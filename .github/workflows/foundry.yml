@@ -3,8 +3,6 @@ name: Foundry
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
@@ -29,19 +27,14 @@ jobs:
         suite: [Unit, Integration, Fork]
     
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-        with:
-          egress-policy: audit
-          
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        uses: actions/cache@v3
         with:
           path: |
             cache/
@@ -52,7 +45,7 @@ jobs:
 
       # Install the Foundry toolchain.
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
+        uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
@@ -90,25 +83,14 @@ jobs:
     name: Test (Storage)
     runs-on: protocol-x64-16core
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-  	with:
-    	  egress-policy: block
-    	  allowed-endpoints: >
-      	    api.etherscan.io:443
-            binaries.soliditylang.org:443
-            eth-mainnet.g.alchemy.com:443
-            github.com:443
-            release-assets.githubusercontent.com:443
-          
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        uses: actions/cache@v3
         with:
           path: |
             cache/
@@ -119,7 +101,7 @@ jobs:
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
+        uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
@@ -137,23 +119,14 @@ jobs:
     name: Coverage
     runs-on: protocol-x64-16core
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-        with:
-          egress-policy: block
-    	  allowed-endpoints: >
-            binaries.soliditylang.org:443
-            github.com:443
-            release-assets.githubusercontent.com:443
-          
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       # Restore Foundry and Forge cache
       - name: Cache Foundry Dependencies
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo
@@ -166,7 +139,7 @@ jobs:
         
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
+        uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
@@ -196,7 +169,7 @@ jobs:
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@v4
         with:
           name: code-coverage-report
           path: report/*
@@ -235,23 +208,14 @@ jobs:
     name: Size Diff
     runs-on: protocol-x64-16core
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-        with:
-          egress-policy: block
-	  allowed-endpoints: >
-            binaries.soliditylang.org:443
-            github.com:443
-            release-assets.githubusercontent.com:443
-          
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
+        uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
 
@@ -312,3 +276,4 @@ jobs:
           if [ "$has_differences" -eq 0 ]; then
             echo -e "\033[1;32m✨ No contract size changes detected ✨\033[0m"
           fi
+
