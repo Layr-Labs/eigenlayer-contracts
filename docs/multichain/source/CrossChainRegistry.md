@@ -83,8 +83,6 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
 * Caller MUST be UAM permissioned for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST NOT already exist for the `operatorSet`
-* At least one `chainID` MUST be provided <!-- @audit this and below need to be removed -->
-* All provided `chainIDs` MUST be whitelisted
 
 ### `removeGenerationReservation`
 

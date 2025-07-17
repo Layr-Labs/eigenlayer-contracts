@@ -145,12 +145,14 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
 
 *Requirements*:
 * The certificate MUST NOT be stale (based on `maxStalenessPeriod`)
-* The root at `referenceTimestamp` MUST be valid (not disabled)
-* The operator table MUST exist for the `referenceTimestamp`
+* The root at `referenceTimestamp` MUST exist
+* The root at `referenceTimestamp` MUST be valid
 * Signatures MUST be proper length
-* Signatures MUST be ordered by signer address (ascending)
-* All signers MUST be registered operators
 * Each signature MUST be valid
+* Signatures MUST be ordered by signer address (ascending)
+* The operatorSet MUST be updated for the `referenceTimestamp`
+* There must be a nonzero number of operators for the `referenceTimestamp`
+* All signers MUST be registered operators
 
 #### `verifyCertificateProportion`
 
@@ -401,9 +403,11 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 
 *Requirements*:
 * The certificate MUST NOT be stale (based on `maxStalenessPeriod`)
-* The root at `referenceTimestamp` MUST be valid (not disabled)
+* The root at the `referenceTimestamp` MUST exist
+* The root at the `referenceTimestamp` MUST not be disabled
 * The operator set info MUST exist for the `referenceTimestamp`
-* All merkle proofs MUST be valid
+* The `operatorIndex` must be valid for the non signer
+* All merkle proofs for nonsigners MUST be valid
 * The BLS signature MUST verify correctly
 
 #### `verifyCertificateProportion`
