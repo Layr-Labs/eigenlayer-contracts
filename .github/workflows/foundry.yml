@@ -28,13 +28,13 @@ jobs:
     
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd719
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84
         with:
           path: |
             cache/
@@ -45,7 +45,7 @@ jobs:
 
       # Install the Foundry toolchain.
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
           version: stable
 
@@ -84,13 +84,13 @@ jobs:
     runs-on: protocol-x64-16core
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd719
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84
         with:
           path: |
             cache/
@@ -101,7 +101,7 @@ jobs:
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
           version: stable
 
@@ -120,13 +120,13 @@ jobs:
     runs-on: protocol-x64-16core
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd719
         with:
           submodules: recursive
 
       # Restore Foundry and Forge cache
       - name: Cache Foundry Dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84
         with:
           path: |
             ~/.cargo
@@ -139,7 +139,7 @@ jobs:
         
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
           version: stable
 
@@ -169,7 +169,7 @@ jobs:
 
       # Upload coverage report as artifact before potential failure
       - name: Upload Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: code-coverage-report
           path: report/*
@@ -209,13 +209,13 @@ jobs:
     runs-on: protocol-x64-16core
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd719
         with:
           submodules: recursive
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
           version: stable
 
