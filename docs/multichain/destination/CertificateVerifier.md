@@ -611,20 +611,20 @@ function getOperatorSetWeights(
 
 ### End to End Verification
 
-The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. Solid lines are on-chain write interactions. Dashed lines are read operations, either on- or off- chain 
+The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. Solid lines are on-chain write interactions. Dashed lines are read operations, either on- or off- chain. 
 
 ```mermaid
 sequenceDiagram
     participant Transporter as EigenLabs Transporter
-    participant OTU as OperatorTableUpdater
+    participant OUT as OperatorTableUpdater
     participant OTC as OperatorTableCalculator
     participant CV as CertificateVerifier
     participant Aggregator as AVS Aggregator
     participant Registry as CrossChainRegistry
     participant Consumer as AVS Consumer
 
-    Transporter->>OTU: 1. updateOperatorTable()
-    OTU->>CV: updateOperatorTable()
+    Transporter->>OUT: 1. updateOperatorTable()
+    OUT->>CV: updateOperatorTable()
 
     Aggregator-->>CV: 2. Get latestReferenceTimestamp()
     Aggregator-->>Registry: 3. getOperatorTableCalculator(operatorSet)
