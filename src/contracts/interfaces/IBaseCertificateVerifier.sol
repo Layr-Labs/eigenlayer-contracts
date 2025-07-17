@@ -87,9 +87,23 @@ interface IBaseCertificateVerifier is
      * @param operatorSet The operator set to calculate stakes for
      * @param referenceTimestamp The reference timestamp
      * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+     * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
+     * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
      */
     function getTotalStakeWeights(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Get the number of operators at a given reference timestamp
+     * @param operatorSet The operator set to get the number of operators for
+     * @param referenceTimestamp The reference timestamp
+     * @return The number of operators
+     * @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
+     */
+    function getOperatorCount(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256);
 }

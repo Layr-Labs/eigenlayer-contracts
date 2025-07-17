@@ -953,6 +953,42 @@ contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVeri
             verifier.isReferenceTimestampSet(differentOperatorSet, referenceTimestamp), "Different operator set timestamp should not be set"
         );
     }
+
+    function test_getTotalStakeWeights() public view {
+        // Test with valid timestamp - should return the totalWeights from operatorSetInfo
+        uint[] memory totalStakes = verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
+
+        assertEq(totalStakes.length, operatorSetInfo.totalWeights.length, "Total stakes length mismatch");
+        for (uint i = 0; i < totalStakes.length; i++) {
+            assertEq(totalStakes[i], operatorSetInfo.totalWeights[i], "Total stake mismatch at index");
+        }
+
+        // Test with non-existent timestamp - should return empty array
+        uint32 nonExistentTimestamp = referenceTimestamp + 1000;
+        uint[] memory emptyStakes = verifier.getTotalStakeWeights(defaultOperatorSet, nonExistentTimestamp);
+        assertEq(emptyStakes.length, 0, "Should return empty array for non-existent timestamp");
+
+        // Test with different operator set - should return empty array
+        OperatorSet memory differentOperatorSet = OperatorSet({avs: address(0x99), id: 10});
+        uint[] memory differentSetStakes = verifier.getTotalStakeWeights(differentOperatorSet, referenceTimestamp);
+        assertEq(differentSetStakes.length, 0, "Should return empty array for unconfigured operator set");
+    }
+
+    function test_getOperatorCount() public view {
+        // Test with valid timestamp - should return the operator count from operatorSetInfo
+        uint operatorCount = verifier.getOperatorCount(defaultOperatorSet, referenceTimestamp);
+        assertEq(operatorCount, operatorSetInfo.numOperators, "Operator count mismatch");
+
+        // Test with non-existent timestamp - should return 0
+        uint32 nonExistentTimestamp = referenceTimestamp + 1000;
+        uint zeroCount = verifier.getOperatorCount(defaultOperatorSet, nonExistentTimestamp);
+        assertEq(zeroCount, 0, "Should return 0 for non-existent timestamp");
+
+        // Test with different operator set - should return 0
+        OperatorSet memory differentOperatorSet = OperatorSet({avs: address(0x99), id: 10});
+        uint differentSetCount = verifier.getOperatorCount(differentOperatorSet, referenceTimestamp);
+        assertEq(differentSetCount, 0, "Should return 0 for unconfigured operator set");
+    }
 }
 
 /**

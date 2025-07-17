@@ -134,17 +134,6 @@ interface IECDSACertificateVerifier is
     ) external view returns (ECDSAOperatorInfo memory);
 
     /**
-     * @notice Get the total number of operators for a given reference timestamp
-     * @param operatorSet The operator set
-     * @param referenceTimestamp The reference timestamp
-     * @return The number of operators, 0 if the operatorSet has not been updated for the given reference timestamp
-     */
-    function getOperatorCount(
-        OperatorSet calldata operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (uint32);
-
-    /**
      * @notice Override domainSeparator to not include chainId
      * @return The domain separator hash without chainId
      * @dev This function overrides the base domainSeparator to not include chainId to replay

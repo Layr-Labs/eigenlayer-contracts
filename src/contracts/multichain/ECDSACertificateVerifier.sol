@@ -238,6 +238,42 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return _referenceTimestampsSet[operatorSetKey][referenceTimestamp];
     }
 
+    /// @inheritdoc IBaseCertificateVerifier
+    /// @dev This function requires the reference timestamp to be set
+    function getTotalStakeWeights(
+        OperatorSet calldata operatorSet,
+        uint32 referenceTimestamp
+    ) public view returns (uint256[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
+
+        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
+        require(operatorCount > 0, OperatorCountZero());
+
+        // All weights are expected to be same length, so 0 index is used
+        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
+
+        uint256[] memory totalStakes = new uint256[](stakeTypesCount);
+        for (uint256 i = 0; i < operatorCount; i++) {
+            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][i].weights;
+
+            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
+                totalStakes[j] += weights[j];
+            }
+        }
+
+        return totalStakes;
+    }
+
+    /// @inheritdoc IBaseCertificateVerifier
+    function getOperatorCount(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _numOperators[operatorSetKey][referenceTimestamp];
+    }
+
     ///@inheritdoc IECDSACertificateVerifier
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -311,41 +347,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         bytes32 operatorSetKey = operatorSet.key();
         require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
         return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
-    }
-
-    /// @inheritdoc IECDSACertificateVerifier
-    function getOperatorCount(
-        OperatorSet memory operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (uint32) {
-        bytes32 operatorSetKey = operatorSet.key();
-        return uint32(_numOperators[operatorSetKey][referenceTimestamp]);
-    }
-
-    /// @inheritdoc IBaseCertificateVerifier
-    function getTotalStakeWeights(
-        OperatorSet calldata operatorSet,
-        uint32 referenceTimestamp
-    ) public view returns (uint256[] memory) {
-        bytes32 operatorSetKey = operatorSet.key();
-        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
-
-        uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
-        require(operatorCount > 0, OperatorCountZero());
-
-        // All weights are expected to be same length, so 0 index is used
-        uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
-
-        uint256[] memory totalStakes = new uint256[](stakeTypesCount);
-        for (uint256 i = 0; i < operatorCount; i++) {
-            uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][i].weights;
-
-            for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
-                totalStakes[j] += weights[j];
-            }
-        }
-
-        return totalStakes;
     }
 
     /// @inheritdoc IECDSACertificateVerifier
