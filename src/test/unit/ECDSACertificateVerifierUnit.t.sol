@@ -1143,7 +1143,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
     function test_getOperatorCount() public view {
         IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators = _getOperators();
 
-        uint32 operatorCount = verifier.getOperatorCount(defaultOperatorSet, referenceTimestamp);
+        uint operatorCount = verifier.getOperatorCount(defaultOperatorSet, referenceTimestamp);
         assertEq(operatorCount, operators.length, "Operator count mismatch");
     }
 

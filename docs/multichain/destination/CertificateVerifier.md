@@ -12,7 +12,7 @@ Libraries and Mixins:
 | -------- | -------- | -------- |
 | [`ECDSA.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/cryptography/ECDSA.sol) | ECDSACertificateVerifier | ECDSA signature recovery |
 | [`SignatureUtilsMixin.sol`](../../../src/contracts/mixins/SignatureUtilsMixin.sol) | ECDSACertificateVerifier | EIP-712 and signature validation |
-| [`BN254.sol`](../../../src/contracts/libraries/BN254.sol) | BN254CertificateVerifier | BN254 curve operations |
+| [`BN254.sol`](../../../src/contracts/libraries/BN254.sol) | BN254CertificateVerifier | BN254CertificateVerifier |
 | [`BN254SignatureVerifier.sol`](../../../src/contracts/libraries/BN254SignatureVerifier.sol) | BN254CertificateVerifier | BLS signature verification |
 | [`Merkle.sol`](../../../src/contracts/libraries/Merkle.sol) | BN254CertificateVerifier | Merkle proof verification |
 | [`SemVerMixin.sol`](../../../src/contracts/mixins/SemVerMixin.sol) | BN254CertificateVerifier | Semantic versioning |
@@ -536,5 +536,106 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 
 Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days in the `CrossChainRegistry`.
 
-## Usage Patterns
+## Consumption Patterns
+
+### Introspection
+
+Both the `BN254CertificateVerifier` and `ECDSACertificateVerifier` share the following view functions
+
+```solidity
+/**
+ * @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
+ *         updated each time an operator table is updated
+ * @param operatorSet The operatorSet to get the latest reference timestamp of
+ * @return The latest reference timestamp, 0 if the operatorSet has never been updated
+ */
+function latestReferenceTimestamp(
+    OperatorSet memory operatorSet
+) external view returns (uint32);
+
+/**
+ * @notice Whether the reference timestamp has been updated for a given operatorSet
+ * @param operatorSet The operatorSet to check
+ * @param referenceTimestamp The reference timestamp to check
+ * @return Whether the reference timestamp has been updated
+ */
+function isReferenceTimestampSet(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (bool);
+
+/**
+ * @notice Get the total stake weights for all operators at a given reference timestamp
+ * @param operatorSet The operator set to calculate stakes for
+ * @param referenceTimestamp The reference timestamp
+ * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+ * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
+ * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
+ */
+function getTotalStakeWeights(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (uint256[] memory);
+
+/**
+ * @notice Get the number of operators at a given reference timestamp
+ * @param operatorSet The operator set to get the number of operators for
+ * @param referenceTimestamp The reference timestamp
+ * @return The number of operators
+ * @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
+ */
+function getOperatorCount(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (uint256);
+```
+
+The `getTotalStakeWeights` function should be read by consumers before passing in expected proportional or nominal amounts into the `verifyCertificateProportion` or `verifyCertificateNominal` respectively. 
+
+The `latestReferenceTimestamp` should be called by AVSs offchain aggregator to pass in a `referenceTimestasmp` into the `Certificate`
+
+To retrieve the operators and their weights from an operatorSet, the AVS offchain aggregator can call the following function on the operatorSet's `OperatorTableCalculator`, which can be retrieved from the `CrossChainRegistry`.
+
+```solidity
+/**
+ * @notice Get the operator stake weights for a given operatorSet
+ * @param operatorSet The operatorSet to get the stake weights for
+ * @return operators The addresses of the operators in the operatorSet
+ * @return weights The stake weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
+ * and the second index is the stake weight
+ */
+function getOperatorSetWeights(
+    OperatorSet calldata operatorSet
+) external view returns (address[] memory operators, uint256[][] memory weights);
+```
+
+### End to End Verification
+
+The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. 
+
+```mermaid
+sequenceDiagram
+    participant Transporter as EigenLabs Transporter
+    participant OTC as OperatorTableCalculator
+    participant CV as CertificateVerifier
+    participant Aggregator as AVS Aggregator
+    participant Registry as CrossChainRegistry
+    participant Consumer as AVS Consumer
+
+    Transporter->>OTC: 1. updateOperatorTable()
+    OTC->>CV: updateOperatorTable()
+
+    Aggregator-->>CV: 2. Get latestReferenceTimestamp()
+    Aggregator-->>Registry: 3. getOperatorTableCalculator(operatorSet)
+    Aggregator-->>OTC: getOperatorSetWeights() at referenceTimestamp
+
+    Aggregator-->>Aggregator: create task & collect operator signatures
+    Aggregator-->>Aggregator: generate certificate with latestReferenceTimestamp & signatures
+
+    Consumer-->>Aggregator: retrieve certificate
+    Consumer-->>CV: getTotalStakeWeights()
+    Consumer-->>Consumer: adjust nominal verification thresholds
+    Consumer->>CV: verifyCertificateNominal()
+```
+
 
