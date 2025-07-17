@@ -1,7 +1,14 @@
 import "../optimizations.spec";
+import "../ptaHelpers.spec";
 
-using AllocationManager as AllocationManager;
+using AllocationManagerHarness as AllocationManager;
+
 methods {
+
+    //harnessed
+    function getOperatorKey(address, uint32) external returns (bytes32) envfree;
+    function getOperatorSetFromKey(bytes32) external returns (AllocationManagerHarness.OperatorSet) envfree;
+
     function AllocationManager.DEALLOCATION_DELAY() external returns(uint32) envfree;
     function AllocationManager.getMaxMagnitude(address,address) external returns (uint64) envfree;
 
@@ -24,6 +31,22 @@ methods {
     // function AllocationManager._addInt128(uint64 a, int128 b) internal returns (uint64) => cvlAddInt128(a, b);
 }
 
+function requireNoOverflow(env e){
+    requireInvariant maxMagnitudeHistoryKeysLessThanCurrentBlock(e);
+    requireInvariant deallocationQueueEffectBlocLessThanCurrBlockNumberPlushDelayPlusOne(e);
+    requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
+    // prevent overflows in deallocationQueue
+    require (forall address _operator. forall address _strategy. (currentContract.deallocationQueue[_operator][_strategy]._end < max_uint64 - 1), "reasonable length of deallocationQueue");
+    // assuming deallocation block indices dont overflow
+    require (forall address _operator . forall address _strategy . (deallocationQueueEndGhost[_operator][_strategy] < max_uint64 - 1), "reasonable length of deallocationQueue");
+    // would happen around the year 2833 to get block number equal to half of max_uint32
+    require (e.block.number < max_uint32 + AllocationManager.DEALLOCATION_DELAY + 1, "reasonable block numbers");  
+    require (e.block.number > 0, "reasonable block numbers");
+    // prevent overflows for loop iter = 2
+    require (forall address operator_. forall address strategy_. maxMagnitudeHistoryLengths[operator_][strategy_] < max_uint256 - 1, "reasonable length of snapshots");
+    require (forall address operator_. forall address strategy_. currentContract._maxMagnitudeHistory[operator_][strategy_]._snapshots.length < max_uint256 - 1, "reasonable length of snapshots");
+
+}
 function cvlAddInt128(uint64 a, int128 b) returns uint64 {
     require(b >= 0 || to_mathint(a) > to_mathint(-b)); // Prevent underflow
     require(b <= 0 || a < to_mathint(max_uint64) -to_mathint(b)); // Prevent overflow
@@ -617,7 +640,7 @@ invariant deallocationQueueDataUniqueness()
             // would happen around the year 2833 to get block number equal to half of max_uint32
             require e.block.number < max_uint32 - AllocationManager.DEALLOCATION_DELAY - 1;  
             require e.block.number > 0;
-            requireInvariant deallocationQueueEffectBlockAscesndingOrder(e);
+            requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
         } 
     }
 
@@ -665,7 +688,7 @@ invariant deallocationQueueEffectBlocLessThanCurrBlockNumberPlushDelayPlusOne(en
 
                 // assuming deallocation block indices dont overflow
                 require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1);
-                requireInvariant deallocationQueueEffectBlockAscesndingOrder(e1);
+                requireInvariant deallocationQueueEffectBlockAscendingOrder(e1);
             }
         }
 
@@ -676,7 +699,7 @@ except when an effect block is zero, which must have been less than or equal to 
 This prevents out-of-order deallocations and ensures a valid execution sequence.
 */
 /// @property Deallocation Queue Effect Block Ascending Order Invariant
-invariant deallocationQueueEffectBlockAscesndingOrder(env e1)
+invariant deallocationQueueEffectBlockAscendingOrder(env e1)
     forall address operator . forall address strategy . forall int128 index1 . forall int128 index2 .
         (index1 <= index2) && inBound(operator, strategy, index1) && inBound(operator, strategy, index2) => 
             ((allocationsEffectBlock[operator][deallocationQueueDataGhost[operator][strategy][index1]][strategy] <= 
@@ -734,6 +757,101 @@ invariant noPositivePendingDiffInDeallocationQ()
             // would happen around the year 2833 to get block number equal to half of max_uint32
             require e.block.number < max_uint32 - AllocationManager.DEALLOCATION_DELAY - 1;  
             require e.block.number > 0;
-            requireInvariant deallocationQueueEffectBlockAscesndingOrder(e);
+            requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
         }
     }
+
+invariant maxMagnitudeGECurrentMagnitude(bytes32 operatorKey, address operator, address strategy)
+    currentContract.allocations[operator][operatorKey][strategy].currentMagnitude <= getMaxMagnitude(operator, strategy)
+    {
+        preserved with (env e) {
+            requireValidState();
+            SumTrackingSetup();
+            requireNoOverflow(e);
+            // magnitudes cannot go beyond 1e18
+            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant currentMagnitudeLeqWAD(operatorKey, operator, strategy);
+            requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
+            requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
+        }
+        preserved slashOperator(
+            address avs2, 
+            IAllocationManagerTypes.SlashingParams params
+        ) with (env e) {
+            bytes32 opKey = getOperatorKey(avs2, params.operatorSetId);
+            require (opKey == operatorKey, "need to ensure that the parameter opKey is the same operatorKey as used in the invariant"); 
+
+            requireValidState();
+            SumTrackingSetup();
+            requireNoOverflow(e);
+            // magnitudes cannot go beyond 1e18
+            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant currentMagnitudeLeqWAD(operatorKey, operator, strategy);
+            requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
+            requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
+
+            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
+        } 
+    }
+
+invariant maxMagnitudeLeqWAD(address operator, address strategy)
+    getMaxMagnitude(operator, strategy) <= WAD();
+
+invariant currentMagnitudeLeqWAD(bytes32 operatorKey, address operator, address strategy)
+    currentContract.allocations[operator][operatorKey][strategy].currentMagnitude <= WAD() {
+        preserved with (env e) {
+            SumTrackingSetup();
+            requireValidState();
+            requireNoOverflow(e);
+            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
+            require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
+        }
+    }
+
+invariant encumberedMagnitudeLeqWAD(env e, address operator, address strategy)
+    getEncumberedMagnitude(e, operator, strategy) <= WAD() {
+        preserved {
+            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            SumTrackingSetup();
+            requireValidState();
+            requireNoOverflow(e);
+            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+        }
+    }
+
+invariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(bytes32 operatorKey, address operator, address strategy)
+     currentContract.allocations[operator][operatorKey][strategy].currentMagnitude + currentContract.allocations[operator][operatorKey][strategy].pendingDiff <= WAD() {
+            preserved with (env e) {
+                SumTrackingSetup();
+                requireValidState();
+                requireNoOverflow(e);
+                requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+                requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
+                requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            }
+            preserved modifyAllocations(
+                address op,
+                IAllocationManagerTypes.AllocateParams[] params
+            ) with (env e) {
+                // require (forall uint256 i. forall uint256 j. params[i].newMagnitudes[j] <= WAD(), "assume new magnitudes respect WAD()");
+
+                // AllocationManager.OperatorSet opSet = getOperatorSetFromKey(operatorKey);
+                // require (forall uint256 i. forall uint256 j. params[i].operatorSet.avs == opSet.avs => 
+                // params[i].newMagnitudes[j] + currentContract.allocations[operator][operatorKey][strategy].pendingDiff <= WAD(), "assume new magnitude + current pending diff respect WAD()");
+                
+                require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
+
+                SumTrackingSetup();
+                requireValidState();
+                requireNoOverflow(e);
+                requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+                requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
+                requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            }
+        }

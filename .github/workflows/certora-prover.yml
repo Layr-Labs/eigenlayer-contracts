@@ -6,37 +6,43 @@ on:
     types: [closed]
     branches:
       - main
-  
+
   # Run on any pushes to certora/* branches
   push:
     branches:
       - 'certora/**'
-  
+
   # Biweekly schedule (1st and 15th of each month at midnight UTC)
   schedule:
     - cron: '0 0 1,15 * *'
-  
+
   # Manual trigger
   workflow_dispatch:
 
 jobs:
-  # First job: Compile the contracts for Certora verification
-  compile:
-    name: Compile
+  # Compile the contracts and run verification
+  compile_and_verify:
+    name: Compile and verify
     # Run if it meets one of these conditions:
     # 1. It's a merged PR from a feat/* branch to dev
     # 2. It's a push to a certora/* branch
     # 3. It's a scheduled run
     # 4. It's a manually triggered run
     if: >
-      (github.event_name == 'pull_request' && 
-       github.event.pull_request.merged == true && 
-       startsWith(github.head_ref, 'feat/')) || 
-      (github.event_name == 'push' && 
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       startsWith(github.head_ref, 'feat/')) ||
+      (github.event_name == 'push' &&
        startsWith(github.ref, 'refs/heads/certora/')) ||
-      github.event_name == 'schedule' || 
+      github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch'
-    runs-on: protocol-x64-16core
+    runs-on: ubuntu-latest
+#    runs-on: protocol-x64-16core
+    permissions:
+      contents: read
+      statuses: write
+      pull-requests: write
+      id-token: write
     steps:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
@@ -49,22 +55,20 @@ jobs:
           # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
           ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
 
-      # Install the Foundry toolchain
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
-        with:
-          version: stable
-
-      # Install dependencies using Forge
-      - name: Install forge dependencies
-        run: forge install
-
-      # Run Certora compilation step only
-      - uses: Certora/certora-run-action@56c6a98e84eee5cd3a135967a9a4bc06ef6d38cc
+      # Run Certora compilation and verification
+      - name: Run Certora compilation and verification
+        uses: Certora/certora-run-action@11979c68d2ffab0b1b2fe6c72ec9d7a38855822d
         with:
           # List of configuration files for different contracts to verify
           configurations: |-
+            certora/confs/multichain/CrossChainRegistry.conf
+            certora/confs/multichain/KeyRegistrar.conf
+            certora/confs/multichain/OperatorTableUpdater.conf
+            certora/confs/multichain/ECDSACertificateVerifier.conf
+            certora/confs/multichain/BN254CertificateVerifier.conf
             certora/confs/core/AllocationManager.conf
+            certora/confs/core/AllocationManagerOverslashing.conf
+            certora/confs/core/AllocationManagerValidState.conf
             certora/confs/core/AllocationManagerSanity.conf
             certora/confs/core/DelegationManager.conf
             certora/confs/core/DelegationManagerValidState.conf
@@ -72,70 +76,8 @@ jobs:
             certora/confs/permissions/Pausable.conf
             certora/confs/pods/EigenPodManagerRules.conf
             certora/confs/strategies/StrategyBase.conf
-          use-beta: true
           solc-versions: 0.8.27
-          solc-remove-version-prefix: "0."
-          job-name: "Eigenlayer Contracts"
-          certora-key: ${{ secrets.CERTORAKEY }}
-          # Only compile, don't run verification yet
-          compilation-steps-only: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Second job: Run the actual verification after compilation succeeds
-  verify:
-    name: Verify
-    runs-on: protocol-x64-16core
-    # This job depends on the compile job
-    needs: compile
-    # Same conditions as the compile job
-    if: >
-      (github.event_name == 'pull_request' && 
-       github.event.pull_request.merged == true && 
-       startsWith(github.head_ref, 'feat/')) || 
-      (github.event_name == 'push' && 
-       startsWith(github.ref, 'refs/heads/certora/')) ||
-      github.event_name == 'schedule' || 
-      github.event_name == 'workflow_dispatch'
-    steps:
-      - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-        with:
-          egress-policy: audit
-
-      # Checkout the repository with submodules
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          submodules: recursive
-          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
-          ref: ${{ github.event_name == 'schedule' && 'dev' || github.ref }}
-          
-      # Install the Foundry toolchain.
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
-        with:
-          version: stable
-
-      # Install dependencies using Forge
-      - name: Install forge dependencies
-        run: forge install
-
-      # Run Certora verification with the same configurations
-      - uses: Certora/certora-run-action@56c6a98e84eee5cd3a135967a9a4bc06ef6d38cc
-        with:
-          # List of configuration files for different contracts to verify
-          configurations: |-
-            certora/confs/core/AllocationManager.conf
-            certora/confs/core/AllocationManagerSanity.conf
-            certora/confs/core/DelegationManager.conf
-            certora/confs/core/DelegationManagerValidState.conf
-            certora/confs/core/StrategyManager.conf
-            certora/confs/permissions/Pausable.conf
-            certora/confs/pods/EigenPodManagerRules.conf
-            certora/confs/strategies/StrategyBase.conf
-          use-beta: true
-          solc-versions: 0.8.27
-          solc-remove-version-prefix: "0."
-          job-name: "Eigenlayer Contracts"
+          job-name: "Verified Rules"
           certora-key: ${{ secrets.CERTORAKEY }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
