@@ -1231,7 +1231,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         vm.prank(address(operatorTableUpdaterMock));
         verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, defaultOperatorSetConfig);
 
-        vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
+        vm.expectRevert(OperatorCountZero.selector);
         verifier.getTotalStakeWeights(defaultOperatorSet, referenceTimestamp);
     }
 }
