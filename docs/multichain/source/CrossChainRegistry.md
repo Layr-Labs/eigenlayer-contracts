@@ -21,12 +21,12 @@ The `CrossChainRegistry` manages the registration/deregistration of operatorSets
 ```solidity
 /**
  * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
- * @param owner the permissioned owner of the OperatorSet on L2 that can call the CertificateVerifier specific setters
+ * @param owner the permissioned owner of the OperatorSet on L2 that can be used by downstream contracts to authorize actions
  * @param maxStalenessPeriod the maximum staleness period of the operatorSet
- * 
+ *
  * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
  * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
- *      certificates would be unable to be validated against. The update cadence is communicated off-chain
+ *      certificates would be unable to be validated against. The update cadence is set by the owner of the CrossChainRegistry
  */
 struct OperatorSetConfig {
     address owner;
@@ -38,7 +38,7 @@ struct OperatorSetConfig {
 * `SupportedChains` (via `getSupportedChains`) are `Mainnet` and `Base`
     * These are chains to which tables can be transported to
     * On Testnet, the supported chains are `Sepolia` and `Base-Sepolia`
-* `TableUpdateCadence` is the frequency at which tables are *expected* to be transported to destination chains
+* `TableUpdateCadence` is the frequency at which tables are *expected* to be transported to destination chains. 1 day on testnet. Weekly on mainnet
     * When setting an operator set config, the `maxStalenessPeriod` must be either:
         * 0 (special case allowing certificates to always be valid)
         * Greater than or equal to the table update cadence
@@ -57,7 +57,7 @@ A generation reservation registers the operatorSet to be included in the `Global
  * @param operatorSet the operatorSet to make a reservation for
  * @param operatorTableCalculator the address of the operatorTableCalculator
  * @param config the config to set for the operatorSet
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
+ * @dev msg.sender must be an authorized caller for operatorSet.avs
  */
 function createGenerationReservation(
     OperatorSet calldata operatorSet,
@@ -80,7 +80,7 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_GENERATION_RESERVATIONS`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
+* Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST NOT already exist for the `operatorSet`
 
@@ -90,7 +90,7 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
 /**
  * @notice Removes a generation reservation for a given operatorSet
  * @param operatorSet the operatorSet to remove
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
+ * @dev msg.sender must be an authorized caller for operatorSet.avs
  */
 function removeGenerationReservation(
     OperatorSet calldata operatorSet
@@ -109,7 +109,7 @@ Removes a generation reservation for a given `operatorSet` and clears all associ
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_GENERATION_RESERVATIONS`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
+* Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
 
@@ -125,7 +125,7 @@ For a given operatorSet, an AVS can set the [`OperatorTableCalculator`](./Operat
  * @notice Sets the operatorTableCalculator for the operatorSet
  * @param operatorSet the operatorSet whose operatorTableCalculator is desired to be set
  * @param operatorTableCalculator the contract to call to calculate the operator table
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
+ * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev operatorSet must have an active reservation
  */
 function setOperatorTableCalculator(
@@ -146,7 +146,7 @@ For more information on the `operatorTableCalculator`, please see full documenta
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_OPERATOR_TABLE_CALCULATOR`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
+* Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
 
@@ -157,7 +157,7 @@ For more information on the `operatorTableCalculator`, please see full documenta
  * @notice Sets the operatorSetConfig for a given operatorSet
  * @param operatorSet the operatorSet to set the operatorSetConfig for
  * @param config the config to set
- * @dev msg.sender must be UAM permissioned for operatorSet.avs
+ * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev operatorSet must have an active generation reservation
  * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
  */
@@ -177,7 +177,7 @@ Updates the operator set configuration for a given `operatorSet`. The config con
 
 *Requirements*:
 * The global paused status MUST NOT be set: `PAUSED_OPERATOR_SET_CONFIG`
-* Caller MUST be UAM permissioned for `operatorSet.avs`
+* Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST exist for the `operatorSet`
 * The `maxStalenessPeriod` MUST be either:
