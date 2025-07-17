@@ -93,19 +93,11 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
 
     /**
-     * @notice Checks if an operator has a registered key, and reverts if the operatorSet has not been configured
-     * @param operatorSet The operator set to check and update
-     * @param operator Address of the operator
-     * @return whether the operator has a registered key
-     * @dev This function can be called by AVSs to check operator key registration
-     */
-    function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool);
-
-    /**
      * @notice Checks if a key is registered for an operator with a specific operator set
      * @param operatorSet The operator set to check
      * @param operator Address of the operator
-     * @return True if the key is registered
+     * @return True if the key is registered, false otherwise
+     * @dev If the operatorSet is not configured, this function will return false
      */
     function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
