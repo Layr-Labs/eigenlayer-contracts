@@ -27,6 +27,11 @@ jobs:
         suite: [Unit, Integration, Fork]
     
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: audit
+          
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -83,6 +88,11 @@ jobs:
     name: Test (Storage)
     runs-on: protocol-x64-16core
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: audit
+          
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -119,6 +129,11 @@ jobs:
     name: Coverage
     runs-on: protocol-x64-16core
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: audit
+          
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -208,6 +223,11 @@ jobs:
     name: Size Diff
     runs-on: protocol-x64-16core
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: audit
+          
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
