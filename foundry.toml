@@ -116,6 +116,46 @@
         "./src/contracts/**/*"
     ]
 
+[profile.default.lint]
+    # Whether to run the linter when building.
+    lint_on_build = false
+    # Specifies which lints to run based on severity.
+    severity = [
+        "high", 
+        "med", 
+        "low", 
+        "info", 
+        "gas"
+    ]
+    # List of lints to exclude from linting.
+    exclude_lints = [
+        # High
+        # "incorrect-shift",
+        # "unchecked-call",
+        # "erc20-unchecked-transfer",
+
+        # Medium
+        # "divide-before-multiply",
+
+        # Info
+        # "unused-import",
+        # "unaliased-plain-import",
+        # "mixed-case-function",
+        # "mixed-case-variable",
+        # "pascal-case-struct",
+        # "screaming-snake-case-const",
+        # "screaming-snake-case-immutable",
+
+        # Gas
+        # "asm-keccak256",
+        # "unwrapped-modifier-logic"
+    ]
+    # List of files or patterns to ignore when running the linter (can use glob patterns)
+    ignore = [
+        "src/test/**/*",
+        "script/**/*"
+    ]
+
 [profile.forktest.fuzz]    
     optimizer = false
     runs = 16
