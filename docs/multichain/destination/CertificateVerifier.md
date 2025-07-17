@@ -554,10 +554,11 @@ function latestReferenceTimestamp(
 ) external view returns (uint32);
 
 /**
- * @notice Whether the reference timestamp has been updated for a given operatorSet
+ * @notice Whether the operator table has been updated for a given reference timestamp
  * @param operatorSet The operatorSet to check
  * @param referenceTimestamp The reference timestamp to check
  * @return Whether the reference timestamp has been updated
+ * @dev The reference timestamp is set when the operator table is updated
  */
 function isReferenceTimestampSet(
     OperatorSet memory operatorSet,

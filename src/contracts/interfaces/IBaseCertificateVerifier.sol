@@ -66,16 +66,18 @@ interface IBaseCertificateVerifier is
      *         updated each time an operator table is updated
      * @param operatorSet The operatorSet to get the latest reference timestamp of
      * @return The latest reference timestamp, 0 if the operatorSet has never been updated
+     * @dev The latest reference timestamp is set when the operator table is updated
      */
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
 
     /**
-     * @notice Whether the reference timestamp has been updated for a given operatorSet
+     * @notice Whether the operator table has been updated for a given reference timestamp
      * @param operatorSet The operatorSet to check
      * @param referenceTimestamp The reference timestamp to check
      * @return Whether the reference timestamp has been updated
+     * @dev The reference timestamp is set when the operator table is updated
      */
     function isReferenceTimestampSet(
         OperatorSet memory operatorSet,
