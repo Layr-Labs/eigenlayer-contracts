@@ -81,4 +81,15 @@ interface IBaseCertificateVerifier is
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (bool);
+
+    /**
+     * @notice Get the total stake weights for all operators at a given reference timestamp
+     * @param operatorSet The operator set to calculate stakes for
+     * @param referenceTimestamp The reference timestamp
+     * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+     */
+    function getTotalStakeWeights(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256[] memory);
 }

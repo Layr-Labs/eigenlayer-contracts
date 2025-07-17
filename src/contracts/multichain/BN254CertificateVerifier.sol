@@ -326,6 +326,15 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         return _referenceTimestampsSet[operatorSetKey][referenceTimestamp];
     }
 
+    ///@inheritdoc IBaseCertificateVerifier
+    function getTotalStakeWeights(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256[] memory) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return _operatorSetInfos[operatorSetKey][referenceTimestamp].totalWeights;
+    }
+
     ///@inheritdoc IBN254CertificateVerifier
     function trySignatureVerification(
         bytes32 msgHash,

@@ -322,7 +322,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return uint32(_numOperators[operatorSetKey][referenceTimestamp]);
     }
 
-    /// @inheritdoc IECDSACertificateVerifier
+    /// @inheritdoc IBaseCertificateVerifier
     function getTotalStakeWeights(
         OperatorSet calldata operatorSet,
         uint32 referenceTimestamp

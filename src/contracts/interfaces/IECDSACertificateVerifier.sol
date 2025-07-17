@@ -145,17 +145,6 @@ interface IECDSACertificateVerifier is
     ) external view returns (uint32);
 
     /**
-     * @notice Get the total stake weights for all operators at a given reference timestamp
-     * @param operatorSet The operator set to calculate stakes for
-     * @param referenceTimestamp The reference timestamp
-     * @return totalStakes The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
-     */
-    function getTotalStakeWeights(
-        OperatorSet calldata operatorSet,
-        uint32 referenceTimestamp
-    ) external view returns (uint256[] memory);
-
-    /**
      * @notice Override domainSeparator to not include chainId
      * @return The domain separator hash without chainId
      * @dev This function overrides the base domainSeparator to not include chainId to replay

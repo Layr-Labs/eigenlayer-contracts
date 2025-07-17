@@ -535,3 +535,6 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 4. Day 7: A new certificate is generated. However, this will fail as the `referenceTimestamp` would still be Day 1 given that was the latest table update
 
 Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days in the `CrossChainRegistry`.
+
+## Usage Patterns
+
