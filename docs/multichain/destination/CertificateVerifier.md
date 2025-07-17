@@ -12,7 +12,7 @@ Libraries and Mixins:
 | -------- | -------- | -------- |
 | [`ECDSA.sol`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/cryptography/ECDSA.sol) | ECDSACertificateVerifier | ECDSA signature recovery |
 | [`SignatureUtilsMixin.sol`](../../../src/contracts/mixins/SignatureUtilsMixin.sol) | ECDSACertificateVerifier | EIP-712 and signature validation |
-| [`BN254.sol`](../../../src/contracts/libraries/BN254.sol) | BN254CertificateVerifier | BN254 curve operations |
+| [`BN254.sol`](../../../src/contracts/libraries/BN254.sol) | BN254CertificateVerifier | BN254CertificateVerifier |
 | [`BN254SignatureVerifier.sol`](../../../src/contracts/libraries/BN254SignatureVerifier.sol) | BN254CertificateVerifier | BLS signature verification |
 | [`Merkle.sol`](../../../src/contracts/libraries/Merkle.sol) | BN254CertificateVerifier | Merkle proof verification |
 | [`SemVerMixin.sol`](../../../src/contracts/mixins/SemVerMixin.sol) | BN254CertificateVerifier | Semantic versioning |
@@ -24,7 +24,7 @@ Libraries and Mixins:
 
 The CertificateVerifier contracts are responsible for verifying certificates from an offchain task, on-chain. The operatorSet tables are configured by the [`OperatorTableUpdater`](./OperatorTableUpdater.md) and updated in the `CertificateVerifier` by an offchain process. These contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures.
 
-Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
+Certificates can be created at any time, but must contain a `referenceTimestamp`, which informs the contract of which operator table for the `operatorSet` to use. Both certificate verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
 **Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) is impossible due bounds enfroced by the [`CrossChainRegistry`](../source/CrossChainRegistry.md#parameterization).** See the [staleness period](#staleness-period) in the appendix for some examples. 
 
@@ -106,8 +106,7 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
 ```solidity
 /**
  * @notice A Certificate used to verify a set of ECDSA signatures
- * @param referenceTimestamp the timestamp at which the certificate was
- *        created, which MUST correspond to a reference timestamp of the operator table update
+ * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
  * @param messageHash the hash of the message that was signed by the operators. 
  * The messageHash should be calculated using `calculateCertificateDigest`
  * @param sig the concatenated signature of each signing operator, in ascending order of signer address
@@ -121,10 +120,12 @@ struct ECDSACertificate {
 
 /**
  * @notice verifies a certificate
+ * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @return signedStakes amount of stake that signed the certificate for each stake
- * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
+ * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return signers array of addresses that signed the certificate
+ * @dev This function DOES NOT support smart contact signatures
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
@@ -361,8 +362,7 @@ The contract supports 3 verification patterns:
 ```solidity
 /**
  * @notice A BN254 Certificate
- * @param referenceTimestamp the timestamp at which the certificate was created,
- *         which MUST correspond to a reference timestamp of the operator table update
+ * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
  * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
  * @param signature the G1 signature of the message
  * @param apk the G2 aggregate public key
@@ -535,3 +535,109 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 4. Day 7: A new certificate is generated. However, this will fail as the `referenceTimestamp` would still be Day 1 given that was the latest table update
 
 Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days in the `CrossChainRegistry`.
+
+## Consumption Patterns
+
+### Introspection
+
+Both the `BN254CertificateVerifier` and `ECDSACertificateVerifier` share the following view functions
+
+```solidity
+/**
+ * @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
+ *         updated each time an operator table is updated
+ * @param operatorSet The operatorSet to get the latest reference timestamp of
+ * @return The latest reference timestamp, 0 if the operatorSet has never been updated
+ */
+function latestReferenceTimestamp(
+    OperatorSet memory operatorSet
+) external view returns (uint32);
+
+/**
+ * @notice Whether the operator table has been updated for a given reference timestamp
+ * @param operatorSet The operatorSet to check
+ * @param referenceTimestamp The reference timestamp to check
+ * @return Whether the reference timestamp has been updated
+ * @dev The reference timestamp is set when the operator table is updated
+ */
+function isReferenceTimestampSet(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (bool);
+
+/**
+ * @notice Get the total stake weights for all operators at a given reference timestamp
+ * @param operatorSet The operator set to calculate stakes for
+ * @param referenceTimestamp The reference timestamp
+ * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+ * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
+ * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
+ */
+function getTotalStakeWeights(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (uint256[] memory);
+
+/**
+ * @notice Get the number of operators at a given reference timestamp
+ * @param operatorSet The operator set to get the number of operators for
+ * @param referenceTimestamp The reference timestamp
+ * @return The number of operators
+ * @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
+ */
+function getOperatorCount(
+    OperatorSet memory operatorSet,
+    uint32 referenceTimestamp
+) external view returns (uint256);
+```
+
+The `getTotalStakeWeights` function should be read by consumers before passing in expected proportional or nominal amounts into the `verifyCertificateProportion` or `verifyCertificateNominal` respectively. 
+
+The `latestReferenceTimestamp` should be called by AVSs offchain aggregator to pass in a `referenceTimestasmp` into the `Certificate`
+
+To retrieve the operators and their weights from an operatorSet, the AVS offchain aggregator can call the following function on the operatorSet's `OperatorTableCalculator`, which can be retrieved from the `CrossChainRegistry`.
+
+```solidity
+/**
+ * @notice Get the operator stake weights for a given operatorSet
+ * @param operatorSet The operatorSet to get the stake weights for
+ * @return operators The addresses of the operators in the operatorSet
+ * @return weights The stake weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
+ * and the second index is the stake weight
+ */
+function getOperatorSetWeights(
+    OperatorSet calldata operatorSet
+) external view returns (address[] memory operators, uint256[][] memory weights);
+```
+
+### End to End Verification
+
+The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. Solid lines are on-chain write interactions. Dashed lines are read operations, either on- or off- chain. 
+
+```mermaid
+sequenceDiagram
+    participant Transporter as EigenLabs Transporter
+    participant OUT as OperatorTableUpdater
+    participant OTC as OperatorTableCalculator
+    participant CV as CertificateVerifier
+    participant Aggregator as AVS Aggregator
+    participant Registry as CrossChainRegistry
+    participant Consumer as AVS Consumer
+
+    Transporter->>OUT: 1. updateOperatorTable()
+    OUT->>CV: updateOperatorTable()
+
+    Aggregator-->>CV: 2. Get latestReferenceTimestamp()
+    Aggregator-->>Registry: 3. getOperatorTableCalculator(operatorSet)
+    Aggregator-->>OTC: 4. getOperatorSetWeights() at referenceTimestamp
+
+    Aggregator-->>Aggregator: 5. create task & collect operator signatures
+    Aggregator-->>Aggregator: 6. generate certificate with latestReferenceTimestamp & signatures
+
+    Consumer-->>Aggregator: 7. retrieve certificate
+    Consumer-->>CV: 8. getTotalStakeWeights()
+    Consumer-->>Consumer: 9. adjust nominal verification thresholds
+    Consumer->>CV: 10. verifyCertificateNominal()
+```
+
+

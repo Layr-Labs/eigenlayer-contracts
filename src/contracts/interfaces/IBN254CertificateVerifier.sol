@@ -23,8 +23,7 @@ interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
 
     /**
      * @notice A BN254 Certificate
-     * @param referenceTimestamp the timestamp at which the certificate was created,
-     *        which MUST correspond to a reference timestamp of the operator table update
+     * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
      * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
      * @param signature the G1 signature of the message
      * @param apk the G2 aggregate public key
