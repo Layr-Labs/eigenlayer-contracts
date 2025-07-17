@@ -83,8 +83,7 @@ jobs:
     name: Test (Storage)
     runs-on: protocol-x64-16core
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+      - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -94,7 +93,6 @@ jobs:
             github.com:443
             release-assets.githubusercontent.com:443
       # Check out repository with all submodules for complete codebase access.
-      - name: checkout
       - uses: actions/checkout@v4
         with:
           submodules: recursive
