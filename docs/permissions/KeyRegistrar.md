@@ -59,10 +59,12 @@ Key registration is segmented by curve type: ECDSA and BN254.
  * @notice Registers a cryptographic key for an operator with a specific operator set
  * @param operator Address of the operator to register key for
  * @param operatorSet The operator set to register the key for
- * @param pubkey Public key bytes
- * @param signature Signature proving ownership (only needed for BN254 keys)
+ * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+ * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
  * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
  * @dev Reverts if key is already registered
+ * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
+ *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
  */
 function registerKey(
     address operator,
@@ -72,11 +74,11 @@ function registerKey(
 ) external;
 ```
 
-There are restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
+There ARE NO restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
 
 For ECDSA keys:
 - `pubkey`: 20 bytes representing the Ethereum address
-- `signature`: EIP-712 signature from the key's private key
+- `signature`: EIP-712 signature from the key's private key. Signature is over [`getECDSAKeyRegistrationMessageHash`](#getecdsakeyregistrationmessagehash)
 
 *Effects*:
 * Registers the key for the operator in the specified operator set
@@ -201,7 +203,7 @@ Returns the message hash that must be signed over for BN254 key registration.
  * @notice Deregisters a cryptographic key for an operator with a specific operator set
  * @param operator Address of the operator to deregister key for
  * @param operatorSet The operator set to deregister the key from
- * @dev Can be called by avs directly or by addresses they've authorized via PermissionController
+ * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
  * @dev Reverts if key was not registered
  * @dev Keys remain in global key registry to prevent reuse
  */
@@ -216,9 +218,19 @@ Removes an operator's key from the specified operator set. Note that the key rem
 * The key remains in the global registry
 
 *Requirements*:
-* Caller MUST be authorized for the AVS (via PermissionController)
+* Caller MUST be authorized for the operator (via PermissionController)
 * The operator MUST not be slashable for the AVS, to prevent off-chain race conditions
 * The operator set MUST be configured
 * The operator MUST have a registered key for this operator set
 
 ---
+
+## Usage patterns
+The `KeyRegistrar` introduces new operator/avs registration patterns. Note that these registration patterns are **only for AVSs who have opted to use the new [`middlewareV2](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs/middlewareV2) contract architecture.**
+
+### Operator/AVS Registration
+
+
+
+
+### Operator Key Deregistration
