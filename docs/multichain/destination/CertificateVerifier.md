@@ -616,14 +616,15 @@ The below diagram describes an end to end verification process for verifying a c
 ```mermaid
 sequenceDiagram
     participant Transporter as EigenLabs Transporter
+    participant OTU as OperatorTableUpdater
     participant OTC as OperatorTableCalculator
     participant CV as CertificateVerifier
     participant Aggregator as AVS Aggregator
     participant Registry as CrossChainRegistry
     participant Consumer as AVS Consumer
 
-    Transporter->>OTC: 1. updateOperatorTable()
-    OTC->>CV: updateOperatorTable()
+    Transporter->>OTU: 1. updateOperatorTable()
+    OTU->>CV: updateOperatorTable()
 
     Aggregator-->>CV: 2. Get latestReferenceTimestamp()
     Aggregator-->>Registry: 3. getOperatorTableCalculator(operatorSet)
