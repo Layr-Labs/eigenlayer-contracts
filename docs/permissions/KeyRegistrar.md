@@ -14,6 +14,8 @@ Keys are stored in a 2-way mapping:
 1. (operator, operatorSet) to key
 2. keyHash to operator address
 
+See [usage patterns](#usage-patterns) below on user flows. 
+
 ---
 
 ## Operator Set Configuration
