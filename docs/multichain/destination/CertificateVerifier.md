@@ -145,12 +145,14 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
 
 *Requirements*:
 * The certificate MUST NOT be stale (based on `maxStalenessPeriod`)
-* The root at `referenceTimestamp` MUST be valid (not disabled)
-* The operator table MUST exist for the `referenceTimestamp`
+* The root at `referenceTimestamp` MUST exist
+* The root at `referenceTimestamp` MUST be valid
 * Signatures MUST be proper length
-* Signatures MUST be ordered by signer address (ascending)
-* All signers MUST be registered operators
 * Each signature MUST be valid
+* Signatures MUST be ordered by signer address (ascending)
+* The operatorSet MUST be updated for the `referenceTimestamp`
+* There must be a nonzero number of operators for the `referenceTimestamp`
+* All signers MUST be registered operators
 
 #### `verifyCertificateProportion`
 
@@ -401,9 +403,11 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 
 *Requirements*:
 * The certificate MUST NOT be stale (based on `maxStalenessPeriod`)
-* The root at `referenceTimestamp` MUST be valid (not disabled)
+* The root at the `referenceTimestamp` MUST exist
+* The root at the `referenceTimestamp` MUST not be disabled
 * The operator set info MUST exist for the `referenceTimestamp`
-* All merkle proofs MUST be valid
+* The `operatorIndex` must be valid for the non signer
+* All merkle proofs for nonsigners MUST be valid
 * The BLS signature MUST verify correctly
 
 #### `verifyCertificateProportion`
@@ -528,6 +532,6 @@ The operator table is updated every 10 days. The staleness period is 5 days. The
 1. Day 1: Table updated
 2. Day 2: Certificate passes
 3. Day 6: Certificate verification *fails*
-4. Day 7: A certificate is re-generated. However, this will stale fail as the `referenceTimestamp` would still be day 1 given that was the latest table update
+4. Day 7: A new certificate is generated. However, this will fail as the `referenceTimestamp` would still be Day 1 given that was the latest table update
 
 Note that we cannot re-generate a certificate on Day 7. This is why we prevent the `stalenessPeriod` from being less than 10 days in the `CrossChainRegistry`.

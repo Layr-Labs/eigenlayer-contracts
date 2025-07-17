@@ -68,6 +68,8 @@ function createGenerationReservation(
 
 Creates a generation reservation for a given `operatorSet`, which enables the operatorSet to be included in the `GlobalTableRoot` generation and transported to all destination chains. This function sets up the complete configuration for cross-chain operations in a single transaction.
 
+Note that the `operatorTableCalculator` must be deployed by the AVS onto the source chain prior to calling this function.
+
 *Effects*:
 * Adds the `operatorSet` to `_activeGenerationReservations`
 * Sets the `operatorTableCalculator` for the `operatorSet`
@@ -81,8 +83,6 @@ Creates a generation reservation for a given `operatorSet`, which enables the op
 * Caller MUST be UAM permissioned for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
 * A generation reservation MUST NOT already exist for the `operatorSet`
-* At least one `chainID` MUST be provided
-* All provided `chainIDs` MUST be whitelisted
 
 ### `removeGenerationReservation`
 
@@ -134,7 +134,11 @@ function setOperatorTableCalculator(
 ) external;
 ```
 
-Updates the `operatorTableCalculator` contract for a given `operatorSet`. The `operatorTableCalculator` is deployed by the AVS and is responsible for computing the operator table bytes that will be included in cross-chain transports. For more information on the `operatorTableCalculator`, please see full documentation in the [middleware repository](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs).
+Updates the `operatorTableCalculator` contract for a given `operatorSet`. The `operatorTableCalculator` is deployed by the AVS and is responsible for computing the operator table bytes that will be included in cross-chain transports.
+
+Note that, if the `operatorTableCalculator` fails to comply with the expected interface, the offchain transport system will simply ignore the active generation reservation for this operator set.
+
+For more information on the `operatorTableCalculator`, please see full documentation in the [middleware repository](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs).
 
 *Effects*:
 * Updates the `_operatorTableCalculators` mapping for the `operatorSet`

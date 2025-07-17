@@ -10,6 +10,8 @@ interface IECDSACertificateVerifierErrors {
     error InvalidSignatureLength();
     /// @notice Thrown when the signatures are not ordered by signer address
     error SignersNotOrdered();
+    /// @notice Thrown when the operator count is zero
+    error OperatorCountZero();
 }
 
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {

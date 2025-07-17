@@ -254,10 +254,13 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint16[] calldata totalStakeProportionThresholds
     ) external view returns (bool, address[] memory) {
         (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
+
         uint256[] memory totalStakes = getTotalStakeWeights(operatorSet, cert.referenceTimestamp);
         require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
+
         for (uint256 i = 0; i < signedStakes.length; i++) {
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
+
             if (signedStakes[i] < threshold) {
                 return (false, signers);
             }
@@ -273,11 +276,13 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     ) external view returns (bool, address[] memory) {
         (uint256[] memory signedStakes, address[] memory signers) = _verifyECDSACertificate(operatorSet, cert);
         require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
+
         for (uint256 i = 0; i < signedStakes.length; i++) {
             if (signedStakes[i] < totalStakeNominalThresholds[i]) {
                 return (false, signers);
             }
         }
+
         return (true, signers);
     }
 
@@ -324,16 +329,22 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     ) public view returns (uint256[] memory) {
         bytes32 operatorSetKey = operatorSet.key();
         require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
+
         uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
-        require(operatorCount > 0, ReferenceTimestampDoesNotExist());
+        require(operatorCount > 0, OperatorCountZero());
+
+        // All weights are expected to be same length, so 0 index is used
         uint256 stakeTypesCount = _operatorInfos[operatorSetKey][referenceTimestamp][0].weights.length;
+
         uint256[] memory totalStakes = new uint256[](stakeTypesCount);
         for (uint256 i = 0; i < operatorCount; i++) {
             uint256[] memory weights = _operatorInfos[operatorSetKey][referenceTimestamp][i].weights;
+
             for (uint256 j = 0; j < weights.length && j < stakeTypesCount; j++) {
                 totalStakes[j] += weights[j];
             }
         }
+
         return totalStakes;
     }
 
