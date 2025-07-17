@@ -248,7 +248,7 @@ sequenceDiagram
 
 ### Deregistration/Key Rotation
 
-Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their keys if they are not slashable by an operatorSet. 
+Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their key from an operatorSet if they are not slashable by said operatorSet. 
 
 To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
 
