@@ -66,19 +66,46 @@ interface IBaseCertificateVerifier is
      *         updated each time an operator table is updated
      * @param operatorSet The operatorSet to get the latest reference timestamp of
      * @return The latest reference timestamp, 0 if the operatorSet has never been updated
+     * @dev The latest reference timestamp is set when the operator table is updated
      */
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
 
     /**
-     * @notice Whether the reference timestamp has been updated for a given operatorSet
+     * @notice Whether the operator table has been updated for a given reference timestamp
      * @param operatorSet The operatorSet to check
      * @param referenceTimestamp The reference timestamp to check
      * @return Whether the reference timestamp has been updated
+     * @dev The reference timestamp is set when the operator table is updated
      */
     function isReferenceTimestampSet(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (bool);
+
+    /**
+     * @notice Get the total stake weights for all operators at a given reference timestamp
+     * @param operatorSet The operator set to calculate stakes for
+     * @param referenceTimestamp The reference timestamp
+     * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+     * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
+     * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
+     */
+    function getTotalStakeWeights(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256[] memory);
+
+    /**
+     * @notice Get the number of operators at a given reference timestamp
+     * @param operatorSet The operator set to get the number of operators for
+     * @param referenceTimestamp The reference timestamp
+     * @return The number of operators
+     * @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
+     */
+    function getOperatorCount(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp
+    ) external view returns (uint256);
 }
