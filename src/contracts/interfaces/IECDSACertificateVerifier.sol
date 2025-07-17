@@ -17,8 +17,7 @@ interface IECDSACertificateVerifierErrors {
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A Certificate used to verify a set of ECDSA signatures
-     * @param referenceTimestamp the timestamp at which the certificate was
-     *        created, which MUST correspond to a reference timestamp of the operator table update
+     * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
      * @param messageHash the hash of the message that was signed by the operators. The messageHash
      *        MUST be calculated using `calculateCertificateDigest`
      * @param sig the concatenated signature of each signing operator, in ascending order of signer address
@@ -64,16 +63,15 @@ interface IECDSACertificateVerifier is
      * @notice verifies a certificate
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @return signedStakes total stake weight that signed the certificate for each stake type. Each
+     * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
      * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return signers array of addresses that signed the certificate
-     * @dev Signed stakes are the total stake weight that has been signed for each stake type
      * @dev This function DOES NOT support smart contact signatures
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate memory cert
-    ) external view returns (uint256[] memory signedStakes, address[] memory signers);
+    ) external view returns (uint256[] memory totalSignedStakeWeights, address[] memory signers);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet

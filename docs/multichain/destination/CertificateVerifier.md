@@ -24,7 +24,7 @@ Libraries and Mixins:
 
 The CertificateVerifier contracts are responsible for verifying certificates from an offchain task, on-chain. The operatorSet tables are configured by the [`OperatorTableUpdater`](./OperatorTableUpdater.md) and updated in the `CertificateVerifier` by an offchain process. These contracts support two signature schemes: ECDSA for individual signatures and BN254 for aggregated signatures.
 
-Both verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
+Certificates can be created at any time, but must contain a `referenceTimestamp`, which informs the contract of which operator table for the `operatorSet` to use. Both certificate verifiers implement staleness checks based on a `maxStalenessPeriod` to ensure certificates are not verified against outdated operator information. 
 
 **Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) is impossible due bounds enfroced by the [`CrossChainRegistry`](../source/CrossChainRegistry.md#parameterization).** See the [staleness period](#staleness-period) in the appendix for some examples. 
 
@@ -106,8 +106,7 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
 ```solidity
 /**
  * @notice A Certificate used to verify a set of ECDSA signatures
- * @param referenceTimestamp the timestamp at which the certificate was
- *        created, which MUST correspond to a reference timestamp of the operator table update
+ * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
  * @param messageHash the hash of the message that was signed by the operators. 
  * The messageHash should be calculated using `calculateCertificateDigest`
  * @param sig the concatenated signature of each signing operator, in ascending order of signer address
@@ -121,10 +120,12 @@ struct ECDSACertificate {
 
 /**
  * @notice verifies a certificate
+ * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @return signedStakes amount of stake that signed the certificate for each stake
- * type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
+ * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return signers array of addresses that signed the certificate
+ * @dev This function DOES NOT support smart contact signatures
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
@@ -361,8 +362,7 @@ The contract supports 3 verification patterns:
 ```solidity
 /**
  * @notice A BN254 Certificate
- * @param referenceTimestamp the timestamp at which the certificate was created,
- *         which MUST correspond to a reference timestamp of the operator table update
+ * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
  * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
  * @param signature the G1 signature of the message
  * @param apk the G2 aggregate public key
