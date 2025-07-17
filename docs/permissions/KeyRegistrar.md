@@ -226,7 +226,7 @@ Removes an operator's key from the specified operator set. Note that the key rem
 ---
 
 ## Usage patterns
-The `KeyRegistrar` introduces new operator/avs registration patterns. Note that these registration patterns are **only for AVSs who have opted to use the new [`middlewareV2](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs/middlewareV2) contract architecture.**
+The `KeyRegistrar` introduces new operator/avs registration patterns. Note that these registration patterns are **only for AVSs who have opted to use the new [middlewareV2](https://github.com/Layr-Labs/eigenlayer-middleware/tree/dev/docs/middlewareV2) contract architecture.**
 
 ### Operator/AVS Registration
 
@@ -246,7 +246,9 @@ sequenceDiagram
 
 ### Deregistration/Key Rotation
 
-Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their keys if they are not slashable by an operatorSet. To rotate a key, an operator must wait until it is not slashable and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
+Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their keys if they are not slashable by an operatorSet. 
+
+To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
 
 ```mermaid
 sequenceDiagram
@@ -254,8 +256,8 @@ sequenceDiagram
     participant AM as AllocationManager
     participant KR as KeyRegistrar
 
-    OP->>AM: deregisterFromOperatorSets
+    OP->>AM: Tx1: deregisterFromOperatorSets
     Note over OP: Wait 14 days<br>(if previously allocated)
-    OP->>KR: deregisterKey
-    OP->>AM: register new key to operatorSet
+    OP->>KR: Tx2: deregisterKey
+    OP->>AM: Tx3: register new key to operatorSet
 ```
