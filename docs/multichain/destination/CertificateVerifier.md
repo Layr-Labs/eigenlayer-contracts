@@ -611,7 +611,7 @@ function getOperatorSetWeights(
 
 ### End to End Verification
 
-The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. 
+The below diagram describes an end to end verification process for verifying a certificate with nominal thresholds. Solid lines are on-chain write interactions. Dashed lines are read operations, either on- or off- chain 
 
 ```mermaid
 sequenceDiagram
@@ -627,15 +627,15 @@ sequenceDiagram
 
     Aggregator-->>CV: 2. Get latestReferenceTimestamp()
     Aggregator-->>Registry: 3. getOperatorTableCalculator(operatorSet)
-    Aggregator-->>OTC: getOperatorSetWeights() at referenceTimestamp
+    Aggregator-->>OTC: 4. getOperatorSetWeights() at referenceTimestamp
 
-    Aggregator-->>Aggregator: create task & collect operator signatures
-    Aggregator-->>Aggregator: generate certificate with latestReferenceTimestamp & signatures
+    Aggregator-->>Aggregator: 5. create task & collect operator signatures
+    Aggregator-->>Aggregator: 6. generate certificate with latestReferenceTimestamp & signatures
 
-    Consumer-->>Aggregator: retrieve certificate
-    Consumer-->>CV: getTotalStakeWeights()
-    Consumer-->>Consumer: adjust nominal verification thresholds
-    Consumer->>CV: verifyCertificateNominal()
+    Consumer-->>Aggregator: 7. retrieve certificate
+    Consumer-->>CV: 8. getTotalStakeWeights()
+    Consumer-->>Consumer: 9. adjust nominal verification thresholds
+    Consumer->>CV: 10. verifyCertificateNominal()
 ```
 
 
