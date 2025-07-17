@@ -675,59 +675,6 @@ contract KeyRegistrarUnitTests_deregisterKey is KeyRegistrarUnitTests {
 }
 
 /**
- * @title KeyRegistrarUnitTests_checkKey
- * @notice Unit tests for KeyRegistrar.checkKey
- */
-contract KeyRegistrarUnitTests_checkKey is KeyRegistrarUnitTests {
-    function test_checkKey_ECDSA() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        bytes memory signature = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
-
-        bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
-        assertTrue(hasKey);
-    }
-
-    function test_checkKey_BN254() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
-
-        bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
-
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
-
-        bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
-        assertTrue(hasKey);
-    }
-
-    function test_checkKey_notRegistered() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
-
-        bool hasKey = keyRegistrar.checkKey(operatorSet, operator1);
-        assertFalse(hasKey);
-    }
-
-    function test_revert_operatorSetNotConfigured() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        vm.expectRevert(OperatorSetNotConfigured.selector);
-        keyRegistrar.checkKey(operatorSet, operator1);
-    }
-}
-
-/**
  * @title KeyRegistrarUnitTests_ViewFunctions
  * @notice Unit tests for KeyRegistrar view functions
  */

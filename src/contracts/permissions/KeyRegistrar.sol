@@ -247,15 +247,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /// @inheritdoc IKeyRegistrar
-    function checkKey(OperatorSet memory operatorSet, address operator) external view returns (bool) {
-        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
-        require(curveType != CurveType.NONE, OperatorSetNotConfigured());
-
-        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
-        return keyInfo.isRegistered;
-    }
-
-    /// @inheritdoc IKeyRegistrar
     function isRegistered(OperatorSet memory operatorSet, address operator) public view returns (bool) {
         return _operatorKeyInfo[operatorSet.key()][operator].isRegistered;
     }
