@@ -89,8 +89,8 @@ invariant arrayExhibitsProperties(address staker)
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerDepositShares[staker][strategy]`) should only increase when
-* `depositIntoStrategy`, `depositIntoStrategyWithSignature`, or `depositBeaconChainETH` has been called
-* *OR* when completing a withdrawal
+* `depositIntoStrategy`, `depositIntoStrategyWithSignature`,
+* `withdrawSharesAsTokens`, or `addShares` is called.
 */
 definition methodCanIncreaseShares(method f) returns bool =
     f.selector == sig:depositIntoStrategy(address,address,uint256).selector
@@ -100,7 +100,7 @@ definition methodCanIncreaseShares(method f) returns bool =
 
 /**
 * a staker's amount of shares in a strategy (i.e. `stakerDepositShares[staker][strategy]`) should only decrease when
-* `queueWithdrawal`, `slashShares`, or `recordBeaconChainETHBalanceUpdate` has been called
+`removeDepositShares` is called
 */
 definition methodCanDecreaseShares(method f) returns bool =
     f.selector == sig:removeDepositShares(address,address,uint256).selector;
@@ -117,10 +117,11 @@ rule sharesAmountsChangeOnlyWhenAppropriateFunctionsCalled(address staker, addre
 }
 
 /**
-* Verifies that the `totalShares` returned by an Strategy increases appropriately when new Strategy shares are issued by the StrategyManager
+* Verifies that the `totalShares` returned by a Strategy increases appropriately when new Strategy shares are issued by the StrategyManager
 * contract (specifically as a result of a call to `StrategyManager.depositIntoStrategy` or `StrategyManager.depositIntoStrategyWithSignature`).
-* This rule excludes the `addShares` and `removeShares` functions, since these are called only by the DelegationManager, and do not
+* This rule excludes the `addShares` function, since this is called only by the DelegationManager, and do not
 * "create new shares", but rather represent existing shares being "moved into a withdrawal".
+* for the `addShares` case, we instead check that the totalShares value does not change as a result of the call
 */
 rule newSharesIncreaseTotalShares(address strategy) {
     method f;
@@ -129,7 +130,6 @@ rule newSharesIncreaseTotalShares(address strategy) {
     uint256 totalSharesBefore = totalShares(strategy);
     if (
         f.selector == sig:addShares(address, address, uint256).selector
-//        || f.selector == sig:removeShares(address, address, uint256).selector
     ) {
         uint256 totalSharesAfter = totalShares(strategy);
         assert(totalSharesAfter == totalSharesBefore, "total shares changed unexpectedly");
@@ -181,9 +181,29 @@ rule safeApprovalUse(address user) {
         bytes signature;
         require balanceOfCVL(token, strategy) + amount <= max_uint256; // Require no overflows on balances as valid env assumption
         depositIntoStrategyWithSignature(e, strategy, token, amount, staker, expiry, signature);
-    }
+    } else if (f.selector == sig:clearBurnOrRedistributableSharesByStrategy(StrategyManager.OperatorSet,uint256,address).selector) {
+        StrategyManager.OperatorSet operatorSet;
+        uint256 slashId;
+        address strategy;
+
+        // User is not the target strategy.
+        // (This withrdraws from that strategy)
+        require user != strategy;
+
+        clearBurnOrRedistributableSharesByStrategy(e, operatorSet, slashId, strategy);
+
+    } else if (f.selector == sig:clearBurnOrRedistributableShares(StrategyManager.OperatorSet,uint256).selector) {
+        StrategyManager.OperatorSet operatorSet;
+        uint256 slashId;
+
+        // User is not one of the strategies.
+        // (This withrdraws from zero or more strategies)
+        require user != StrategyBase;
+        require user != currentContract;
+
+        clearBurnOrRedistributableShares(e, operatorSet, slashId);
     // otherwise just perform an arbitrary function call 
-    else {
+    } else {
         calldataarg args;
         f(e,args);
     }

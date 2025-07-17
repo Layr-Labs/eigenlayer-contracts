@@ -1,14 +1,15 @@
 import "../optimizations.spec";
 
-using AllocationManager as AllocationManager;
+using AllocationManagerHarness as AllocationManager;
 methods {
     function AllocationManager.DEALLOCATION_DELAY() external returns(uint32) envfree;
     function AllocationManager.getMaxMagnitude(address,address) external returns (uint64) envfree;
-
     // external calls to AVSRegistrar.  Note that the source does not have a proper implementation, the one available always reverts
     function _.registerOperator(address,address,uint32[],bytes) external => DISPATCHER(true);
     function _.deregisterOperator(address,address,uint32[]) external => DISPATCHER(true);
     function _.supportsAVS(address) external => DISPATCHER(true);
+
+    function getOperatorKeyFromSet(AllocationManagerHarness.OperatorSet) external returns (bytes32) envfree;
 
     // external calls to Strategy contracts
     function _.underlyingToken() external => DISPATCHER(true);
@@ -17,8 +18,6 @@ methods {
     // external calls to ERC20
     function _.balanceOf(address) external => DISPATCHER(true);
     function _.transfer(address,uint256) external => DISPATCHER(true);
-
-    function OperatorSetLib.key(OperatorSetLib.OperatorSet memory os) internal returns (bytes32) => returnOperatorSetKey(os); // expect (bytes32); // return unique bytes32 that is not zero.
 
     // internal math summary to avoid overflows from the tool;
     // function AllocationManager._addInt128(uint64 a, int128 b) internal returns (uint64) => cvlAddInt128(a, b);
@@ -30,20 +29,11 @@ function cvlAddInt128(uint64 a, int128 b) returns uint64 {
     return require_uint64(to_mathint(a) + to_mathint(b));
 }
 
-function returnOperatorSetKey(OperatorSetLib.OperatorSet os) returns bytes32 {
-    return idToKey[os.id];
-}
-
-ghost mapping(uint32 => bytes32) idToKey {
-    axiom forall uint32 id1 . forall uint32 id2 . (idToKey[id1] != to_bytes32(0) && idToKey[id2] != to_bytes32(0)) &&
-        (id1 != id2 => idToKey[id1] != idToKey[id2]);
-}
-
 // -----------------------------------------
 // Constants and Definitions
 // -----------------------------------------
 
-definition WAD() returns uint64 = 1000000000000000000; // definition uint64 WAD = 1e18
+definition WAD() returns uint64 = 10^18; // definition uint64 WAD = 1e18
 
 definition inRegisteredSets(address operator, bytes32 value) returns bool = (registeredSetsIndexes[operator][value] != 0);
 
@@ -461,11 +451,28 @@ function requireValidState() {
     requireInvariant encumberedMagnitudeEqSumOfCurrentMagnitudesAndPositivePending();
     requireInvariant negativePendingDiffAtMostCurrentMagnitude();
     requireInvariant noZeroKeyInDealocationQ();
-    requireInvariant EndGreaterThenBegin();
+    requireInvariant endGreaterThenBegin();
     requireInvariant deallocationQueueDataOutOfBoundsAreNullified();
     requireInvariant noPositivePendingDiffInDeallocationQ();
     requireInvariant effectBlockZeroHasNoPendingDiff();
     requireInvariant deallocationQueueDataUniqueness();
+}
+
+function requireNoOverflow(env e){
+    requireInvariant maxMagnitudeHistoryKeysLessThanCurrentBlock(e);
+    requireInvariant deallocationQueueEffectBlocLessThanCurrBlockNumberPlushDelayPlusOne(e);
+    requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
+    // prevent overflows in deallocationQueue
+    require (forall address _operator. forall address _strategy. (currentContract.deallocationQueue[_operator][_strategy]._end < max_uint64 - 1), "reasonable length of deallocationQueue");
+    // assuming deallocation block indices dont overflow
+    require (forall address _operator . forall address _strategy . (deallocationQueueEndGhost[_operator][_strategy] < max_uint64 - 1), "reasonable length of deallocationQueue");
+    // would happen around the year 2833 to get block number equal to half of max_uint32
+    require (e.block.number < max_uint32 + AllocationManager.DEALLOCATION_DELAY + 1, "reasonable block numbers");  
+    require (e.block.number > 0, "reasonable block numbers");
+    // prevent overflows for loop iter = 2
+    require (forall address operator_. forall address strategy_. maxMagnitudeHistoryLengths[operator_][strategy_] < max_uint256 - 1, "reasonable length of snapshots");
+    require (forall address operator_. forall address strategy_. currentContract._maxMagnitudeHistory[operator_][strategy_]._snapshots.length < max_uint256 - 1, "reasonable length of snapshots");
+
 }
 
 // Ensures consistency and correctness of the `registeredSets` mapping:
@@ -617,7 +624,7 @@ invariant deallocationQueueDataUniqueness()
             // would happen around the year 2833 to get block number equal to half of max_uint32
             require e.block.number < max_uint32 - AllocationManager.DEALLOCATION_DELAY - 1;  
             require e.block.number > 0;
-            requireInvariant deallocationQueueEffectBlockAscesndingOrder(e);
+            requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
         } 
     }
 
@@ -626,13 +633,24 @@ invariant deallocationQueueDataOutOfBoundsAreNullified()
     forall address operator . forall address strategy . forall int128 index . (!inBound(operator, strategy, index)) <=> deallocationQueueDataGhost[operator][strategy][index] == to_bytes32(0)
     {
         preserved {
+            requireInvariant endGreaterThenBegin();
+            requireInvariant noZeroKeyInDealocationQ();
             // assuming deallocation block indices dont overflow
             require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1);
         }
+        preserved modifyAllocations(
+                address op,
+                IAllocationManagerTypes.AllocateParams[] params
+            ) with (env e) {
+                requireInvariant endGreaterThenBegin();
+                require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1), "assuming deallocation block indices dont overflow";
+                bytes32 key = getOperatorKeyFromSet(params[0].operatorSet);
+                require (key != to_bytes32(0), "assume the stored operatorSet key is nonzero otw 0 entries are possible, relies on loop_iter 1");
+            }
     }
 
 // Deallocation Queue Ordering: End Index ≥ Begin Index Invariant - helper Lemma
-invariant EndGreaterThenBegin()
+invariant endGreaterThenBegin()
     forall address operator . forall address strategy . deallocationQueueBeginGhost[operator][strategy] <= deallocationQueueEndGhost[operator][strategy]
     {
         preserved {
@@ -644,7 +662,22 @@ invariant EndGreaterThenBegin()
 /// @title Non-Zero Keys in Deallocation Queue Invariant
 /// @property DeallocationQueue allocations uniqueness
 invariant noZeroKeyInDealocationQ()
-    forall address operator . forall address strategy . forall int128 index . inBound(operator, strategy, index) => deallocationQueueDataGhost[operator][strategy][index] != to_bytes32(0);
+    forall address operator . forall address strategy . forall int128 index . (inBound(operator, strategy, index) <=> deallocationQueueDataGhost[operator][strategy][index] != to_bytes32(0))
+    {
+        preserved {
+            requireInvariant endGreaterThenBegin();
+            require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1), "assuming deallocation block indices dont overflow";
+        }
+        preserved modifyAllocations(
+                address op,
+                IAllocationManagerTypes.AllocateParams[] params
+            ) with (env e) {
+                requireInvariant endGreaterThenBegin();
+                require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1), "assuming deallocation block indices dont overflow";
+                bytes32 key = getOperatorKeyFromSet(params[0].operatorSet);
+                require (key != to_bytes32(0), "assume the stored operatorSet key is nonzero otw 0 entries are possible, relies on loop_iter 1");
+            }
+    }
 
 /// @title Allocations in the deallocation queue have their effect blocks equal at most the latest block number + DEALLOCATION_DELAY + 1.
 /// @property Deallocation Queue Effect Block Timing Bound Invariant.
@@ -665,7 +698,7 @@ invariant deallocationQueueEffectBlocLessThanCurrBlockNumberPlushDelayPlusOne(en
 
                 // assuming deallocation block indices dont overflow
                 require forall address operator . forall address strategy . (deallocationQueueEndGhost[operator][strategy] < max_uint64 - 1);
-                requireInvariant deallocationQueueEffectBlockAscesndingOrder(e1);
+                requireInvariant deallocationQueueEffectBlockAscendingOrder(e1);
             }
         }
 
@@ -676,7 +709,7 @@ except when an effect block is zero, which must have been less than or equal to 
 This prevents out-of-order deallocations and ensures a valid execution sequence.
 */
 /// @property Deallocation Queue Effect Block Ascending Order Invariant
-invariant deallocationQueueEffectBlockAscesndingOrder(env e1)
+invariant deallocationQueueEffectBlockAscendingOrder(env e1)
     forall address operator . forall address strategy . forall int128 index1 . forall int128 index2 .
         (index1 <= index2) && inBound(operator, strategy, index1) && inBound(operator, strategy, index2) => 
             ((allocationsEffectBlock[operator][deallocationQueueDataGhost[operator][strategy][index1]][strategy] <= 
@@ -734,6 +767,6 @@ invariant noPositivePendingDiffInDeallocationQ()
             // would happen around the year 2833 to get block number equal to half of max_uint32
             require e.block.number < max_uint32 - AllocationManager.DEALLOCATION_DELAY - 1;  
             require e.block.number > 0;
-            requireInvariant deallocationQueueEffectBlockAscesndingOrder(e);
+            requireInvariant deallocationQueueEffectBlockAscendingOrder(e);
         }
     }

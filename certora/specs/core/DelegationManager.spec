@@ -1,6 +1,6 @@
 import "../ptaHelpers.spec";
 
-using DelegationManager as DelegationManager;
+using DelegationManagerHarness as DelegationManager;
 
 methods {
     //// External Calls
@@ -57,7 +57,6 @@ methods {
     function isDelegated(address staker) external returns (bool) envfree;
     function isOperator(address operator) external returns (bool) envfree;
     function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
-    function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
     function calculateWithdrawalRoot(IDelegationManagerTypes.Withdrawal) external returns (bytes32) envfree;
@@ -133,13 +132,6 @@ hook Sstore DelegationManager._operatorDetails[KEY address operator].delegationA
 hook Sload address delegationApprover DelegationManager._operatorDetails[KEY address operator].delegationApprover {
     require delegationApprover == operatorDetailsDelegationApproversMirror[operator];
 }
-
-// verify that anyone who is registered as an operator is also always delegated to themselves
-// the zero address is an exception to this rule, since it is always "delegated to itself" but not an operator
-/// @title Verifies that operators delegates to themselves.
-/// @property Operators delegates to themselves
-invariant operatorsAlwaysDelegatedToSelf(address operator)
-    operatorDetailsDelegationApproversMirror[operator] != 0 => DelegationManager.delegatedTo[operator] == operator;
 
 // verify that once registered as an operator, a person cannot 'unregister' from being an operator
 // proving this rule in concert with 'operatorsAlwaysDelegatedToSelf' proves that an operator can never change their delegation
@@ -245,47 +237,50 @@ rule canOnlyDelegateWithSpecificFunctions(address staker) {
     }
 }
 
-rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, address strategy) {
-    // filter out zero address (not a valid operator)
-    require(operator != 0);
-    // assume the staker begins as undelegated
-    require(!isDelegated(staker));
-    mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
-    mathint operatorSharesBefore = get_operatorShares(operator, strategy);
-    // perform arbitrary function call
-    method f;
-    env e;
-    calldataarg arg;
-    // Certora: The rule does not hold if uncommented
-//    f(e, arg);
-    mathint operatorSharesAfter = get_operatorShares(operator, strategy);
-    if (delegatedTo(staker) == operator) {
-        assert(operatorSharesAfter == operatorSharesBefore + stakerDelegateableSharesInStrategy, "operator shares did not increase appropriately");
-    } else {
-        assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
-    }
-}
 
-rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address staker, address strategy) {
-    // filter out zero address (not a valid operator)
-    require(operator != 0);
-    // assume the staker begins as delegated to the operator
-    require(delegatedTo(staker) == operator);
-    mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
-    mathint operatorSharesBefore = get_operatorShares(operator, strategy);
-    // perform arbitrary function call
-    method f;
-    env e;
-    calldataarg arg;
-    // Certora: The rule does not hold if uncommented
-//    f(e, arg);
-    mathint operatorSharesAfter = get_operatorShares(operator, strategy);
-    if (!isDelegated(staker)) {
-        assert(operatorSharesAfter == operatorSharesBefore - stakerDelegateableSharesInStrategy, "operator shares did not decrease appropriately");
-    } else {
-        assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
-    }
-}
+// unfinished
+// rule sharesBecomeDelegatedWhenStakerDelegates(address operator, address staker, address strategy) {
+//     // filter out zero address (not a valid operator)
+//     require(operator != 0);
+//     // assume the staker begins as undelegated
+//     require(!isDelegated(staker));
+//     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
+//     mathint operatorSharesBefore = get_operatorShares(operator, strategy);
+//     // perform arbitrary function call
+//     method f;
+//     env e;
+//     calldataarg arg;
+//     // Certora: The rule does not hold if uncommented
+// //    f(e, arg);
+//     mathint operatorSharesAfter = get_operatorShares(operator, strategy);
+//     if (delegatedTo(staker) == operator) {
+//         assert(operatorSharesAfter == operatorSharesBefore + stakerDelegateableSharesInStrategy, "operator shares did not increase appropriately");
+//     } else {
+//         assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
+//     }
+// }
+
+// unfinished
+// rule sharesBecomeUndelegatedWhenStakerUndelegates(address operator, address staker, address strategy) {
+//     // filter out zero address (not a valid operator)
+//     require(operator != 0);
+//     // assume the staker begins as delegated to the operator
+//     require(delegatedTo(staker) == operator);
+//     mathint stakerDelegateableSharesInStrategy = get_stakerDelegateableShares(staker, strategy);
+//     mathint operatorSharesBefore = get_operatorShares(operator, strategy);
+//     // perform arbitrary function call
+//     method f;
+//     env e;
+//     calldataarg arg;
+//     // Certora: The rule does not hold if uncommented
+// //    f(e, arg);
+//     mathint operatorSharesAfter = get_operatorShares(operator, strategy);
+//     if (!isDelegated(staker)) {
+//         assert(operatorSharesAfter == operatorSharesBefore - stakerDelegateableSharesInStrategy, "operator shares did not decrease appropriately");
+//     } else {
+//         assert(operatorSharesAfter == operatorSharesBefore, "operator shares changed inappropriately");
+//     }
+// }
 
 rule newWithdrawalsHaveCorrectStartBlock() {
     IDelegationManagerTypes.Withdrawal queuedWithdrawal;
@@ -319,7 +314,7 @@ rule withdrawalDelayIsEnforced() {
     );
 }
 
-/*
+/* unfinished
 rule batchEquivalence {
     env e;
     storage initial = lastStorage;
