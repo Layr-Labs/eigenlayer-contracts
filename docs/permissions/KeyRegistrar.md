@@ -261,5 +261,5 @@ sequenceDiagram
     OP->>AM: Tx1: deregisterFromOperatorSets
     Note over OP: Wait 14 days<br>(if previously allocated)
     OP->>KR: Tx2: deregisterKey
-    OP->>AM: Tx3: register new key to operatorSet
+    OP->>KR: Tx3: registerKey
 ```
