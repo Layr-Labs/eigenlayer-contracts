@@ -39,12 +39,12 @@ interface ICrossChainRegistryErrors {
 interface ICrossChainRegistryTypes {
     /**
      * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
-     * @param owner the permissioned owner of the OperatorSet on L2 that can call the CertificateVerifier specific setters
+     * @param owner the permissioned owner of the OperatorSet on L2 that can be used by downstream contracts to authorize actions
      * @param maxStalenessPeriod the maximum staleness period of the operatorSet
      *
      * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
      * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
-     *      certificates would be unable to be validated against. The update cadence is communicated off-chain
+     *      certificates would be unable to be validated against. The update cadence is set by the owner of the CrossChainRegistry
      */
     struct OperatorSetConfig {
         address owner;
@@ -87,7 +87,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator
      * @param config the config to set for the operatorSet
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
      */
     function createGenerationReservation(
@@ -99,7 +99,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Removes a generation reservation for a given operatorSet
      * @param operatorSet the operatorSet to remove
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be an authorized caller for operatorSet.avs
      */
     function removeGenerationReservation(
         OperatorSet calldata operatorSet
@@ -109,7 +109,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Sets the operatorTableCalculator for the operatorSet
      * @param operatorSet the operatorSet whose operatorTableCalculator is desired to be set
      * @param operatorTableCalculator the contract to call to calculate the operator table
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active reservation
      */
     function setOperatorTableCalculator(
@@ -121,7 +121,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Sets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to set the operatorSetConfig for
      * @param config the config to set
-     * @dev msg.sender must be UAM permissioned for operatorSet.avs
+     * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active generation reservation
      * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
      */
