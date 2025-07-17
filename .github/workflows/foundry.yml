@@ -30,7 +30,14 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
-          egress-policy: audit
+          egress-policy: block
+	  allowed-endpoints: >
+            binaries.soliditylang.org:443
+            eth-mainnet.g.alchemy.com:443
+            github.com:443
+            powerful-dimensional-season.ethereum-holesky.quiknode.pro:443
+            release-assets.githubusercontent.com:443
+            api.etherscan.io:443
           
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -90,8 +97,14 @@ jobs:
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
-        with:
-          egress-policy: audit
+  	with:
+    	  egress-policy: block
+    	  allowed-endpoints: >
+      	    api.etherscan.io:443
+            binaries.soliditylang.org:443
+            eth-mainnet.g.alchemy.com:443
+            github.com:443
+            release-assets.githubusercontent.com:443
           
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -132,7 +145,11 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
-          egress-policy: audit
+          egress-policy: block
+    	  allowed-endpoints: >
+            binaries.soliditylang.org:443
+            github.com:443
+            release-assets.githubusercontent.com:443
           
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -226,7 +243,11 @@ jobs:
       - name: Harden Runner
         uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
-          egress-policy: audit
+          egress-policy: block
+	  allowed-endpoints: >
+            binaries.soliditylang.org:443
+            github.com:443
+            release-assets.githubusercontent.com:443
           
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
