@@ -91,7 +91,7 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return ECDSAOperatorInfo({pubkey: address(0), weights: weights});
     }
 
-    function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint256) {
+    function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint) {
         return 0;
     }
 
