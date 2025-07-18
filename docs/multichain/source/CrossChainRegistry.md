@@ -116,7 +116,7 @@ Removes a generation reservation for a given `operatorSet` and clears all associ
 ---
 
 ## Update Configuration
-For a given operatorSet, an AVS can set the [`OperatorTableCalculator`](./OperatorTableCalculator.md) and `OperatorSetConfig`, which is an `owner` and `maxStalenessPeriod` transported to each chain. The [`CertificateVerifier`](../destination/CertificateVerifier.md) has more information on the `maxStalenessPeriod`. 
+For a given operatorSet, an AVS can set the [`OperatorTableCalculator`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/docs/middlewareV2/OperatorTableCalculator.md) and `OperatorSetConfig`, which is an `owner` and `maxStalenessPeriod` transported to each chain. The [`CertificateVerifier`](../destination/CertificateVerifier.md) has more information on the `maxStalenessPeriod`. 
 
 ### `setOperatorTableCalculator`
 
