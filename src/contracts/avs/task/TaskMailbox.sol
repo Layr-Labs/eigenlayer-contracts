@@ -194,6 +194,7 @@ contract TaskMailbox is
             task.executorOperatorSetTaskConfig.curveType,
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
+            task.creationTime,
             executorCert
         );
         require(isCertificateValid, CertificateVerificationFailed());
@@ -366,6 +367,7 @@ contract TaskMailbox is
      * @param curveType The curve type used for signature verification
      * @param consensus The consensus configuration
      * @param executorOperatorSet The executor operator set
+     * @param creationTime The creation time of the task
      * @param executorCert The executor certificate to verify
      * @return isCertificateValid Whether the certificate is valid
      */
@@ -373,6 +375,7 @@ contract TaskMailbox is
         IKeyRegistrarTypes.CurveType curveType,
         Consensus memory consensus,
         OperatorSet memory executorOperatorSet,
+        uint96 creationTime,
         bytes memory executorCert
     ) internal returns (bool isCertificateValid) {
         if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
@@ -387,7 +390,8 @@ contract TaskMailbox is
                 IBN254CertificateVerifierTypes.BN254Certificate memory bn254Cert =
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
-                // Validate that the certificate has a non-empty signature
+                // Validate the certificate
+                require(bn254Cert.referenceTimestamp == creationTime, InvalidReferenceTimestamp());
                 require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
 
                 isCertificateValid = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
@@ -398,7 +402,8 @@ contract TaskMailbox is
                 IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCert =
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
-                // Validate that the certificate has a non-empty signature
+                // Validate the certificate
+                require(ecdsaCert.referenceTimestamp == creationTime, InvalidReferenceTimestamp());
                 require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
 
                 (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
