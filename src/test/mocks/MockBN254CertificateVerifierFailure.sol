@@ -117,17 +117,15 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return true;
     }
 
-    function getTotalStakeWeights(
-        OperatorSet memory, /*operatorSet*/
-        uint32 /*referenceTimestamp*/
-    ) external pure returns (uint256[] memory) {
-        return new uint256[](0);
+    function getTotalStakeWeights(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ )
+        external
+        pure
+        returns (uint[] memory)
+    {
+        return new uint[](0);
     }
 
-    function getOperatorCount(
-        OperatorSet memory, /*operatorSet*/
-        uint32 /*referenceTimestamp*/
-    ) external pure returns (uint256) {
+    function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint) {
         return 0;
     }
 }
