@@ -80,6 +80,7 @@ interface IOperatorTableCalculator {
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The stake weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      * and the second index is the stake weight
+     * @dev This function can be used by the AVS to distribute stake-weighted tasks to operators
      */
     function getOperatorSetWeights(
         OperatorSet calldata operatorSet
