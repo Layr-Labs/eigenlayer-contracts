@@ -1,0 +1,19 @@
+{
+    "name": "hourglass-v1.8.0",
+    "from": ">=1.7.0 <1.8.0",
+    "to": "1.8.0-rc.0",
+    "phases": [
+        {
+            "type": "multisig",
+            "filename": "1-deployDestinationChainProxies.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "2-deployDestinationChainImpls.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-instantiateDestinationChainProxies.s.sol"
+        }
+    ]
+}
