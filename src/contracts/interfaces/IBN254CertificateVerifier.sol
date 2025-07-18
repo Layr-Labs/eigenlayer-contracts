@@ -76,13 +76,13 @@ interface IBN254CertificateVerifier is
      * @notice verifies a certificate
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
-     * @return signedStakes array of stake weights that signed the certificate for each stake type. Each index
-     *         corresponds to a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`.
+     * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
+     * index corresponds to a stake type in the `weights` array in the `BN254OperatorSetInfo` struct
      */
     function verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
-    ) external returns (uint256[] memory signedStakes);
+    ) external returns (uint256[] memory totalSignedStakeWeights);
 
     /**
      * @notice verifies a certificate and makes sure that the signed stakes meet

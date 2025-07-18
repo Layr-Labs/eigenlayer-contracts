@@ -64,7 +64,7 @@ interface IECDSACertificateVerifier is
      * @param operatorSet the operatorSet that the certificate is for
      * @param cert a certificate
      * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
-     * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+     * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo` struct
      * @return signers array of addresses that signed the certificate
      * @dev This function DOES NOT support smart contact signatures
      */
