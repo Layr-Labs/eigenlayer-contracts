@@ -35,32 +35,52 @@ contract UpgradeTest is IntegrationCheckUtils {
     // 10 Days
     uint queueDelay = 864000;
 
+    // Used to make calls to the EIP-4788 oracle work when testing EigenPod methods
+    uint startTimestamp;
+    uint executeTimestamp = queueTimestamp + queueDelay;
+
     function test_TEMP() public {
         cheats.createSelectFork(cheats.rpcUrl("mainnet"));
-        // fork mainnet
+        // cheats.createSelectFork(cheats.rpcUrl("mainnet"), block.number - 1);
 
-        console.log("Using current block/time, reading mainnet state...".yellow().bold());
-
-        _checkRoles();
-        _checkIsPending();
-        
-        // Warp to Monday morning
         console.log("");
-        console.log("Warping to timestamp: %d".yellow().bold(), queueTimestamp + queueDelay);
-        cheats.warp(queueTimestamp + queueDelay);
-        _checkIsPending();
+        _logBanner("Using current block/time, reading mainnet state...".yellow().bold());
+        startTimestamp = block.timestamp;
+        console.log(" - current timestamp: %d", startTimestamp);
+        console.log(" - execute timestamp: %d", executeTimestamp);
+        console.log("");
 
+        // _checkRoles();
+        bool upgradeDone = _checkIsPending();
+
+        // Warp forward if we haven't hit execution time yet
+        if (block.timestamp < executeTimestamp) {
+            require(!upgradeDone, "Expected upgrade to be incomplete, since it can't be completed yet.".red().bold());
+
+            _logBanner("Warping to execute timestamp".yellow().bold());
+            cheats.warp(executeTimestamp);
+
+            _checkIsPending();
+        }
+        
+        if (!upgradeDone) {
+            _logBanner("Execution time has been reached; upgrade not active. Checking new functions.".yellow().bold());
+
+            // Try calling methods before upgrade, then run upgrade.
+            _tryCallFunctions();
+            _executeUpgrade();
+
+            // Timelock should say the upgrade is completed
+            upgradeDone = _checkIsPending();
+            require(upgradeDone, "Expected TimelockController to mark operations as complete post-upgrade.".red().bold());
+        }
+
+        // Try calling new methods now that the upgrade is complete
+        _logBanner("Upgrade is complete. Calling new functions.".green().bold());
         _tryCallFunctions();
-
-        _executeUpgrade();
-
-        _tryCallFunctions();
-
-
     }
 
     function _checkRoles() internal {
-        console.log("");
         console.log("_checkRoles()...".dim());
 
         bytes32 PROPOSER_ROLE = tcl.PROPOSER_ROLE();
@@ -77,12 +97,11 @@ contract UpgradeTest is IntegrationCheckUtils {
         require(!tcl.hasRole(CANCELLER_ROLE, pCMS), "pCMS should NOT have canceller role");
         require(tcl.hasRole(EXECUTOR_ROLE, pCMS), "pCMS should have executor role");
 
-        console.log("_checkRoles success".green());
+        console.log("_checkRoles success\n".green());
     }
 
-    function _checkIsPending() internal {
-        console.log("");
-        console.log("_checkIsPending()...".dim());
+    function _checkIsPending() internal returns (bool upgradeDone) {
+        console.log("checking timelock controller state...".dim());
 
         bytes32 DISTRO_OPERATION_ID = tcl.hashOperation({
             target: execMS,
@@ -100,21 +119,157 @@ contract UpgradeTest is IntegrationCheckUtils {
             salt: bytes32(0)
         });
 
-        _logTruthy(" - DISTRO is pending", tcl.isOperationPending(DISTRO_OPERATION_ID));
-        _logTruthy(" - MOOCOW is pending", tcl.isOperationPending(MOOCOW_OPERATION_ID));
+        __logTruthy(" - DISTRO is pending", tcl.isOperationPending(DISTRO_OPERATION_ID));
+        __logTruthy(" - MOOCOW is pending", tcl.isOperationPending(MOOCOW_OPERATION_ID));
 
-        _logTruthy(" - DISTRO is ready", tcl.isOperationReady(DISTRO_OPERATION_ID));
-        _logTruthy(" - MOOCOW is ready", tcl.isOperationReady(MOOCOW_OPERATION_ID));
+        __logTruthy(" - DISTRO is ready", tcl.isOperationReady(DISTRO_OPERATION_ID));
+        __logTruthy(" - MOOCOW is ready", tcl.isOperationReady(MOOCOW_OPERATION_ID));
 
-        _logTruthy(" - DISTRO is done", tcl.isOperationDone(DISTRO_OPERATION_ID));
-        _logTruthy(" - MOOCOW is done", tcl.isOperationDone(MOOCOW_OPERATION_ID));
+        bool distroDone = tcl.isOperationDone(DISTRO_OPERATION_ID);
+        bool moocowDone = tcl.isOperationDone(MOOCOW_OPERATION_ID);
+
+        __logTruthy(" - DISTRO is done", distroDone);
+        __logTruthy(" - MOOCOW is done", moocowDone);
+        require(distroDone == moocowDone, "expected both upgrades to be in same state");
+
+        __logTruthy("Upgrade complete", distroDone && moocowDone);
+        console.log("");
+
+        return (distroDone && moocowDone);
     }
 
-    function _logTruthy(string memory str, bool truthy) internal {
-        if (truthy) {
-            console.log("%s: %s", str.dim(), "TRUE".green());
-        } else {
-            console.log("%s: %s", str.dim(), "FALSE".red());
+    address constant pod_addr = 0xA6f93249580EC3F08016cD3d4154AADD70aC3C96;
+    EigenPod constant pod = EigenPod(payable(pod_addr));
+
+    function _tryCallFunctions() internal {
+        // Since we want to be able to call this method more than once, we snapshot state here
+        // and revert state changes at the end of the method.
+        uint id = cheats.snapshotState();
+
+        {
+            // Call new DISTRO methods
+            console.log("%s %s %s", "Checking".cyan(), "DISTRO".magenta(), "functions...".cyan());
+            console.log("TODO");
+
+            console.log("");
         }
+
+        {
+            // Call new MOOCOW methods
+            console.log("%s %s %s", "Checking".cyan(), "MOOCOW".magenta(), "functions...".cyan());
+
+            address podOwner = pod.podOwner();
+            cheats.startPrank(podOwner);
+
+            // Basic info
+            console.log(" - Using pod:  %s".dim(), pod_addr);
+            console.log(" - podOwner(): %s".dim(), podOwner);
+            console.log(" - activeValidatorCount(): %s".dim(), pod.activeValidatorCount());
+            __logTruthy(" - checkpoint active", pod.currentCheckpointTimestamp() != 0);
+            console.log("");
+
+            // 1. Version string should read 1.6.0 in MOOCOW; 1.4.1 before
+            string memory _version = pod.version();
+            bool is1_6 = _strEq(_version, "1.6.0");
+            __logTruMoo(" - version is 1.6.0", is1_6);
+            if (!is1_6) console.log(" -- (current version: %s)".dim(), _version);
+
+            // 2. In MOOCOW, when a checkpoint is finalized, we should see the currentCheckpoint update
+            //    to the final version, with proofsRemaining == 0. Previously, the currentCheckpoint
+            //    would not update (so proofsRemaining would be nonzero). This also means that in pods
+            //    with activeValidatorCount == 0, starting a checkpoint would finalize it immediately
+            //    without a currentCheckpoint update of any kind.
+            //
+            // - We test this here on our mainnet pod, which does not currently have a checkpoint active.
+            //   - First, we manually store 0 into activeValidatorCount.slot
+            //   - Then, we read currentCheckpoint()
+            //   - Next, we call startCheckpoint()
+            //   - Finally, we read currentCheckpoint() again and compare
+            //
+            // - In MOOCOW, the two read checkpoints will be different. Pre-MOOCOW, they will be the same.
+
+            // activeValidatorCount.slot: 57
+            cheats.store(pod_addr, bytes32(uint(57)), 0);
+
+            Checkpoint memory prevCheckpoint = pod.currentCheckpoint();
+            {
+                // startCheckpoint calls the EIP-4788 oracle, which needs a valid timestamp to fetch a block root
+                // Here, we warp to a valid timestamp for this one method call, then set it back to its prev value
+                uint ts = block.timestamp;
+                cheats.warp(startTimestamp);
+                pod.startCheckpoint(false);
+                cheats.warp(ts);
+            } 
+            Checkpoint memory newCheckpoint = pod.currentCheckpoint();
+            require(pod.currentCheckpointTimestamp() == 0, "expected checkpoint to be finalized".red().bold());
+
+            __logTruMoo(
+                " - currentCheckpoint updates on completion",
+                keccak256(abi.encode(prevCheckpoint)) != keccak256(abi.encode(newCheckpoint))
+            );
+
+            // 3. In MOOCOW, we removed the method "GENESIS_TIME"
+            // TODO
+
+            // 4. In MOOCOW, we should be able to call each new method
+            // TODO
+
+            cheats.stopPrank();
+        }
+
+        console.log("");
+        cheats.revertToState(id);
+    }
+
+    function _executeUpgrade() internal {
+        _logBanner("Executing upgrade as protocol council.".yellow().bold());
+        
+        cheats.startPrank(pCMS);
+
+        tcl.execute({
+            target: execMS,
+            value: 0,
+            payload: calldataToExecutor_DISTRO,
+            predecessor: bytes32(0),
+            salt: bytes32(0)
+        });
+
+        tcl.execute({
+            target: execMS,
+            value: 0,
+            payload: calldataToExecutor_MOOCOW,
+            predecessor: bytes32(0),
+            salt: bytes32(0)
+        });
+
+        cheats.stopPrank();
+    }
+
+    function _logBanner(string memory str) internal {
+        console.log("=================".dim());
+        console.log(str);
+        console.log("=================".dim());
+        console.log("");
+    }
+
+    function __logTruthy(string memory str, bool truthy) internal {
+        if (truthy) {
+            console.log("%s: %s".dim(), str, "TRUE".green());
+        } else {
+            console.log("%s: %s".dim(), str, "FALSE".red());
+        }
+    }
+
+    // __logTruthy, but logs "MOOCOW ACTIVE" vs "MOOCOW INACTIVE"
+    function __logTruMoo(string memory str, bool truthy) internal {
+        if (truthy) {
+            console.log("%s: %s %s".dim(), str, "TRUE".green(), "(MOOCOW ACTIVE)".green().italic());
+        } else {
+            console.log("%s: %s %s".dim(), str, "FALSE".red(), "(MOOCOW INACTIVE)".red().italic());
+        }
+    }
+
+    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }
