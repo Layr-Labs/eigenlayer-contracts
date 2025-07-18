@@ -391,7 +391,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
                 // Validate the certificate
-                require(bn254Cert.referenceTimestamp == creationTime, InvalidReferenceTimestamp());
+                require(bn254Cert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
                 require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
 
                 isCertificateValid = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
@@ -403,7 +403,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
                 // Validate the certificate
-                require(ecdsaCert.referenceTimestamp == creationTime, InvalidReferenceTimestamp());
+                require(ecdsaCert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
                 require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
 
                 (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
