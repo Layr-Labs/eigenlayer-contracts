@@ -168,7 +168,7 @@ contract ExistingDeploymentParser is Script, Logger {
     address operationsMultisig;
     address communityMultisig;
     address pauserMultisig;
-    address timelock;
+    address timelockController;
 
     // strategies deployed
     uint256 numStrategiesDeployed;
@@ -214,7 +214,7 @@ contract ExistingDeploymentParser is Script, Logger {
         operationsMultisig = json.readAddress(".parameters.operationsMultisig");
         communityMultisig = json.readAddress(".parameters.communityMultisig");
         pauserMultisig = json.readAddress(".parameters.pauserMultisig");
-        timelock = json.readAddress(".parameters.timelock");
+        timelockController = json.readAddress(".parameters.timelockController");
 
         eigenLayerProxyAdmin = ProxyAdmin(json.readAddress(".addresses.eigenLayerProxyAdmin"));
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
@@ -744,7 +744,7 @@ contract ExistingDeploymentParser is Script, Logger {
         parameters.serialize("operationsMultisig", operationsMultisig);
         parameters.serialize("communityMultisig", communityMultisig);
         parameters.serialize("pauserMultisig", pauserMultisig);
-        parameters.serialize("timelock", timelock);
+        parameters.serialize("timelockController", timelockController);
         string memory parameters_output = parameters.serialize("operationsMultisig", operationsMultisig);
 
         string memory chain_info = "chainInfo";
