@@ -55,6 +55,7 @@
             "0xAe60d8180437b5C34bB956822ac2710972584473",
             "0x298aFB19A105D59E74658C4C334Ff360BadE6dd2"
         ],
+        "strategyBaseTVLLimitsImplementation": "0x62F7226Fb9d615590EadB539713b250fB2fdf4E0",
         "token": {
             "tokenProxyAdmin": "0x3f5Ab2D4418d38568705bFd6672630fCC3435CC9",
             "EIGEN": "0xec53bf9167f50cdeb3ae105f56099aaab9061f83",
@@ -74,6 +75,7 @@
         "communityMultisig": "0xFEA47018D632A77bA579846c840d5706705Dc598",
         "executorMultisig": "0x369e6F597e22EaB55fFb173C6d9cD234BD699111",
         "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
+        "protocolCouncil": "0x461854d84ee845f905e0ecf6c288ddeeb4a9533f",
         "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
         "timelockController": "0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d",
         "semver": "v1.4.1"

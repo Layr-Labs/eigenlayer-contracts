@@ -167,6 +167,7 @@ contract ExistingDeploymentParser is Script, Logger {
     address executorMultisig;
     address operationsMultisig;
     address communityMultisig;
+    address protocolCouncil;
     address pauserMultisig;
     address timelockController;
 
@@ -213,6 +214,7 @@ contract ExistingDeploymentParser is Script, Logger {
         executorMultisig = json.readAddress(".parameters.executorMultisig");
         operationsMultisig = json.readAddress(".parameters.operationsMultisig");
         communityMultisig = json.readAddress(".parameters.communityMultisig");
+        protocolCouncil = json.readAddress(".parameters.protocolCouncil");
         pauserMultisig = json.readAddress(".parameters.pauserMultisig");
         timelockController = json.readAddress(".parameters.timelockController");
 
