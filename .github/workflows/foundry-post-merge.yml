@@ -31,13 +31,13 @@ jobs:
       fail-fast: true
     steps:
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             cache/

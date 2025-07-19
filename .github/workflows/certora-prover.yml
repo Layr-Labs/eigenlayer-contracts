@@ -39,7 +39,7 @@ jobs:
     runs-on: protocol-x64-16core
     steps:
       # Checkout the repository with submodules
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
           # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
@@ -95,7 +95,7 @@ jobs:
       github.event_name == 'workflow_dispatch'
     steps:
       # Checkout the repository with submodules
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
           # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
