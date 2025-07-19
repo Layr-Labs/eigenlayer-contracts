@@ -38,6 +38,10 @@ jobs:
       github.event_name == 'workflow_dispatch'
     runs-on: protocol-x64-16core
     steps:
+      - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: audit
+
       # Checkout the repository with submodules
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -56,7 +60,7 @@ jobs:
         run: forge install
 
       # Run Certora compilation step only
-      - uses: Certora/certora-run-action@v1
+      - uses: Certora/certora-run-action@56c6a98e84eee5cd3a135967a9a4bc06ef6d38cc
         with:
           # List of configuration files for different contracts to verify
           configurations: |-
@@ -97,7 +101,7 @@ jobs:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
           egress-policy: audit
-          
+
       # Checkout the repository with submodules
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
