@@ -240,8 +240,10 @@ jobs:
         with:
           egress-policy: block
           allowed-endpoints: >
+            *.blob.core.windows.net:443
             binaries.soliditylang.org:443
             github.com:443
+            objects.githubusercontent.com:443
             release-assets.githubusercontent.com:443
             
       # Check out repository with all submodules for complete codebase access.
