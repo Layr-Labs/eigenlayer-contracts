@@ -6,13 +6,13 @@ import {QueueUpgrade} from "./2-queueUpgrade.s.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "zeus-templates/utils/Encode.sol";
 
+/// @notice Executes the upgrade for redistribution v1.5.0
 contract Execute is QueueUpgrade {
     using Env for *;
     using Encode for *;
 
     function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor_v1_5_queue = _getCalldataToExecutor_v1_5_queue();
-        bytes memory calldata_to_executor_v1_6_queue = _getCalldataToExecutor();
         TimelockController timelock = Env.timelockController();
 
         if (_isMainnet()) {
@@ -24,14 +24,6 @@ contract Execute is QueueUpgrade {
                 salt: 0
             });
         }
-
-        timelock.execute({
-            target: Env.executorMultisig(),
-            value: 0,
-            payload: calldata_to_executor_v1_6_queue,
-            predecessor: 0,
-            salt: 0
-        });
     }
 
     /// @dev Get the calldata to be sent from the timelock to the executor
@@ -92,8 +84,6 @@ contract Execute is QueueUpgrade {
     }
 
     function testScript() public virtual override {
-        runAsEOA();
-
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor_v1_5_queue = _getCalldataToExecutor_v1_5_queue();
         bytes32 txHash_v1_5 = timelock.hashOperation({
@@ -103,88 +93,23 @@ contract Execute is QueueUpgrade {
             predecessor: 0,
             salt: 0
         });
+        // 1 - Deploy. The contracts have been deployed in the redistro upgrade script
 
-        bytes memory calldata_to_executor = _getCalldataToExecutor();
-        bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(),
-            value: 0,
-            data: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
-        });
-
-        if (_isMainnet()) {
-            assertTrue(timelock.isOperationPending(txHash_v1_5), "v 1.5 txn SHOULD be queued.");
-        }
-        assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
-
-        // 1- run queueing logic
-        QueueUpgrade._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
-
-        if (_isMainnet()) {
-            assertTrue(timelock.isOperationPending(txHash_v1_5), "v 1.5 txn SHOULD be queued.");
-            assertFalse(timelock.isOperationReady(txHash_v1_5), "v 1.5 txn sh;ould NOT be ready for execution.");
-            assertFalse(timelock.isOperationDone(txHash_v1_5), "v 1.5 should NOT be complete.");
-        }
-        assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
-        assertFalse(timelock.isOperationReady(txHash), "Transaction should NOT be ready for execution.");
-        assertFalse(timelock.isOperationDone(txHash), "Transaction should NOT be complete.");
-
-        // 2- warp past delay
-        vm.warp(block.timestamp + timelock.getMinDelay()); // 1 tick after ETA
+        /// 2 - Queue. The contracts have been deployed in the redistribution upgrade script.
+        /// At the time of writing, the operation IS ready
         if (_isMainnet()) {
             assertEq(timelock.isOperationReady(txHash_v1_5), true, "v1.5 txn should be executable.");
         }
-        assertEq(timelock.isOperationReady(txHash), true, "Transaction should be executable.");
 
-        // 3- execute
+        // 3 - execute
         execute();
-
         assertTrue(timelock.isOperationDone(txHash_v1_5), "v1.5 txn should be complete.");
-        assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
 
-        _validateNewImplAddresses({areMatching: true});
+        // 4. Validate
         _validateNewImplAddresses_v1_5({areMatching: true});
-        _validateProxyAdmins();
         _validateProxyAdmins_v1_5();
-        _validateProxyConstructors();
         _validateProxyConstructors_v1_5();
-        _validateProxiesInitialized();
         _validateProxiesInitialized_v1_5();
-    }
-
-    /// @dev Mirrors the checks done in 1-deployContracts, but now we check each contract's
-    /// proxy, as the upgrade should mean that each proxy can see these methods/immutables
-    function _validateProxyConstructors() internal view {
-        {
-            UpgradeableBeacon eigenPodBeacon = Env.beacon.eigenPod();
-            assertTrue(eigenPodBeacon.implementation() == address(Env.impl.eigenPod()), "eigenPodBeacon.impl invalid");
-
-            /// EigenPod
-            EigenPod eigenPod = Env.impl.eigenPod();
-            assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "ep.ethPOS invalid");
-            assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "ep.epm invalid");
-            assertEq(eigenPod.version(), Env.deployVersion(), "ep.version failed");
-        }
-
-        {
-            /// Eigen
-            Eigen eigen = Eigen(address(Env.proxy.eigen()));
-            assertTrue(address(eigen.bEIGEN()) == address(Env.proxy.beigen()), "eigen.beigen invalid");
-            assertEq(eigen.version(), Env.deployVersion(), "eigen.version failed");
-        }
-    }
-
-    /// @dev Call initialize on all proxies to ensure they are initialized
-    /// Additionally, validate initialization variables
-    function _validateProxiesInitialized() internal {
-        bytes memory errInit = "Initializable: contract is already initialized";
-
-        /// Eigen
-        Eigen eigen = Eigen(address(Env.proxy.eigen()));
-        vm.expectRevert(errInit);
-        eigen.initialize(address(0), new address[](0), new uint256[](0), new uint256[](0));
     }
 
     /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
