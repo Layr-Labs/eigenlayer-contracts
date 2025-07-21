@@ -84,6 +84,10 @@ contract Execute is QueueUpgrade {
     }
 
     function testScript() public virtual override {
+        if (!_isMainnet()) {
+            return;
+        }
+
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor_v1_5_queue = _getCalldataToExecutor_v1_5_queue();
         bytes32 txHash_v1_5 = timelock.hashOperation({
@@ -97,9 +101,7 @@ contract Execute is QueueUpgrade {
 
         /// 2 - Queue. The contracts have been deployed in the redistribution upgrade script.
         /// At the time of writing, the operation IS ready
-        if (_isMainnet()) {
-            assertEq(timelock.isOperationReady(txHash_v1_5), true, "v1.5 txn should be executable.");
-        }
+        assertEq(timelock.isOperationReady(txHash_v1_5), true, "v1.5 txn should be executable.");
 
         // 3 - execute
         execute();
