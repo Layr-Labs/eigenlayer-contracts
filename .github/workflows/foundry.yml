@@ -36,6 +36,7 @@ jobs:
             release-assets.githubusercontent.com:443
             eth-mainnet.g.alchemy.com:443
             powerful-dimensional-season.ethereum-holesky.quiknode.pro:443
+            objects.githubusercontent.com:443
 
       # Check out repository with all submodules for complete codebase access.
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
