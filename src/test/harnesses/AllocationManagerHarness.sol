@@ -10,6 +10,7 @@ contract AllocationManagerHarness is AllocationManager {
 
     constructor(
         IDelegationManager _delegation,
+        IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
@@ -17,11 +18,12 @@ contract AllocationManagerHarness is AllocationManager {
     )
         AllocationManager(
             _delegation,
+            _eigenStrategy,
             _pauserRegistry,
             _permissionController,
             _DEALLOCATION_DELAY,
             _ALLOCATION_CONFIGURATION_DELAY,
-            TestConstants.TEST_VERSION
+            "9.9.9"
         )
     {}
 
