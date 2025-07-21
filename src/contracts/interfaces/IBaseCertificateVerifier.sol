@@ -43,6 +43,7 @@ interface IBaseCertificateVerifier is
      * @return The owner
      * @dev The owner of the OperatorSet is not used by this contract, but can be used by periphery contracts
      *      to gate access control for on-chain operations
+     * @dev This value is set in the `CrossChainRegistry` and transported when the operator table is updated
      */
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
@@ -54,8 +55,9 @@ interface IBaseCertificateVerifier is
      * @param operatorSet The operatorSet to get the max staleness period of
      * @return The max staleness period
      * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
-     * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
-     *      certificates would be unable to be validated against
+     * @dev Staleness periods cannot be greater than 0 and less than the update cadence of the `OperatorTables`, since
+     *      certificates would be unable to be validated against. This value is set and bounds enforced in the `CrossChainRegistry`
+     * @dev This value is NOT checkpointed and is set when the operator table is updated
      */
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet

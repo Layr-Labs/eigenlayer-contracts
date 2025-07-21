@@ -124,6 +124,8 @@ interface IBN254CertificateVerifier is
      * @param signature The BLS signature to verify
      * @return pairingSuccessful Whether the pairing operation completed successfully
      * @return signatureValid Whether the signature is valid
+     * @dev This function should be used off-chain to validate a signature. Careful consideration should be taken
+     *      when parsing `pairingSuccessful` and `signatureValid`. Refer to our internal usage of this function
      */
     function trySignatureVerification(
         bytes32 msgHash,
@@ -139,7 +141,7 @@ interface IBN254CertificateVerifier is
      * @param operatorIndex The operator index
      * @return The cached operator info, empty if the operator is not in the cache
      * @dev The non-signing operatorInfo is stored upon a successful certificate verification. Once cached,
-     *      non-signer proofs do not need to be passed in as part of the `BN254Certificate`
+     *      non-signer proofs do not need to be passed in as part of the `BN254Certificate` for a given reference timestamp
      */
     function getNonsignerOperatorInfo(
         OperatorSet memory operatorSet,
@@ -154,7 +156,7 @@ interface IBN254CertificateVerifier is
      * @param operatorIndex The operator index
      * @return Whether the operator is cached
      * @dev The non-signing operatorInfo is stored upon a successful certificate verification. Once cached,
-     *      non-signer proofs do not need to be passed in as part of the `BN254Certificate`
+     *      non-signer proofs do not need to be passed in as part of the `BN254Certificate` for a given reference timestamp
      */
     function isNonsignerCached(
         OperatorSet memory operatorSet,

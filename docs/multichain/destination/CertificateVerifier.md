@@ -133,7 +133,7 @@ function verifyCertificate(
 ) external returns (uint256[] memory signedStakes, address[] memory signers);
 ```
 
-Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest).
+Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest). **The `referenceTimestamp` of the certificate is used to get the operators and their stake weights for certificate verification.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
@@ -389,7 +389,7 @@ function verifyCertificate(
 ) external returns (uint256[] memory signedStakes);
 ```
 
-Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information.
+Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information. **The `referenceTimestamp` of the certificate is used to get the operators and their stake weights for certificate verification.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
