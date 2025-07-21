@@ -179,6 +179,9 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
 
     /// @notice Thrown when fee split value is invalid (> 10000 bips)
     error InvalidFeeSplit();
+
+    /// @notice Thrown when a certificate has an invalid message hash
+    error InvalidMessageHash();
 }
 
 /**

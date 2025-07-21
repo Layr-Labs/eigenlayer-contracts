@@ -195,7 +195,8 @@ contract TaskMailbox is
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
             task.creationTime,
-            executorCert
+            executorCert,
+            result
         );
         require(isCertificateValid, CertificateVerificationFailed());
 
@@ -369,6 +370,7 @@ contract TaskMailbox is
      * @param executorOperatorSet The executor operator set
      * @param creationTime The creation time of the task
      * @param executorCert The executor certificate to verify
+     * @param result The result of the task
      * @return isCertificateValid Whether the certificate is valid
      */
     function _verifyExecutorCertificate(
@@ -376,7 +378,8 @@ contract TaskMailbox is
         Consensus memory consensus,
         OperatorSet memory executorOperatorSet,
         uint96 creationTime,
-        bytes memory executorCert
+        bytes memory executorCert,
+        bytes memory result
     ) internal returns (bool isCertificateValid) {
         if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
             // Decode stake proportion threshold
@@ -392,6 +395,7 @@ contract TaskMailbox is
 
                 // Validate the certificate
                 require(bn254Cert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
+                require(bn254Cert.messageHash == keccak256(result), InvalidMessageHash());
                 require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
 
                 isCertificateValid = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
@@ -404,6 +408,13 @@ contract TaskMailbox is
 
                 // Validate the certificate
                 require(ecdsaCert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
+                require(
+                    ecdsaCert.messageHash
+                        == IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).calculateCertificateDigest(
+                            ecdsaCert.referenceTimestamp, keccak256(result)
+                        ),
+                    InvalidMessageHash()
+                );
                 require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
 
                 (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
