@@ -30,14 +30,24 @@ jobs:
     strategy:
       fail-fast: true
     steps:
+      - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            binaries.soliditylang.org:443
+            github.com:443
+            release-assets.githubusercontent.com:443
+            eth-mainnet.g.alchemy.com:443
+            powerful-dimensional-season.ethereum-holesky.quiknode.pro:443
+
       # Check out repository with all submodules for complete codebase access.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
 
       # Restore Forge cache
       - name: Cache Forge Build
-        uses: actions/cache@v3
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
           path: |
             cache/
@@ -48,7 +58,7 @@ jobs:
 
       # Install the Foundry toolchain.
       - name: "Install Foundry"
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
           version: stable
 
