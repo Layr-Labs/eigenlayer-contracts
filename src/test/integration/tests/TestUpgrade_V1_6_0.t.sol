@@ -11,6 +11,10 @@ interface IOldPod {
     function GENESIS_TIME() external view returns (uint64);
 }
 
+interface IOldALM {
+    function owner() external view returns (address);
+}
+
 /**
  * Queue txns:
  * - DISTRO: https://etherscan.io/tx/0x8e6f1701abc942d468a5cea427ae16069b5ee6341407e2f3ac64e18e01e06756
@@ -53,28 +57,34 @@ contract UpgradeTest is IntegrationCheckUtils {
     EigenPod constant pod = EigenPod(payable(pod_addr));
     bytes constant validatorPubkey = hex"9067f3fb35c5fc6aa9e05f102519c22050c447acaf6b88aeb16d92fc14e30891f4c2bc21ee95ef5779224f5ceef3a168";
 
-    struct Impls {
-        // distro
-        address dm;
-        address am;
-        address sm;
-        address epm;
-        address eigenStrategy;
-        address strategyBase;
-        address[] instances;
-        // moocow
-        address eigenPod;
-        address eigen;
+    struct Proxies {
+        AllocationManager alm;
+        DelegationManager dm;
+        StrategyManager sm;
+        EigenPodManager em;
+        EigenStrategy eigenStrategy;
+        StrategyBase factoryStrat;
+        StrategyBaseTVLLimits instanceStrat;
     }
 
-    Impls cur;
+    Proxies p;
 
     // Set up "current impl address list"
-    function _init() internal override {
-        // cur.dm = 
+    function _setup() internal {
+        p = Proxies({
+            alm: AllocationManager(0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39),
+            dm: DelegationManager(0x39053D51B77DC0d36036Fc1fCc8Cb819df8Ef37A),
+            sm: StrategyManager(0x858646372CC42E1A627fcE94aa7A7033e7CF075A),
+            em: EigenPodManager(0x91E677b07F7AF907ec9a428aafA9fc14a0d3A338),
+            eigenStrategy: EigenStrategy(0xaCB55C530Acdb2849e6d4f36992Cd8c9D50ED8F7),
+            factoryStrat: StrategyBase(0x7079A4277eAF578cbe9682ac7BC3EfFF8635ebBf),          // EtherFi strategy
+            instanceStrat: StrategyBaseTVLLimits(0x93c4b944D05dfe6df7645A86cd2206016c51564D) // stETH strategy
+        });
     }
 
     function test_TEMP() public {
+        _setup();
+
         cheats.createSelectFork(cheats.rpcUrl("mainnet"));
         // cheats.createSelectFork(cheats.rpcUrl("mainnet"), block.number - 1);
 
@@ -181,14 +191,181 @@ contract UpgradeTest is IntegrationCheckUtils {
         // and revert state changes at the end of the method.
         uint id = cheats.snapshotState();
 
-        {
-            // Call new DISTRO methods
-            console.log("%s %s %s", "Checking".cyan(), "DISTRO".magenta(), "functions...".cyan());
-            console.log("TODO");
+        _tryCallVersions();
 
+        {
+            // Call new DISTRO allocationManager methods
+            console.log("%s %s %s", "Checking".cyan(), "DISTRO (alm)".magenta(), "functions...".cyan());
+
+            // Using Singularity AVS and its permissioned caller (pulled from Etherscan)
+            address avsCaller = address(0x639ebD317364962Ce8F785D3d523118841C2b81F);
+            address avs = address(0x128e65461Ee2D794fc7F1A8c732dd9A275A8618c);   
+            cheats.startPrank(avsCaller);
+
+            {
+                // 1. alm.owner(): REMOVED after upgrade
+                address almOwner;
+                bool methodExists;
+                try IOldALM(address(p.alm)).owner() returns (address ao) {
+                    methodExists = true;
+                    almOwner = ao;
+                } catch (bytes memory) {
+                    methodExists = false;
+                }
+                __logTruMoo(" - alm.owner() method removed", !methodExists);
+                if (methodExists) console.log(" -- (current owner: %s)".dim(), almOwner);
+            }
+
+            CreateSetParams[] memory params = new CreateSetParams[](1);
+            params[0].operatorSetId = 420;
+            params[0].strategies = new IStrategy[](1);
+            params[0].strategies[0] = p.instanceStrat; // stETH
+            address[] memory recipients = new address[](1);
+            recipients[0] = address(0x93C4b944D05dfE6DF7645A86Cd2206016C51564e); // some random empty address
+
+            OperatorSet memory opSet = OperatorSet(avs, 420);
+
+            {
+                // 2. alm.createRedistributingOperatorSets(): ADDED after upgrade
+                bool methodExists;
+                try p.alm.createRedistributingOperatorSets(avs, params, recipients) {
+                    methodExists = true;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                }
+
+                __logTruMoo(" - alm.createRedistributingOpSets() method added", methodExists);
+            }
+
+            {
+                // 3. alm redistribution getters: ADDED after upgrade
+                bool methodExists;
+                address recipient;
+                try p.alm.getRedistributionRecipient(opSet) returns (address r) {
+                    methodExists = true;
+                    recipient = r;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                }
+
+                __logTruMoo(" - alm.getRedistributionRecipient() method added", methodExists);
+                if (methodExists) __logTruthy(" -- recipient is expected", recipient == recipients[0]);
+            }
+
+            {
+                // 4. alm.isRedistributingOperatorSet(): ADDED after upgrade
+                bool methodExists;
+                bool isRedistributing;
+                try p.alm.isRedistributingOperatorSet(opSet) returns (bool b) {
+                    methodExists = true;
+                    isRedistributing = b;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                }
+
+                __logTruMoo(" - alm.isRedistributingOperatorSet() method added", methodExists);
+                if (methodExists) __logTruthy(" -- status is expected", isRedistributing);
+            }
+
+            {
+                // 5. alm.getSlashCount(): ADDED after upgrade
+                bool methodExists;
+                try p.alm.getSlashCount(opSet) returns (uint) {
+                    methodExists = true;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                }
+
+                __logTruMoo(" - alm.getSlashCount() method added", methodExists);
+            }
+
+            {
+                // 5. alm.isOperatorRedistributable(): ADDED after upgrade
+                bool methodExists;
+                try p.alm.isOperatorRedistributable(pod_addr) returns (bool) {
+                    methodExists = true;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                }
+
+                __logTruMoo(" - alm.isOperatorRedistributable() method added", methodExists);
+            }
+
+            {
+                // 7. alm.eigenStrategy(): ADDED after upgrade
+                bool methodExists;
+                IStrategy es;
+                try p.alm.eigenStrategy() returns (IStrategy s) {
+                    methodExists = true;
+                    es = s;
+                } catch (bytes memory err) {
+                    methodExists = false;
+                    
+                }
+
+                __logTruMoo(" - alm.eigenStrategy() method added", methodExists);
+                if (methodExists) __logTruthy(" -- returned expected address", IStrategy(p.eigenStrategy) == es);
+            }
+
+            // alm.slashOperator returns (uint, uint[])
+
+            cheats.stopPrank();
             console.log("");
         }
 
+        _tryCallMOOCOW();
+        _tryCallEigen();
+
+        cheats.revertToState(id);
+    }
+
+    function _tryCallVersions() internal {
+        console.log("%s %s %s", "Checking".cyan(), "version()".magenta(), "methods...".cyan());
+        
+        {
+            // 1. alm.version should read 1.5.0 in DISTRO; 1.3.0 before
+            string memory _version = p.alm.version();
+            bool is1_5 = _strEq(_version, "1.5.0");
+            __logTruMoo(" - alm.version is 1.5.0", is1_5);
+            if (!is1_5) console.log(" -- (current version: %s)".dim(), _version);
+        }
+
+        {
+            // 2. dm.version should read 1.5.0 in DISTRO; 1.3.0 before
+            string memory _version = p.dm.version();
+            bool is1_5 = _strEq(_version, "1.5.0");
+            __logTruMoo(" - dm.version is 1.5.0", is1_5);
+            if (!is1_5) console.log(" -- (current version: %s)".dim(), _version);
+        }
+
+        {
+            // 3. sm.version should read 1.5.0 in DISTRO; 1.3.0 before
+            string memory _version = p.sm.version();
+            bool is1_5 = _strEq(_version, "1.5.0");
+            __logTruMoo(" - sm.version is 1.5.0", is1_5);
+            if (!is1_5) console.log(" -- (current version: %s)".dim(), _version);
+        }
+
+        {
+            // 4. factoryStrat.version should read 1.5.0 in DISTRO; 1.3.0 before
+            string memory _version = p.factoryStrat.version();
+            bool is1_5 = _strEq(_version, "1.5.0");
+            __logTruMoo(" - factoryStrat.version is 1.5.0", is1_5);
+            if (!is1_5) console.log(" -- (current version: %s)".dim(), _version);
+        }
+
+        {
+            // 5. instanceStrat.version should read 1.5.0 in DISTRO; 1.3.0 before
+            string memory _version = p.instanceStrat.version();
+            bool is1_5 = _strEq(_version, "1.5.0");
+            __logTruMoo(" - instanceStrat.version is 1.5.0", is1_5);
+            if (!is1_5) console.log(" -- (current version: %s)".dim(), _version);
+        }
+
+        console.log("");
+    }
+
+    function _tryCallMOOCOW() internal {
         {
             // Call new EigenPod MOOCOW methods
             console.log("%s %s %s", "Checking".cyan(), "MOOCOW (pod)".magenta(), "functions...".cyan());
@@ -332,7 +509,9 @@ contract UpgradeTest is IntegrationCheckUtils {
             cheats.stopPrank();
             console.log("");
         }
+    }
 
+    function _tryCallEigen() internal {
         {
             // Call EIGEN methods
             console.log("%s %s %s", "Checking".cyan(), "MOOCOW (eigen token)".magenta(), "functions...".cyan());
@@ -362,10 +541,9 @@ contract UpgradeTest is IntegrationCheckUtils {
 
                 __logTruMoo(" - version exists and is 1.6.0", versionExists && _strEq(_version, "1.6.0"));
             }
-        }
 
-        console.log("");
-        cheats.revertToState(id);
+            console.log("");
+        }
     }
 
     function _executeUpgrade() internal {
