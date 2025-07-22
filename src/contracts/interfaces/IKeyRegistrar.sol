@@ -80,6 +80,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Reverts if key is already registered
      * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
      *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+     * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
      */
     function registerKey(
         address operator,

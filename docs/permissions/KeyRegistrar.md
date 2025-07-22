@@ -67,6 +67,7 @@ Key registration is segmented by curve type: ECDSA and BN254.
  * @dev Reverts if key is already registered
  * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
  *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+ * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
  */
 function registerKey(
     address operator,
@@ -76,7 +77,7 @@ function registerKey(
 ) external;
 ```
 
-There ARE NO restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
+There ARE NO restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. The contract supports the ERC1271 signature scheme. However, **note that the multichain protocol DOES NOT support smart contract signatures**.  
 
 For ECDSA keys:
 - `pubkey`: 20 bytes representing the Ethereum address
@@ -127,10 +128,13 @@ BN254 keys registration requires passing in G1 and G2 points.
  * @notice Registers a cryptographic key for an operator with a specific operator set
  * @param operator Address of the operator to register key for
  * @param operatorSet The operator set to register the key for
- * @param pubkey Public key bytes
- * @param signature Signature proving ownership (only needed for BN254 keys)
+ * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+ * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
  * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
  * @dev Reverts if key is already registered
+ * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
+ *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+ * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
  */
 function registerKey(
     address operator,
