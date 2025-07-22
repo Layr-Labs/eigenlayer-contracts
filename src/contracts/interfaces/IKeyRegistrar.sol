@@ -54,6 +54,11 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
 }
 
+/// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets    /// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
+/// @notice The integration pattern is as follows:
+/// 1. The AVS calls `configureOperatorSet` to set the key type for their operatorSet
+/// 2. Operators call `registerKey` to register their keys to the operatorSet
+/// @dev This contract requires that keys are unique across all operatorSets, globally
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
     /**
      * @notice Configures an operator set with curve type
@@ -174,7 +179,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (address, bool);
 
     /**
-     * @notice Returns the message hash for ECDSA key registration
+     * @notice Returns the message hash for ECDSA key registration, which must be signed by the operator when registering an ECDSA key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyAddress The address of the key
@@ -187,7 +192,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (bytes32);
 
     /**
-     * @notice Returns the message hash for BN254 key registration
+     * @notice Returns the message hash for BN254 key registration, which must be signed by the operator when registering a BN254 key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyData The BN254 key data

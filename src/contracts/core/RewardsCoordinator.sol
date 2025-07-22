@@ -224,7 +224,6 @@ contract RewardsCoordinator is
     /// @inheritdoc IRewardsCoordinator
     function submitRoot(
         bytes32 root,
-        uint256 treeHeigh, // @audit -> Maybe add this?
         uint32 rewardsCalculationEndTimestamp
     ) external onlyWhenNotPaused(PAUSED_SUBMIT_DISABLE_ROOTS) onlyRewardsUpdater {
         require(

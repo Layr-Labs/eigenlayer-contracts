@@ -12,7 +12,7 @@ interface IOperatorTableCalculatorTypes {
      * @param weights The weights of the operator for a single operatorSet
      *
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
-     * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
      */
@@ -29,7 +29,7 @@ interface IOperatorTableCalculatorTypes {
      * @param totalWeights The total stake weights of the operators in the operatorSet
      *
      * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
-     * It is calculated on-chain by the `BN254TableCalculator` and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
+     *      It is calculated on-chain by the `BN254TableCalculator` and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
      *
      * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
      *
@@ -47,11 +47,10 @@ interface IOperatorTableCalculatorTypes {
     /**
      * @notice A struct that contains information about a single operator for an ECDSA signing key
      * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
-     * This is read from the KeyRegistrar contract.
      * @param weights The weights of the operator for a single operatorSet
      *
      * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
-     * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
      */
@@ -63,12 +62,19 @@ interface IOperatorTableCalculatorTypes {
 
 /// @notice A base operator table calculator that all operator table calculators (ECDSA, BN254) must implement
 /// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Lay-Labs/middleware repository for an example implementation
+/// @dev Once deployed, the AVS will set the `OperatorTableCalculator` in the `CrossChainRegistry`
 interface IOperatorTableCalculator {
+    /// @notice The OperatorTableCalculator calculates the stake weights (ie. operator table) for a given operatorSet
+    /// @notice This contract is read by the multichain protocol to calculate and transport the operator table to destination chains
+    /// @dev To distribute stake-weighted tasks to operators, the AVS should read this contract (via RPC) at the `referenceTimestamp`
+    ///      for which the operator table was updated on the destination chains
+    /// @dev The operatorTableCalculator is configured by the AVS in the core `CrossChainRegistry` contract
+
     /**
      * @notice Calculates the operator table, in bytes, for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for
      * @return operatorTableBytes the operatorTableBytes for the given operatorSet
-     * @dev The `operatorTableBytes` is used by the offchain multichain protocol to calculate the operator table
+     * @dev The `operatorTableBytes` is used by the offchain multichain protocol to calculate and merkleize the operator table
      */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
@@ -79,8 +85,11 @@ interface IOperatorTableCalculator {
      * @param operatorSet The operatorSet to get the stake weights for
      * @return operators The addresses of the operators in the operatorSet
      * @return weights The stake weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
-     * and the second index is the stake weight
-     * @dev This function can be used by the AVS to distribute stake-weighted tasks to operators
+     *         and the second index is the stake weight.
+     * @dev The `weights` array is as a list of arbitrary stake types. For example,
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+     * @dev This function can be used by the AVS to distribute stake-weighted tasks to operators. Specifically, the AVS should read this function
+     *      at the `referenceTimestamp` for which the operator table was updated on the destination chains
      */
     function getOperatorSetWeights(
         OperatorSet calldata operatorSet
@@ -92,7 +101,7 @@ interface IOperatorTableCalculator {
      * @param operator The operator to get the weight for
      * @return weights The weights for the operator in the operatorSet
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
-     * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      */
     function getOperatorWeights(
         OperatorSet calldata operatorSet,
