@@ -134,6 +134,10 @@ contract TaskMailbox is
         // Calculate the AVS fee using the task hook
         uint96 avsFee = taskConfig.taskHook.calculateTaskFee(taskParams);
 
+        // Get the operator table reference timestamp
+        uint32 operatorTableReferenceTimestamp = IBaseCertificateVerifier(_getCertificateVerifier(taskConfig.curveType))
+            .latestReferenceTimestamp(taskParams.executorOperatorSet);
+
         bytes32 taskHash = keccak256(abi.encode(_globalTaskCount, address(this), block.chainid, taskParams));
         _globalTaskCount = _globalTaskCount + 1;
 
@@ -147,6 +151,7 @@ contract TaskMailbox is
             feeSplit,
             TaskStatus.CREATED,
             false, // isFeeRefunded
+            operatorTableReferenceTimestamp,
             taskConfig,
             taskParams.payload,
             bytes(""),
@@ -168,6 +173,7 @@ contract TaskMailbox is
             taskHash,
             taskParams.executorOperatorSet.avs,
             taskParams.executorOperatorSet.id,
+            operatorTableReferenceTimestamp,
             taskParams.refundCollector,
             avsFee,
             block.timestamp + taskConfig.taskSLA,
@@ -194,7 +200,7 @@ contract TaskMailbox is
             task.executorOperatorSetTaskConfig.curveType,
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
-            task.creationTime,
+            task.operatorTableReferenceTimestamp,
             executorCert,
             result
         );
@@ -323,6 +329,23 @@ contract TaskMailbox is
     }
 
     /**
+     * @notice Gets the certificate verifier for a given curve type
+     * @param curveType The curve type to get the certificate verifier for
+     * @return The address of the certificate verifier
+     */
+    function _getCertificateVerifier(
+        IKeyRegistrarTypes.CurveType curveType
+    ) internal view returns (address) {
+        if (curveType == IKeyRegistrarTypes.CurveType.BN254) {
+            return BN254_CERTIFICATE_VERIFIER;
+        } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
+            return ECDSA_CERTIFICATE_VERIFIER;
+        } else {
+            revert InvalidCurveType();
+        }
+    }
+
+    /**
      * @notice Validates that the caller is the owner of the operator set
      * @param operatorSet The operator set to validate ownership for
      * @param curveType The curve type used to determine the certificate verifier
@@ -331,14 +354,7 @@ contract TaskMailbox is
         OperatorSet memory operatorSet,
         IKeyRegistrarTypes.CurveType curveType
     ) internal view {
-        address certificateVerifier;
-        if (curveType == IKeyRegistrarTypes.CurveType.BN254) {
-            certificateVerifier = BN254_CERTIFICATE_VERIFIER;
-        } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
-            certificateVerifier = ECDSA_CERTIFICATE_VERIFIER;
-        } else {
-            revert InvalidCurveType();
-        }
+        address certificateVerifier = _getCertificateVerifier(curveType);
 
         require(
             IBaseCertificateVerifier(certificateVerifier).getOperatorSetOwner(operatorSet) == msg.sender,
@@ -368,7 +384,7 @@ contract TaskMailbox is
      * @param curveType The curve type used for signature verification
      * @param consensus The consensus configuration
      * @param executorOperatorSet The executor operator set
-     * @param creationTime The creation time of the task
+     * @param operatorTableReferenceTimestamp The reference timestamp of the operator table
      * @param executorCert The executor certificate to verify
      * @param result The result of the task
      * @return isCertificateValid Whether the certificate is valid
@@ -377,7 +393,7 @@ contract TaskMailbox is
         IKeyRegistrarTypes.CurveType curveType,
         Consensus memory consensus,
         OperatorSet memory executorOperatorSet,
-        uint96 creationTime,
+        uint32 operatorTableReferenceTimestamp,
         bytes memory executorCert,
         bytes memory result
     ) internal returns (bool isCertificateValid) {
@@ -394,7 +410,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
                 // Validate the certificate
-                require(bn254Cert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
+                require(bn254Cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
                 require(bn254Cert.messageHash == keccak256(result), InvalidMessageHash());
                 require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
 
@@ -407,7 +423,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
                 // Validate the certificate
-                require(ecdsaCert.referenceTimestamp == creationTime.toUint32(), InvalidReferenceTimestamp());
+                require(ecdsaCert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
                 require(
                     ecdsaCert.messageHash
                         == IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).calculateCertificateDigest(
@@ -455,6 +471,7 @@ contract TaskMailbox is
             task.feeSplit,
             _getTaskStatus(task),
             task.isFeeRefunded,
+            task.operatorTableReferenceTimestamp,
             task.executorOperatorSetTaskConfig,
             task.payload,
             task.executorCert,

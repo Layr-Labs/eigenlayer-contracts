@@ -150,6 +150,16 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
     }
 
     /**
+     * @notice Get the reference timestamp for a task (helper for tests)
+     * @param _taskHash The task hash
+     * @return The reference timestamp stored in the task
+     */
+    function _getTaskReferenceTimestamp(bytes32 _taskHash) internal view returns (uint32) {
+        Task memory task = taskMailbox.getTaskInfo(_taskHash);
+        return task.operatorTableReferenceTimestamp;
+    }
+
+    /**
      * @notice Create a valid ECDSA certificate for a given result
      * @param result The result data to create certificate for
      * @param referenceTimestamp The reference timestamp
@@ -580,7 +590,15 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         // Expect event
         vm.expectEmit(true, true, true, true, address(taskMailbox));
         emit TaskCreated(
-            creator, expectedTaskHash, avs, executorOperatorSetId, fuzzRefundCollector, fuzzAvsFee, block.timestamp + taskSLA, fuzzPayload
+            creator,
+            expectedTaskHash,
+            avs,
+            executorOperatorSetId,
+            0,
+            fuzzRefundCollector,
+            fuzzAvsFee,
+            block.timestamp + taskSLA,
+            fuzzPayload
         );
 
         // Create task
@@ -610,6 +628,7 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
         assertEq(task.avs, avs);
         assertEq(task.executorOperatorSetId, executorOperatorSetId);
+        assertEq(task.operatorTableReferenceTimestamp, 0);
         assertEq(task.refundCollector, fuzzRefundCollector);
         assertEq(task.avsFee, fuzzAvsFee);
         assertEq(task.feeSplit, 0);
@@ -871,14 +890,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
     }
 
     function testFuzz_submitResult_WithBN254Certificate(bytes memory fuzzResult) public {
-        // Get task creation time
-        Task memory task = taskMailbox.getTaskInfo(taskHash);
-        uint96 taskCreationTime = task.creationTime;
-
         // Advance time by 1 second to pass TimestampAtCreation check
         vm.warp(block.timestamp + 1);
 
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(fuzzResult, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(fuzzResult, _getTaskReferenceTimestamp(taskHash));
 
         // Expect event
         vm.expectEmit(true, true, true, true, address(taskMailbox));
@@ -915,14 +931,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.prank(creator);
         bytes32 newTaskHash = taskMailbox.createTask(taskParams);
 
-        // Get task creation time
-        Task memory newTask = taskMailbox.getTaskInfo(newTaskHash);
-        uint96 taskCreationTime = newTask.creationTime;
-
         // Advance time by 1 second to pass TimestampAtCreation check
         vm.warp(block.timestamp + 1);
 
-        IECDSACertificateVerifier.ECDSACertificate memory cert = _createValidECDSACertificateForResult(fuzzResult, taskCreationTime);
+        IECDSACertificateVerifier.ECDSACertificate memory cert =
+            _createValidECDSACertificateForResult(fuzzResult, _getTaskReferenceTimestamp(newTaskHash));
 
         // Expect event
         vm.expectEmit(true, true, true, true, address(taskMailbox));
@@ -1027,7 +1040,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         vm.warp(block.timestamp + 1);
 
         bytes memory result = bytes("result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         vm.expectRevert(CertificateVerificationFailed.selector);
@@ -1075,7 +1089,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Create ECDSA certificate
         bytes memory result = bytes("result");
-        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = _createValidECDSACertificateForResult(result, taskCreationTime);
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createValidECDSACertificateForResult(result, _getTaskReferenceTimestamp(newTaskHash));
 
         // Submit should fail
         vm.prank(aggregator);
@@ -1115,14 +1130,16 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // First submit a valid result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(taskHash, abi.encode(cert), result);
 
         // Try to submit again with a different result
         bytes memory newResult = bytes("new result");
-        IBN254CertificateVerifier.BN254Certificate memory cert2 = _createValidBN254CertificateForResult(newResult, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert2 =
+            _createValidBN254CertificateForResult(newResult, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         vm.expectRevert(abi.encodeWithSelector(InvalidTaskStatus.selector, TaskStatus.CREATED, TaskStatus.VERIFIED));
@@ -1157,7 +1174,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Set up attack parameters
         bytes memory result = bytes("result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, attackTaskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         attacker.setAttackParams(
             taskParams,
@@ -1207,7 +1225,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Set up attack parameters
         bytes memory result = bytes("result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, attackTaskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         attacker.setAttackParams(
             taskParams,
@@ -1250,7 +1269,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit result with zero threshold should still work
         bytes memory result = bytes("test result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
@@ -1286,7 +1306,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit result with max threshold
         bytes memory result = bytes("test result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
@@ -1297,17 +1318,13 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
     }
 
     function test_Revert_WhenBN254CertificateHasEmptySignature() public {
-        // Get task creation time
-        Task memory task = taskMailbox.getTaskInfo(taskHash);
-        uint96 taskCreationTime = task.creationTime;
-
         // Advance time by 1 second to pass TimestampAtCreation check
         vm.warp(block.timestamp + 1);
 
         // Create BN254 certificate with empty signature (X=0, Y=0)
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(0, 0), // Empty signature
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
@@ -1331,7 +1348,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Create BN254 certificate with empty X coordinate
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(0, 2), // Only X is zero
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
@@ -1355,7 +1372,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Create BN254 certificate with empty Y coordinate
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(1, 0), // Only Y is zero
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
@@ -1392,8 +1409,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Create ECDSA certificate with empty signature
         bytes memory result = bytes("result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: uint32(taskCreationTime),
-            messageHash: _getECDSACertificateDigest(uint32(taskCreationTime), result),
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), result),
             sig: bytes("") // Empty signature
         });
 
@@ -1430,7 +1447,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Create BN254 certificate with empty signature
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(0, 0), // Empty signature
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
@@ -1471,8 +1488,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Create ECDSA certificate with empty signature
         bytes memory result = bytes("result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: uint32(taskCreationTime),
-            messageHash: _getECDSACertificateDigest(uint32(taskCreationTime), result),
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), result),
             sig: bytes("") // Empty signature
         });
 
@@ -1516,7 +1533,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(1, 2),
             apk: BN254.G2Point([uint(3), uint(4)], [uint(5), uint(6)]),
@@ -1578,7 +1595,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Calculate expected amounts
         uint expectedFeeSplitAmount = (avsFee * feeSplit) / 10_000;
@@ -1630,7 +1647,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Calculate expected amounts - should be equal split
         uint expectedFeeSplitAmount = avsFee / 2;
@@ -1682,7 +1699,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Expect Transfer event for fee transfer to fee collector only (no fee split)
         // Since feeSplit is 0, all avsFee goes to feeCollector
@@ -1727,7 +1744,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Expect Transfer event for fee transfer to fee split collector only
         // Since feeSplit is 100%, all avsFee goes to feeSplitCollector
@@ -1770,7 +1787,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, executorCert, result);
@@ -1814,7 +1831,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (smallFee * feeSplit) / 10_000; // 33 wei
@@ -1867,7 +1884,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (oddFee * feeSplit) / 10_000; // 1 wei (rounded down from 1.0001)
@@ -1930,7 +1947,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash)));
 
         // Calculate expected amounts
         uint expectedFeeSplitAmount = (uint(_avsFee) * _feeSplit) / 10_000;
@@ -1999,7 +2016,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit result
         vm.warp(block.timestamp + 1);
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(bytes("result"), taskCreationTime));
+        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(bytes("result"), _getTaskReferenceTimestamp(taskHash)));
 
         // Expect Transfer events for fee distribution
         // First, transfer to current fee split collector (not the initial one)
@@ -2088,7 +2105,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("result");
         bytes memory wrongResult = bytes("wrong result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(wrongResult), // Wrong message hash
             signature: BN254.G1Point(1, 2),
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
@@ -2126,8 +2143,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("result");
         bytes memory wrongResult = bytes("wrong result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: uint32(taskCreationTime),
-            messageHash: _getECDSACertificateDigest(uint32(taskCreationTime), wrongResult), // Wrong digest
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), wrongResult), // Wrong digest
             sig: bytes("0x1234567890abcdef")
         });
 
@@ -2238,7 +2255,7 @@ contract TaskMailboxUnitTests_refundFee is TaskMailboxUnitTests {
         // Submit result to verify the task
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
-            referenceTimestamp: uint32(taskCreationTime),
+            referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
             signature: BN254.G1Point(1, 2),
             apk: BN254.G2Point([uint(3), uint(4)], [uint(5), uint(6)]),
@@ -2441,6 +2458,7 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         assertEq(task.refundCollector, refundCollector);
         assertEq(task.avsFee, avsFee);
         assertEq(task.feeSplit, 0);
+        assertEq(task.operatorTableReferenceTimestamp, _getTaskReferenceTimestamp(taskHash)); // New field check
         assertEq(task.payload, bytes("test payload"));
         assertEq(task.executorCert, bytes(""));
         assertEq(task.result, bytes(""));
@@ -2470,7 +2488,8 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
 
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(result, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(taskHash, abi.encode(cert), result);
@@ -2512,7 +2531,8 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         // Submit result first
         vm.warp(block.timestamp + 1);
         bytes memory expectedResult = bytes("test result");
-        IBN254CertificateVerifier.BN254Certificate memory cert = _createValidBN254CertificateForResult(expectedResult, taskCreationTime);
+        IBN254CertificateVerifier.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(expectedResult, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(taskHash, abi.encode(cert), expectedResult);

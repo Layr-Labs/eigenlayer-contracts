@@ -102,12 +102,13 @@ interface ITaskMailboxTypes {
         // Storage slot 2: avs (20 bytes) + avsFee (12 bytes) = 32 bytes
         address avs;
         uint96 avsFee;
-        // Storage slot 3: refundCollector (20 bytes) + executorOperatorSetId (4 bytes) + feeSplit (2 bytes) + status (1 byte) + isFeeRefunded (1 byte) = 28 bytes (4 bytes unused)
+        // Storage slot 3: refundCollector (20 bytes) + executorOperatorSetId (4 bytes) + feeSplit (2 bytes) + status (1 byte) + isFeeRefunded (1 byte) + referenceTimestamp (4 bytes) = 32 bytes
         address refundCollector;
         uint32 executorOperatorSetId;
         uint16 feeSplit;
         TaskStatus status;
         bool isFeeRefunded;
+        uint32 operatorTableReferenceTimestamp;
         // Dynamic storage slots
         ExecutorOperatorSetTaskConfig executorOperatorSetTaskConfig;
         bytes payload;
@@ -220,6 +221,7 @@ interface ITaskMailboxEvents is ITaskMailboxTypes {
      * @param taskHash Unique identifier of the task
      * @param avs Address of the AVS handling the task
      * @param executorOperatorSetId ID of the executor operator set
+     * @param operatorTableReferenceTimestamp Reference timestamp of the operator table
      * @param refundCollector Address to receive refunds
      * @param avsFee Fee paid to the AVS
      * @param taskDeadline Timestamp by which the task must be completed
@@ -230,6 +232,7 @@ interface ITaskMailboxEvents is ITaskMailboxTypes {
         bytes32 indexed taskHash,
         address indexed avs,
         uint32 executorOperatorSetId,
+        uint32 operatorTableReferenceTimestamp,
         address refundCollector,
         uint96 avsFee,
         uint256 taskDeadline,
