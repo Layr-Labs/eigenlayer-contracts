@@ -683,6 +683,8 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
             OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
+            // Set the key type for the operator set in KeyRegistrar
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
