@@ -89,6 +89,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param config the config to set for the operatorSet
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
+     * @dev It is expected that the AVS has:
+     *      - Deployed or is using a generalizable `OperatorTableCalculator` to calculate its operator's stake weights
+     *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key registration/deregistration
+     *      - Created an operatorSet in the `AllocationManager`
      */
     function createGenerationReservation(
         OperatorSet calldata operatorSet,

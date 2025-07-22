@@ -59,6 +59,8 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 /// 1. The AVS calls `configureOperatorSet` to set the key type for their operatorSet
 /// 2. Operators call `registerKey` to register their keys to the operatorSet
 /// @dev This contract requires that keys are unique across all operatorSets, globally
+/// @dev For the multichain protocol, the key type of the operatorSet must be set in the `KeyRegistrar`, but the 
+///      AVS is not required to use the KeyRegistrar for operator key registration/deregistration and can implement its own registry
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
     /**
      * @notice Configures an operator set with curve type
