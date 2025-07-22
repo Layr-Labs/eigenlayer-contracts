@@ -567,6 +567,8 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         vm.assume(fuzzPayload.length > 0);
         // We create two tasks in this test, so need at least 2x the fee
         vm.assume(fuzzAvsFee <= mockToken.balanceOf(creator) / 2);
+        // If there's a fee, refund collector cannot be zero address
+        if (fuzzAvsFee > 0) vm.assume(fuzzRefundCollector != address(0));
 
         // Set the mock hook to return the fuzzed fee
         mockTaskHook.setDefaultFee(fuzzAvsFee);
@@ -594,7 +596,7 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
             expectedTaskHash,
             avs,
             executorOperatorSetId,
-            0,
+            0, // operatorTableReferenceTimestamp
             fuzzRefundCollector,
             fuzzAvsFee,
             block.timestamp + taskSLA,
