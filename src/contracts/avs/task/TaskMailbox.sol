@@ -201,8 +201,8 @@ contract TaskMailbox is
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
             task.operatorTableReferenceTimestamp,
-            executorCert,
-            result
+            keccak256(result),
+            executorCert
         );
         require(isCertificateValid, CertificateVerificationFailed());
 
@@ -385,8 +385,8 @@ contract TaskMailbox is
      * @param consensus The consensus configuration
      * @param executorOperatorSet The executor operator set
      * @param operatorTableReferenceTimestamp The reference timestamp of the operator table
+     * @param resultHash The hash of the result of the task
      * @param executorCert The executor certificate to verify
-     * @param result The result of the task
      * @return isCertificateValid Whether the certificate is valid
      */
     function _verifyExecutorCertificate(
@@ -394,8 +394,8 @@ contract TaskMailbox is
         Consensus memory consensus,
         OperatorSet memory executorOperatorSet,
         uint32 operatorTableReferenceTimestamp,
-        bytes memory executorCert,
-        bytes memory result
+        bytes32 resultHash,
+        bytes memory executorCert
     ) internal returns (bool isCertificateValid) {
         if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
             // Decode stake proportion threshold
@@ -411,7 +411,7 @@ contract TaskMailbox is
 
                 // Validate the certificate
                 require(bn254Cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-                require(bn254Cert.messageHash == keccak256(result), InvalidMessageHash());
+                require(bn254Cert.messageHash == resultHash, InvalidMessageHash());
                 require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
 
                 isCertificateValid = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
@@ -427,7 +427,7 @@ contract TaskMailbox is
                 require(
                     ecdsaCert.messageHash
                         == IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).calculateCertificateDigest(
-                            ecdsaCert.referenceTimestamp, keccak256(result)
+                            ecdsaCert.referenceTimestamp, resultHash
                         ),
                     InvalidMessageHash()
                 );
