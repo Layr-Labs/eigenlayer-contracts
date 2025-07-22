@@ -103,8 +103,8 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return bytes32(0);
     }
 
-    function calculateCertificateDigest(uint32, /*referenceTimestamp*/ bytes32 /*messageHash*/ ) external pure returns (bytes32) {
-        return bytes32(0);
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) external pure returns (bytes32) {
+        return keccak256(abi.encode(referenceTimestamp, messageHash));
     }
 
     function getTotalStakeWeights(OperatorSet calldata, uint32) external pure returns (uint[] memory) {
