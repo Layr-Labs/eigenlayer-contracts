@@ -114,6 +114,9 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
+        // Validate the the KeyType has been set in the KeyRegistrar for the OperatorSet
+        require(keyRegistrar.getOperatorSetCurveType(operatorSet) != IKeyRegistrarTypes.CurveType.NONE, KeyTypeNotSet());
+
         // Add to active generation reservations
         require(_activeGenerationReservations.add(operatorSet.key()), GenerationReservationAlreadyExists());
         emit GenerationReservationCreated(operatorSet);
