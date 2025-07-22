@@ -126,6 +126,7 @@ struct ECDSACertificate {
  * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return signers array of addresses that signed the certificate
  * @dev This function DOES NOT support smart contact signatures
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
@@ -168,6 +169,7 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return Whether or not the certificate is valid and meets thresholds
  * @return signers array of addresses that signed the certificate
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificateProportion(
     OperatorSet calldata operatorSet,
@@ -202,6 +204,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return Whether or not certificate is valid and meets nominal thresholds
  * @return signers array of addresses that signed the certificate
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificateNominal(
     OperatorSet calldata operatorSet,
@@ -382,6 +385,7 @@ struct BN254Certificate {
  * @param cert a certificate
  * @return signedStakes total stake weight that signed the certificate for each stake type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return signers array of addresses that signed the certificate
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificate(
     OperatorSet memory operatorSet,
@@ -421,7 +425,8 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
  * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
  * the signed stake of the certificate should meet. Each index corresponds to
  * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
- * @return whether or not certificate is valid and meets proportion thresholds
+ * @return Whether or not certificate is valid and meets proportion thresholds
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificateProportion(
     OperatorSet memory operatorSet,
@@ -457,6 +462,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * the signed stake of the certificate should meet. Each index corresponds to
  * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
  * @return Whether or not certificate is valid and meets nominal thresholds
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
  */
 function verifyCertificateNominal(
     OperatorSet memory operatorSet,

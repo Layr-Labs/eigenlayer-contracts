@@ -67,6 +67,7 @@ interface IECDSACertificateVerifier is
      * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo` struct
      * @return signers array of addresses that signed the certificate
      * @dev This function DOES NOT support smart contact signatures
+     * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -83,6 +84,7 @@ interface IECDSACertificateVerifier is
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
      * @return signers array of addresses that signed the certificate
+     * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
      */
     function verifyCertificateProportion(
         OperatorSet calldata operatorSet,
@@ -100,6 +102,7 @@ interface IECDSACertificateVerifier is
      * a stake type in the `weights` array in the `ECDSAOperatorInfo`
      * @return Whether or not the certificate is valid and meets thresholds
      * @return signers array of addresses that signed the certificate
+     * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
      */
     function verifyCertificateNominal(
         OperatorSet calldata operatorSet,
