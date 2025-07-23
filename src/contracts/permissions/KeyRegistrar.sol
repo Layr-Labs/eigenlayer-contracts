@@ -164,6 +164,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes calldata keyData,
         bytes calldata signature
     ) internal {
+        require(keyData.length == 192, InvalidKeyFormat());
+        require(signature.length == 64, InvalidSignature());
+
         BN254.G1Point memory g1Point;
         BN254.G2Point memory g2Point;
 
