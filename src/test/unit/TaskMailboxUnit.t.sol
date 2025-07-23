@@ -97,18 +97,6 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
         });
     }
 
-    /**
-     * @notice Get the ECDSA certificate digest for a given result
-     * @param referenceTimestamp The reference timestamp for the certificate
-     * @param result The result data
-     * @return The certificate digest
-     */
-    function _getECDSACertificateDigest(uint32 referenceTimestamp, bytes memory result) internal view returns (bytes32) {
-        // For testing, we'll use a simple digest calculation that matches what the mock expects
-        // In the real implementation, this would call IECDSACertificateVerifier.calculateCertificateDigest
-        return keccak256(abi.encode(referenceTimestamp, keccak256(result)));
-    }
-
     function _createValidBN254Certificate(bytes32 messageHash, uint96 referenceTimestamp)
         internal
         view
@@ -170,8 +158,7 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
         view
         returns (IECDSACertificateVerifierTypes.ECDSACertificate memory)
     {
-        bytes32 digest = _getECDSACertificateDigest(uint32(referenceTimestamp), result);
-        return _createValidECDSACertificate(digest, referenceTimestamp);
+        return _createValidECDSACertificate(keccak256(result), referenceTimestamp);
     }
 }
 
@@ -1412,7 +1399,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
-            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), result),
+            messageHash: keccak256(result),
             sig: bytes("") // Empty signature
         });
 
@@ -1491,7 +1478,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
-            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), result),
+            messageHash: keccak256(result),
             sig: bytes("") // Empty signature
         });
 
@@ -2085,7 +2072,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: uint32(block.timestamp), // Wrong timestamp
-            messageHash: _getECDSACertificateDigest(uint32(block.timestamp), result),
+            messageHash: keccak256(result),
             sig: bytes("0x1234567890abcdef")
         });
 
@@ -2146,7 +2133,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory wrongResult = bytes("wrong result");
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
             referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
-            messageHash: _getECDSACertificateDigest(_getTaskReferenceTimestamp(newTaskHash), wrongResult), // Wrong digest
+            messageHash: keccak256(wrongResult), // Wrong message hash
             sig: bytes("0x1234567890abcdef")
         });
 
