@@ -424,13 +424,7 @@ contract TaskMailbox is
 
                 // Validate the certificate
                 require(ecdsaCert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-                require(
-                    ecdsaCert.messageHash
-                        == IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).calculateCertificateDigest(
-                            ecdsaCert.referenceTimestamp, resultHash
-                        ),
-                    InvalidMessageHash()
-                );
+                require(ecdsaCert.messageHash == resultHash, InvalidMessageHash());
                 require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
 
                 (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
