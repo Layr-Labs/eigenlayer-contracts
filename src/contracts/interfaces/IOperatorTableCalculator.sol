@@ -68,7 +68,7 @@ interface IOperatorTableCalculatorTypes {
 /// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Lay-Labs/middleware repository for an example implementation
 /// @dev Once deployed, the AVS will set the `OperatorTableCalculator` in the `CrossChainRegistry`
 interface IOperatorTableCalculator {
-    /// @notice The OperatorTableCalculator calculates the stake weights (ie. operator table) for a given operatorSet
+    /// @notice The OperatorTableCalculator calculates the stake weights to generate an operator table for a given operatorSet
     /// @notice This contract is read by the multichain protocol to calculate and transport the operator table to destination chains
     /// @dev To distribute stake-weighted tasks to operators, the AVS should read this contract (via RPC) at the `referenceTimestamp`
     ///      for which the operator table was updated on the destination chains

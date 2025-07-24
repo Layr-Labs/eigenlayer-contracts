@@ -15,7 +15,7 @@ interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @param operatorInfo the `BN254OperatorInfo` for the operator.
      *        Leave empty if the non-signing operator is already stored from a previous verification at the same `referenceTimestamp`
      * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification that includes a merkle proof for the non-signing operator.
-     *  This is done to avoid the need for resupplying proofs of non-signing operators for each certificate verification at a given reference timestamp
+     *      This is done to avoid the need to provide proofs for non-signing operators for each certificate with the same `referenceTimestamp`
      */
     struct BN254OperatorInfoWitness {
         uint32 operatorIndex;
