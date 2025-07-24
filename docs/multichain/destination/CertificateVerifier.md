@@ -510,7 +510,7 @@ Verifies that a certificate meets specified nominal (absolute) stake thresholds 
 /**
  * @notice A witness for an operator, used to identify the non-signers for a given certificate
  * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
- * @param operatorInfoProofs merkle proof of the nonsigner at the index. Empty if the non-signing operator is   already stored from a previous verification
+ * @param operatorInfoProofs merkle proof of the nonsigner at the index. Empty if the non-signing operator is already stored from a previous verification
  * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if the non-signing operator is already stored from a previous verification
  * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification that includes a merkle proof for the non-signing operator. 
  *  This is done to avoid the need for resupplying proofs of non-signing operators for each certificate verification at a given reference timestamp
