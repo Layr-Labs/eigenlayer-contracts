@@ -44,7 +44,7 @@ interface IBaseCertificateVerifier is
     ///    b. KeyRegistrar.configureOperatorSet: Configures the curve type of the operatorSet
     ///    c. CrossChainRegistry.makeGenerationReservation: Registers the operatorSet to be transported by the multichain protocol. This includes
     ///      the `owner`, `maxStalenessPeriod`, and `operatorTableCalculator` for the operatorSet. The output of the `OperatorTableCalculator`
-    ///      are the operatorSet's stake weights (ie. operator table) and is transported by the multichain protocol, along with the `maxStalenessPeriod` and `owner`
+    ///      are the operatorSet's stake weights (i.e. operator table) and is transported by the multichain protocol, along with the `maxStalenessPeriod` and `owner`
     /// 2. The multichain protocol calculates the operatorTable of an operatorSet. The time at which the table is calculated is the reference timesetamp. The protocol
     ///    will then call `updateOperatorTable` to update the operatorSet's operator table for a given referenceTimestamp
     /// 3. A task is created and certificate is generated, off-chain, by the AVS to validate the completion of a task.
@@ -53,7 +53,7 @@ interface IBaseCertificateVerifier is
     /// @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT when the certificate was generated off-chain
     /// @dev The `maxStalenessPeriod` configured in step 1c denotes if a certificate is too stale with respect to the `referenceTimestamp`
     /// @dev Operator tables for ALL operatorSets with an active generation reservation are updated at a set cadence. See `crossChainRegistry.tableUpdateCadence` for the frequency of table updates
-    /// @dev To ensure that tables do not become stale between table updates (ie. a large operator has joined or been ejected), the multichain protocol updates tables for operatorSets when the following events are emitted:
+    /// @dev To ensure that tables do not become stale between table updates (i.e. a large operator has joined or been ejected), the multichain protocol updates tables for operatorSets when the following events are emitted:
     ///      - AllocationManager: `OperatorSlashed`
     ///      - AllocationManager: `OperatorAddedToOperatorSet`
     ///      - AllocationManager: `OperatorRemovedFromOperatorSet`

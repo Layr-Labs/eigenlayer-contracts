@@ -57,9 +57,9 @@ struct ECDSAOperatorInfo {
 }
 
 /**
- * @notice updates the operatorSet with the operator table (ie. stake weights) and its configuration
+ * @notice updates the operatorSet with the operator table (i.e. stake weights) and its configuration
  * @param operatorSet the operatorSet to update the operator table for
- * @param referenceTimestamp the timestamp at which the operatorInfos (ie. operator table) was sourced
+ * @param referenceTimestamp the timestamp at which the operatorInfos (i.e. operator table) was sourced
  * @param operatorInfos the operatorInfos to update the operator table with.
  *        See `IOperatorTableCalculator.ECDSAOperatorInfo` for more details    
  * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
@@ -334,9 +334,9 @@ struct BN254OperatorSetInfo {
 }
 
 /**
- * @notice updates the operatorSet with the operator table (ie. stake weights) and its configuration
+ * @notice updates the operatorSet with the operator table (i.e. stake weights) and its configuration
  * @param operatorSet the operatorSet to update the operator table for
- * @param referenceTimestamp the timestamp at which the operatorSetInfo (ie. operator table) was sourced
+ * @param referenceTimestamp the timestamp at which the operatorSetInfo (i.e. operator table) was sourced
  * @param operatorSetInfo the operator table for this operatorSet. This includes the `totalWeights`, `operatorInfoTreeRoot`, `aggregatePubkey`, and `numOperators`.
  *        See `IOperatorTableCalculator.BN254OperatorSetInfo` for more details
  * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
