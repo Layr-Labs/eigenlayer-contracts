@@ -139,7 +139,7 @@ function verifyCertificate(
 ) external returns (uint256[] memory signedStakes, address[] memory signers);
 ```
 
-Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest). **The `referenceTimestamp` of the certificate is used to get the operators and their stake weights for certificate verification.**
+Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest). **The `referenceTimestamp` of the certificate is the time at which the operator table for a given certificate was sourced. It is not the timestamp at which the certificate was created.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
@@ -419,7 +419,7 @@ function verifyCertificate(
 ) external returns (uint256[] memory totalSignedStakeWeights);
 ```
 
-Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information. **The `referenceTimestamp` of the certificate is used to get the operators and their stake weights for certificate verification. It is not the timestamp at which the certificate was created.**
+Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information. **The `referenceTimestamp` of the certificate is the time at which the operator table for a given certificate was sourced. It is not the timestamp at which the certificate was created.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
