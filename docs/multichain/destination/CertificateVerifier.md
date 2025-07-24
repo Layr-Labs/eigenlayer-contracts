@@ -303,7 +303,7 @@ struct BN254OperatorInfo {
 }
 
 /**
- * @notice A struct that contains information about all operators for a given BN254operatorSet
+ * @notice A struct that contains information about all operators for a given BN254OperatorSet
  * @param operatorInfoTreeRoot The root of the operatorInfo tree
  * @param numOperators The number of operators in the operatorSet
  * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
