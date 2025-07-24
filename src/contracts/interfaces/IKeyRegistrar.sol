@@ -54,7 +54,7 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
 }
 
-/// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets    /// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
+/// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
 /// @notice The integration pattern is as follows:
 /// 1. The AVS calls `configureOperatorSet` to set the key type for their operatorSet
 /// 2. Operators call `registerKey` to register their keys to the operatorSet
