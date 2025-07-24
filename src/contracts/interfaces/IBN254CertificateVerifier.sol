@@ -89,9 +89,9 @@ interface IBN254CertificateVerifier is
      * @param operatorSetInfo the operator table for this operatorSet. This includes the `totalWeights`, `operatorInfoTreeRoot`, `aggregatePubkey`, and `numOperators`.
      *        See `IOperatorTableCalculator.BN254OperatorSetInfo` for more details
      * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
-     * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call.”
+     * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
-     * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
+     *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
      */
     function updateOperatorTable(
         OperatorSet calldata operatorSet,
