@@ -74,6 +74,25 @@ contract DeployDestinationChainProxies is MultisigBuilder {
         return admin;
     }
 
+    /// @dev Check if the TaskMailbox proxy is deployed by checking if it's code size is greater than 0
+    function _areProxiesDeployed() internal view returns (bool) {
+        EmptyContract emptyContract = Env.impl.emptyContract();
+        address taskMailboxProxy = _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract));
+
+        if (taskMailboxProxy.code.length > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    /// @dev Add the contracts to the env
+    function _addContractsToEnv() internal {
+        EmptyContract emptyContract = Env.impl.emptyContract();
+        _unsafeAddProxyContract(
+            type(TaskMailbox).name, _computeExpectedProxyAddress(type(TaskMailbox).name, address(emptyContract))
+        );
+    }
+
     /// @dev Compute the expected proxy address for a given name and empty contract
     function _computeExpectedProxyAddress(string memory name, address emptyContract) internal view returns (address) {
         return CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress({
