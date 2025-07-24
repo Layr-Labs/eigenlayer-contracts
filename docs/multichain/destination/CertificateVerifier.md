@@ -127,7 +127,7 @@ struct ECDSACertificate {
  * @return signers array of addresses that signed the certificate
  * @dev This function DOES NOT support smart contact signatures
  * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
@@ -176,7 +176,7 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
  * @return signers array of addresses that signed the certificate
  * @dev This function DOES NOT support smart contact signatures
  * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
@@ -217,7 +217,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * @return signers array of addresses that signed the certificate
  * @dev This function DOES NOT support smart contact signatures
  * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
@@ -406,7 +406,7 @@ struct BN254Certificate {
  * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
  *         index corresponds to a stake type in the `weights` array in the `BN254OperatorSetInfo` struct
  * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
@@ -453,7 +453,7 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
  *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
  * @return Whether or not certificate is valid and meets proportion thresholds
  * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
@@ -495,7 +495,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
  * @return Whether or not certificate is valid and meets nominal thresholds
  * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
- * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
