@@ -107,7 +107,10 @@ interface IBN254CertificateVerifier is
      * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
      *         index corresponds to a stake type in the `weights` array in the `BN254OperatorSetInfo` struct
      * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
-     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables
+     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+     *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+     *         wants to only confirm tasks against the *latest* certificate
+     *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      */
@@ -126,7 +129,10 @@ interface IBN254CertificateVerifier is
      *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
      * @return Whether or not certificate is valid and meets proportion thresholds
      * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
-     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables
+     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+     *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+     *         wants to only confirm tasks against the *latest* certificate
+     *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      */
@@ -146,7 +152,10 @@ interface IBN254CertificateVerifier is
      *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
      * @return Whether or not certificate is valid and meets nominal thresholds
      * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
-     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables
+     * @dev It is up to the AVS to handle race conditions for certificates against stale or new operator tables. Some examples include:
+     *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+     *         wants to only confirm tasks against the *latest* certificate
+     *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      */
