@@ -43,7 +43,7 @@ interface IECDSACertificateVerifier is
     IECDSACertificateVerifierErrors,
     IBaseCertificateVerifier
 {
-    /// @notice The following steps are part of the certificate verification process
+    /// @notice The following steps describe the certificate verification process, in order:
     /// 1. The AVS configures the following parameters in EigenLayer core:
     ///    a. AllocationManager.createOperatorSet: Creates an operatorSet
     ///    b. KeyRegistrar.configureOperatorSet: Configures the curve type of the operatorSet
