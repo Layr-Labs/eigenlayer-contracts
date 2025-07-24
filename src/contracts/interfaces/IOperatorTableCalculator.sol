@@ -15,7 +15,7 @@ interface IOperatorTableCalculatorTypes {
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
-     * 
+     *
      * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
      */
     struct BN254OperatorInfo {
@@ -55,7 +55,7 @@ interface IOperatorTableCalculatorTypes {
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
-     * 
+     *
      * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
      */
     struct ECDSAOperatorInfo {

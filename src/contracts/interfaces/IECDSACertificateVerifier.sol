@@ -74,7 +74,7 @@ interface IECDSACertificateVerifier is
      * @param operatorSet the operatorSet to update the operator table for
      * @param referenceTimestamp the timestamp at which the operatorInfos (ie. operator table) was sourced
      * @param operatorInfos the operatorInfos to update the operator table with.
-     *        See `IOperatorTableCalculator.ECDSAOperatorInfo` for more details    
+     *        See `IOperatorTableCalculator.ECDSAOperatorInfo` for more details
      * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
      * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
