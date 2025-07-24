@@ -43,7 +43,7 @@ interface ICrossChainRegistryTypes {
      * @param maxStalenessPeriod the maximum staleness period of the operatorSet
      *
      * @dev A `maxStalenessPeriod` of 0 completely removes staleness checks, allowing certificates to be validated regardless of their timestamp
-     * @dev A nonzero `maxStalenessPeriod` has a floor of the table update cadence, which is the frequency at which operator tables are expected 
+     * @dev A nonzero `maxStalenessPeriod` has a floor of the table update cadence, which is the frequency at which operator tables are expected
      *      to be updated. The table update cadence is set by the owner of the `CrossChainRegistry`
      */
     struct OperatorSetConfig {
@@ -91,7 +91,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
      * @dev It is expected that the AVS has:
      *      - Deployed or is using a generalizable `OperatorTableCalculator` to calculate its operator's stake weights
-     *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management 
+     *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management
      *           - Valid Key Types are given in the `IKeyRegistrarTypes.CurveType` enum. The `KeyType` must not be `NONE`
      *      - Created an operatorSet in the `AllocationManager`
      */

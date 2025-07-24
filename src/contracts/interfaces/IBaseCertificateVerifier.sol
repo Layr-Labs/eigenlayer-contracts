@@ -121,7 +121,7 @@ interface IBaseCertificateVerifier is
      * @param referenceTimestamp The reference timestamp
      * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
      * @dev The stake weights are defined in the AVS's `OperatorTableCalculator` and transported by the multichain protocol. An example
-     *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array. 
+     *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array.
      *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
      * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
      * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0

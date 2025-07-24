@@ -60,7 +60,7 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 /// 2. Operators call `registerKey` to register their keys to the operatorSet
 /// @dev This contract requires that keys are unique across all operatorSets, globally
 /// @dev For the multichain protocol, the key type of the operatorSet must be set in the `KeyRegistrar`, but the
-///      AVS is not required to use the KeyRegistrar for operator key registration/deregistration and can implement its own registry
+///      AVS is not required to use the KeyRegistrar for operator key management and can implement its own registry
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
     /**
      * @notice Configures an operator set with curve type
@@ -76,7 +76,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to register the key for
      * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
      * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
-     * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+     * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
      * @dev Reverts if key is already registered
      * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
      *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
@@ -93,7 +93,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Deregisters a cryptographic key for an operator with a specific operator set
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
-     * @dev Can be called by the operator directly or by addresses they've authorized via PermissionController
+     * @dev Can be called by the operator directly or by addresses they've authorized via the `PermissionController`
      * @dev Reverts if key was not registered
      * @dev Reverts if operator is still slashable for the operator set (prevents key rotation while slashable)
      * @dev Keys remain in global key registry to prevent reuse

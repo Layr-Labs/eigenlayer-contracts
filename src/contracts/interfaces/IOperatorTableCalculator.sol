@@ -14,9 +14,9 @@ interface IOperatorTableCalculatorTypes {
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
      *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
-     * 
-     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
-     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+     *
+     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks.
+     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
      *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
@@ -61,9 +61,9 @@ interface IOperatorTableCalculatorTypes {
      * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
      *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
-     * 
-     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
-     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+     *
+     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks.
+     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
      *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
