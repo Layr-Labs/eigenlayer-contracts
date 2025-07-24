@@ -15,6 +15,8 @@ interface IOperatorTableCalculatorTypes {
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
+     * 
+     * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
      */
     struct BN254OperatorInfo {
         BN254.G1Point pubkey;
@@ -33,7 +35,7 @@ interface IOperatorTableCalculatorTypes {
      *
      * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
      *
-     * @dev The `totalWeights` array should be the same length as each individual `weights` array in `BN254OperatorInfo`
+     * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`
      */
     struct BN254OperatorSetInfo {
         bytes32 operatorInfoTreeRoot;
@@ -53,6 +55,8 @@ interface IOperatorTableCalculatorTypes {
      *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
+     * 
+     * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
      */
     struct ECDSAOperatorInfo {
         address pubkey;

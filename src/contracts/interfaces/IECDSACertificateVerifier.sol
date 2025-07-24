@@ -73,9 +73,10 @@ interface IECDSACertificateVerifier is
      * @notice updates the operatorSet with the operator table (ie. stake weights) and its configuration
      * @param operatorSet the operatorSet to update the operator table for
      * @param referenceTimestamp the timestamp at which the operatorInfos (ie. operator table) was sourced
-     * @param operatorInfos the operatorInfos to update the operator table with
+     * @param operatorInfos the operatorInfos to update the operator table with.
+     *        See `IOperatorTableCalculator.ECDSAOperatorInfo` for more details    
      * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
-     * @dev Only callable by the `OperatorTableUpdater`, the function on which is permissionless
+     * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call.”
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
      */
