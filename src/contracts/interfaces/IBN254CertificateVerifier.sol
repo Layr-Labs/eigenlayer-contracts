@@ -183,7 +183,7 @@ interface IBN254CertificateVerifier is
      * @dev The non-signing operatorInfo is stored upon a successful certificate verification. Once cached,
      *      merkle proofs for non-signing operators do not need to be passed in as part of the `BN254Certificate` for a given reference timestamp
      * @dev Non-signing operators are stored on the `operatorInfoTreeRoot` that is transported in the `BN254OperatorSetInfo` struct on an operator table update
-     * @dev The tree structure of the `operatorInfoTreeRoot` is as follows:
+     * @dev The tree structure of the `operatorInfoTreeRoot` is as follows. (Below is a tree of height 2 -- in practice, each tree will have a height appropriate for the total number of leaves.)
      * ```
      *                    OperatorInfoTreeRoot
      *                           |
