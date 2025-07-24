@@ -47,9 +47,16 @@ The `operatorTableUpdater` will update the via a merkle proof of the table again
  * @param weights The weights of the operator for a single operatorSet
  *
  * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
- *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+ *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
+ * 
+ * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+ *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+ *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
  *
  * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
+ *
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -303,9 +310,16 @@ The `operatorTableUpdater` will update the table via a merkle proof against the 
  * @param weights The weights of the operator for a single operatorSet
  *
  * @dev The `weights` array is as a list of arbitrary stake types. For example,
- *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+ *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
+ * 
+ * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+ *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+ *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
  *
  * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
+ *
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct BN254OperatorInfo {
     BN254.G1Point pubkey;
@@ -324,7 +338,9 @@ struct BN254OperatorInfo {
  *
  * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
  *
- * @dev The `totalWeights` array should be the same length as each individual `weights` array in `BN254OperatorInfo`
+ * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`.
+ *      For example, if there are 3 operators with individual weights arrays with composition of  [delegated_stake, slashable_stake]
+ *      of [100, 200], [300, 400], and [500, 600], the `totalWeights` array would be [900, 1200]
  */
 struct BN254OperatorSetInfo {
     bytes32 operatorInfoTreeRoot;
@@ -619,7 +635,7 @@ function isReferenceTimestampSet(
  * @param referenceTimestamp The reference timestamp
  * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
  * @dev The stake weights are defined in the AVS's `OperatorTableCalculator` and transported by the multichain protocol. An example
- *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an index in the array
+ *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array
  * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
  * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
  */

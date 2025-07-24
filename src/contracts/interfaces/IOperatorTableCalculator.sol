@@ -12,7 +12,12 @@ interface IOperatorTableCalculatorTypes {
      * @param weights The weights of the operator for a single operatorSet
      *
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
-     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+     *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
+     * 
+     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+     *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
      *
@@ -35,7 +40,9 @@ interface IOperatorTableCalculatorTypes {
      *
      * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
      *
-     * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`
+     * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`.
+     *      For example, if there are 3 operators with individual weights arrays with composition of  [delegated_stake, slashable_stake]
+     *      of [100, 200], [300, 400], and [500, 600], the `totalWeights` array would be [900, 1200]
      */
     struct BN254OperatorSetInfo {
         bytes32 operatorInfoTreeRoot;
@@ -52,7 +59,12 @@ interface IOperatorTableCalculatorTypes {
      * @param weights The weights of the operator for a single operatorSet
      *
      * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
-     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+     *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
+     * 
+     * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+     *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
      *
@@ -91,7 +103,7 @@ interface IOperatorTableCalculator {
      * @return weights The stake weights for each operator in the operatorSet, this is a 2D array where the first index is the operator
      *         and the second index is the stake weight.
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
-     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array
      * @dev This function can be used by the AVS to distribute stake-weighted tasks to operators. Specifically, the AVS should read this function
      *      at the `referenceTimestamp` for which the operator table was updated on the destination chains
      */
@@ -105,7 +117,7 @@ interface IOperatorTableCalculator {
      * @param operator The operator to get the weight for
      * @return weights The weights for the operator in the operatorSet
      * @dev The `weights` array is as a list of arbitrary stake types. For example,
-     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an index in the array
+     *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array
      */
     function getOperatorWeights(
         OperatorSet calldata operatorSet,
