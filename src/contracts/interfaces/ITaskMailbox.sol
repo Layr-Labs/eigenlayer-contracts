@@ -43,15 +43,11 @@ interface ITaskMailboxTypes {
      * @param taskMetadata Additional metadata for task execution
      */
     struct ExecutorOperatorSetTaskConfig {
-        // Storage slot 1: taskHook (20 bytes) + taskSLA (12 bytes) = 32 bytes
         IAVSTaskHook taskHook;
         uint96 taskSLA;
-        // Storage slot 2: feeToken (20 bytes) + curveType (1 byte) = 21 bytes (11 bytes unused)
         IERC20 feeToken;
         IKeyRegistrarTypes.CurveType curveType;
-        // Storage slot 3: feeCollector (20 bytes) = 20 bytes (12 bytes unused)
         address feeCollector;
-        // Dynamic storage slots
         Consensus consensus;
         bytes taskMetadata;
     }
@@ -96,20 +92,16 @@ interface ITaskMailboxTypes {
      * @param result Task execution result data
      */
     struct Task {
-        // Storage slot 1: creator (20 bytes) + creationTime (12 bytes) = 32 bytes
         address creator;
         uint96 creationTime;
-        // Storage slot 2: avs (20 bytes) + avsFee (12 bytes) = 32 bytes
         address avs;
         uint96 avsFee;
-        // Storage slot 3: refundCollector (20 bytes) + executorOperatorSetId (4 bytes) + feeSplit (2 bytes) + status (1 byte) + isFeeRefunded (1 byte) + referenceTimestamp (4 bytes) = 32 bytes
         address refundCollector;
         uint32 executorOperatorSetId;
         uint16 feeSplit;
         TaskStatus status;
         bool isFeeRefunded;
         uint32 operatorTableReferenceTimestamp;
-        // Dynamic storage slots
         ExecutorOperatorSetTaskConfig executorOperatorSetTaskConfig;
         bytes payload;
         bytes executorCert;
