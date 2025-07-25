@@ -10,13 +10,13 @@ EigenLayer brings together Restakers, Operators, and Autonomous Verifiable Servi
 
 The deployments on `mainnet`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` are on the below versions:
 
-| Environment | Version | Supports Multichain |
-| -------- | -------- | -------- | 
-| Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | No |
-| Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | No |
-| Testnet Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | Yes (source & destination) |
-| Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | No |
-| Testnet Base Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | Yes (destination) |
+| Environment | Version | Core Protocol Deployed | Supports Native Restaking | Supports Multichain |
+| -------- | -------- | -------- | -------- | -------- | 
+| Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No (pending) |
+| Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
+| Testnet Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | Yes | No | Yes (source & destination) |
+| Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
+| Testnet Base Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
