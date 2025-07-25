@@ -1240,7 +1240,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertApproxEqAbs(prevShares - slashedShares, curShares, 1e2, err);
     }
 
-    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
+    /// @dev Validates behavior of "restaking", i.e. that the funds can be slashed twice
     function assert_Snap_StakerWithdrawableShares_AfterAVSSlash_BCSlash(
         User staker,
         AllocateParams memory allocateParams,
@@ -1287,7 +1287,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     /**
-     * @dev Validates behavior of "restaking", ie. that the funds can be slashed twice. Also validates
+     * @dev Validates behavior of "restaking", i.e. that the funds can be slashed twice. Also validates
      *      the edge case where a validator is proven prior to the BC slash.
      * @dev These bounds are based off of rounding when avs and bc slashing occur together
      */

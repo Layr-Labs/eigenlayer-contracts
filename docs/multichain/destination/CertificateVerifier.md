@@ -44,13 +44,19 @@ The `operatorTableUpdater` will update the via a merkle proof of the table again
 /**
  * @notice A struct that contains information about a single operator for an ECDSA signing key
  * @param pubkey The address of the signing ECDSA key of the operator and not the operator address itself.
- * This is read from the KeyRegistrar contract.
  * @param weights The weights of the operator for a single operatorSet
- * 
+ *
  * @dev The `weights` array can be defined as a list of arbitrary stake types. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+ *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
  * 
+ * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+ *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+ *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
+ *
  * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
+ *
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct ECDSAOperatorInfo {
     address pubkey;
@@ -58,14 +64,15 @@ struct ECDSAOperatorInfo {
 }
 
 /**
- * @notice updates the operator table
+ * @notice updates the operatorSet with the operator table (i.e. stake weights) and its configuration
  * @param operatorSet the operatorSet to update the operator table for
- * @param referenceTimestamp the timestamp at which the operatorInfos were sourced
- * @param operatorInfos the operatorInfos to update the operator table with
- * @param operatorSetConfig the configuration of the operatorSet
- * @dev Only callable by the `OperatorTableUpdater`
+ * @param referenceTimestamp the timestamp at which the operatorInfos (i.e. operator table) was sourced
+ * @param operatorInfos the operatorInfos to update the operator table with.
+ *        See `IOperatorTableCalculator.ECDSAOperatorInfo` for more details    
+ * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
+ * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
  * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
- * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
+ *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
  */
 function updateOperatorTable(
     OperatorSet calldata operatorSet,
@@ -106,7 +113,7 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
 ```solidity
 /**
  * @notice A Certificate used to verify a set of ECDSA signatures
- * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
+ * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
  * @param messageHash the hash of the message that was signed by the operators. 
  * The messageHash should be calculated using `calculateCertificateDigest`
  * @param sig the concatenated signature of each signing operator, in ascending order of signer address
@@ -119,13 +126,19 @@ struct ECDSACertificate {
 }
 
 /**
- * @notice verifies a certificate
+ * @notice verifies a certificate against the operator table for a given reference timestamp
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
  * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
- * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
+ * index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo` struct
  * @return signers array of addresses that signed the certificate
  * @dev This function DOES NOT support smart contact signatures
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
@@ -133,7 +146,7 @@ function verifyCertificate(
 ) external returns (uint256[] memory signedStakes, address[] memory signers);
 ```
 
-Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest).
+Verifies an ECDSA certificate by checking individual signatures from operators. Each individual operator must sign off on a `signableDigest` given by [`calculateCertificateDigest`](#calculatecertificatedigest). **The `referenceTimestamp` of the certificate is the time at which the operator table for a given certificate was sourced. It is not the timestamp at which the certificate was created.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
@@ -160,14 +173,21 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
 ```solidity
 /**
  * @notice verifies a certificate and makes sure that the signed stakes meet
- * provided portions of the total stake on the AVS
+ * provided portions of the total stake weight on the AVS
  * @param operatorSet the operatorSet to verify the certificate for
  * @param cert a certificate
- * @param totalStakeProportionThresholds the proportion, in BPS, of total stake that
- * the signed stake of the certificate should meet. Each index corresponds to 
+ * @param totalStakeProportionThresholds the proportion, in BPS, of total stake weight that
+ * the signed stake of the certificate should meet. Each index corresponds to
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
  * @return Whether or not the certificate is valid and meets thresholds
  * @return signers array of addresses that signed the certificate
+ * @dev This function DOES NOT support smart contact signatures
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
  */
 function verifyCertificateProportion(
     OperatorSet calldata operatorSet,
@@ -197,11 +217,18 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * provided nominal stake thresholds
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @param totalStakeNominalThresholds the nominal amount of stake that
+ * @param totalStakeNominalThresholds the nominal amount of total stake weight that
  * the signed stake of the certificate should meet. Each index corresponds to
  * a stake type in the `weights` array in the `ECDSAOperatorInfo`
- * @return Whether or not certificate is valid and meets nominal thresholds
+ * @return Whether or not the certificate is valid and meets thresholds
  * @return signers array of addresses that signed the certificate
+ * @dev This function DOES NOT support smart contact signatures
+ * @dev The `referenceTimestamp` in the `ECDSACertificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
  */
 function verifyCertificateNominal(
     OperatorSet calldata operatorSet,
@@ -249,6 +276,8 @@ The ECDSA Certificate Verifier uses a modified domain separator that intentional
  * @return The EIP-712 digest
  * @dev This function is public to allow offchain tools to calculate the same digest
  * @dev Note: This does not support smart contract based signatures for multichain
+ * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
+ *      multiple destination chains
  */
 function calculateCertificateDigest(
     uint32 referenceTimestamp,
@@ -279,32 +308,39 @@ The `operatorTableUpdater` will update the table via a merkle proof against the 
  * @notice A struct that contains information about a single operator for a given BN254 operatorSet
  * @param pubkey The G1 public key of the operator
  * @param weights The weights of the operator for a single operatorSet
- * 
+ *
  * @dev The `weights` array is as a list of arbitrary stake types. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ *      it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]. Each stake type is an element in the array.
+ *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
  * 
+ * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks. 
+ *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would 
+ *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
+ *
  * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
+ *
+ * @dev For each operator, the `weights` array should be the same length and composition, otherwise verification issues can arise
  */
 struct BN254OperatorInfo {
     BN254.G1Point pubkey;
     uint256[] weights;
 }
 
-
 /**
- * @notice A struct that contains information about all operators for a given operatorSet
- * @param operatorInfoTreeRoot The root of the operatorInfo tree. Each leaf is a `BN254OperatorInfo` struct
+ * @notice A struct that contains information about all operators for a given BN254OperatorSet
+ * @param operatorInfoTreeRoot The root of the operatorInfo tree
  * @param numOperators The number of operators in the operatorSet
  * @param aggregatePubkey The aggregate G1 public key of the operators in the operatorSet
  * @param totalWeights The total stake weights of the operators in the operatorSet
  *
  * @dev The operatorInfoTreeRoot is the root of a merkle tree that contains the operatorInfos for each operator in the operatorSet.
- * It is calculated in this function and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
+ *      It is calculated on-chain by the `BN254TableCalculator` and used by the `IBN254CertificateVerifier` to verify stakes against the non-signing operators
  *
- * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract or using the core `KeyRegistrar` contract.
- * See `BN254TableCalculatorBase` in the middleware repo for an example implementation.
- * 
- * @dev The `totalWeights` array should be the same length as each individual `weights` array in `operatorInfos`.
+ * @dev Retrieval of the `aggregatePubKey` depends on maintaining a key registry contract, see `KeyRegistrar` for an example implementation
+ *
+ * @dev The `totalWeights` array should be the same length and composition as each individual `weights` array in `BN254OperatorInfo`.
+ *      For example, if there are 3 operators with individual weights arrays with composition of  [delegated_stake, slashable_stake]
+ *      of [100, 200], [300, 400], and [500, 600], the `totalWeights` array would be [900, 1200]
  */
 struct BN254OperatorSetInfo {
     bytes32 operatorInfoTreeRoot;
@@ -314,14 +350,15 @@ struct BN254OperatorSetInfo {
 }
 
 /**
- * @notice updates the operator table with stake weights for an operatorSet
+ * @notice updates the operatorSet with the operator table (i.e. stake weights) and its configuration
  * @param operatorSet the operatorSet to update the operator table for
- * @param referenceTimestamp the timestamp at which the operatorInfos were sourced via the `globalTableRoot`
- * @param operatorSetInfo the operatorInfos to update the operator table with
+ * @param referenceTimestamp the timestamp at which the operatorSetInfo (i.e. operator table) was sourced
+ * @param operatorSetInfo the operator table for this operatorSet. This includes the `totalWeights`, `operatorInfoTreeRoot`, `aggregatePubkey`, and `numOperators`.
+ *        See `IOperatorTableCalculator.BN254OperatorSetInfo` for more details
  * @param operatorSetConfig the configuration of the operatorSet, which includes the owner and max staleness period
- * @dev Only callable by the `OperatorTableUpdater`
+ * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
  * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
- * @dev The `referenceTimestamp` must be greater than the latest reference timestamp for the given operatorSet
+ *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
  */
 function updateOperatorTable(
     OperatorSet calldata operatorSet,
@@ -361,12 +398,14 @@ The contract supports 3 verification patterns:
 
 ```solidity
 /**
- * @notice A BN254 Certificate
- * @param referenceTimestamp a reference timestamp that corresponds to an operator table update
- * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
- * @param signature the G1 signature of the message
- * @param apk the G2 aggregate public key
- * @param nonSignerWitnesses an array of witnesses of non-signing operators
+ * @notice A struct that contains information about a single operator for a given BN254 operatorSet
+ * @param pubkey The G1 public key of the operator
+ * @param weights The weights of the operator for a single operatorSet
+ *
+ * @dev The `weights` array is as a list of arbitrary stake types. For example,
+ * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
+ *
+ * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
  */
 struct BN254Certificate {
     uint32 referenceTimestamp;
@@ -377,19 +416,26 @@ struct BN254Certificate {
 }
 
 /**
- * @notice verifies a certificate
+ * @notice verifies a certificate against the operator table for a given reference timestamp
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert a certificate
- * @return signedStakes total stake weight that signed the certificate for each stake type. Each index corresponds to a stake type in the `weights` array in the `ECDSAOperatorInfo`
- * @return signers array of addresses that signed the certificate
+ * @return totalSignedStakeWeights total stake weight that signed the certificate for each stake type. Each
+ *         index corresponds to a stake type in the `weights` array in the `BN254OperatorSetInfo` struct
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
  */
 function verifyCertificate(
     OperatorSet memory operatorSet,
     BN254Certificate memory cert
-) external returns (uint256[] memory signedStakes);
+) external returns (uint256[] memory totalSignedStakeWeights);
 ```
 
-Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information.
+Verifies a BN254 certificate by checking the aggregated signature against the operator set's aggregate public key. *Note: This function is non-view because the non-signers are cached in storage.*. See [cachingMechanism](#caching-mechanism) for more information. **The `referenceTimestamp` of the certificate is the time at which the operator table for a given certificate was sourced. It is not the timestamp at which the certificate was created.**
 
 *Process*:
 * Validates the certificate timestamp against staleness requirements
@@ -415,13 +461,20 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 ```solidity
 /**
  * @notice verifies a certificate and makes sure that the signed stakes meet
- * provided portions of the total stake on the AVS
+ * provided portions of the total stake weight on the AVS
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert the certificate
- * @param totalStakeProportionThresholds the proportion, in BPS,of total stake that
- * the signed stake of the certificate should meet. Each index corresponds to
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
- * @return whether or not certificate is valid and meets proportion thresholds
+ * @param totalStakeProportionThresholds the proportion, in BPS, of total stake weight that
+ *        the signed stake of the certificate should meet. Each index corresponds to
+ *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
+ * @return Whether or not certificate is valid and meets proportion thresholds
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
  */
 function verifyCertificateProportion(
     OperatorSet memory operatorSet,
@@ -454,9 +507,16 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * @param operatorSet the operatorSet that the certificate is for
  * @param cert the certificate
  * @param totalStakeNominalThresholds the nominal amount of stake that
- * the signed stake of the certificate should meet. Each index corresponds to
- * a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
+ *        the signed stake of the certificate should meet. Each index corresponds to
+ *        a stake type in the `totalWeights` array in the `BN254OperatorSetInfo`
  * @return Whether or not certificate is valid and meets nominal thresholds
+ * @dev The `referenceTimestamp` in the `BN254Certificate` is used to determine the operator table to use for the verification
+ * @dev AVS' are responsible for managing potential race conditions when certificates are signed close to operator table updates. Some examples include:
+ *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
+ *         wants to only confirm tasks against the *latest* certificate
+ *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
+ * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
  */
 function verifyCertificateNominal(
     OperatorSet memory operatorSet,
@@ -485,10 +545,12 @@ Verifies that a certificate meets specified nominal (absolute) stake thresholds 
 /**
  * @notice A witness for an operator, used to identify the non-signers for a given certificate
  * @param operatorIndex the index of the nonsigner in the `BN254OperatorInfo` tree
- * @param operatorInfoProofs merkle proof of the nonsigner at the index. Empty if the non-signing operator is already stored from a previous verification
- * @param operatorInfo the `BN254OperatorInfo` for the operator. Empty if the non-signing operator is already stored from a previous verification
- * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification that includes a merkle proof for the non-signing operator. This is done to avoid
- *      the need for resupplying proofs of non-signing operators for each certificate verification.
+ * @param operatorInfoProofs merkle proof of the nonsigner at the index.
+ *        Leave empty if the non-signing operator is already stored from a previous verification at the same `referenceTimestamp`
+ * @param operatorInfo the `BN254OperatorInfo` for the operator.
+ *        Leave empty if the non-signing operator is already stored from a previous verification at the same `referenceTimestamp`
+ * @dev Non-signing operators are stored in the `BN254CertificateVerifier` upon the first successful certificate verification that includes a merkle proof for the non-signing operator.
+ *      This is done to avoid the need to provide proofs for non-signing operators for each certificate with the same `referenceTimestamp`
  */
 struct BN254OperatorInfoWitness {
     uint32 operatorIndex;
@@ -497,7 +559,7 @@ struct BN254OperatorInfoWitness {
 }
 ```
 
-The `BN254CertificateVerifier` requires merkle proofs of nonSigning operators. When an operator is proven against an `operatorInfoTreeRoot` for the first time, it will be stored in the `operatorInfos` mapping so it doesn't need to be proven for future `referenceTimestamps`. This results in the stake table of all proven operators being cached over time for a given `operatorSet's` table. Once cached, future `certificates` do not need to pass in a proof for the `nonSigner`. 
+The `BN254CertificateVerifier` requires merkle proofs of nonSigning operators. When an operator is proven against an `operatorInfoTreeRoot` for the first time, it will be stored in the `operatorInfos` mapping so it doesn't need to be proven for future `referenceTimestamps`. Caching the non-signer decreases the verification costs for certificates at a given reference timestamp, since merkle proofs for non-signing operators do not have to be re-supplied. Once cached, future `certificates` do not need to pass in a proof for the `nonSigner`. 
 
 ```mermaid
 flowchart TB
@@ -548,6 +610,8 @@ Both the `BN254CertificateVerifier` and `ECDSACertificateVerifier` share the fol
  *         updated each time an operator table is updated
  * @param operatorSet The operatorSet to get the latest reference timestamp of
  * @return The latest reference timestamp, 0 if the operatorSet has never been updated
+ * @dev The latest reference timestamp is set when the operator table is updated
+ * @dev The reference timestamp denotes the timestamp at which the operator table was calculated by the multichain protocol
  */
 function latestReferenceTimestamp(
     OperatorSet memory operatorSet
@@ -570,6 +634,8 @@ function isReferenceTimestampSet(
  * @param operatorSet The operator set to calculate stakes for
  * @param referenceTimestamp The reference timestamp
  * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+ * @dev The stake weights are defined in the AVS's `OperatorTableCalculator` and transported by the multichain protocol. An example
+ *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array
  * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
  * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
  */

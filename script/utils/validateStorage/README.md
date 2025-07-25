@@ -20,4 +20,4 @@ npx ts-node script/upgrade/validateStorage.ts --old <path_to_old_layout_csv> --n
 ## Limitations
 Storage slot validation is NOT comprehensive, and errs on the side of caution. We recommend using this script as a tool along with manual storage slot verification. The validation is opinionated on storage for each contract consuming 50 slots and gaps being sized accordingly.
 
-The script does not validate legal type changes (ie. from bool to uint8) and errors out if the types of slots have updated, including having different struct names. A manual check will need to be done to validate this conversion. In addition, the script does not support non-contiguous gaps.
+The script does not validate legal type changes (i.e. from bool to uint8) and errors out if the types of slots have updated, including having different struct names. A manual check will need to be done to validate this conversion. In addition, the script does not support non-contiguous gaps.

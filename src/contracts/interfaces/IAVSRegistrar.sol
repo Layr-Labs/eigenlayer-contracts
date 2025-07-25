@@ -19,8 +19,7 @@ interface IAVSRegistrar {
     ) external;
 
     /**
-     * @notice Called by the AllocationManager when an operator is deregistered from
-     * one or more operator sets. If this method reverts, it is ignored.
+     * @notice Called by the AllocationManager when an operator is deregistered from one or more operator sets
      * @param operator the deregistering operator
      * @param avs the AVS the operator is deregistering from. This should be the same as IAVSRegistrar.avs()
      * @param operatorSetIds the list of operator set ids being deregistered from
