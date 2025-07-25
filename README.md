@@ -14,9 +14,9 @@ The deployments on `mainnet`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` 
 | -------- | -------- | -------- | -------- | -------- | 
 | Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No (pending) |
 | Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | Yes | No | Yes (source & destination) |
+| Testnet Sepolia | [`v1.8.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-rc.0) | Yes | No | Yes (source & destination) |
 | Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Base Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | No | No | Yes (destination) |
+| Testnet Base Sepolia | [`v1.8.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-rc.0) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
@@ -240,11 +240,12 @@ The following strategies differ significantly from the other strategies deployed
 
 ###### AVS
 
-The following contracts are be used by AVSs to manage and declare releases. 
+The following contracts are used by AVSs.
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
 | [`ReleaseManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/core/ReleaseManager.sol) | [`0x59c8D715DCa616e032B744a753C017c9f3E16bf4`](https://sepolia.etherscan.io/address/0x59c8D715DCa616e032B744a753C017c9f3E16bf4) | [`0xAe14...3A15`](https://sepolia.etherscan.io/address/0xAe145081D4fd04Af9e0Ca38b35DC0113c3064A15) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`TaskMailbox`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.0-rc.0/src/contracts/avs/task/TaskMailbox.sol) | [`0xB99CC53e8db7018f557606C2a5B066527bF96b26`](https://sepolia.etherscan.io/address/0xB99CC53e8db7018f557606C2a5B066527bF96b26) | [`0xA30a...1537`](https://sepolia.etherscan.io/address/0xA30aFa32052428225F930f128e3835a2c73a1537) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multichain - Source
 
@@ -355,6 +356,14 @@ The following strategies differ significantly from the other strategies deployed
 | [`OperatorTableUpdater`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/OperatorTableUpdater.sol) | [`0xB02A15c6Bd0882b35e9936A9579f35FB26E11476`](https://sepolia.basescan.org/address/0xB02A15c6Bd0882b35e9936A9579f35FB26E11476) | [`0x1D4d...3e17C`](https://sepolia.basescan.org/address/0x1D4d6054BD11A5711ad7c5d3E376C987a603e17C) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`ECDSACertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/ECDSACertificateVerifier.sol) | [`0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F`](https://sepolia.basescan.org/address/0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F) | [`0x3D8c...2A477`](https://sepolia.basescan.org/address/0x3D8c4Ac89040aa25168F32407274F239Ab52A477) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/BN254CertificateVerifier.sol) | [`0xff58A373c18268F483C1F5cA03Cf885c0C43373a`](https://sepolia.basescan.org/address/0xff58A373c18268F483C1F5cA03Cf885c0C43373a) | [`0x854d...f00b5`](https://sepolia.basescan.org/address/0x854dc9e5d011B060bf77B1a492302C349f2f00b5) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### AVS
+
+The following contracts are used by AVSs.
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`TaskMailbox`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.0-rc.0/src/contracts/avs/task/TaskMailbox.sol) | [`0xB99CC53e8db7018f557606C2a5B066527bF96b26`](https://sepolia.basescan.org/address/0xB99CC53e8db7018f557606C2a5B066527bF96b26) | [`0x0bf1...0E85`](https://sepolia.basescan.org/address/0x0bf1fD127176310375C4d8852066acbD4Fcf0E85) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 
