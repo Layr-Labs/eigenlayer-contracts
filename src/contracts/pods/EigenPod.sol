@@ -314,7 +314,10 @@ contract EigenPod is
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
         uint256 remainder = msg.value - totalFee;
-
+        // Refund any excess ETH to the sender BEFORE making any external calls to prevent potential reentrancy vulnerabilities.
+        if (remainder > 0) {
+            Address.sendValue(payable(msg.sender), remainder);
+        }
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
 
@@ -333,11 +336,6 @@ contract EigenPod is
             if (sourcePubkeyHash == targetPubkeyHash) emit SwitchToCompoundingRequested(sourcePubkeyHash);
             else emit ConsolidationRequested(sourcePubkeyHash, targetPubkeyHash);
         }
-
-        // Refund remainder of msg.value
-        if (remainder > 0) {
-            Address.sendValue(payable(msg.sender), remainder);
-        }
     }
 
     /// @inheritdoc IEigenPod
@@ -348,7 +346,10 @@ contract EigenPod is
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
         uint256 remainder = msg.value - totalFee;
-
+        // Refund any excess ETH to the sender BEFORE making any external calls to prevent potential reentrancy vulnerabilities.
+        if (remainder > 0) {
+            Address.sendValue(payable(msg.sender), remainder);
+        }
         for (uint256 i = 0; i < requests.length; i++) {
             WithdrawalRequest calldata request = requests[i];
             bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
@@ -361,11 +362,6 @@ contract EigenPod is
             // Emit event depending on whether the request is a full exit or a partial withdrawal
             if (request.amountGwei == 0) emit ExitRequested(pubkeyHash);
             else emit WithdrawalRequested(pubkeyHash, request.amountGwei);
-        }
-
-        // Refund remainder of msg.value
-        if (remainder > 0) {
-            Address.sendValue(payable(msg.sender), remainder);
         }
     }
 
