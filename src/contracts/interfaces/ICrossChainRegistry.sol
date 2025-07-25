@@ -81,11 +81,13 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event TableUpdateCadenceSet(uint32 tableUpdateCadence);
 }
 
+/// @notice The CrossChainRegistry allows AVSs to register their operatorSets for cross-chain transport by the multichain protocol
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
     /**
-     * @notice Creates a generation reservation
+     * @notice Creates a generation reservation, which transports the operator table
      * @param operatorSet the operatorSet to make a reservation for
-     * @param operatorTableCalculator the address of the operatorTableCalculator
+     * @param operatorTableCalculator the address of the operatorTableCalculator. This contract is deployed (or a template is used) by the AVS
+     *                                to calculate the stake weights for the operatorSet. See `IOperatorTableCalculator` for more details
      * @param config the config to set for the operatorSet
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
@@ -125,7 +127,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Sets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to set the operatorSetConfig for
-     * @param config the config to set
+     * @param config the config to set, which includes the owner of the operatorSet and the max staleness period
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active generation reservation
      * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
@@ -150,7 +152,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
-     * @notice Sets the table update cadence in seconds
+     * @notice Sets the table update cadence in seconds. This is the frequency at which operator tables are expected to be updated on all destination chains
      * @param tableUpdateCadence the table update cadence
      * @dev msg.sender must be the owner of the CrossChainRegistry
      * @dev The table update cadence cannot be 0

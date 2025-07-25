@@ -53,15 +53,16 @@ A generation reservation registers the operatorSet to be included in the `Global
 
 ```solidity
 /**
- * @notice Creates a generation reservation
+ * @notice Creates a generation reservation, which transports the operator table
  * @param operatorSet the operatorSet to make a reservation for
- * @param operatorTableCalculator the address of the operatorTableCalculator
+ * @param operatorTableCalculator the address of the operatorTableCalculator. This contract is deployed (or a template is used) by the AVS
+ *                                to calculate the stake weights for the operatorSet. See `IOperatorTableCalculator` for more details
  * @param config the config to set for the operatorSet
  * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
  * @dev It is expected that the AVS has:
  *      - Deployed or is using a generalizable `OperatorTableCalculator` to calculate its operator's stake weights
- *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management 
+ *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management
  *           - Valid Key Types are given in the `IKeyRegistrarTypes.CurveType` enum. The `KeyType` must not be `NONE`
  *      - Created an operatorSet in the `AllocationManager`
  */
