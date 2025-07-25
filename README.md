@@ -8,14 +8,15 @@ EigenLayer brings together Restakers, Operators, and Autonomous Verifiable Servi
 
 ## Deployments
 
-The deployments on `mainnet`, `holesky`, `sepolia`, and `hoodi` are on the below versions:
+The deployments on `mainnet`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` are on the below versions:
 
-| Environment | Version |
-| -------- | -------- |
-| Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) |
-| Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) |
-| Testnet Sepolia | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) |
-| Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) |
+| Environment | Version | Core Protocol Deployed | Supports Native Restaking | Supports Multichain |
+| -------- | -------- | -------- | -------- | -------- | 
+| Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No (pending) |
+| Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
+| Testnet Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | Yes | No | Yes (source & destination) |
+| Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
+| Testnet Base Sepolia | [`v1.7.0-rc.4`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.7.0-rc.4) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
@@ -200,6 +201,7 @@ You can view the deployed contract addresses below, or check out the code itself
 | [`RewardsCoordinator`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/core/RewardsCoordinator.sol) | [`0x5ae8152fb88c26ff9ca5C014c94fca3c68029349`](https://sepolia.etherscan.io/address/0x5ae8152fb88c26ff9ca5C014c94fca3c68029349) | [`0xcC30...7940`](https://sepolia.etherscan.io/address/0xcC305562B01bec562D13A40ef8781e313AFE7940) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`AllocationManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.5.0/src/contracts/core/AllocationManager.sol) | [`0x42583067658071247ec8CE0A516A58f682002d07`](https://sepolia.etherscan.io/address/0x42583067658071247ec8CE0A516A58f682002d07) | [`0xB87A...7Db7`](https://sepolia.etherscan.io/address/0xB87AeeA46BB3a3050D277272E33b011922537Db7) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`PermissionController`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PermissionController.sol) | [`0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37`](https://sepolia.etherscan.io/address/0x44632dfBdCb6D3E21EF613B0ca8A6A0c618F5a37) | [`0x59B1...f525`](https://sepolia.etherscan.io/address/0x59B11b191B572888703E150E45F5015e0fFcf525) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`KeyRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/permissions/KeyRegistrar.sol) | [`0xA4dB30D08d8bbcA00D40600bee9F029984dB162a`](https://sepolia.etherscan.io/address/0xA4dB30D08d8bbcA00D40600bee9F029984dB162a) | [`0xe61E...87CD`](https://sepolia.etherscan.io/address/0xe61E638650DC91Fe0f59bBBf5315517337d687CD) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Strategies
 
@@ -235,6 +237,30 @@ The following strategies differ significantly from the other strategies deployed
 | -------- | -------- | -------- | -------- | 
 | [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0/src/contracts/token/Eigen.sol) | [`0x0011FA2c512063C495f77296Af8d195F33A8Dd38`](https://sepolia.etherscan.io/address/0x0011FA2c512063C495f77296Af8d195F33A8Dd38) | [`0x7ec6...BD6F`](https://sepolia.etherscan.io/address/0x7ec6a02235Bf8d8a1fDB894AD2E1573192bfBD6F) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/BackingEigen.sol) | [`0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c`](https://sepolia.etherscan.io/address/0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c) | [`0x1298...3173`](https://sepolia.etherscan.io/address/0x12988B679AA497C30A8D1850eCC4Dc7700383173) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### AVS
+
+The following contracts are be used by AVSs to manage and declare releases. 
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`ReleaseManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/core/ReleaseManager.sol) | [`0x59c8D715DCa616e032B744a753C017c9f3E16bf4`](https://sepolia.etherscan.io/address/0x59c8D715DCa616e032B744a753C017c9f3E16bf4) | [`0xAe14...3A15`](https://sepolia.etherscan.io/address/0xAe145081D4fd04Af9e0Ca38b35DC0113c3064A15) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multichain - Source
+
+The multichain protocol expects AVSs to register on the source chain. AVS's stakes are then transported to supported destination chains. For the sepolia network, the destination chains are sepolia and base-sepolia. 
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`CrossChainRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/source/CrossChainRegistry.sol) | [`0x287381B1570d9048c4B4C7EC94d21dDb8Aa1352a`](https://sepolia.etherscan.io/address/0x287381B1570d9048c4B4C7EC94d21dDb8Aa1352a) | [`0x2071...8f48b`](https://sepolia.etherscan.io/address/0x20715838d4Cf054577cd2b89648D9cFC8994f48b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multichain - Destination
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`OperatorTableUpdater`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/OperatorTableUpdater.sol) | [`0xB02A15c6Bd0882b35e9936A9579f35FB26E11476`](https://sepolia.etherscan.io/address/0xB02A15c6Bd0882b35e9936A9579f35FB26E11476) | [`0xABbc...9473`](https://sepolia.etherscan.io/address/0xABbc13111F059D64A5BB9056399018c11D5C9473) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`ECDSACertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/ECDSACertificateVerifier.sol) | [`0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F`](https://sepolia.etherscan.io/address/0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F) | [`0x184D...3Eb4f`](https://sepolia.etherscan.io/address/0x184Dcf2c01e237644363925FBB0C0Dce88a3Eb4f) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/BN254CertificateVerifier.sol) | [`0xff58A373c18268F483C1F5cA03Cf885c0C43373a`](https://sepolia.etherscan.io/address/0xff58A373c18268F483C1F5cA03Cf885c0C43373a) | [`0x3B18...B41fC`](https://sepolia.etherscan.io/address/0x3B1842EB1e785b975316A4161044A76CaE6B41fC) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 
@@ -311,6 +337,34 @@ The following strategies differ significantly from the other strategies deployed
 | [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.4.1/src/contracts/permissions/PauserRegistry.sol) | - | [`0x64D7...c13D`](https://hoodi.etherscan.io/address/0x64D78399B0fa32EA72959f33edCF313159F3c13D) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xE332...2d15`](https://hoodi.etherscan.io/address/0xE3328cb5068924119d6170496c4AB2dD12c12d15) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xE7f4...2257`](https://hoodi.etherscan.io/address/0xE7f4E30D2619273468afe9EC0Acf805E55532257) | |
+
+</details>
+
+
+
+<details>
+    <summary>Testnet Base Sepolia</summary>
+
+
+**Note: Testnet Base Sepolia only supports verification of tasks from stake that lives on Sepolia. Standard core protocol functionality (restaking, slashing) does not exist on Base Sepolia.**
+
+###### Multichain - Destination
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`OperatorTableUpdater`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/OperatorTableUpdater.sol) | [`0xB02A15c6Bd0882b35e9936A9579f35FB26E11476`](https://sepolia.basescan.org/address/0xB02A15c6Bd0882b35e9936A9579f35FB26E11476) | [`0x1D4d...3e17C`](https://sepolia.basescan.org/address/0x1D4d6054BD11A5711ad7c5d3E376C987a603e17C) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`ECDSACertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/ECDSACertificateVerifier.sol) | [`0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F`](https://sepolia.basescan.org/address/0xb3Cd1A457dEa9A9A6F6406c6419B1c326670A96F) | [`0x3D8c...2A477`](https://sepolia.basescan.org/address/0x3D8c4Ac89040aa25168F32407274F239Ab52A477) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/multichain/destination/BN254CertificateVerifier.sol) | [`0xff58A373c18268F483C1F5cA03Cf885c0C43373a`](https://sepolia.basescan.org/address/0xff58A373c18268F483C1F5cA03Cf885c0C43373a) | [`0x854d...f00b5`](https://sepolia.basescan.org/address/0x854dc9e5d011B060bf77B1a492302C349f2f00b5) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multisigs
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- | 
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.7.0-rc.4/src/contracts/permissions/PauserRegistry.sol) | - | [`0x6ffE...672B`](https://sepolia.basescan.org/address/0x6ffE77C321a773e2A27B0B0a31C5e1bBda83672B) | |
+| [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xbe2F...0b5`](https://sepolia.basescan.org/address/0xbe2F96Efff467c6773Dc91eA62Ab34C73195a0b5) | |
+| [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x2DD9BDDf299C846f61C0105905f9a60ee99242d6`](https://sepolia.basescan.org/address/0x2DD9BDDf299C846f61C0105905f9a60ee99242d6) | - | |
+| [`Operations Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x4ACA7e09eF90612941A9185A6690Dbe9e39aae8f`](https://sepolia.basescan.org/address/0x4ACA7e09eF90612941A9185A6690Dbe9e39aae8f) | - | |
+| [`Multichain Deployer Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xA591635DE4C254BD3fa9C9Db9000eA6488344C28`](https://sepolia.basescan.org/address/0xA591635DE4C254BD3fa9C9Db9000eA6488344C28) | - | |
 
 </details>
 
