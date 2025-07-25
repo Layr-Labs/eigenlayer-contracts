@@ -141,22 +141,22 @@ contract TaskMailbox is
         bytes32 taskHash = keccak256(abi.encode(_globalTaskCount, address(this), block.chainid, taskParams));
         _globalTaskCount = _globalTaskCount + 1;
 
-        _tasks[taskHash] = Task(
-            msg.sender,
-            block.timestamp.toUint96(),
-            taskParams.executorOperatorSet.avs,
-            avsFee,
-            taskParams.refundCollector,
-            taskParams.executorOperatorSet.id,
-            feeSplit,
-            TaskStatus.CREATED,
-            false, // isFeeRefunded
-            operatorTableReferenceTimestamp,
-            taskConfig,
-            taskParams.payload,
-            bytes(""),
-            bytes("")
-        );
+        _tasks[taskHash] = Task({
+            creator: msg.sender,
+            creationTime: block.timestamp.toUint96(),
+            avs: taskParams.executorOperatorSet.avs,
+            avsFee: avsFee,
+            refundCollector: taskParams.refundCollector,
+            executorOperatorSetId: taskParams.executorOperatorSet.id,
+            feeSplit: feeSplit,
+            status: TaskStatus.CREATED,
+            isFeeRefunded: false,
+            operatorTableReferenceTimestamp: operatorTableReferenceTimestamp,
+            executorOperatorSetTaskConfig: taskConfig,
+            payload: taskParams.payload,
+            executorCert: bytes(""),
+            result: bytes("")
+        });
 
         // Transfer fee to the TaskMailbox if there's a fee to transfer
         if (taskConfig.feeToken != IERC20(address(0)) && avsFee > 0) {
