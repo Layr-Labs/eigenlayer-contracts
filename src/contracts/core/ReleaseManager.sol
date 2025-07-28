@@ -40,12 +40,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         // New release id is the length of the array before this call.
         releaseId = releases.length;
         // Increment total releases for this operator set.
-        releases.push();
-        // Copy the release to storage.
-        for (uint256 i = 0; i < release.artifacts.length; ++i) {
-            releases[releaseId].artifacts.push(release.artifacts[i]);
-        }
-        releases[releaseId].upgradeByTime = release.upgradeByTime;
+        releases.push(release);
 
         emit ReleasePublished(operatorSet, releaseId, release);
     }
