@@ -78,6 +78,8 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         OperatorSet memory operatorSet
     ) external view returns (uint256, Release memory) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
+        require(releases.length > 0, NoReleases());
+
         uint256 latestReleaseId = releases.length - 1;
         return (latestReleaseId, releases[latestReleaseId]);
     }

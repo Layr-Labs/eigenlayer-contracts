@@ -12,6 +12,9 @@ interface IReleaseManagerErrors {
 
     /// @notice Thrown when the metadata URI is empty.
     error InvalidMetadataURI();
+
+    /// @notice Thrown when there are no releases for an operator set.
+    error NoReleases();
 }
 
 interface IReleaseManagerTypes {
