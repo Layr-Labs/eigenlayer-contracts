@@ -76,7 +76,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     /// @inheritdoc IReleaseManager
     function getLatestRelease(
         OperatorSet memory operatorSet
-    ) public view returns (uint256, Release memory) {
+    ) external view returns (uint256, Release memory) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
         uint256 latestReleaseId = releases.length - 1;
         return (latestReleaseId, releases[latestReleaseId]);
