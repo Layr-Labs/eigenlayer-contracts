@@ -419,7 +419,7 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         bytes memory malformedSignature = new bytes(len);
 
         vm.prank(operator1);
-        vm.expectRevert(InvalidKeyFormat.selector);
+        vm.expectRevert(InvalidSignature.selector);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, malformedSignature);
     }
 
