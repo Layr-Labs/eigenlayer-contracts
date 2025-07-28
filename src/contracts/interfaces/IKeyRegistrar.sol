@@ -54,6 +54,13 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
 }
 
+/// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
+/// @notice The integration pattern is as follows:
+/// 1. The AVS calls `configureOperatorSet` to set the key type for their operatorSet
+/// 2. Operators call `registerKey` to register their keys to the operatorSet
+/// @dev This contract requires that keys are unique across all operatorSets, globally
+/// @dev For the multichain protocol, the key type of the operatorSet must be set in the `KeyRegistrar`, but the
+///      AVS is not required to use the KeyRegistrar for operator key management and can implement its own registry
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
     /**
      * @notice Configures an operator set with curve type
@@ -69,10 +76,11 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to register the key for
      * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
      * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
-     * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+     * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
      * @dev Reverts if key is already registered
      * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
      *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+     * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
      */
     function registerKey(
         address operator,
@@ -85,7 +93,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Deregisters a cryptographic key for an operator with a specific operator set
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
-     * @dev Can be called by the operator directly or by addresses they've authorized via PermissionController
+     * @dev Can be called by the operator directly or by addresses they've authorized via the `PermissionController`
      * @dev Reverts if key was not registered
      * @dev Reverts if operator is still slashable for the operator set (prevents key rotation while slashable)
      * @dev Keys remain in global key registry to prevent reuse
@@ -174,7 +182,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (address, bool);
 
     /**
-     * @notice Returns the message hash for ECDSA key registration
+     * @notice Returns the message hash for ECDSA key registration, which must be signed by the operator when registering an ECDSA key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyAddress The address of the key
@@ -187,7 +195,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (bytes32);
 
     /**
-     * @notice Returns the message hash for BN254 key registration
+     * @notice Returns the message hash for BN254 key registration, which must be signed by the operator when registering a BN254 key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyData The BN254 key data

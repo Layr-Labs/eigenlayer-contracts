@@ -101,7 +101,7 @@ contract Integration_DualSlashing_AVSFirst is Integration_DualSlashing_Base {
         );
     }
 
-    /// @dev Validates behavior of "restaking", ie. that the funds can be slashed twice
+    /// @dev Validates behavior of "restaking", i.e. that the funds can be slashed twice
     function testFuzz_avsSlash_bcSlash_checkpoint(uint24 _random) public rand(_random) {
         // 7. Slash Staker on BC
         uint64 slashedAmountGwei = beaconChain.slashValidators(validators, BeaconChainMock.SlashType.Minor);
