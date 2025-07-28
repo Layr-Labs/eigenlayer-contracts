@@ -42,9 +42,9 @@ interface ICrossChainRegistryTypes {
      * @param owner the permissioned owner of the OperatorSet on L2 that can be used by downstream contracts to authorize actions
      * @param maxStalenessPeriod the maximum staleness period of the operatorSet
      *
-     * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
-     * @dev Staleness periods should not be greater than 0 and less than the update cadence of the `OperatorTables`, since
-     *      certificates would be unable to be validated against. The update cadence is set by the owner of the CrossChainRegistry
+     * @dev A `maxStalenessPeriod` of 0 completely removes staleness checks, allowing certificates to be validated regardless of their timestamp
+     * @dev A nonzero `maxStalenessPeriod` has a floor of the table update cadence, which is the frequency at which operator tables are expected
+     *      to be updated. The table update cadence is set by the owner of the `CrossChainRegistry`
      */
     struct OperatorSetConfig {
         address owner;
@@ -81,14 +81,21 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event TableUpdateCadenceSet(uint32 tableUpdateCadence);
 }
 
+/// @notice The CrossChainRegistry allows AVSs to register their operatorSets for cross-chain transport by the multichain protocol
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
     /**
-     * @notice Creates a generation reservation
+     * @notice Creates a generation reservation, which transports the operator table
      * @param operatorSet the operatorSet to make a reservation for
-     * @param operatorTableCalculator the address of the operatorTableCalculator
+     * @param operatorTableCalculator the address of the operatorTableCalculator. This contract is deployed (or a template is used) by the AVS
+     *                                to calculate the stake weights for the operatorSet. See `IOperatorTableCalculator` for more details
      * @param config the config to set for the operatorSet
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
+     * @dev It is expected that the AVS has:
+     *      - Deployed or is using a generalizable `OperatorTableCalculator` to calculate its operator's stake weights
+     *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management
+     *           - Valid Key Types are given in the `IKeyRegistrarTypes.CurveType` enum. The `KeyType` must not be `NONE`
+     *      - Created an operatorSet in the `AllocationManager`
      */
     function createGenerationReservation(
         OperatorSet calldata operatorSet,
@@ -120,7 +127,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Sets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to set the operatorSetConfig for
-     * @param config the config to set
+     * @param config the config to set, which includes the owner of the operatorSet and the max staleness period
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active generation reservation
      * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
@@ -145,7 +152,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external;
 
     /**
-     * @notice Sets the table update cadence in seconds
+     * @notice Sets the table update cadence in seconds. This is the frequency at which operator tables are expected to be updated on all destination chains
      * @param tableUpdateCadence the table update cadence
      * @dev msg.sender must be the owner of the CrossChainRegistry
      * @dev The table update cadence cannot be 0

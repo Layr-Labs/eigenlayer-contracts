@@ -581,21 +581,21 @@ func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) Up
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
-// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
+// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] totalSignedStakeWeights)
 func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactor) VerifyCertificate(opts *bind.TransactOpts, operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
 	return _IBN254CertificateVerifier.contract.Transact(opts, "verifyCertificate", operatorSet, cert)
 }
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
-// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
+// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] totalSignedStakeWeights)
 func (_IBN254CertificateVerifier *IBN254CertificateVerifierSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
 	return _IBN254CertificateVerifier.Contract.VerifyCertificate(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert)
 }
 
 // VerifyCertificate is a paid mutator transaction binding the contract method 0x080b7150.
 //
-// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] signedStakes)
+// Solidity: function verifyCertificate((address,uint32) operatorSet, (uint32,bytes32,(uint256,uint256),(uint256[2],uint256[2]),(uint32,bytes,((uint256,uint256),uint256[]))[]) cert) returns(uint256[] totalSignedStakeWeights)
 func (_IBN254CertificateVerifier *IBN254CertificateVerifierTransactorSession) VerifyCertificate(operatorSet OperatorSet, cert IBN254CertificateVerifierTypesBN254Certificate) (*types.Transaction, error) {
 	return _IBN254CertificateVerifier.Contract.VerifyCertificate(&_IBN254CertificateVerifier.TransactOpts, operatorSet, cert)
 }
