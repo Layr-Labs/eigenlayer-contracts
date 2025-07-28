@@ -398,7 +398,7 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         vm.prank(avs1);
         keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
-        uint256 len = vm.randomUint();
+        uint256 len = vm.randomUint(0, 256);
         vm.assume(len != 192);
         bytes memory keyData = new bytes(len);
         bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -414,7 +414,7 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         vm.prank(avs1);
         keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
-        uint256 len = vm.randomUint();
+        uint256 len = vm.randomUint(0, 256);
         vm.assume(len != 64);
         bytes memory malformedSignature = new bytes(len);
 
