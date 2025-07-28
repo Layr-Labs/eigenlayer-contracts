@@ -276,6 +276,37 @@ func (_CrossChainRegistry *CrossChainRegistryCallerSession) CalculateOperatorTab
 	return _CrossChainRegistry.Contract.CalculateOperatorTableBytes(&_CrossChainRegistry.CallOpts, operatorSet)
 }
 
+// GetActiveGenerationReservationCount is a free data retrieval call binding the contract method 0xb186a60e.
+//
+// Solidity: function getActiveGenerationReservationCount() view returns(uint256)
+func (_CrossChainRegistry *CrossChainRegistryCaller) GetActiveGenerationReservationCount(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _CrossChainRegistry.contract.Call(opts, &out, "getActiveGenerationReservationCount")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetActiveGenerationReservationCount is a free data retrieval call binding the contract method 0xb186a60e.
+//
+// Solidity: function getActiveGenerationReservationCount() view returns(uint256)
+func (_CrossChainRegistry *CrossChainRegistrySession) GetActiveGenerationReservationCount() (*big.Int, error) {
+	return _CrossChainRegistry.Contract.GetActiveGenerationReservationCount(&_CrossChainRegistry.CallOpts)
+}
+
+// GetActiveGenerationReservationCount is a free data retrieval call binding the contract method 0xb186a60e.
+//
+// Solidity: function getActiveGenerationReservationCount() view returns(uint256)
+func (_CrossChainRegistry *CrossChainRegistryCallerSession) GetActiveGenerationReservationCount() (*big.Int, error) {
+	return _CrossChainRegistry.Contract.GetActiveGenerationReservationCount(&_CrossChainRegistry.CallOpts)
+}
+
 // GetActiveGenerationReservations is a free data retrieval call binding the contract method 0xd09b978b.
 //
 // Solidity: function getActiveGenerationReservations() view returns((address,uint32)[])
@@ -305,6 +336,37 @@ func (_CrossChainRegistry *CrossChainRegistrySession) GetActiveGenerationReserva
 // Solidity: function getActiveGenerationReservations() view returns((address,uint32)[])
 func (_CrossChainRegistry *CrossChainRegistryCallerSession) GetActiveGenerationReservations() ([]OperatorSet, error) {
 	return _CrossChainRegistry.Contract.GetActiveGenerationReservations(&_CrossChainRegistry.CallOpts)
+}
+
+// GetActiveGenerationReservationsByRange is a free data retrieval call binding the contract method 0xd9a6729e.
+//
+// Solidity: function getActiveGenerationReservationsByRange(uint256 startIndex, uint256 endIndex) view returns((address,uint32)[])
+func (_CrossChainRegistry *CrossChainRegistryCaller) GetActiveGenerationReservationsByRange(opts *bind.CallOpts, startIndex *big.Int, endIndex *big.Int) ([]OperatorSet, error) {
+	var out []interface{}
+	err := _CrossChainRegistry.contract.Call(opts, &out, "getActiveGenerationReservationsByRange", startIndex, endIndex)
+
+	if err != nil {
+		return *new([]OperatorSet), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]OperatorSet)).(*[]OperatorSet)
+
+	return out0, err
+
+}
+
+// GetActiveGenerationReservationsByRange is a free data retrieval call binding the contract method 0xd9a6729e.
+//
+// Solidity: function getActiveGenerationReservationsByRange(uint256 startIndex, uint256 endIndex) view returns((address,uint32)[])
+func (_CrossChainRegistry *CrossChainRegistrySession) GetActiveGenerationReservationsByRange(startIndex *big.Int, endIndex *big.Int) ([]OperatorSet, error) {
+	return _CrossChainRegistry.Contract.GetActiveGenerationReservationsByRange(&_CrossChainRegistry.CallOpts, startIndex, endIndex)
+}
+
+// GetActiveGenerationReservationsByRange is a free data retrieval call binding the contract method 0xd9a6729e.
+//
+// Solidity: function getActiveGenerationReservationsByRange(uint256 startIndex, uint256 endIndex) view returns((address,uint32)[])
+func (_CrossChainRegistry *CrossChainRegistryCallerSession) GetActiveGenerationReservationsByRange(startIndex *big.Int, endIndex *big.Int) ([]OperatorSet, error) {
+	return _CrossChainRegistry.Contract.GetActiveGenerationReservationsByRange(&_CrossChainRegistry.CallOpts, startIndex, endIndex)
 }
 
 // GetOperatorSetConfig is a free data retrieval call binding the contract method 0x21fa7fdc.

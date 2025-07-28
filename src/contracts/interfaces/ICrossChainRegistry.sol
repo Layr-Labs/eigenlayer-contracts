@@ -51,6 +51,12 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when the table update cadence is invalid
     /// @dev Error code: 0xb6cc70d8
     error InvalidTableUpdateCadence();
+
+    /// @notice Thrown when the range is invalid for the `getActiveGenerationReservations` function
+    error InvalidRange();
+
+    /// @notice Thrown when the end index is invalid for the `getActiveGenerationReservations` function
+    error InvalidEndIndex();
 }
 
 interface ICrossChainRegistryTypes {
@@ -246,6 +252,17 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function getActiveGenerationReservations() external view returns (OperatorSet[] memory);
 
     /**
+     * @notice Gets the active generation reservations by range
+     * @param startIndex the start index of the range, inclusive
+     * @param endIndex the end index of the range, exclusive
+     * @return An array of operatorSets with active generationReservations
+     */
+    function getActiveGenerationReservationsByRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (OperatorSet[] memory);
+
+    /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
      * @return The operatorTableCalculator for the given operatorSet
@@ -292,4 +309,12 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *      frequency at which operator tables are expected to be updated on all destination chains
      */
     function getTableUpdateCadence() external view returns (uint32);
+
+    /**
+     * @notice Gets the number of active generation reservations
+     * @return The number of active generation reservations
+     * @dev This function can be used in conjunction with the paginated version of `getActiveGenerationReservations`
+     *      to iterate over all active generation reservations
+     */
+    function getActiveGenerationReservationCount() external view returns (uint256);
 }

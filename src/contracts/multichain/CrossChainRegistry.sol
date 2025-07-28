@@ -292,6 +292,27 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
+    function getActiveGenerationReservationsByRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (OperatorSet[] memory) {
+        require(startIndex <= endIndex, InvalidRange());
+        require(endIndex <= _activeGenerationReservations.length(), InvalidEndIndex());
+
+        uint256 length = endIndex - startIndex;
+        OperatorSet[] memory operatorSets = new OperatorSet[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 operatorSetKey = _activeGenerationReservations.at(startIndex + i);
+            OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
+
+            operatorSets[i] = operatorSet;
+        }
+
+        return operatorSets;
+    }
+
+    /// @inheritdoc ICrossChainRegistry
     function getOperatorTableCalculator(
         OperatorSet memory operatorSet
     ) public view returns (IOperatorTableCalculator) {
@@ -335,5 +356,10 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function getTableUpdateCadence() external view returns (uint32) {
         return _tableUpdateCadence;
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getActiveGenerationReservationCount() external view returns (uint256) {
+        return _activeGenerationReservations.length();
     }
 }
