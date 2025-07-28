@@ -42,7 +42,7 @@ Configures an operator set to use a specific cryptographic curve type. This must
 * Emits an `OperatorSetConfigured` event
 
 *Requirements*:
-* Caller MUST be authorized for the AVS (via PermissionController)
+* Caller MUST be authorized for the AVS (via the `PermissionController`)
 * The operator set MUST NOT already be configured
 * The curve type MUST be either ECDSA or BN254
 
@@ -63,10 +63,11 @@ Key registration is segmented by curve type: ECDSA and BN254.
  * @param operatorSet The operator set to register the key for
  * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
  * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
- * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+ * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
  * @dev Reverts if key is already registered
  * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
  *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+ * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
  */
 function registerKey(
     address operator,
@@ -76,7 +77,7 @@ function registerKey(
 ) external;
 ```
 
-There ARE NO restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. 
+There ARE NO restrictions on the state of the operator with respect to the operatorSet. That is, an operator does not have to be registered for the operator in the `AllocationManager` to register a key for it. The contract supports the ERC1271 signature scheme. However, **note that the multichain protocol DOES NOT support smart contract signatures**.  
 
 For ECDSA keys:
 - `pubkey`: 20 bytes representing the Ethereum address
@@ -89,7 +90,7 @@ For ECDSA keys:
 * Emits a `KeyRegistered` event with curve type ECDSA
 
 *Requirements*:
-* Caller MUST be the operator or authorized via PermissionController
+* Caller MUST be the operator or authorized via the `PermissionController`
 * The operator MUST NOT be already registered for the operatorSet in the `KeyRegistrar`
 * The key MUST be exactly 20 bytes
 * The key MUST NOT be the zero address
@@ -127,10 +128,13 @@ BN254 keys registration requires passing in G1 and G2 points.
  * @notice Registers a cryptographic key for an operator with a specific operator set
  * @param operator Address of the operator to register key for
  * @param operatorSet The operator set to register the key for
- * @param pubkey Public key bytes
- * @param signature Signature proving ownership (only needed for BN254 keys)
- * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+ * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+ * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
+ * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
  * @dev Reverts if key is already registered
+ * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
+ *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+ * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
  */
 function registerKey(
     address operator,
@@ -151,7 +155,7 @@ For BN254 keys:
 * Emits a `KeyRegistered` event with curve type BN254
 
 *Requirements*:
-* Caller MUST be the operator or authorized via PermissionController
+* Caller MUST be the operator or authorized via the `PermissionController`
 * The operator MUST NOT be already registered for the operatorSet in the `KeyRegistrar`
 * The key MUST contain valid G1 and G2 points
 * The G1 point MUST NOT be the zero point
@@ -205,7 +209,7 @@ Returns the message hash that must be signed over for BN254 key registration.
  * @notice Deregisters a cryptographic key for an operator with a specific operator set
  * @param operator Address of the operator to deregister key for
  * @param operatorSet The operator set to deregister the key from
- * @dev Can be called by operator directly or by addresses they've authorized via PermissionController
+ * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
  * @dev Reverts if key was not registered
  * @dev Keys remain in global key registry to prevent reuse
  */
@@ -220,7 +224,7 @@ Removes an operator's key from the specified operator set. Note that the key rem
 * The key remains in the global registry
 
 *Requirements*:
-* Caller MUST be authorized for the operator (via PermissionController)
+* Caller MUST be authorized for the operator (via the `PermissionController`)
 * The operator MUST not be slashable for the AVS, to prevent off-chain race conditions
 * The operator set MUST be configured
 * The operator MUST have a registered key for this operator set
