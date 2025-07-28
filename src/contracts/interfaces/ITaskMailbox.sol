@@ -72,7 +72,6 @@ interface ITaskMailboxTypes {
         CREATED, // 1 - Task has been created
         VERIFIED, // 2 - Task has been verified
         EXPIRED // 3 - Task has expired
-
     }
 
     /**
