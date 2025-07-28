@@ -160,7 +160,7 @@ function setExecutorOperatorSetTaskConfig(
 Configures how tasks should be executed by a specific operator set. The configuration includes:
 - **Task Hook**: AVS-specific contract for custom validation and handling
 - **Task SLA**: Time limit for task completion
-- **Fee Token**: Token used for task fees (can be zero address for no fees)
+- **Fee Token**: Token used for task fees (can be zero address for no fees). **Fees will not be collected if this is the zero address.**
 - **Fee Collector**: Address to receive AVS portion of fees
 - **Curve Type**: Cryptographic curve used by operators (BN254 or ECDSA)
 - **Consensus**: Type and threshold for result verification

@@ -72,6 +72,7 @@ interface ITaskMailboxTypes {
         CREATED, // 1 - Task has been created
         VERIFIED, // 2 - Task has been verified
         EXPIRED // 3 - Task has expired
+
     }
 
     /**
@@ -138,9 +139,6 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
 
     /// @notice Thrown when a payload is empty
     error PayloadIsEmpty();
-
-    /// @notice Thrown when a task SLA is zero
-    error TaskSLAIsZero();
 
     /// @notice Thrown when a timestamp is at creation
     error TimestampAtCreation();
