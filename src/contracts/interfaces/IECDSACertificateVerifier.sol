@@ -7,20 +7,26 @@ import "./IOperatorTableCalculator.sol";
 
 interface IECDSACertificateVerifierErrors {
     /// @notice Thrown when the signature length is invalid
+    /// TODO: add a reason for the expected signature length
+    /// TODO: add the 4 byte error code
+    /// @dev Error code: 0x4be6321b
     error InvalidSignatureLength();
-    /// @notice Thrown when the signatures are not ordered by signer address
+    /// @notice Thrown when the signatures are not ordered by signer address to validate unique signers
+    /// TODO: add a reason for why we use ordering of the signers
     error SignersNotOrdered();
     /// @notice Thrown when the operator count is zero
+    /// TODO: add a reason for why we require a non-zero operator count
     error OperatorCountZero();
 }
 
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
-     * @notice A Certificate used to verify a set of ECDSA signatures
-     * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
+     * @notice A Certificate used to verify a set of ECDSA signatures for an off-chain task
+     * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet
      * @param messageHash the hash of the message that was signed by the operators. The messageHash
      *        MUST be calculated using `calculateCertificateDigest`
      * @param sig the concatenated signature of each signing operator, in ascending order of signer address
+     * /// TODO: add a link to how we sort in the documentation
      * @dev ECDSA certificates DO NOT support smart contract signatures
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
      */
@@ -191,8 +197,9 @@ interface IECDSACertificateVerifier is
 
     /**
      * @notice Calculate the EIP-712 digest bytes for a certificate
+     * // TODO: why we are using 712 hash
      * @param referenceTimestamp The reference timestamp
-     * @param messageHash The message hash
+     * @param messageHash The message hash of the task
      * @return The EIP-712 digest
      * @dev This function is public to allow offchain tools to calculate the same digest
      * @dev Note: This does not support smart contract based signatures for multichain
@@ -209,7 +216,7 @@ interface IECDSACertificateVerifier is
     /**
      * @notice Calculate the EIP-712 digest for a certificate
      * @param referenceTimestamp The reference timestamp
-     * @param messageHash The message hash
+     * @param messageHash The message hash of the task
      * @return The EIP-712 digest
      * @dev This function is public to allow offchain tools to calculate the same digest
      * @dev Note: This does not support smart contract based signatures for multichain
