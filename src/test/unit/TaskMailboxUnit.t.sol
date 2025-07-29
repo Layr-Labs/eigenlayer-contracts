@@ -375,7 +375,7 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         config.taskHook = IAVSTaskHook(address(0));
 
         vm.prank(avs);
-        vm.expectRevert(InvalidAddressZero.selector);
+        vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
     }
 
@@ -385,7 +385,7 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         config.taskSLA = 0;
 
         vm.prank(avs);
-        vm.expectRevert(TaskSLAIsZero.selector);
+        vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
     }
 
@@ -468,7 +468,7 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         });
 
         vm.prank(avs);
-        vm.expectRevert(InvalidConsensusType.selector);
+        vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
     }
 }

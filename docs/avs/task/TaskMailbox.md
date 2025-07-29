@@ -26,8 +26,7 @@ Libraries and Mixins:
 * [CertificateVerifier](../../multichain/destination/CertificateVerifier.md) - for understanding certificate verification
 
 ## Overview
-
-The `TaskMailbox` is a core infrastructure contract that enables task-based AVS (Actively Validated Service) execution models. It provides a standardized way for AVSs to create tasks, have operators execute them, and submit verified results on-chain. The contract acts as a mailbox system where task creators post tasks with fees, and operators compete to execute and submit results with proper consensus verification.
+The `TaskMailbox` is a core infrastructure contract that enables task-based AVS (Autonomous Verifiable Service) execution models. It provides a standardized way for AVSs to accept tasks created by users or apps, have operators execute them, and submit verified results on-chain. The contract acts as a mailbox system where task creators post tasks with fees, and operators compete to execute and submit results with proper consensus verification.
 
 The `TaskMailbox`'s responsibilities are broken down into the following concepts:
 
@@ -161,7 +160,7 @@ function setExecutorOperatorSetTaskConfig(
 Configures how tasks should be executed by a specific operator set. The configuration includes:
 - **Task Hook**: AVS-specific contract for custom validation and handling
 - **Task SLA**: Time limit for task completion
-- **Fee Token**: Token used for task fees (can be zero address for no fees)
+- **Fee Token**: Token used for task fees (can be zero address for no fees). **Fees will not be collected if this is the zero address.**
 - **Fee Collector**: Address to receive AVS portion of fees
 - **Curve Type**: Cryptographic curve used by operators (BN254 or ECDSA)
 - **Consensus**: Type and threshold for result verification

@@ -140,9 +140,6 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
     /// @notice Thrown when a payload is empty
     error PayloadIsEmpty();
 
-    /// @notice Thrown when a task SLA is zero
-    error TaskSLAIsZero();
-
     /// @notice Thrown when a timestamp is at creation
     error TimestampAtCreation();
 

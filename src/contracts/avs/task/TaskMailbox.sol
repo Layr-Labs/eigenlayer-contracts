@@ -76,12 +76,11 @@ contract TaskMailbox is
         OperatorSet memory operatorSet,
         ExecutorOperatorSetTaskConfig memory config
     ) external {
-        // Validate config
-        require(config.curveType != IKeyRegistrarTypes.CurveType.NONE, InvalidCurveType());
-        require(config.taskHook != IAVSTaskHook(address(0)), InvalidAddressZero());
-        require(config.taskSLA > 0, TaskSLAIsZero());
-        _validateConsensus(config.consensus);
+        // Validate config is populated with non-zero values
+        require(_isConfigPopulated(config), ExecutorOperatorSetTaskConfigNotSet());
 
+        // Validate consensus enum within range
+        _validateConsensus(config.consensus);
         // Validate operator set ownership
         _validateOperatorSetOwner(operatorSet, config.curveType);
 
@@ -99,11 +98,7 @@ contract TaskMailbox is
         ExecutorOperatorSetTaskConfig memory taskConfig = _executorOperatorSetTaskConfigs[operatorSet.key()];
 
         // Validate that task config has been set before registration can be toggled.
-        require(
-            taskConfig.curveType != IKeyRegistrarTypes.CurveType.NONE && address(taskConfig.taskHook) != address(0)
-                && taskConfig.taskSLA > 0 && taskConfig.consensus.consensusType != ConsensusType.NONE,
-            ExecutorOperatorSetTaskConfigNotSet()
-        );
+        require(_isConfigPopulated(taskConfig), ExecutorOperatorSetTaskConfigNotSet());
 
         // Validate operator set ownership
         _validateOperatorSetOwner(operatorSet, taskConfig.curveType);
@@ -122,11 +117,7 @@ contract TaskMailbox is
 
         ExecutorOperatorSetTaskConfig memory taskConfig =
             _executorOperatorSetTaskConfigs[taskParams.executorOperatorSet.key()];
-        require(
-            taskConfig.curveType != IKeyRegistrarTypes.CurveType.NONE && address(taskConfig.taskHook) != address(0)
-                && taskConfig.taskSLA > 0 && taskConfig.consensus.consensusType != ConsensusType.NONE,
-            ExecutorOperatorSetTaskConfigNotSet()
-        );
+        require(_isConfigPopulated(taskConfig), ExecutorOperatorSetTaskConfigNotSet());
 
         // Pre-task submission checks: AVS can validate the caller and task params.
         taskConfig.taskHook.validatePreTaskCreation(msg.sender, taskParams);
@@ -332,6 +323,7 @@ contract TaskMailbox is
      * @notice Gets the certificate verifier for a given curve type
      * @param curveType The curve type to get the certificate verifier for
      * @return The address of the certificate verifier
+     * @dev This function will revert if the curve type is invalid
      */
     function _getCertificateVerifier(
         IKeyRegistrarTypes.CurveType curveType
@@ -346,9 +338,23 @@ contract TaskMailbox is
     }
 
     /**
+     * @notice Checks if a task config is populated
+     * @param taskConfig The task config to check
+     * @return True if all elements of the task config are populated, false otherwise
+     */
+    function _isConfigPopulated(
+        ExecutorOperatorSetTaskConfig memory taskConfig
+    ) internal pure returns (bool) {
+        return taskConfig.curveType != IKeyRegistrarTypes.CurveType.NONE
+            && taskConfig.taskHook != IAVSTaskHook(address(0)) && taskConfig.taskSLA > 0
+            && taskConfig.consensus.consensusType != ConsensusType.NONE;
+    }
+
+    /**
      * @notice Validates that the caller is the owner of the operator set
      * @param operatorSet The operator set to validate ownership for
      * @param curveType The curve type used to determine the certificate verifier
+     * @dev This function will revert if the curve type is invalid or if msg.sender is not the owner of the operator set
      */
     function _validateOperatorSetOwner(
         OperatorSet memory operatorSet,
