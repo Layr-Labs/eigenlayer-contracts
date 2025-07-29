@@ -5,6 +5,7 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IOperatorTableCalculator.sol";
 
 interface ICrossChainRegistryErrors {
+    /// TODO: add a reason why we throw errors for each error (ie. what would happen if we didn't throw)
     /// @notice Thrown when the chainId is invalid
     error InvalidChainId();
 
@@ -43,7 +44,7 @@ interface ICrossChainRegistryTypes {
     /**
      * @notice A per-operatorSet configuration struct that is transported from the CrossChainRegistry on L1.
      * @param owner the permissioned owner of the OperatorSet on L2 that can be used by downstream contracts to authorize actions
-     * @param maxStalenessPeriod the maximum staleness period of the operatorSet
+     * @param maxStalenessPeriod the maximum staleness period of the operatorSet, in seconds
      *
      * @dev A `maxStalenessPeriod` of 0 completely removes staleness checks, allowing certificates to be validated regardless of their timestamp
      * @dev A nonzero `maxStalenessPeriod` has a floor of the table update cadence, which is the frequency at which operator tables are expected
@@ -84,14 +85,15 @@ interface ICrossChainRegistryEvents is ICrossChainRegistryTypes {
     event TableUpdateCadenceSet(uint32 tableUpdateCadence);
 }
 
-/// @notice The CrossChainRegistry allows AVSs to register their operatorSets for cross-chain transport by the multichain protocol
+/// @notice The CrossChainRegistry allows AVSs to register their operatorSets and the associated operator table for cross-chain transport by the multichain protocol
 interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryEvents {
     /**
-     * @notice Creates a generation reservation, which transports the operator table
+     * @notice Creates a generation reservation, which transports the operator table of an operatorSet to all whitelisted chains
      * @param operatorSet the operatorSet to make a reservation for
      * @param operatorTableCalculator the address of the operatorTableCalculator. This contract is deployed (or a template is used) by the AVS
      *                                to calculate the stake weights for the operatorSet. See `IOperatorTableCalculator` for more details
-     * @param config the config to set for the operatorSet
+     * @param config the config to set for the operatorSet, which includes the owner of the operatorSet and the max staleness period
+     * @dev Tables are transported at a cadence of `tableUpdateCadence` seconds. The `maxStalenessPeriod` is used to determine the maximum
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
      * @dev It is expected that the AVS has:
@@ -216,9 +218,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     function getSupportedChains() external view returns (uint256[] memory, address[] memory);
 
     /**
-     * @notice Gets the table update cadence
-     * @return The table update cadence
-     * @dev The table update cadence is applicable to all chains
+     * @notice Gets the table update cadence, in seconds
+     * @return The table update cadence, in seconds
+     * @dev The table update cadence is applicable to all whitelisted chains, and is the
+     *      frequency at which operator tables are expected to be updated on all destination chains
      */
     function getTableUpdateCadence() external view returns (uint32);
 }
