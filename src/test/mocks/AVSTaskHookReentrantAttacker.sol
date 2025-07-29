@@ -81,7 +81,7 @@ contract AVSTaskHookReentrantAttacker is IAVSTaskHook, ITaskMailboxTypes {
 
     function validatePreTaskResultSubmission(address, bytes32, bytes memory, bytes memory) external view {}
 
-    function handlePostTaskResultSubmission(bytes32) external {
+    function handlePostTaskResultSubmission(address, bytes32) external {
         if (!attackOnPost) {
             if (attackCreateTask) {
                 // Reconstruct TaskParams for the attack

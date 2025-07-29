@@ -45,12 +45,11 @@ interface IAVSTaskHook {
 
     /**
      * @notice Handles a task result submission
+     * @param caller Address that submitted the result
      * @param taskHash Unique identifier of the task
      * @dev This function can be used to perform additional validation or update AVS-specific state
      */
-    function handlePostTaskResultSubmission(
-        bytes32 taskHash
-    ) external;
+    function handlePostTaskResultSubmission(address caller, bytes32 taskHash) external;
 
     /**
      * @notice Calculates the fee for a task payload against a specific fee market

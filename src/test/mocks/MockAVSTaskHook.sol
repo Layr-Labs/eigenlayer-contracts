@@ -27,7 +27,7 @@ contract MockAVSTaskHook is IAVSTaskHook {
         //TODO: Implement
     }
 
-    function handlePostTaskResultSubmission(bytes32 /*taskHash*/ ) external {
+    function handlePostTaskResultSubmission(address, /*caller*/ bytes32 /*taskHash*/ ) external {
         //TODO: Implement
     }
 

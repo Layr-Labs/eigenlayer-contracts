@@ -459,7 +459,7 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         assertEq(decodedThreshold, 10_000);
     }
 
-    function test_Revert_WhenConsensusTypeIsNone() public {
+    function test_ConsensusTypeNone_ValidWithEmptyValue() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
         config.consensus = Consensus({
@@ -467,8 +467,27 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
             value: bytes("") // Empty value for NONE type
         });
 
+        // Should succeed with ConsensusType.NONE and empty value
         vm.prank(avs);
-        vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Verify the config was set
+        ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+        assertEq(uint8(retrievedConfig.consensus.consensusType), uint8(ConsensusType.NONE));
+        assertEq(retrievedConfig.consensus.value.length, 0);
+    }
+
+    function test_Revert_ConsensusTypeNone_InvalidWithNonEmptyValue() public {
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({
+            consensusType: ConsensusType.NONE,
+            value: abi.encode(uint16(5000)) // Non-empty value for NONE type
+        });
+
+        // Should revert with non-empty value for ConsensusType.NONE
+        vm.prank(avs);
+        vm.expectRevert(InvalidConsensusValue.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
     }
 }
@@ -1033,7 +1052,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
             _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
-        vm.expectRevert(CertificateVerificationFailed.selector);
+        vm.expectRevert(ThresholdNotMet.selector);
         failingTaskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
     }
 
@@ -1083,7 +1102,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit should fail
         vm.prank(aggregator);
-        vm.expectRevert(CertificateVerificationFailed.selector);
+        vm.expectRevert(ThresholdNotMet.selector);
         failingTaskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
     }
 

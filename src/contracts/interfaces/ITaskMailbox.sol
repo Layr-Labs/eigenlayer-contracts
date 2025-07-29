@@ -114,8 +114,8 @@ interface ITaskMailboxTypes {
  * @notice Interface defining errors that can be thrown by the TaskMailbox
  */
 interface ITaskMailboxErrors is ITaskMailboxTypes {
-    /// @notice Thrown when a certificate verification fails
-    error CertificateVerificationFailed();
+    /// @notice Thrown when a certificate verification threshold is not met
+    error ThresholdNotMet();
 
     /// @notice Thrown when an executor operator set is not registered
     error ExecutorOperatorSetNotRegistered();
