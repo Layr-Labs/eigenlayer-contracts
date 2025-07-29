@@ -52,3 +52,10 @@ fix-typos:
 
 fmt:
 	forge fmt; FOUNDRY_PROFILE=test forge fmt
+
+integration:
+	export FOUNDRY_PROFILE=default; forge t --mc Integration
+	export FOUNDRY_PROFILE=mainnet; forge t --mc Integration
+	export FOUNDRY_PROFILE=sepolia; forge t --mc Integration
+	export FOUNDRY_PROFILE=hoodi; forge t --mc Integration
+	export FOUNDRY_PROFILE=holesky; forge t --mc Integration

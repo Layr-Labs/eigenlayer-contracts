@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
-contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
+contract Integration_Deposit_Delegate_UpdateBalance is IntegrationChecks {
 // TODO: fix for slashing
 /// Generates a random stake and operator. The staker:
 /// 1. deposits all assets into strategies
@@ -12,7 +12,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 /// 3. queues a withdrawal for a ALL shares
 /// 4. updates their balance randomly
 /// 5. completes the queued withdrawal as tokens
-// function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24 _random) public {
+// function testFuzz_deposit_delegate_updateBalance_completeAsTokens(uint24) public {
 //     _configRand({
 //         _randomSeed: _random,
 //         _assetTypes: HOLDS_ETH, // HOLDS_LST | HOLDS_ETH | HOLDS_ALL,
@@ -23,19 +23,19 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 //     (
 //         User staker,
 //         IStrategy[] memory strategies,
-//         uint[] memory tokenBalances
+//         uint[] memory initTokenBalances
 //     ) = _newRandomStaker();
 //     (User operator, ,) = _newRandomOperator();
 //     // Upgrade contracts if forkType is not local
 //     _upgradeEigenLayerContracts();
 
-//     uint[] memory shares = _calculateExpectedShares(strategies, tokenBalances);
+//     uint[] memory shares = _calculateExpectedShares(strategies, initTokenBalances);
 
 //     assert_HasNoDelegatableShares(staker, "staker should not have delegatable shares before depositing");
-//     assertFalse(delegationManager.isDelegated(address(staker)), "staker should not be delegated");
+//     assertFalse(delegationManager().isDelegated(address(staker)), "staker should not be delegated");
 
 //     /// 1. Deposit into strategies
-//     staker.depositIntoEigenlayer(strategies, tokenBalances);
+//     staker.depositIntoEigenlayer(strategies, initTokenBalances);
 //     check_Deposit_State(staker, strategies, shares);
 
 //     /// 2. Delegate to an operator
@@ -44,7 +44,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 
 //     /// 3. Queue withdrawals for ALL shares
 //     Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, shares);
-//     bytes32[] memory withdrawalRoots = _getWithdrawalHashes(withdrawals);
+//     withdrawalRoots = _getWithdrawalHashes(withdrawals);
 //     check_QueuedWithdrawal_State(staker, operator, strategies, shares, withdrawals, withdrawalRoots);
 
 //     // Generate a random balance update:
@@ -68,7 +68,7 @@ contract Integration_Deposit_Delegate_UpdateBalance is IntegrationCheckUtils {
 
 //     // 5. Complete queued withdrawals as tokens
 //     staker.completeWithdrawalsAsTokens(withdrawals);
-//     assertEq(address(operator), delegationManager.delegatedTo(address(staker)), "staker should still be delegated to operator");
+//     assertEq(address(operator), delegationManager().delegatedTo(address(staker)), "staker should still be delegated to operator");
 //     assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
 //     assert_Snap_Unchanged_TokenBalances(operator, "operator token balances should not have changed");
 //     assert_Snap_Unchanged_OperatorShares(operator, "operator shares should not have changed");
