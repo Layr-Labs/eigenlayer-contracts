@@ -5,38 +5,49 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IOperatorTableCalculator.sol";
 
 interface ICrossChainRegistryErrors {
-    /// TODO: add a reason why we throw errors for each error (ie. what would happen if we didn't throw)
     /// @notice Thrown when the chainId is invalid
+    /// @dev Error code: 0x7a47c9a2
     error InvalidChainId();
 
     /// @notice Thrown when a generation reservation already exists for the operator set
+    /// @dev Error code: 0x18834615
     error GenerationReservationAlreadyExists();
 
     /// @notice Thrown when a generation reservation does not exist for the operator set
+    /// @dev Error code: 0x9a575d52
     error GenerationReservationDoesNotExist();
 
     /// @notice Thrown when a chain ID is already whitelisted
+    /// @dev Error code: 0x497ec636
     error ChainIDAlreadyWhitelisted();
 
     /// @notice Thrown when a chain ID is not whitelisted
+    /// @dev Error code: 0xb3f92ba1
     error ChainIDNotWhitelisted();
 
     /// @notice Thrown when the operator set is not valid
+    /// @dev Error code: 0x7ec5c154
+    /// @dev We require valid operator sets (existing in AllocationManager) to ensure cross-chain operations are performed on legitimate operator configurations
     error InvalidOperatorSet();
 
     /// @notice Thrown when the key type is not set for the operatorSet
     error KeyTypeNotSet();
 
     /// @notice Thrown when the chainIDs array is empty
+    /// @dev Error code: 0x8631a075
     error EmptyChainIDsArray();
 
     /// @notice Thrown when the lengths between two arrays are not the same
+    /// @dev Error code: 0xa24a13a6
     error ArrayLengthMismatch();
 
     /// @notice Thrown when the staleness period set by an operatorSet is invalid
+    /// @dev Error code: 0x5c8c9062
+    /// @dev We enforce valid staleness periods (0 or >= table update cadence) to ensure certificates are not prematurely invalidated between table updates
     error InvalidStalenessPeriod();
 
     /// @notice Thrown when the table update cadence is invalid
+    /// @dev Error code: 0xb6cc70d8
     error InvalidTableUpdateCadence();
 }
 
@@ -101,6 +112,16 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management
      *           - Valid Key Types are given in the `IKeyRegistrarTypes.CurveType` enum. The `KeyType` must not be `NONE`
      *      - Created an operatorSet in the `AllocationManager`
+     * @dev Reverts for:
+     *      - The global paused status is set: PAUSED_GENERATION_RESERVATIONS
+     *      - Caller is not an authorized caller for operatorSet.avs
+     *      - The operatorSet does not exist in the AllocationManager (InvalidOperatorSet)
+     *      - A generation reservation already exists for the operatorSet (GenerationReservationAlreadyExists)
+     *      - The maxStalenessPeriod is invalid (InvalidStalenessPeriod)
+     * @dev Emits the following events:
+     *      - GenerationReservationCreated
+     *      - OperatorTableCalculatorSet
+     *      - OperatorSetConfigSet
      */
     function createGenerationReservation(
         OperatorSet calldata operatorSet,
@@ -112,6 +133,15 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Removes a generation reservation for a given operatorSet
      * @param operatorSet the operatorSet to remove
      * @dev msg.sender must be an authorized caller for operatorSet.avs
+     * @dev Reverts for:
+     *      - The global paused status is set: PAUSED_GENERATION_RESERVATIONS
+     *      - Caller is not an authorized caller for operatorSet.avs
+     *      - The operatorSet does not exist in the AllocationManager (InvalidOperatorSet)
+     *      - A generation reservation does not exist for the operatorSet (GenerationReservationDoesNotExist)
+     * @dev Emits the following events:
+     *      - OperatorTableCalculatorRemoved
+     *      - OperatorSetConfigRemoved
+     *      - GenerationReservationRemoved
      */
     function removeGenerationReservation(
         OperatorSet calldata operatorSet
@@ -123,6 +153,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param operatorTableCalculator the contract to call to calculate the operator table
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active reservation
+     * @dev Reverts for:
+     *      - The global paused status is set: PAUSED_OPERATOR_TABLE_CALCULATOR
+     *      - Caller is not an authorized caller for operatorSet.avs
+     *      - The operatorSet does not exist in the AllocationManager (InvalidOperatorSet)
+     *      - A generation reservation does not exist for the operatorSet (GenerationReservationDoesNotExist)
+     * @dev Emits the following events:
+     *      - OperatorTableCalculatorSet
      */
     function setOperatorTableCalculator(
         OperatorSet calldata operatorSet,
@@ -136,6 +173,14 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev msg.sender must be an authorized caller for operatorSet.avs
      * @dev operatorSet must have an active generation reservation
      * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
+     * @dev Reverts for:
+     *      - The global paused status is set: PAUSED_OPERATOR_SET_CONFIG
+     *      - Caller is not an authorized caller for operatorSet.avs
+     *      - The operatorSet does not exist in the AllocationManager (InvalidOperatorSet)
+     *      - A generation reservation does not exist for the operatorSet (GenerationReservationDoesNotExist)
+     *      - The maxStalenessPeriod is invalid (InvalidStalenessPeriod)
+     * @dev Emits the following events:
+     *      - OperatorSetConfigSet
      */
     function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 
@@ -144,6 +189,14 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param chainIDs the chainIDs to add to the whitelist
      * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
      * @dev msg.sender must be the owner of the CrossChainRegistry
+     * @dev Reverts for:
+     *      - Caller is not the owner of the contract
+     *      - The global paused status is set: PAUSED_CHAIN_WHITELIST
+     *      - The chainIDs and operatorTableUpdaters arrays have different lengths (ArrayLengthMismatch)
+     *      - Any chainID is zero (InvalidChainId)
+     *      - Any chainID is already whitelisted (ChainIDAlreadyWhitelisted)
+     * @dev Emits the following events:
+     *      - ChainIDAddedToWhitelist (for each successfully added chain)
      */
     function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 
@@ -151,6 +204,12 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Removes chainIDs from the whitelist of chainIDs
      * @param chainIDs the chainIDs to remove from the whitelist
      * @dev msg.sender must be the owner of the CrossChainRegistry
+     * @dev Reverts for:
+     *      - Caller is not the owner of the contract
+     *      - The global paused status is set: PAUSED_CHAIN_WHITELIST
+     *      - Any chainID is not currently whitelisted (ChainIDNotWhitelisted)
+     * @dev Emits the following events:
+     *      - ChainIDRemovedFromWhitelist (for each successfully removed chain)
      */
     function removeChainIDsFromWhitelist(
         uint256[] calldata chainIDs
@@ -161,6 +220,11 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @param tableUpdateCadence the table update cadence
      * @dev msg.sender must be the owner of the CrossChainRegistry
      * @dev The table update cadence cannot be 0
+     * @dev Reverts for:
+     *      - Caller is not the owner of the contract
+     *      - The tableUpdateCadence is zero (InvalidTableUpdateCadence)
+     * @dev Emits the following events:
+     *      - TableUpdateCadenceSet
      */
     function setTableUpdateCadence(
         uint32 tableUpdateCadence
@@ -205,6 +269,8 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *         - operator set configuration
      *         - calculated operator table from the calculator contract
      * @dev This function aggregates data from multiple sources for cross-chain transport
+     * @dev Reverts for:
+     *      - The operatorTableCalculator contract call fails or reverts
      */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
