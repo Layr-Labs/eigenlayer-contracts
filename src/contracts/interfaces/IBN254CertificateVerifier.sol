@@ -97,8 +97,8 @@ interface IBN254CertificateVerifier is
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
      * @dev Reverts for:
-     *      - OnlyTableUpdater: Caller is not the authorized OperatorTableUpdater
-     *      - TableUpdateStale: referenceTimestamp is not greater than the latest reference timestamp
+     *      - Caller is not the authorized OperatorTableUpdater
+     *      - referenceTimestamp is not greater than the latest reference timestamp
      * @dev Emits the following events:
      *      - TableUpdated: When operator table is successfully updated
      */
@@ -123,11 +123,11 @@ interface IBN254CertificateVerifier is
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      * @dev Reverts for:
-     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
-     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
-     *      - RootDisabled: The global table root for this timestamp has been disabled
-     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
-     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
+     *      - Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - No operator table exists for the referenceTimestamp
+     *      - The global table root for this timestamp has been disabled
+     *      - Operator index provided in nonSigner witness is invalid (InvalidOperatorIndex)
+     *      - Merkle proof verification failed or BLS signature verification failed
      */
     function verifyCertificate(
         OperatorSet memory operatorSet,
@@ -151,12 +151,12 @@ interface IBN254CertificateVerifier is
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      * @dev Reverts for:
-     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
-     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
-     *      - RootDisabled: The global table root for this timestamp has been disabled
-     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
-     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
-     *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeProportionThresholds length
+     *      - Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - No operator table exists for the referenceTimestamp
+     *      - The global table root for this timestamp has been disabled
+     *      - Operator index provided in nonSigner witness is invalid (InvalidOperatorIndex)
+     *      - Merkle proof verification failed or BLS signature verification failed
+     *      - signedStakes length does not equal totalStakeProportionThresholds length (ArrayLengthMismatch)
      */
     function verifyCertificateProportion(
         OperatorSet memory operatorSet,
@@ -181,12 +181,12 @@ interface IBN254CertificateVerifier is
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
      * @dev Reverts for:
-     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
-     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
-     *      - RootDisabled: The global table root for this timestamp has been disabled
-     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
-     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
-     *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeNominalThresholds length
+     *      - Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - No operator table exists for the referenceTimestamp
+     *      - The global table root for this timestamp has been disabled
+     *      - Operator index provided in nonSigner witness is invalid (InvalidOperatorIndex)
+     *      - Merkle proof verification failed or BLS signature verification failed
+     *      - signedStakes length does not equal totalStakeNominalThresholds length (ArrayLengthMismatch)
      */
     function verifyCertificateNominal(
         OperatorSet memory operatorSet,

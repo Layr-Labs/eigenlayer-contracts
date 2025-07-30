@@ -46,17 +46,14 @@ interface IOperatorTableUpdaterErrors {
 
     /// @notice Thrown when the confirmation threshold is invalid
     /// @dev Error code: 0x0e66de06
-    /// @dev We enforce that confirmation thresholds are within valid bounds (≤ 10000 BPS) to prevent invalid threshold configurations
     error InvalidConfirmationThreshold();
 
     /// @notice Thrown when the curve type is invalid
     /// @dev Error code: 0xfdea7c09
-    /// @dev We enforce that only supported curve types (BN254, ECDSA) are used to prevent routing to non-existent certificate verifiers
     error InvalidCurveType();
 
     /// @notice Thrown when a root is invalid
     /// @dev Error code: 0x504570e3
-    /// @dev We enforce that only valid (enabled) global table roots can be used to prevent operations against disabled or non-existent roots
     error InvalidRoot();
 
     /// @notice Thrown when the generator is invalid (via a non-zero reference timestamp)
@@ -66,12 +63,10 @@ interface IOperatorTableUpdaterErrors {
 
     /// @notice Thrown when the operator set to update is the generator
     /// @dev Error code: 0x7ec5c154
-    /// @dev We enforce that regular operator table updates cannot target the generator to maintain separation of concerns
     error InvalidOperatorSet();
 
     /// @notice Thrown when the generator's global table root is being disabled
     /// @dev Error code: 0x332415fa
-    /// @dev We enforce that the generator's global table root cannot be disabled to maintain system functionality
     error CannotDisableGeneratorRoot();
 }
 
@@ -121,10 +116,10 @@ interface IOperatorTableUpdater is
      * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp`, whereas
      *      the `referenceTimestamp` passed directly in the calldata is the block timestamp at which the global table root was calculated
      * @dev Reverts for:
-     *      - GlobalTableRootInFuture: referenceTimestamp is in the future
-     *      - GlobalTableRootStale: referenceTimestamp is not greater than latest reference timestamp
-     *      - InvalidMessageHash: certificate messageHash does not match expected EIP-712 hash
-     *      - CertificateInvalid: certificate verification failed against confirmation threshold
+     *      - referenceTimestamp is in the future
+     *      - referenceTimestamp is not greater than latest reference timestamp
+     *      - certificate messageHash does not match expected EIP-712 hash
+     *      - certificate verification failed against confirmation threshold
      * @dev Emits the following events:
      *      - NewGlobalTableRoot: When global table root is successfully confirmed
      */
@@ -139,7 +134,7 @@ interface IOperatorTableUpdater is
      * @notice The threshold, in bps, for a global root to be signed off on and updated
      * @dev Only callable by the owner of the contract
      * @dev Reverts for:
-     *      - InvalidConfirmationThreshold: bps is greater than MAX_BPS (10000)
+     *      - bps is greater than MAX_BPS (10000)
      * @dev Emits the following events:
      *      - GlobalRootConfirmationThresholdUpdated: When threshold is successfully updated
      */
@@ -159,7 +154,7 @@ interface IOperatorTableUpdater is
      * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
      * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      * @dev Reverts for:
-     *      - InvalidGenerator: generator has a non-zero reference timestamp
+     *      - generator has a non-zero reference timestamp
      * @dev Emits the following events:
      *      - GeneratorUpdated: When generator is successfully updated
      */
@@ -175,12 +170,12 @@ interface IOperatorTableUpdater is
      * @dev This function calls `updateOperatorTable` on the `ECDSACertificateVerifier` or `BN254CertificateVerifier`
      *      depending on the `KeyType` of the operatorSet, which is encoded in the `operatorTableBytes`
      * @dev Reverts for:
-     *      - InvalidRoot: globalTableRoot is disabled or invalid
-     *      - InvalidOperatorSet: operatorSet is the generator (not allowed for regular updates)
-     *      - TableUpdateForPastTimestamp: referenceTimestamp is not greater than latest for the operatorSet
-     *      - InvalidGlobalTableRoot: provided globalTableRoot does not match stored root for referenceTimestamp
-     *      - InvalidOperatorSetProof: merkle proof verification failed
-     *      - InvalidCurveType: unsupported curve type in operatorTableBytes
+     *      - globalTableRoot is disabled or invalid
+     *      - operatorSet is the generator (not allowed for regular updates)
+     *      - referenceTimestamp is not greater than latest for the operatorSet
+     *      - provided globalTableRoot does not match stored root for referenceTimestamp
+     *      - merkle proof verification failed
+     *      - unsupported curve type in operatorTableBytes
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
@@ -196,8 +191,8 @@ interface IOperatorTableUpdater is
      * @dev Only callable by the pauser
      * @dev Cannot disable the GENERATOR_GLOBAL_TABLE_ROOT
      * @dev Reverts for:
-     *      - InvalidRoot: globalTableRoot is already disabled or does not exist
-     *      - CannotDisableGeneratorRoot: attempting to disable the generator's global table root
+     *      - globalTableRoot is already disabled or does not exist
+     *      - attempting to disable the generator's global table root
      * @dev Emits the following events:
      *      - GlobalRootDisabled: When global table root is successfully disabled
      */
