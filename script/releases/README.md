@@ -5,7 +5,7 @@ This directory is where you will build [Zeus](https://github.com/Layr-Labs/zeus)
 * Update environment after a release is run to completion
 * Track status of releases to ensure steps are run (in order) only once per environment
 
-**Note about environments:** Zeus scripts are intended to be written once, and run across _any_ environment we use. We currently have 5 live environments (`preprod`, `testnet`, `testnet-sepolia`, `testnet-hoodi` and `mainnet`), and the params/deployment addresses for each live in separate folders in [`layr-labs/eigenlayer-contracts-zeus-metadata`](https://github.com/Layr-Labs/eigenlayer-contracts-zeus-metadata).
+**Note about environments:** Zeus scripts are intended to be written once, and run across _any_ environment we use. We currently have 6 live environments (`preprod`, `testnet`, `testnet-sepolia`, `testnet-hoodi`, `testnet-base-sepolia`, and `mainnet`), and the params/deployment addresses for each live in separate folders in [`layr-labs/eigenlayer-contracts-zeus-metadata`](https://github.com/Layr-Labs/eigenlayer-contracts-zeus-metadata).
 
 When running or testing a script, _you tell zeus which environment to use,_ and it will fork the corresponding network state and setup environment variables for that environment's params/deployment addresses.
 
