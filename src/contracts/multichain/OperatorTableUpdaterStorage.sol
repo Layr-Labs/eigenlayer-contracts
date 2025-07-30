@@ -13,7 +13,7 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
 
     /// @notice Index for flag that pauses calling `updateOperatorTable`
     uint8 internal constant PAUSED_OPERATOR_TABLE_UPDATE = 1;
-    
+
     /// @notice Salt for operator table leaf
     uint8 internal constant OPERATOR_TABLE_LEAF_SALT = 1;
 

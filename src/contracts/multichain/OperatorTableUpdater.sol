@@ -294,7 +294,7 @@ contract OperatorTableUpdater is
     ) external view returns (bool) {
         return _isRootValid[_globalTableRoots[referenceTimestamp]];
     }
-    
+
     /// @inheritdoc IOperatorTableUpdater
     function getOperatorTableLeaf(
         bytes calldata operatorTableBytes

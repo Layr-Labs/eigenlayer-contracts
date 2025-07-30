@@ -244,7 +244,7 @@ interface IOperatorTableUpdater is
     function isRootValidByTimestamp(
         uint32 referenceTimestamp
     ) external view returns (bool);
-    
+
     /**
      * @notice Get the leaf for an operator table
      * @param operatorTableBytes the bytes of the operator table

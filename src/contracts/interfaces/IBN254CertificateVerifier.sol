@@ -241,7 +241,7 @@ interface IBN254CertificateVerifier is
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (BN254OperatorSetInfo memory);
-    
+
     /**
      * @notice Get the leaf for an operator info
      * @param operatorInfo The operator info
