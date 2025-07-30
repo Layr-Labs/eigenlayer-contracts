@@ -14,18 +14,32 @@ interface IBaseCertificateVerifierEvents {
 
 interface IBaseCertificateVerifierErrors {
     /// @notice Thrown when the table updater is not caller
+    /// @dev 4byte error code: 0x061836d6
+    /// @dev We enforce that only the operator table updater can update operator tables to maintain system integrity and prevent unauthorized table modifications
     error OnlyTableUpdater();
     /// @notice Thrown when the table update is stale
+    /// @dev 4byte error code: 0x2f20889f
+    /// @dev We enforce that reference timestamps must be greater than the latest reference timestamp to prevent retroactive table updates and maintain chronological ordering
     error TableUpdateStale();
     /// @notice Thrown when array lengths mismatch
+    /// @dev 4byte error code: 0xa24a13a6
+    /// @dev We enforce that input arrays have matching lengths to ensure proper validation logic and prevent out-of-bounds access
     error ArrayLengthMismatch();
     /// @notice Thrown when the certificate is too stale, per the max staleness period of the operatorSet
+    /// @dev 4byte error code: 0xc81f9ad6
+    /// @dev We enforce staleness checks to ensure certificates are verified against recent operator table data and prevent verification against outdated stake information
     error CertificateStale();
     /// @notice Thrown when the reference timestamp does not exist
+    /// @dev 4byte error code: 0x6568bdb8
+    /// @dev We enforce that reference timestamps exist to ensure certificates are verified against valid operator table snapshots
     error ReferenceTimestampDoesNotExist();
     /// @notice Thrown when certificate verification fails
+    /// @dev 4byte error code: 0x439cc0cd
+    /// @dev We enforce proper signature verification and merkle proof validation to maintain cryptographic security guarantees
     error VerificationFailed();
     /// @notice Thrown when the global table root is disabled
+    /// @dev 4byte error code: 0x1b14174b
+    /// @dev We enforce that roots are not disabled to prevent verification against invalid or compromised operator table data
     error RootDisabled();
 }
 
