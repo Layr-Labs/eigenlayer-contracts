@@ -48,6 +48,8 @@ interface IBN254CertificateVerifierEvents is IBN254CertificateVerifierTypes {
 
 interface IBN254CertificateVerifierErrors {
     /// @notice thrown when operator index provided in certificate is invalid
+    /// @dev Error code: 0x03f4a78e
+    /// @dev We enforce that operator indices are within valid bounds to prevent out-of-bounds access in the merkle tree verification
     error InvalidOperatorIndex();
 }
 
@@ -94,6 +96,11 @@ interface IBN254CertificateVerifier is
      * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
+     * @dev Reverts for:
+     *      - OnlyTableUpdater: Caller is not the authorized OperatorTableUpdater
+     *      - TableUpdateStale: referenceTimestamp is not greater than the latest reference timestamp
+     * @dev Emits the following events:
+     *      - TableUpdated: When operator table is successfully updated
      */
     function updateOperatorTable(
         OperatorSet calldata operatorSet,
@@ -115,6 +122,12 @@ interface IBN254CertificateVerifier is
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
+     * @dev Reverts for:
+     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
+     *      - RootDisabled: The global table root for this timestamp has been disabled
+     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      */
     function verifyCertificate(
         OperatorSet memory operatorSet,
@@ -137,6 +150,13 @@ interface IBN254CertificateVerifier is
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
+     * @dev Reverts for:
+     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
+     *      - RootDisabled: The global table root for this timestamp has been disabled
+     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
+     *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeProportionThresholds length
      */
     function verifyCertificateProportion(
         OperatorSet memory operatorSet,
@@ -160,6 +180,13 @@ interface IBN254CertificateVerifier is
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
      * @dev This function is *non-view* because it caches non-signing operator info upon a successful certificate verification. See `getNonsignerOperatorInfo` for more details
+     * @dev Reverts for:
+     *      - CertificateStale: Certificate referenceTimestamp is too stale per maxStalenessPeriod
+     *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
+     *      - RootDisabled: The global table root for this timestamp has been disabled
+     *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
+     *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeNominalThresholds length
      */
     function verifyCertificateNominal(
         OperatorSet memory operatorSet,
