@@ -459,7 +459,7 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         assertEq(decodedThreshold, 10_000);
     }
 
-    function test_Revert_WhenConsensusTypeIsNone() public {
+    function test_ConsensusTypeNone_ValidWithEmptyValue() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
         config.consensus = Consensus({
@@ -467,8 +467,27 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
             value: bytes("") // Empty value for NONE type
         });
 
+        // Should succeed with ConsensusType.NONE and empty value
         vm.prank(avs);
-        vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Verify the config was set
+        ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+        assertEq(uint8(retrievedConfig.consensus.consensusType), uint8(ConsensusType.NONE));
+        assertEq(retrievedConfig.consensus.value.length, 0);
+    }
+
+    function test_Revert_ConsensusTypeNone_InvalidWithNonEmptyValue() public {
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({
+            consensusType: ConsensusType.NONE,
+            value: abi.encode(uint16(5000)) // Non-empty value for NONE type
+        });
+
+        // Should revert with non-empty value for ConsensusType.NONE
+        vm.prank(avs);
+        vm.expectRevert(InvalidConsensusValue.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
     }
 }
@@ -1033,7 +1052,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
             _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(taskHash));
 
         vm.prank(aggregator);
-        vm.expectRevert(CertificateVerificationFailed.selector);
+        vm.expectRevert(ThresholdNotMet.selector);
         failingTaskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
     }
 
@@ -1083,7 +1102,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit should fail
         vm.prank(aggregator);
-        vm.expectRevert(CertificateVerificationFailed.selector);
+        vm.expectRevert(ThresholdNotMet.selector);
         failingTaskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
     }
 
@@ -2140,6 +2159,261 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result should fail with InvalidMessageHash error
         vm.prank(aggregator);
         vm.expectRevert(InvalidMessageHash.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    // ============ ConsensusType.NONE Tests ============
+
+    function test_submitResult_ConsensusTypeNone_WithBN254Certificate() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({
+            consensusType: ConsensusType.NONE,
+            value: bytes("") // Empty value for NONE type
+        });
+        config.curveType = IKeyRegistrarTypes.CurveType.BN254;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with valid certificate
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        // Create a valid BN254 certificate
+        IBN254CertificateVerifierTypes.BN254Certificate memory cert =
+            _createValidBN254CertificateForResult(result, _getTaskReferenceTimestamp(newTaskHash));
+        bytes memory executorCert = abi.encode(cert);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, result);
+
+        // Verify task is marked as verified
+        assertEq(uint8(taskMailbox.getTaskStatus(newTaskHash)), uint8(TaskStatus.VERIFIED));
+        assertEq(taskMailbox.getTaskResult(newTaskHash), result);
+    }
+
+    function test_submitResult_ConsensusTypeNone_WithECDSACertificate() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({
+            consensusType: ConsensusType.NONE,
+            value: bytes("") // Empty value for NONE type
+        });
+        config.curveType = IKeyRegistrarTypes.CurveType.ECDSA;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with valid certificate
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        // Create a valid ECDSA certificate
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createValidECDSACertificateForResult(result, _getTaskReferenceTimestamp(newTaskHash));
+        bytes memory executorCert = abi.encode(cert);
+
+        vm.prank(aggregator);
+        taskMailbox.submitResult(newTaskHash, executorCert, result);
+
+        // Verify task is marked as verified
+        assertEq(uint8(taskMailbox.getTaskStatus(newTaskHash)), uint8(TaskStatus.VERIFIED));
+        assertEq(taskMailbox.getTaskResult(newTaskHash), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_BN254Certificate_InvalidReferenceTimestamp() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.BN254;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with invalid reference timestamp
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IBN254CertificateVerifierTypes.BN254Certificate memory cert = _createValidBN254CertificateForResult(
+            result,
+            99_999 // Wrong reference timestamp
+        );
+
+        vm.prank(aggregator);
+        vm.expectRevert(InvalidReferenceTimestamp.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_ECDSACertificate_InvalidReferenceTimestamp() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.ECDSA;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with invalid reference timestamp
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: 99_999, // Wrong reference timestamp
+            messageHash: keccak256(result),
+            sig: bytes("dummy signature")
+        });
+
+        vm.prank(aggregator);
+        vm.expectRevert(InvalidReferenceTimestamp.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_BN254Certificate_InvalidMessageHash() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.BN254;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with invalid message hash
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: keccak256(bytes("wrong result")), // Wrong message hash
+            signature: BN254.G1Point(3, 4),
+            apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
+            nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
+        });
+
+        vm.prank(aggregator);
+        vm.expectRevert(InvalidMessageHash.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_ECDSACertificate_InvalidMessageHash() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.ECDSA;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with wrong message hash
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: keccak256("wrong result"),
+            sig: bytes("signature")
+        });
+
+        vm.prank(aggregator);
+        vm.expectRevert(InvalidMessageHash.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_BN254Certificate_EmptySignature() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.BN254;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with empty signature
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: keccak256(result),
+            signature: BN254.G1Point(0, 0), // Empty signature
+            apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
+            nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
+        });
+
+        vm.prank(aggregator);
+        vm.expectRevert(EmptyCertificateSignature.selector);
+        taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
+    }
+
+    function test_Revert_ConsensusTypeNone_ECDSACertificate_EmptySignature() public {
+        // Setup executor operator set with ConsensusType.NONE
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.consensus = Consensus({consensusType: ConsensusType.NONE, value: bytes("")});
+        config.curveType = IKeyRegistrarTypes.CurveType.ECDSA;
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Create task
+        TaskParams memory taskParams = _createValidTaskParams();
+        vm.prank(creator);
+        bytes32 newTaskHash = taskMailbox.createTask(taskParams);
+
+        // Submit result with empty signature
+        vm.warp(block.timestamp + 1);
+        bytes memory result = bytes("test result");
+
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
+            messageHash: keccak256(result),
+            sig: bytes("") // Empty signature
+        });
+
+        vm.prank(aggregator);
+        vm.expectRevert(EmptyCertificateSignature.selector);
         taskMailbox.submitResult(newTaskHash, abi.encode(cert), result);
     }
 }

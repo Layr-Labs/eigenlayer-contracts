@@ -187,7 +187,7 @@ contract TaskMailbox is
 
         // Verify certificate based on consensus configuration
         OperatorSet memory executorOperatorSet = OperatorSet(task.avs, task.executorOperatorSetId);
-        bool isCertificateValid = _verifyExecutorCertificate(
+        _verifyExecutorCertificate(
             task.executorOperatorSetTaskConfig.curveType,
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
@@ -195,7 +195,6 @@ contract TaskMailbox is
             keccak256(result),
             executorCert
         );
-        require(isCertificateValid, CertificateVerificationFailed());
 
         task.status = TaskStatus.VERIFIED;
         task.executorCert = executorCert;
@@ -221,7 +220,7 @@ contract TaskMailbox is
         }
 
         // Post-task result submission checks: AVS can update hook storage for task lifecycle if needed.
-        task.executorOperatorSetTaskConfig.taskHook.handlePostTaskResultSubmission(taskHash);
+        task.executorOperatorSetTaskConfig.taskHook.handlePostTaskResultSubmission(msg.sender, taskHash);
 
         emit TaskVerified(msg.sender, taskHash, task.avs, task.executorOperatorSetId, task.executorCert, task.result);
     }
@@ -346,8 +345,7 @@ contract TaskMailbox is
         ExecutorOperatorSetTaskConfig memory taskConfig
     ) internal pure returns (bool) {
         return taskConfig.curveType != IKeyRegistrarTypes.CurveType.NONE
-            && taskConfig.taskHook != IAVSTaskHook(address(0)) && taskConfig.taskSLA > 0
-            && taskConfig.consensus.consensusType != ConsensusType.NONE;
+            && taskConfig.taskHook != IAVSTaskHook(address(0)) && taskConfig.taskSLA > 0;
     }
 
     /**
@@ -375,7 +373,10 @@ contract TaskMailbox is
     function _validateConsensus(
         Consensus memory consensus
     ) internal pure {
-        if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
+        if (consensus.consensusType == ConsensusType.NONE) {
+            // For NONE consensus type, value should be empty bytes
+            require(consensus.value.length == 0, InvalidConsensusValue());
+        } else if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
             // Decode and validate the stake proportion threshold
             require(consensus.value.length == 32, InvalidConsensusValue());
             uint16 stakeProportionThreshold = abi.decode(consensus.value, (uint16));
@@ -386,6 +387,38 @@ contract TaskMailbox is
     }
 
     /**
+     * @notice Validates a BN254 certificate's basic requirements
+     * @param cert The BN254 certificate to validate
+     * @param operatorTableReferenceTimestamp The expected reference timestamp
+     * @param resultHash The expected message hash
+     */
+    function _validateBN254Certificate(
+        IBN254CertificateVerifierTypes.BN254Certificate memory cert,
+        uint32 operatorTableReferenceTimestamp,
+        bytes32 resultHash
+    ) internal pure {
+        require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
+        require(cert.messageHash == resultHash, InvalidMessageHash());
+        require(cert.signature.X != 0 && cert.signature.Y != 0, EmptyCertificateSignature());
+    }
+
+    /**
+     * @notice Validates an ECDSA certificate's basic requirements
+     * @param cert The ECDSA certificate to validate
+     * @param operatorTableReferenceTimestamp The expected reference timestamp
+     * @param resultHash The expected message hash
+     */
+    function _validateECDSACertificate(
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert,
+        uint32 operatorTableReferenceTimestamp,
+        bytes32 resultHash
+    ) internal pure {
+        require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
+        require(cert.messageHash == resultHash, InvalidMessageHash());
+        require(cert.sig.length > 0, EmptyCertificateSignature());
+    }
+
+    /**
      * @notice Verifies an executor certificate based on the consensus configuration
      * @param curveType The curve type used for signature verification
      * @param consensus The consensus configuration
@@ -393,7 +426,6 @@ contract TaskMailbox is
      * @param operatorTableReferenceTimestamp The reference timestamp of the operator table
      * @param resultHash The hash of the result of the task
      * @param executorCert The executor certificate to verify
-     * @return isCertificateValid Whether the certificate is valid
      */
     function _verifyExecutorCertificate(
         IKeyRegistrarTypes.CurveType curveType,
@@ -402,12 +434,10 @@ contract TaskMailbox is
         uint32 operatorTableReferenceTimestamp,
         bytes32 resultHash,
         bytes memory executorCert
-    ) internal returns (bool isCertificateValid) {
-        if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
-            // Decode stake proportion threshold
-            uint16 stakeProportionThreshold = abi.decode(consensus.value, (uint16));
-            uint16[] memory totalStakeProportionThresholds = new uint16[](1);
-            totalStakeProportionThresholds[0] = stakeProportionThreshold;
+    ) internal {
+        if (consensus.consensusType == ConsensusType.NONE) {
+            // For NONE consensus type, just verify the certificate.
+            // The consensus logic handling is left to the AVS in the `handlePostTaskResultSubmission` hook.
 
             // Verify certificate based on curve type
             if (curveType == IKeyRegistrarTypes.CurveType.BN254) {
@@ -416,11 +446,40 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
                 // Validate the certificate
-                require(bn254Cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-                require(bn254Cert.messageHash == resultHash, InvalidMessageHash());
-                require(bn254Cert.signature.X != 0 && bn254Cert.signature.Y != 0, EmptyCertificateSignature());
+                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, resultHash);
 
-                isCertificateValid = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
+                IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificate(executorOperatorSet, bn254Cert);
+            } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
+                // ECDSA Certificate verification
+                IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCert =
+                    abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
+
+                // Validate the certificate
+                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, resultHash);
+
+                IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificate(executorOperatorSet, ecdsaCert);
+            } else {
+                revert InvalidCurveType();
+            }
+        } else if (consensus.consensusType == ConsensusType.STAKE_PROPORTION_THRESHOLD) {
+            // Decode stake proportion threshold
+            uint16 stakeProportionThreshold = abi.decode(consensus.value, (uint16));
+            // This assumes that that the `BN254TableCalculator` or `ECDSATableCalculator` have been set as the `OperatorTableCalculator` in the `CrossChainRegistry` on the source chain while creating a generation reservation.
+            // These table calculators calculate slashable stake for an operatorSet and value all strategies equally. Hence `totalStakeProportionThresholds` is an array of length 1.
+            uint16[] memory totalStakeProportionThresholds = new uint16[](1);
+            totalStakeProportionThresholds[0] = stakeProportionThreshold;
+
+            bool isThresholdMet;
+            // Verify certificate based on curve type
+            if (curveType == IKeyRegistrarTypes.CurveType.BN254) {
+                // BN254 Certificate verification
+                IBN254CertificateVerifierTypes.BN254Certificate memory bn254Cert =
+                    abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
+
+                // Validate the certificate
+                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, resultHash);
+
+                isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
                     executorOperatorSet, bn254Cert, totalStakeProportionThresholds
                 );
             } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
@@ -429,15 +488,16 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
                 // Validate the certificate
-                require(ecdsaCert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-                require(ecdsaCert.messageHash == resultHash, InvalidMessageHash());
-                require(ecdsaCert.sig.length > 0, EmptyCertificateSignature());
+                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, resultHash);
 
-                (isCertificateValid,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
-                    .verifyCertificateProportion(executorOperatorSet, ecdsaCert, totalStakeProportionThresholds);
+                (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificateProportion(
+                    executorOperatorSet, ecdsaCert, totalStakeProportionThresholds
+                );
             } else {
                 revert InvalidCurveType();
             }
+            // If the threshold is not met, revert
+            require(isThresholdMet, ThresholdNotMet());
         } else {
             revert InvalidConsensusType();
         }

@@ -143,6 +143,52 @@ Executor operator sets define which operators are eligible to execute tasks and 
 * [`registerExecutorOperatorSet`](#registerexecutoroperatorset)
 * [`getExecutorOperatorSetTaskConfig`](#getexecutoroperatorsettaskconfig)
 
+### ExecutorOperatorSetTaskConfig Structure
+
+The task configuration for an executor operator set contains the following fields:
+
+```solidity
+struct ExecutorOperatorSetTaskConfig {
+    IAVSTaskHook taskHook;        // AVS-specific contract for custom validation
+    uint96 taskSLA;               // Time limit in seconds for task completion
+    IERC20 feeToken;              // Token used for task fees (zero address = no fees)
+    address feeCollector;         // Address to receive AVS portion of fees
+    CurveType curveType;          // Cryptographic curve (BN254 or ECDSA)
+    Consensus consensus;          // Consensus type and parameters
+    bytes taskMetadata;           // AVS-specific metadata
+}
+```
+
+### Consensus Configuration
+
+The consensus configuration determines how operator signatures are validated:
+
+```solidity
+struct Consensus {
+    ConsensusType consensusType;  // Type of consensus validation
+    bytes value;                  // Type-specific parameters
+}
+
+enum ConsensusType {
+    NONE,                         // AVS handles consensus validation
+    STAKE_PROPORTION_THRESHOLD    // Require minimum stake percentage
+}
+```
+
+**Consensus Types:**
+
+1. **NONE**: 
+   - The TaskMailbox only verifies certificate validity (signature, timestamp, message hash)
+   - AVS is responsible for implementing custom consensus logic in task hooks
+   - `value` must be empty bytes
+   - Useful for AVSs with custom consensus mechanisms or off-chain validation
+
+2. **STAKE_PROPORTION_THRESHOLD**:
+   - Requires a minimum percentage of total stake to sign the result
+   - `value` contains `abi.encode(uint16)` representing threshold in basis points (0-10000)
+   - Example: 6667 = 66.67% stake required
+   - Certificate verification will fail if threshold is not met
+
 #### `setExecutorOperatorSetTaskConfig`
 
 ```solidity
@@ -177,6 +223,38 @@ Configures how tasks should be executed by a specific operator set. The configur
 * Task SLA must be greater than zero
 * Consensus type and curve type must be valid
 * Consensus value must be properly formatted
+
+**Example Configuration:**
+
+```solidity
+// Example 1: Configure with 66.67% stake threshold
+ExecutorOperatorSetTaskConfig memory config = ExecutorOperatorSetTaskConfig({
+    taskHook: IAVSTaskHook(0x...),
+    taskSLA: 3600, // 1 hour
+    feeToken: IERC20(0x...),
+    feeCollector: 0x...,
+    curveType: CurveType.BN254,
+    consensus: Consensus({
+        consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+        value: abi.encode(uint16(6667)) // 66.67%
+    }),
+    taskMetadata: bytes("")
+});
+
+// Example 2: Configure with NONE consensus (AVS handles validation)
+ExecutorOperatorSetTaskConfig memory config = ExecutorOperatorSetTaskConfig({
+    taskHook: IAVSTaskHook(0x...),
+    taskSLA: 3600,
+    feeToken: IERC20(address(0)), // No fees
+    feeCollector: address(0),
+    curveType: CurveType.ECDSA,
+    consensus: Consensus({
+        consensusType: ConsensusType.NONE,
+        value: bytes("") // Must be empty
+    }),
+    taskMetadata: bytes("")
+});
+```
 
 #### `registerExecutorOperatorSet`
 
@@ -232,9 +310,16 @@ Submits the result of task execution along with proof of consensus. The method:
 
 1. Validates the task exists and hasn't expired or been verified
 2. Calls AVS hook for pre-submission validation
-3. Verifies the certificate based on the configured curve type:
-   - **BN254**: Verifies aggregated BLS signature
-   - **ECDSA**: Verifies individual ECDSA signatures meet threshold
+3. Verifies the certificate based on both curve type and consensus type:
+   - **ConsensusType.NONE**: 
+     - Validates certificate fields (reference timestamp, message hash, non-empty signature)
+     - Calls certificate verifier to validate signature authenticity
+     - Does NOT enforce any stake threshold requirements
+     - AVS can implement custom consensus logic in `handlePostTaskResultSubmission`
+   - **ConsensusType.STAKE_PROPORTION_THRESHOLD**:
+     - Performs all validations from NONE
+     - Additionally verifies that signers meet the configured stake threshold
+     - Uses `verifyCertificateProportion` to ensure minimum stake percentage signed
 4. Distributes fees according to fee split configuration
 5. Stores the result and marks task as verified
 6. Calls AVS hook for post-submission handling
@@ -250,7 +335,7 @@ Submits the result of task execution along with proof of consensus. The method:
 * Task must exist and be in CREATED status
 * Current timestamp must be after task creation time
 * Certificate must have valid signature(s)
-* Certificate verification must pass consensus threshold
+* Certificate verification must pass consensus threshold (reverts with `ThresholdNotMet` if not)
 * AVS validation must pass
 
 #### `getTaskResult`
@@ -379,7 +464,10 @@ interface IAVSTaskHook {
     ) external view;
 
     // Called after successful result submission for any side effects
-    function handlePostTaskResultSubmission(bytes32 taskHash) external;
+    function handlePostTaskResultSubmission(
+        address caller,
+        bytes32 taskHash
+    ) external;
 
     // Calculates the fee for a task based on its parameters
     function calculateTaskFee(

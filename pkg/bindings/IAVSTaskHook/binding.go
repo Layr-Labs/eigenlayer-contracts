@@ -44,7 +44,7 @@ type OperatorSet struct {
 
 // IAVSTaskHookMetaData contains all meta data concerning the IAVSTaskHook contract.
 var IAVSTaskHookMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"calculateTaskFee\",\"inputs\":[{\"name\":\"taskParams\",\"type\":\"tuple\",\"internalType\":\"structITaskMailboxTypes.TaskParams\",\"components\":[{\"name\":\"refundCollector\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"executorOperatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"handlePostTaskCreation\",\"inputs\":[{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"handlePostTaskResultSubmission\",\"inputs\":[{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"validatePreTaskCreation\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"taskParams\",\"type\":\"tuple\",\"internalType\":\"structITaskMailboxTypes.TaskParams\",\"components\":[{\"name\":\"refundCollector\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"executorOperatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"validatePreTaskResultSubmission\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"cert\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"result\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"calculateTaskFee\",\"inputs\":[{\"name\":\"taskParams\",\"type\":\"tuple\",\"internalType\":\"structITaskMailboxTypes.TaskParams\",\"components\":[{\"name\":\"refundCollector\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"executorOperatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"handlePostTaskCreation\",\"inputs\":[{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"handlePostTaskResultSubmission\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"validatePreTaskCreation\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"taskParams\",\"type\":\"tuple\",\"internalType\":\"structITaskMailboxTypes.TaskParams\",\"components\":[{\"name\":\"refundCollector\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"executorOperatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"payload\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"validatePreTaskResultSubmission\",\"inputs\":[{\"name\":\"caller\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"taskHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"cert\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"result\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"view\"}]",
 }
 
 // IAVSTaskHookABI is the input ABI used to generate the binding from.
@@ -303,23 +303,23 @@ func (_IAVSTaskHook *IAVSTaskHookTransactorSession) HandlePostTaskCreation(taskH
 	return _IAVSTaskHook.Contract.HandlePostTaskCreation(&_IAVSTaskHook.TransactOpts, taskHash)
 }
 
-// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xdb6ecf67.
+// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xe082467e.
 //
-// Solidity: function handlePostTaskResultSubmission(bytes32 taskHash) returns()
-func (_IAVSTaskHook *IAVSTaskHookTransactor) HandlePostTaskResultSubmission(opts *bind.TransactOpts, taskHash [32]byte) (*types.Transaction, error) {
-	return _IAVSTaskHook.contract.Transact(opts, "handlePostTaskResultSubmission", taskHash)
+// Solidity: function handlePostTaskResultSubmission(address caller, bytes32 taskHash) returns()
+func (_IAVSTaskHook *IAVSTaskHookTransactor) HandlePostTaskResultSubmission(opts *bind.TransactOpts, caller common.Address, taskHash [32]byte) (*types.Transaction, error) {
+	return _IAVSTaskHook.contract.Transact(opts, "handlePostTaskResultSubmission", caller, taskHash)
 }
 
-// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xdb6ecf67.
+// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xe082467e.
 //
-// Solidity: function handlePostTaskResultSubmission(bytes32 taskHash) returns()
-func (_IAVSTaskHook *IAVSTaskHookSession) HandlePostTaskResultSubmission(taskHash [32]byte) (*types.Transaction, error) {
-	return _IAVSTaskHook.Contract.HandlePostTaskResultSubmission(&_IAVSTaskHook.TransactOpts, taskHash)
+// Solidity: function handlePostTaskResultSubmission(address caller, bytes32 taskHash) returns()
+func (_IAVSTaskHook *IAVSTaskHookSession) HandlePostTaskResultSubmission(caller common.Address, taskHash [32]byte) (*types.Transaction, error) {
+	return _IAVSTaskHook.Contract.HandlePostTaskResultSubmission(&_IAVSTaskHook.TransactOpts, caller, taskHash)
 }
 
-// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xdb6ecf67.
+// HandlePostTaskResultSubmission is a paid mutator transaction binding the contract method 0xe082467e.
 //
-// Solidity: function handlePostTaskResultSubmission(bytes32 taskHash) returns()
-func (_IAVSTaskHook *IAVSTaskHookTransactorSession) HandlePostTaskResultSubmission(taskHash [32]byte) (*types.Transaction, error) {
-	return _IAVSTaskHook.Contract.HandlePostTaskResultSubmission(&_IAVSTaskHook.TransactOpts, taskHash)
+// Solidity: function handlePostTaskResultSubmission(address caller, bytes32 taskHash) returns()
+func (_IAVSTaskHook *IAVSTaskHookTransactorSession) HandlePostTaskResultSubmission(caller common.Address, taskHash [32]byte) (*types.Transaction, error) {
+	return _IAVSTaskHook.Contract.HandlePostTaskResultSubmission(&_IAVSTaskHook.TransactOpts, caller, taskHash)
 }
