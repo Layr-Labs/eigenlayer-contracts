@@ -84,6 +84,9 @@ contract CrossChainRegistryUnitTests is
         // Make the operator set valid in AllocationManager
         allocationManagerMock.setIsOperatorSet(defaultOperatorSet, true);
 
+        // Set the key type for the operator set in KeyRegistrar
+        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
+
         // Whitelist chain IDs
         crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
     }
@@ -215,6 +218,18 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
 
         cheats.expectRevert(InvalidStalenessPeriod.selector);
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig);
+    }
+
+    function test_Revert_KeyTypeNotSet() public {
+        // Create a new operator set that hasn't been configured in KeyRegistrar
+        OperatorSet memory unconfiguredOperatorSet = _createOperatorSet(defaultAVS, 999);
+
+        // Make the operator set valid in AllocationManager but don't configure it in KeyRegistrar
+        allocationManagerMock.setIsOperatorSet(unconfiguredOperatorSet, true);
+
+        // Expect the KeyTypeNotSet error when trying to create generation reservation
+        cheats.expectRevert(KeyTypeNotSet.selector);
+        crossChainRegistry.createGenerationReservation(unconfiguredOperatorSet, defaultCalculator, defaultConfig);
     }
 
     function test_createGenerationReservation_Success() public {
@@ -668,6 +683,8 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
             OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
+            // Set the key type for the operator set in KeyRegistrar
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
@@ -691,8 +708,6 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
 
         // Set up mock data
         defaultCalculator.setOperatorTableBytes(defaultOperatorSet, testOperatorTableBytes);
-        // Configure operator set in KeyRegistrar (permissions already granted in base setUp)
-        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
     }
 
     function test_calculateOperatorTableBytes_Success() public {
