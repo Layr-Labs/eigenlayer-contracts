@@ -14,32 +14,18 @@ interface IBaseCertificateVerifierEvents {
 
 interface IBaseCertificateVerifierErrors {
     /// @notice Thrown when the table updater is not caller
-    /// @dev Error code: 0x061836d6
-    /// @dev We enforce that only the OperatorTableUpdater can update tables to prevent unauthorized modifications that could compromise system security
     error OnlyTableUpdater();
     /// @notice Thrown when the table update is stale
-    /// @dev Error code: 0x2f20889f
-    /// @dev We enforce that reference timestamps must increase to prevent retroactive updates that could be used to manipulate historical data
     error TableUpdateStale();
     /// @notice Thrown when array lengths mismatch
-    /// @dev Error code: 0xa24a13a6
-    /// @dev We enforce matching array lengths to ensure data consistency between related arrays and prevent out-of-bounds access
     error ArrayLengthMismatch();
     /// @notice Thrown when the certificate is too stale, per the max staleness period of the operatorSet
-    /// @dev Error code: 0xc81f9ad6
-    /// @dev We enforce staleness limits to prevent verification against outdated operator information that may not reflect current network state
     error CertificateStale();
     /// @notice Thrown when the reference timestamp does not exist
-    /// @dev Error code: 0x6568bdb8
-    /// @dev We enforce that operator tables exist for the reference timestamp to ensure verification is performed against valid data snapshots
     error ReferenceTimestampDoesNotExist();
     /// @notice Thrown when certificate verification fails
-    /// @dev Error code: 0x439cc0cd
-    /// @dev We enforce valid signatures and proofs to ensure only authentic certificates are accepted and prevent unauthorized task confirmations
     error VerificationFailed();
     /// @notice Thrown when the global table root is disabled
-    /// @dev Error code: 0x1b14174b
-    /// @dev We enforce that table roots are enabled to prevent verification when operator table data has been intentionally disabled for security reasons
     error RootDisabled();
 }
 
