@@ -282,7 +282,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         BN254OperatorInfo memory operatorInfo,
         bytes memory proof
     ) internal view returns (bool verified) {
-        bytes32 leaf = keccak256(abi.encode(operatorInfo));
+        bytes32 leaf = getOperatorInfoLeaf(operatorInfo);
         bytes32 root = _operatorSetInfos[operatorSetKey][referenceTimestamp].operatorInfoTreeRoot;
         return proof.verifyInclusionKeccak(root, leaf, operatorIndex);
     }
@@ -390,5 +390,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
+    }
+
+    /// @inheritdoc IBN254CertificateVerifier
+    function getOperatorInfoLeaf(
+        BN254OperatorInfo memory operatorInfo
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encode(OPERATOR_INFO_LEAF_SALT, operatorInfo));
     }
 }

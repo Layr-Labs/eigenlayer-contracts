@@ -15,6 +15,9 @@ abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     /// @dev Basis point unit denominator for division
     uint256 internal constant BPS_DENOMINATOR = 10_000;
 
+    /// @dev Salt for operator info leaf
+    uint8 internal constant OPERATOR_INFO_LEAF_SALT = 1;
+
     // Immutables
 
     /// @dev The address that can update operator tables
