@@ -23,6 +23,9 @@ interface ICrossChainRegistryErrors {
     /// @notice Thrown when the operator set is not valid
     error InvalidOperatorSet();
 
+    /// @notice Thrown when the key type is not set for the operatorSet
+    error KeyTypeNotSet();
+
     /// @notice Thrown when the chainIDs array is empty
     error EmptyChainIDsArray();
 
