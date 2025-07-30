@@ -89,6 +89,7 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
 * The global paused status MUST NOT be set: `PAUSED_GENERATION_RESERVATIONS`
 * Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
+* The `KeyType` of the `operatorSet` MUST be set in the `KeyRegistrar`
 * A generation reservation MUST NOT already exist for the `operatorSet`
 
 ### `removeGenerationReservation`
