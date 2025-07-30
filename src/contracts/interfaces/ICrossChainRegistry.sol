@@ -31,6 +31,8 @@ interface ICrossChainRegistryErrors {
     error InvalidOperatorSet();
 
     /// @notice Thrown when the key type is not set for the operatorSet
+    /// @dev Error code: 0xe57cacbd
+    /// @dev We require operator sets to have configured curve types so the multichain protocol can properly decode the operator table
     error KeyTypeNotSet();
 
     /// @notice Thrown when the chainIDs array is empty

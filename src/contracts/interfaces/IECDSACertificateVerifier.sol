@@ -10,12 +10,12 @@ interface IECDSACertificateVerifierErrors {
     /// @dev Error code: 0x4be6321b
     /// @dev We require valid signature lengths (65 bytes per signature) for proper ECDSA signature verification and recovery
     error InvalidSignatureLength();
-    
+
     /// @notice Thrown when the signatures are not ordered by signer address to validate unique signers
     /// @dev Error code: 0xb550c570
     /// @dev We order signers by address as a gas optimization for verification and to ensure unique signers without additional storage
     error SignersNotOrdered();
-    
+
     /// @notice Thrown when the operator count is zero
     /// @dev Error code: 0x40a42054
     /// @dev We require a non-zero operator count to ensure there are operators available for certificate verification

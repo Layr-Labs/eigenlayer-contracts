@@ -10,44 +10,44 @@ interface IKeyRegistrarErrors {
     /// @dev Error code: 0x18f78402
     /// @dev We prevent duplicate key registrations to maintain global key uniqueness and avoid conflicting operator-key mappings
     error KeyAlreadyRegistered();
-    
+
     /// @notice Error thrown when the key format is invalid
     /// @dev Error code: 0xd1091181
     /// @dev We enforce proper key formats (20 bytes for ECDSA, valid G1/G2 points for BN254) to ensure cryptographic validity and prevent malformed key data
     error InvalidKeyFormat();
-    
+
     /// @notice Error thrown when the address is zero
     /// @dev Error code: 0xd92e233d
     error ZeroAddress();
-    
+
     /// @notice Error thrown when the public key is zero
     /// @dev Error code: 0x4935505f
     error ZeroPubkey();
-    
+
     /// @notice Error thrown when the curve type is invalid
     /// @dev Error code: 0xfdea7c09
     /// @dev We require valid curve types (ECDSA or BN254)
     error InvalidCurveType();
-    
+
     /// @notice Error thrown when the keypair is invalid
     /// @dev Error code: 0x1b56a68b
     error InvalidKeypair();
-    
+
     /// @notice Error thrown when the configuration is already set
     /// @dev Error code: 0x0081f09f
     /// @dev We prevent reconfiguration of operator sets to maintain consistency and avoid conflicting curve type settings
     error ConfigurationAlreadySet();
-    
+
     /// @notice Error thrown when the operator set is not configured
     /// @dev Error code: 0xb9a620da
     /// @dev We require operator sets to be configured before key operations to ensure proper curve type validation and prevent operations on unconfigured sets
     error OperatorSetNotConfigured();
-    
+
     /// @notice Error thrown when the key is not found
     /// @dev Error code: 0x2e40e187
     /// @dev We require existing key registrations for deregistration operations to ensure meaningful state changes and prevent operations on non-existent keys
     error KeyNotFound(OperatorSet operatorSet, address operator);
-    
+
     /// @notice Error thrown when the operator is still slashable when trying to deregister a key
     /// @dev Error code: 0x10702879
     /// @dev We prevent key deregistration while operators are slashable to avoid race conditions and ensure operators cannot escape slashing by deregistering keys
@@ -120,6 +120,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - For ECDSA: The key is the zero address (ZeroPubkey)
      *      - For ECDSA: The key is already registered globally by hash (KeyAlreadyRegistered)
      *      - For ECDSA: The signature is not valid (InvalidSignature)
+     *      - For BN254: The key data is not exactly 192 bytes (InvalidKeyFormat)
+     *      - For BN254: The signature is not exactly 64 bytes (InvalidSignature)
      *      - For BN254: The G1 point is the zero point (ZeroPubkey)
      *      - For BN254: The signature is not valid (InvalidSignature)
      *      - For BN254: The key is already registered globally by hash (KeyAlreadyRegistered)

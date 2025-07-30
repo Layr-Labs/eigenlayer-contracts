@@ -159,6 +159,8 @@ For BN254 keys:
 * Caller MUST be the operator or authorized via the `PermissionController`
 * The operatorSet MUST be configured
 * The operator MUST NOT be already registered for the operatorSet in the `KeyRegistrar`
+* The key MUST be exactly 192 bytes 
+* The signatures MUST be exactly 64 bytes
 * The key MUST contain valid G1 and G2 points
 * The G1 point MUST NOT be the zero point
 * The key MUST NOT already be registered globally (by hash)
