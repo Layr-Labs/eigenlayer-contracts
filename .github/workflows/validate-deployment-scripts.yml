@@ -48,7 +48,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
-          version: stable
+          version: v1.2.0
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
