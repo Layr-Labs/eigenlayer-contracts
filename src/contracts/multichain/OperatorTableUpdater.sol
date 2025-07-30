@@ -148,7 +148,7 @@ contract OperatorTableUpdater is
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: keccak256(operatorTableBytes)
+            operatorSetLeafHash: getOperatorTableLeaf(operatorTableBytes)
         });
 
         // Update the operator table
@@ -293,6 +293,13 @@ contract OperatorTableUpdater is
         uint32 referenceTimestamp
     ) external view returns (bool) {
         return _isRootValid[_globalTableRoots[referenceTimestamp]];
+    }
+    
+    /// @inheritdoc IOperatorTableUpdater
+    function getOperatorTableLeaf(
+        bytes calldata operatorTableBytes
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encode(OPERATOR_TABLE_LEAF_SALT, operatorTableBytes));
     }
 
     /**
