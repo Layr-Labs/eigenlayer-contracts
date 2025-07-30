@@ -13,50 +13,62 @@ interface IOperatorTableUpdaterErrors {
     /// @dev Error code: 0xb4233b6a
     /// @dev We enforce that reference timestamps cannot be in the future to prevent manipulation and ensure temporal consistency
     error GlobalTableRootInFuture();
+
     /// @notice Thrown when the global table root is stale
     /// @dev Error code: 0x1bfd4358
     /// @dev We enforce that new reference timestamps must be greater than the latest to prevent retroactive updates and maintain chronological order
     error GlobalTableRootStale();
+
     /// @notice Thrown when the table root does not match what is in the certificate
     /// @dev Error code: 0x8b56642d
     /// @dev We enforce that the message hash in the certificate matches the expected EIP-712 hash to prevent certificate replay attacks
     error InvalidMessageHash();
+
     /// @notice Thrown when the GlobalTableRoot update fails
     /// @dev Error code: 0xc108107c
     /// @dev We enforce that certificates are valid according to the confirmation threshold to prevent unauthorized global root updates
     error CertificateInvalid();
+
     /// @notice Thrown when the table has been updated for the timestamp
     /// @dev Error code: 0x207617df
     /// @dev We enforce that reference timestamps for operator tables increase to prevent retroactive operator table modifications
     error TableUpdateForPastTimestamp();
+
     /// @notice Thrown when the global table root does not match what is in storage
     /// @dev Error code: 0xc73a136a
     /// @dev We enforce that the provided global table root matches the stored root for the timestamp to ensure data integrity
     error InvalidGlobalTableRoot();
+
     /// @notice Thrown when the operator set proof is invalid
     /// @dev Error code: 0xafa42ca7
     /// @dev We enforce that merkle proofs are valid to prevent unauthorized operator table updates and maintain cryptographic security
     error InvalidOperatorSetProof();
+
     /// @notice Thrown when the confirmation threshold is invalid
     /// @dev Error code: 0x0e66de06
     /// @dev We enforce that confirmation thresholds are within valid bounds (≤ 10000 BPS) to prevent invalid threshold configurations
     error InvalidConfirmationThreshold();
+
     /// @notice Thrown when the curve type is invalid
     /// @dev Error code: 0xfdea7c09
     /// @dev We enforce that only supported curve types (BN254, ECDSA) are used to prevent routing to non-existent certificate verifiers
     error InvalidCurveType();
+
     /// @notice Thrown when a root is invalid
     /// @dev Error code: 0x504570e3
     /// @dev We enforce that only valid (enabled) global table roots can be used to prevent operations against disabled or non-existent roots
     error InvalidRoot();
+
     /// @notice Thrown when the generator is invalid (via a non-zero reference timestamp)
     /// @dev Error code: 0x6446f917
     /// @dev We enforce that the generator has a reference timestamp of 0 to ensure proper initialization and prevent conflicts
     error InvalidGenerator();
+
     /// @notice Thrown when the operator set to update is the generator
     /// @dev Error code: 0x7ec5c154
     /// @dev We enforce that regular operator table updates cannot target the generator to maintain separation of concerns
     error InvalidOperatorSet();
+
     /// @notice Thrown when the generator's global table root is being disabled
     /// @dev Error code: 0x332415fa
     /// @dev We enforce that the generator's global table root cannot be disabled to maintain system functionality
