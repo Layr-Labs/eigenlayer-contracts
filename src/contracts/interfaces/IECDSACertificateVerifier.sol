@@ -20,6 +20,11 @@ interface IECDSACertificateVerifierErrors {
     /// @dev Error code: 0x40a42054
     /// @dev We require a non-zero operator count to ensure there are operators available for certificate verification
     error OperatorCountZero();
+
+    /// @notice Thrown when the operator index is out of bounds
+    /// @dev Error code: 0x40a42054
+    /// @dev We require a valid operator index to ensure the operator exists in the operator table
+    error IndexOutOfBounds();
 }
 
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
@@ -89,10 +94,10 @@ interface IECDSACertificateVerifier is
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
      * @dev Reverts for:
-     *      - Caller is not the operatorTableUpdater
-     *      - The referenceTimestamp is not greater than the latest reference timestamp
+     *      - OnlyTableUpdater: Caller is not the operatorTableUpdater
+     *      - TableUpdateStale: The referenceTimestamp is not greater than the latest reference timestamp
      * @dev Emits the following events:
-     *      - TableUpdated
+     *      - TableUpdated: When the operator table is successfully updated
      */
     function updateOperatorTable(
         OperatorSet calldata operatorSet,
@@ -115,15 +120,15 @@ interface IECDSACertificateVerifier is
      *         wants to only confirm tasks against the *latest* certificate
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts for:
-     *      - The certificate's referenceTimestamp is too stale with respect to the maxStalenessPeriod of the operatorSet
-     *      - The root at referenceTimestamp does not exist
-     *      - The root at referenceTimestamp is not valid
-     *      - Signatures are not proper length (InvalidSignatureLength)
-     *      - Each signature is not valid
-     *      - Signatures are not ordered by signer address ascending (SignersNotOrdered)
-     *      - The operatorSet has not been updated for the referenceTimestamp
-     *      - There are zero operators for the referenceTimestamp (OperatorCountZero)
-     *      - Any signer is not a registered operator
+     *      - CertificateStale: The certificate's referenceTimestamp is too stale with respect to the maxStalenessPeriod of the operatorSet
+     *      - ReferenceTimestampDoesNotExist: The root at referenceTimestamp does not exist
+     *      - RootDisabled: The root at referenceTimestamp is not valid
+     *      - InvalidSignatureLength: Signatures are not proper length
+     *      - InvalidSignature: Each signature is not valid
+     *      - SignersNotOrdered: Signatures are not ordered by signer address ascending
+     *      - ReferenceTimestampDoesNotExist: The operatorSet has not been updated for the referenceTimestamp
+     *      - OperatorCountZero: There are zero operators for the referenceTimestamp
+     *      - VerificationFailed: Any signer is not a registered operator
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -148,8 +153,7 @@ interface IECDSACertificateVerifier is
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts for:
      *      - All requirements from verifyCertificate
-     *      - signedStakes.length does not equal totalStakeProportionThresholds.length
-     *      - Any stake type where signedStakes[i] < (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000
+     *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeProportionThresholds.length
      */
     function verifyCertificateProportion(
         OperatorSet calldata operatorSet,
@@ -175,8 +179,7 @@ interface IECDSACertificateVerifier is
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
      * @dev Reverts for:
      *      - All requirements from verifyCertificate
-     *      - signedStakes.length does not equal totalStakeNominalThresholds.length
-     *      - Any stake type where signedStakes[i] < totalStakeNominalThresholds[i]
+     *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeNominalThresholds.length
      */
     function verifyCertificateNominal(
         OperatorSet calldata operatorSet,
@@ -204,7 +207,7 @@ interface IECDSACertificateVerifier is
      * @dev The index is at most the number of operators in the operatorSet at the given reference timestamp,
      *      which is given by `getOperatorCount`
      * @dev Reverts for:
-     *      - operatorIndex is greater than or equal to the number of operators
+     *      - IndexOutOfBounds: operatorIndex is greater than or equal to the number of operators
      */
     function getOperatorInfo(
         OperatorSet calldata operatorSet,
