@@ -14,7 +14,7 @@ import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import {stdToml} from "forge-std/StdToml.sol";
 
 /**
- * Purpose: Update the generaetor on a TESTNET environment
+ * Purpose: Update the generator on a TESTNET environment
  */
 contract QueueTransferProxyAdmin is MultisigBuilder {
     using Env for *;
