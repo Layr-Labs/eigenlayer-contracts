@@ -396,6 +396,6 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     function calculateOperatorInfoLeaf(
         BN254OperatorInfo memory operatorInfo
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(OPERATOR_INFO_LEAF_SALT, operatorInfo));
+        return keccak256(abi.encodePacked(OPERATOR_INFO_LEAF_SALT, abi.encode(operatorInfo)));
     }
 }

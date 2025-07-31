@@ -299,7 +299,7 @@ contract OperatorTableUpdater is
     function calculateOperatorTableLeaf(
         bytes calldata operatorTableBytes
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(OPERATOR_TABLE_LEAF_SALT, operatorTableBytes));
+        return keccak256(abi.encodePacked(OPERATOR_TABLE_LEAF_SALT, operatorTableBytes));
     }
 
     /**
