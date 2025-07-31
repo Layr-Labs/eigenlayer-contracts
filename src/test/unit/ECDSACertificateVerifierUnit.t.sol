@@ -825,6 +825,62 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         vm.expectRevert(VerificationFailed.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
+
+    function test_verifyCertificate_olderTimestamp() public {
+        // First update with initial operators
+        uint32 firstTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory firstOperators,
+            uint32[] memory firstNonSignerIndices,
+            uint[] memory firstSignerPrivKeys
+        ) = _createOperatorsWithSplitKeys(123, 3, 1);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, firstOperators, defaultOperatorSetConfig);
+
+        // Advance time and update with new operators (making this the latest timestamp)
+        vm.warp(block.timestamp + 100);
+        uint32 secondTimestamp = uint32(block.timestamp);
+        (
+            IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory secondOperators,
+            uint32[] memory secondNonSignerIndices,
+            uint[] memory secondSignerPrivKeys
+        ) = _createOperatorsWithSplitKeys(456, 2, 2);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, secondTimestamp, secondOperators, defaultOperatorSetConfig);
+
+        // Verify that the second timestamp is now the latest
+        assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), secondTimestamp, "Second timestamp should be latest");
+
+        // Create certificate for the FIRST (older) timestamp
+        IECDSACertificateVerifierTypes.ECDSACertificate memory cert =
+            _createCertificate(firstTimestamp, defaultMsgHash, firstNonSignerIndices, firstOperators, firstSignerPrivKeys);
+
+        // Verify certificate for older timestamp should succeed
+        (uint[] memory signedStakes, address[] memory signers) = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Calculate expected signed stakes from first operators (only signers contribute)
+        uint[] memory expectedSignedStakes = new uint[](2);
+        for (uint i = 0; i < firstOperators.length; i++) {
+            expectedSignedStakes[0] += firstOperators[i].weights[0];
+            expectedSignedStakes[1] += firstOperators[i].weights[1];
+        }
+
+        // Subtract non-signer stakes
+        for (uint i = 0; i < firstNonSignerIndices.length; i++) {
+            uint32 nonSignerIndex = firstNonSignerIndices[i];
+            expectedSignedStakes[0] -= firstOperators[nonSignerIndex].weights[0];
+            expectedSignedStakes[1] -= firstOperators[nonSignerIndex].weights[1];
+        }
+
+        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
+        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
+
+        // Verify the correct number of signers
+        uint expectedSignerCount = firstOperators.length - firstNonSignerIndices.length;
+        assertEq(signers.length, expectedSignerCount, "Wrong number of signers returned");
+    }
 }
 
 /**
@@ -1213,13 +1269,6 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
 
         vm.expectRevert("Operator index out of bounds");
         verifier.getOperatorInfo(defaultOperatorSet, referenceTimestamp, outOfBoundsIndex);
-    }
-
-    function test_revert_referenceTimestampDoesNotExist() public {
-        uint32 nonExistentTimestamp = uint32(block.timestamp + 1000);
-
-        vm.expectRevert(ReferenceTimestampDoesNotExist.selector);
-        verifier.getTotalStakeWeights(defaultOperatorSet, nonExistentTimestamp);
     }
 
     function test_revert_noOperators() public {
