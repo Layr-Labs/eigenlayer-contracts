@@ -73,6 +73,11 @@ struct ECDSAOperatorInfo {
  * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
  * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
  *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
+ * @dev Reverts for:
+ *      - OnlyTableUpdater: Caller is not the operatorTableUpdater
+ *      - TableUpdateStale: The referenceTimestamp is not greater than the latest reference timestamp
+ * @dev Emits the following events:
+ *      - TableUpdated: When the operator table is successfully updated
  */
 function updateOperatorTable(
     OperatorSet calldata operatorSet,
@@ -138,7 +143,16 @@ struct ECDSACertificate {
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
- * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev Reverts for:
+ *      - CertificateStale: The certificate's referenceTimestamp is too stale with respect to the maxStalenessPeriod of the operatorSet
+ *      - ReferenceTimestampDoesNotExist: The root at referenceTimestamp does not exist
+ *      - RootDisabled: The root at referenceTimestamp is not valid
+ *      - InvalidSignatureLength: Signatures are not proper length
+ *      - InvalidSignature: Each signature is not valid
+ *      - SignersNotOrdered: Signatures are not ordered by signer address ascending
+ *      - ReferenceTimestampDoesNotExist: The operatorSet has not been updated for the referenceTimestamp
+ *      - OperatorCountZero: There are zero operators for the referenceTimestamp
+ *      - VerificationFailed: Any signer is not a registered operator
  */
 function verifyCertificate(
     OperatorSet calldata operatorSet,
@@ -187,7 +201,9 @@ Verifies an ECDSA certificate by checking individual signatures from operators. 
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
- * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev Reverts for:
+ *      - All requirements from verifyCertificate
+ *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeProportionThresholds.length
  */
 function verifyCertificateProportion(
     OperatorSet calldata operatorSet,
@@ -207,7 +223,6 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
 *Requirements*:
 * All requirements from `verifyCertificate`
 * `signedStakes.length` MUST equal `totalStakeProportionThresholds.length`
-* For each stake type: `signedStakes[i] >= (totalStakes[i] * totalStakeProportionThresholds[i]) / 10_000`
 
 #### `verifyCertificateNominal`
 
@@ -228,7 +243,9 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
  *         wants to only confirm tasks against the *latest* certificate
  *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
- * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+ * @dev Reverts for:
+ *      - All requirements from verifyCertificate
+ *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeNominalThresholds.length
  */
 function verifyCertificateNominal(
     OperatorSet calldata operatorSet,
@@ -247,7 +264,6 @@ Verifies that a certificate meets specified nominal (absolute) stake thresholds 
 *Requirements*:
 * All requirements from `verifyCertificate`
 * `signedStakes.length` MUST equal `totalStakeNominalThresholds.length`
-* For each stake type: `signedStakes[i] >= totalStakeNominalThresholds[i]`
 
 ### Utility Functions
 
@@ -270,10 +286,11 @@ The ECDSA Certificate Verifier uses a modified domain separator that intentional
 
 ```solidity
 /**
- * @notice Calculate the EIP-712 digest for a certificate
+ * @notice Calculate the EIP-712 digest for a certificate, returning the hash of the digest
  * @param referenceTimestamp The reference timestamp
- * @param messageHash The message hash
+ * @param messageHash The message hash of the task
  * @return The EIP-712 digest
+ * @dev EIP-712 is a standard ECDSA signature verification framework. See https://eips.ethereum.org/EIPS/eip-712 for more details
  * @dev This function is public to allow offchain tools to calculate the same digest
  * @dev Note: This does not support smart contract based signatures for multichain
  * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
