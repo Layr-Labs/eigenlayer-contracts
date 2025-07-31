@@ -8,6 +8,7 @@ import "../libraries/BN254SignatureVerifier.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/OperatorSetLib.sol";
 import "../mixins/SemVerMixin.sol";
+import "../mixins/LeafCalculatorMixin.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
 /**
@@ -16,7 +17,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, SemVerMixin {
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, SemVerMixin, LeafCalculatorMixin {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
@@ -390,12 +391,5 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
-    }
-
-    /// @inheritdoc IBN254CertificateVerifier
-    function calculateOperatorInfoLeaf(
-        BN254OperatorInfo memory operatorInfo
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(OPERATOR_INFO_LEAF_SALT, abi.encode(operatorInfo)));
     }
 }

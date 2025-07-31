@@ -241,22 +241,4 @@ interface IBN254CertificateVerifier is
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (BN254OperatorSetInfo memory);
-
-    /**
-     * @notice Calculate the leaf for an operator info
-     * @param operatorInfo The operator info
-     * @return The leaf, a hash of a salt and the operator info
-     * @dev The salt is used to prevent against second preimage attacks: attacks where an 
-     * attacker can create a partial proof using an internal node rather than a leaf to 
-     * validate a proof. The salt ensures that leaves cannot be concatenated together to 
-     * form a valid proof, as well as reducing the likelihood of an internal node matching 
-     * the salt prefix.
-     * 
-     * This is a standard "domain separation" technique in Merkle tree implementations
-     * to ensure leaf nodes and internal nodes can never be confused with each other.
-     * See Section 2.1 of <https://www.rfc-editor.org/rfc/rfc9162#name-merkle-trees> for more.
-     */
-    function calculateOperatorInfoLeaf(
-        BN254OperatorInfo memory operatorInfo
-    ) external pure returns (bytes32);
 }

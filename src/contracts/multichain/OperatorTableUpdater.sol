@@ -8,6 +8,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
+import "../mixins/LeafCalculatorMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
 contract OperatorTableUpdater is
@@ -16,6 +17,7 @@ contract OperatorTableUpdater is
     Pausable,
     OperatorTableUpdaterStorage,
     SemVerMixin,
+    LeafCalculatorMixin,
     ReentrancyGuardUpgradeable
 {
     /**
@@ -293,13 +295,6 @@ contract OperatorTableUpdater is
         uint32 referenceTimestamp
     ) external view returns (bool) {
         return _isRootValid[_globalTableRoots[referenceTimestamp]];
-    }
-
-    /// @inheritdoc IOperatorTableUpdater
-    function calculateOperatorTableLeaf(
-        bytes calldata operatorTableBytes
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(OPERATOR_TABLE_LEAF_SALT, operatorTableBytes));
     }
 
     /**
