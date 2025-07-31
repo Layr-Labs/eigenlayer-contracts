@@ -1267,7 +1267,7 @@ contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVeri
         // Try to get operator info with out of bounds index
         uint32 outOfBoundsIndex = uint32(operators.length);
 
-        vm.expectRevert("Operator index out of bounds");
+        vm.expectRevert(IndexOutOfBounds.selector);
         verifier.getOperatorInfo(defaultOperatorSet, referenceTimestamp, outOfBoundsIndex);
     }
 
