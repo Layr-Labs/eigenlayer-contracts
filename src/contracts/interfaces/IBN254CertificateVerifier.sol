@@ -243,11 +243,11 @@ interface IBN254CertificateVerifier is
     ) external view returns (BN254OperatorSetInfo memory);
 
     /**
-     * @notice Get the leaf for an operator info
+     * @notice Calculate the leaf for an operator info
      * @param operatorInfo The operator info
      * @return The leaf, a hash of a salt and the operator info
      */
-    function getOperatorInfoLeaf(
+    function calculateOperatorInfoLeaf(
         BN254OperatorInfo memory operatorInfo
     ) external pure returns (bytes32);
 }

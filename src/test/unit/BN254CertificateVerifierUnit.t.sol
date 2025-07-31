@@ -157,7 +157,7 @@ contract BN254CertificateVerifierUnitTests is
     function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal view returns (bytes32 root) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = verifier.getOperatorInfoLeaf(ops[i]);
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         root = Merkle.merkleizeKeccak(leaves);
     }
@@ -165,7 +165,7 @@ contract BN254CertificateVerifierUnitTests is
     function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal view returns (bytes memory proof) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = verifier.getOperatorInfoLeaf(ops[i]);
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         proof = Merkle.getProofKeccak(leaves, operatorIndex);
     }
