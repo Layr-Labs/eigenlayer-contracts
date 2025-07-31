@@ -633,6 +633,54 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         }
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
+
+    function test_verifyCertificate_olderTimestamp() public {
+        // First update with initial operators
+        uint32 firstTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory firstOperators, uint32[] memory firstNonSignerIndices, BN254.G1Point memory firstSignature) =
+            _createOperatorsWithSplitKeys(123, 3, 1);
+        BN254OperatorSetInfo memory firstOperatorSetInfo = _createOperatorSetInfo(firstOperators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, firstOperatorSetInfo, defaultOperatorSetConfig);
+
+        // Advance time and update with new operators (making this the latest timestamp)
+        vm.warp(block.timestamp + 100);
+        uint32 secondTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory secondOperators,,) = _createOperatorsWithSplitKeys(456, 2, 2);
+        BN254OperatorSetInfo memory secondOperatorSetInfo = _createOperatorSetInfo(secondOperators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, secondTimestamp, secondOperatorSetInfo, defaultOperatorSetConfig);
+
+        // Verify that the second timestamp is now the latest
+        assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), secondTimestamp, "Second timestamp should be latest");
+
+        // Create certificate for the FIRST (older) timestamp
+        BN254Certificate memory cert =
+            _createCertificate(firstTimestamp, defaultMsgHash, firstNonSignerIndices, firstOperators, firstSignature);
+
+        // Verify certificate for older timestamp should succeed
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Calculate expected signed stakes from first operators (total minus non-signers)
+        uint[] memory expectedSignedStakes = new uint[](2);
+        expectedSignedStakes[0] = firstOperatorSetInfo.totalWeights[0];
+        expectedSignedStakes[1] = firstOperatorSetInfo.totalWeights[1];
+
+        // Subtract non-signer stakes
+        for (uint i = 0; i < firstNonSignerIndices.length; i++) {
+            uint32 nonSignerIndex = firstNonSignerIndices[i];
+            expectedSignedStakes[0] -= firstOperators[nonSignerIndex].weights[0];
+            expectedSignedStakes[1] -= firstOperators[nonSignerIndex].weights[1];
+        }
+
+        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
+        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
+
+        // Verify the signed stakes match expected calculation
+        assertEq(signedStakes.length, 2, "Wrong number of stake types returned");
+    }
 }
 
 /**
