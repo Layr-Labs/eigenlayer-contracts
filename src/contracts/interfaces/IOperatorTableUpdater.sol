@@ -246,11 +246,11 @@ interface IOperatorTableUpdater is
     ) external view returns (bool);
 
     /**
-     * @notice Get the leaf for an operator table
+     * @notice Calculate the leaf for an operator table
      * @param operatorTableBytes the bytes of the operator table
      * @return The leaf, a hash of a salt and the operator table bytes
      */
-    function getOperatorTableLeaf(
+    function calculateOperatorTableLeaf(
         bytes calldata operatorTableBytes
     ) external pure returns (bytes32);
 }

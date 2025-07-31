@@ -148,7 +148,7 @@ contract OperatorTableUpdater is
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: getOperatorTableLeaf(operatorTableBytes)
+            operatorSetLeafHash: calculateOperatorTableLeaf(operatorTableBytes)
         });
 
         // Update the operator table
@@ -296,7 +296,7 @@ contract OperatorTableUpdater is
     }
 
     /// @inheritdoc IOperatorTableUpdater
-    function getOperatorTableLeaf(
+    function calculateOperatorTableLeaf(
         bytes calldata operatorTableBytes
     ) public pure returns (bytes32) {
         return keccak256(abi.encode(OPERATOR_TABLE_LEAF_SALT, operatorTableBytes));
