@@ -392,6 +392,37 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         keyRegistrar.registerKey(operator1, operatorSet, zeroKey, signature);
     }
 
+    function test_revert_invalidKeyDataLength() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        uint len = vm.randomUint(0, 256);
+        if (len == 192) ++len;
+        bytes memory keyData = new bytes(len);
+        bytes memory signature = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+
+        vm.prank(operator1);
+        vm.expectRevert(InvalidKeyFormat.selector);
+        keyRegistrar.registerKey(operator1, operatorSet, keyData, signature);
+    }
+
+    function test_revert_invalidSignatureLength() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        uint len = vm.randomUint(0, 256);
+        if (len == 64) ++len;
+        bytes memory malformedSignature = new bytes(len);
+
+        vm.prank(operator1);
+        vm.expectRevert(InvalidSignature.selector);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, malformedSignature);
+    }
+
     function test_revert_invalidSignature() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 

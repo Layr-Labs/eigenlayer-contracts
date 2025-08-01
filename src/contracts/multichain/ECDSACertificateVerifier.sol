@@ -246,7 +246,6 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint32 referenceTimestamp
     ) public view returns (uint256[] memory) {
         bytes32 operatorSetKey = operatorSet.key();
-        require(_latestReferenceTimestamps[operatorSetKey] == referenceTimestamp, ReferenceTimestampDoesNotExist());
 
         uint256 operatorCount = _numOperators[operatorSetKey][referenceTimestamp];
         require(operatorCount > 0, OperatorCountZero());

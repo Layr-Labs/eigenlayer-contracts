@@ -26,7 +26,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     struct VerificationContext {
         bytes32 operatorSetKey;
         BN254OperatorSetInfo operatorSetInfo;
-        uint256[] signedStakes;
+        uint256[] totalSignedStakeWeights;
         BN254.G1Point nonSignerApk;
     }
 
@@ -83,7 +83,7 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
     function verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
-    ) external returns (uint256[] memory signedStakes) {
+    ) external returns (uint256[] memory totalSignedStakeWeights) {
         return _verifyCertificate(operatorSet, cert);
     }
 
@@ -93,20 +93,20 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         BN254Certificate memory cert,
         uint16[] memory totalStakeProportionThresholds
     ) external returns (bool) {
-        uint256[] memory signedStakes = _verifyCertificate(operatorSet, cert);
+        uint256[] memory totalSignedStakeWeights = _verifyCertificate(operatorSet, cert);
 
         bytes32 operatorSetKey = operatorSet.key();
         BN254OperatorSetInfo memory operatorSetInfo = _operatorSetInfos[operatorSetKey][cert.referenceTimestamp];
         uint256[] memory totalStakes = operatorSetInfo.totalWeights;
 
-        require(signedStakes.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
+        require(totalSignedStakeWeights.length == totalStakeProportionThresholds.length, ArrayLengthMismatch());
 
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            // Calculate threshold as proportion of total stake weight
+        for (uint256 i = 0; i < totalSignedStakeWeights.length; i++) {
+            // Calculate threshold as proportion of total signed stake weight
             // totalStakeProportionThresholds is in basis points (e.g. 6600 = 66%)
             uint256 threshold = (totalStakes[i] * totalStakeProportionThresholds[i]) / BPS_DENOMINATOR;
 
-            if (signedStakes[i] < threshold) {
+            if (totalSignedStakeWeights[i] < threshold) {
                 return false;
             }
         }
@@ -120,12 +120,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         BN254Certificate memory cert,
         uint256[] memory totalStakeNominalThresholds
     ) external returns (bool) {
-        uint256[] memory signedStakes = _verifyCertificate(operatorSet, cert);
+        uint256[] memory totalSignedStakeWeights = _verifyCertificate(operatorSet, cert);
 
-        require(signedStakes.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
+        require(totalSignedStakeWeights.length == totalStakeNominalThresholds.length, ArrayLengthMismatch());
 
-        for (uint256 i = 0; i < signedStakes.length; i++) {
-            if (signedStakes[i] < totalStakeNominalThresholds[i]) {
+        for (uint256 i = 0; i < totalSignedStakeWeights.length; i++) {
+            if (totalSignedStakeWeights[i] < totalStakeNominalThresholds[i]) {
                 return false;
             }
         }
@@ -143,12 +143,12 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
      * @notice Internal function to verify a certificate
      * @param operatorSet The operator set the certificate is for
      * @param cert The certificate to verify
-     * @return signedStakes The amount of stake that signed the certificate for each stake type
+     * @return totalSignedStakeWeights The amount of stake that signed the certificate for each stake type
      */
     function _verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
-    ) internal returns (uint256[] memory signedStakes) {
+    ) internal returns (uint256[] memory totalSignedStakeWeights) {
         VerificationContext memory ctx;
         ctx.operatorSetKey = operatorSet.key();
 
@@ -156,16 +156,16 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
         ctx.operatorSetInfo = _operatorSetInfos[ctx.operatorSetKey][cert.referenceTimestamp];
 
         // Initialize signed stakes with total stake weights
-        ctx.signedStakes = new uint256[](ctx.operatorSetInfo.totalWeights.length);
+        ctx.totalSignedStakeWeights = new uint256[](ctx.operatorSetInfo.totalWeights.length);
         for (uint256 i = 0; i < ctx.operatorSetInfo.totalWeights.length; i++) {
-            ctx.signedStakes[i] = ctx.operatorSetInfo.totalWeights[i];
+            ctx.totalSignedStakeWeights[i] = ctx.operatorSetInfo.totalWeights[i];
         }
 
         ctx.nonSignerApk = _processNonSigners(ctx, cert);
 
         _verifySignature(ctx, cert);
 
-        return ctx.signedStakes;
+        return ctx.totalSignedStakeWeights;
     }
 
     /**
@@ -209,8 +209,8 @@ contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStor
 
             // Subtract non-signer stakes from total signed stakes
             for (uint256 j = 0; j < operatorInfo.weights.length; j++) {
-                if (j < ctx.signedStakes.length) {
-                    ctx.signedStakes[j] -= operatorInfo.weights[j];
+                if (j < ctx.totalSignedStakeWeights.length) {
+                    ctx.totalSignedStakeWeights[j] -= operatorInfo.weights[j];
                 }
             }
         }

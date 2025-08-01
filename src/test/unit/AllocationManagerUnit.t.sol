@@ -2071,7 +2071,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         // Warp to allocation complete block
         cheats.roll(block.number + DEFAULT_OPERATOR_ALLOCATION_DELAY);
 
-        // Attempt to allocate no magnitude (ie. same magnitude)
+        // Attempt to allocate no magnitude (i.e. same magnitude)
         cheats.expectRevert(SameMagnitude.selector);
         cheats.prank(defaultOperator);
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
