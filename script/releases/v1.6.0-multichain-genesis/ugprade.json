@@ -1,0 +1,11 @@
+{
+    "name": "v1.6.0-destination-genesis",
+    "from": "0.0.0",
+    "to": "1.6.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        }
+    ]
+}
