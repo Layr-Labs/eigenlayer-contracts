@@ -43,7 +43,7 @@ type IOperatorTableCalculatorTypesBN254OperatorInfo struct {
 
 // LeafCalculatorMixinMetaData contains all meta data concerning the LeafCalculatorMixin contract.
 var LeafCalculatorMixinMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"calculateOperatorInfoLeaf\",\"inputs\":[{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableLeaf\",\"inputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"OPERATOR_INFO_LEAF_SALT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"OPERATOR_TABLE_LEAF_SALT\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"calculateOperatorInfoLeaf\",\"inputs\":[{\"name\":\"operatorInfo\",\"type\":\"tuple\",\"internalType\":\"structIOperatorTableCalculatorTypes.BN254OperatorInfo\",\"components\":[{\"name\":\"pubkey\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"weights\",\"type\":\"uint256[]\",\"internalType\":\"uint256[]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"calculateOperatorTableLeaf\",\"inputs\":[{\"name\":\"operatorTableBytes\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"pure\"}]",
 }
 
 // LeafCalculatorMixinABI is the input ABI used to generate the binding from.
@@ -190,6 +190,68 @@ func (_LeafCalculatorMixin *LeafCalculatorMixinTransactorRaw) Transfer(opts *bin
 // Transact invokes the (paid) contract method with params as input values.
 func (_LeafCalculatorMixin *LeafCalculatorMixinTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _LeafCalculatorMixin.Contract.contract.Transact(opts, method, params...)
+}
+
+// OPERATORINFOLEAFSALT is a free data retrieval call binding the contract method 0xa2c902f5.
+//
+// Solidity: function OPERATOR_INFO_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinCaller) OPERATORINFOLEAFSALT(opts *bind.CallOpts) (uint8, error) {
+	var out []interface{}
+	err := _LeafCalculatorMixin.contract.Call(opts, &out, "OPERATOR_INFO_LEAF_SALT")
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// OPERATORINFOLEAFSALT is a free data retrieval call binding the contract method 0xa2c902f5.
+//
+// Solidity: function OPERATOR_INFO_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinSession) OPERATORINFOLEAFSALT() (uint8, error) {
+	return _LeafCalculatorMixin.Contract.OPERATORINFOLEAFSALT(&_LeafCalculatorMixin.CallOpts)
+}
+
+// OPERATORINFOLEAFSALT is a free data retrieval call binding the contract method 0xa2c902f5.
+//
+// Solidity: function OPERATOR_INFO_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinCallerSession) OPERATORINFOLEAFSALT() (uint8, error) {
+	return _LeafCalculatorMixin.Contract.OPERATORINFOLEAFSALT(&_LeafCalculatorMixin.CallOpts)
+}
+
+// OPERATORTABLELEAFSALT is a free data retrieval call binding the contract method 0x121409ea.
+//
+// Solidity: function OPERATOR_TABLE_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinCaller) OPERATORTABLELEAFSALT(opts *bind.CallOpts) (uint8, error) {
+	var out []interface{}
+	err := _LeafCalculatorMixin.contract.Call(opts, &out, "OPERATOR_TABLE_LEAF_SALT")
+
+	if err != nil {
+		return *new(uint8), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+
+	return out0, err
+
+}
+
+// OPERATORTABLELEAFSALT is a free data retrieval call binding the contract method 0x121409ea.
+//
+// Solidity: function OPERATOR_TABLE_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinSession) OPERATORTABLELEAFSALT() (uint8, error) {
+	return _LeafCalculatorMixin.Contract.OPERATORTABLELEAFSALT(&_LeafCalculatorMixin.CallOpts)
+}
+
+// OPERATORTABLELEAFSALT is a free data retrieval call binding the contract method 0x121409ea.
+//
+// Solidity: function OPERATOR_TABLE_LEAF_SALT() view returns(uint8)
+func (_LeafCalculatorMixin *LeafCalculatorMixinCallerSession) OPERATORTABLELEAFSALT() (uint8, error) {
+	return _LeafCalculatorMixin.Contract.OPERATORTABLELEAFSALT(&_LeafCalculatorMixin.CallOpts)
 }
 
 // CalculateOperatorInfoLeaf is a free data retrieval call binding the contract method 0x538a3790.
