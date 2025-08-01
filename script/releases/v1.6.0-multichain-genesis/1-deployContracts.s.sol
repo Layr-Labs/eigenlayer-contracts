@@ -64,7 +64,7 @@ contract DeployDestinationGenesis is EOADeployer {
             return;
         }
 
-        _runAsEOA();
+        super.runAsEOA();
 
         // Check proxyAdmin owner
         assertEq(ProxyAdmin(Env.proxyAdmin()).owner(), Env.opsMultisig());
@@ -79,9 +79,9 @@ contract DeployDestinationGenesis is EOADeployer {
 
         // Assert the owners of each multisig
         address[] memory opsMultisigOwners =
-            _getMultisigOwner("script/releases/1.6.0-multichain-genesis/opsOwners.toml");
+            _getMultisigOwner("script/releases/v1.6.0-multichain-genesis/opsOwners.toml");
         address[] memory pauserMultisigOwners =
-            _getMultisigOwner("script/releases/1.6.0-multichain-genesis/pauserOwners.toml");
+            _getMultisigOwner("script/releases/v1.6.0-multichain-genesis/pauserOwners.toml");
         for (uint256 i = 0; i < opsMultisigOwners.length; i++) {
             assertTrue(Multisig(address(Env.opsMultisig())).isOwner(opsMultisigOwners[i]));
         }
