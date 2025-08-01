@@ -77,7 +77,7 @@
     sparse_mode = true
     
     no_match_test = "queueUpgrade"
-    no_match_path = "script/releases/**/*.sol"
+    no_match_path = "script/**/*.sol"
     fs_permissions = [{ access = "read-write", path = "./"}]
 
 [profile.default.fmt]
