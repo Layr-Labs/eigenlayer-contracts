@@ -115,7 +115,7 @@ contract DeployDestinationGenesis is EOADeployer {
         // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
         // NOTE: double check these addresses are correct on each chain
         address safeFactory = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
-        address safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+        address safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762; // Gnosis safe L2 singleton
         address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
 
         bytes memory emptyData;
