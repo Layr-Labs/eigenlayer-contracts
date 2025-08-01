@@ -17,9 +17,9 @@ abstract contract LeafCalculatorMixin {
     /// validate a proof. The salt ensures that leaves cannot be concatenated together to
     /// form a valid proof, as well as reducing the likelihood of an internal node matching
     /// the salt prefix.
-    /// @dev Value derived from keccak256("EIGENLAYER_OPERATOR_INFO_LEAF_SALT") = 0x38...
+    /// @dev Value derived from keccak256("OPERATOR_INFO_LEAF_SALT") = 0x38...
     /// This ensures collision resistance and semantic meaning.
-    uint8 internal constant OPERATOR_INFO_LEAF_SALT = 0x38;
+    uint8 public constant OPERATOR_INFO_LEAF_SALT = 0x75;
 
     /// @dev Salt for operator table leaf hash calculation
     /// @dev The salt is used to prevent against second preimage attacks: attacks where an
@@ -27,9 +27,9 @@ abstract contract LeafCalculatorMixin {
     /// validate a proof. The salt ensures that leaves cannot be concatenated together to
     /// form a valid proof, as well as reducing the likelihood of an internal node matching
     /// the salt prefix.
-    /// @dev Value derived from keccak256("EIGENLAYER_OPERATOR_TABLE_LEAF_SALT") = 0x7d...
+    /// @dev Value derived from keccak256("OPERATOR_TABLE_LEAF_SALT") = 0x7d...
     /// This ensures collision resistance and semantic meaning.
-    uint8 internal constant OPERATOR_TABLE_LEAF_SALT = 0x7d;
+    uint8 public constant OPERATOR_TABLE_LEAF_SALT = 0x8e;
 
     /**
      * @notice Calculate the leaf hash for an operator info
