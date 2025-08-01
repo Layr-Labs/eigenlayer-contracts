@@ -134,6 +134,7 @@ interface IOperatorTableUpdater is
      * @notice The threshold, in bps, for a global root to be signed off on and updated
      * @dev Only callable by the owner of the contract
      * @dev Reverts for:
+     *      - "Ownable: caller is not the owner": caller is not the owner
      *      - InvalidConfirmationThreshold: bps is greater than MAX_BPS (10000)
      * @dev Emits the following events:
      *      - GlobalRootConfirmationThresholdUpdated: When threshold is successfully updated
@@ -154,6 +155,7 @@ interface IOperatorTableUpdater is
      * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
      * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      * @dev Reverts for:
+     *      - "Ownable: caller is not the owner": caller is not the owner
      *      - InvalidGenerator: generator has a non-zero reference timestamp
      * @dev Emits the following events:
      *      - GeneratorUpdated: When generator is successfully updated
@@ -191,6 +193,7 @@ interface IOperatorTableUpdater is
      * @dev Only callable by the pauser
      * @dev Cannot disable the GENERATOR_GLOBAL_TABLE_ROOT
      * @dev Reverts for:
+     *      - OnlyPauser: caller is not the pauser
      *      - InvalidRoot: globalTableRoot is already disabled or does not exist
      *      - CannotDisableGeneratorRoot: attempting to disable the generator's global table root
      * @dev Emits the following events:
