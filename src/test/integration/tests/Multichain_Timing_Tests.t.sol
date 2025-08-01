@@ -54,7 +54,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
             abi.encode(operatorSetInfo)
         );
 
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
@@ -119,7 +119,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
             abi.encode(operatorSetInfo)
         );
 
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
@@ -243,7 +243,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
             abi.encode(operatorSetInfo)
         );
 
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
@@ -277,7 +277,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
             abi.encode(operatorSetInfo)
         );
 
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
@@ -626,7 +626,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
         );
 
         // Create global table root containing the operator table
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);
@@ -659,7 +659,7 @@ contract Multichain_Timing_Tests is MultichainIntegrationCheckUtils {
         );
 
         // Create global table root containing the operator table
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
         bytes32[] memory leaves = new bytes32[](1);
         leaves[0] = operatorSetLeafHash;
         bytes32 globalTableRoot = Merkle.merkleizeKeccak(leaves);

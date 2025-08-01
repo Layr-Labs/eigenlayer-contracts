@@ -154,18 +154,18 @@ contract BN254CertificateVerifierUnitTests is
         signature = BN254.hashToG1(defaultMsgHash).scalar_mul(aggSignerPrivKey);
     }
 
-    function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal pure returns (bytes32 root) {
+    function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal view returns (bytes32 root) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = keccak256(abi.encode(ops[i]));
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         root = Merkle.merkleizeKeccak(leaves);
     }
 
-    function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal pure returns (bytes memory proof) {
+    function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal view returns (bytes memory proof) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = keccak256(abi.encode(ops[i]));
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         proof = Merkle.getProofKeccak(leaves, operatorIndex);
     }

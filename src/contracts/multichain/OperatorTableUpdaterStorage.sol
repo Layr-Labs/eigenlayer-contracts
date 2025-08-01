@@ -14,6 +14,8 @@ abstract contract OperatorTableUpdaterStorage is IOperatorTableUpdater {
     /// @notice Index for flag that pauses calling `updateOperatorTable`
     uint8 internal constant PAUSED_OPERATOR_TABLE_UPDATE = 1;
 
+    // OPERATOR_TABLE_LEAF_SALT is now inherited from LeafCalculatorMixin
+
     bytes32 public constant GLOBAL_TABLE_ROOT_CERT_TYPEHASH =
         keccak256("GlobalTableRootCert(bytes32 globalTableRoot,uint32 referenceTimestamp,uint32 referenceBlockNumber)");
 
