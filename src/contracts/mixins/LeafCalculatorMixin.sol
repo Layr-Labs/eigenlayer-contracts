@@ -17,7 +17,7 @@ abstract contract LeafCalculatorMixin {
     /// validate a proof. The salt ensures that leaves cannot be concatenated together to
     /// form a valid proof, as well as reducing the likelihood of an internal node matching
     /// the salt prefix.
-    /// @dev Value derived from keccak256("OPERATOR_INFO_LEAF_SALT") = 0x38...
+    /// @dev Value derived from keccak256("OPERATOR_INFO_LEAF_SALT") = 0x75...
     /// This ensures collision resistance and semantic meaning.
     uint8 public constant OPERATOR_INFO_LEAF_SALT = 0x75;
 
@@ -27,7 +27,7 @@ abstract contract LeafCalculatorMixin {
     /// validate a proof. The salt ensures that leaves cannot be concatenated together to
     /// form a valid proof, as well as reducing the likelihood of an internal node matching
     /// the salt prefix.
-    /// @dev Value derived from keccak256("OPERATOR_TABLE_LEAF_SALT") = 0x7d...
+    /// @dev Value derived from keccak256("OPERATOR_TABLE_LEAF_SALT") = 0x8e...
     /// This ensures collision resistance and semantic meaning.
     uint8 public constant OPERATOR_TABLE_LEAF_SALT = 0x8e;
 
