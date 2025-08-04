@@ -20,6 +20,7 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
     mapping(bytes32 operatorSetKey => address owner) internal _operatorSetOwners;
     mapping(bytes32 operatorSetKey => uint32 maxStalenessPeriod) internal _maxStalenessPeriods;
     mapping(bytes32 operatorSetKey => uint32 latestReferenceTimestamp) internal _latestReferenceTimestamp;
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => bool isSet)) internal _isReferenceTimestampSet;
 
     // Mock operator table updater for testing
     IOperatorTableUpdater public operatorTableUpdater;
@@ -43,6 +44,7 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
         _operatorSetInfos[operatorSet.key()][referenceTimestamp] = operatorSetInfo;
         _operatorSetOwners[operatorSet.key()] = operatorSetConfig.owner;
         _maxStalenessPeriods[operatorSet.key()] = operatorSetConfig.maxStalenessPeriod;
+        _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp] = true;
     }
 
     function verifyCertificateProportion(
@@ -63,6 +65,14 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
 
     function latestReferenceTimestamp(OperatorSet memory operatorSet) external view returns (uint32) {
         return _latestReferenceTimestamp[operatorSet.key()];
+    }
+
+    function setIsReferenceTimestampSet(OperatorSet memory operatorSet, uint32 referenceTimestamp, bool isSet) public {
+        _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp] = isSet;
+    }
+
+    function isReferenceTimestampSet(OperatorSet memory operatorSet, uint32 referenceTimestamp) external view returns (bool) {
+        return _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp];
     }
 
     /**

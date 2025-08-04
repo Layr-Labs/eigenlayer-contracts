@@ -171,6 +171,7 @@ interface IOperatorTableUpdater is
      * @param operatorTableBytes the bytes of the operator table
      * @dev This function calls `updateOperatorTable` on the `ECDSACertificateVerifier` or `BN254CertificateVerifier`
      *      depending on the `KeyType` of the operatorSet, which is encoded in the `operatorTableBytes`
+     * @dev Function silently returns if the `referenceTimestamp` has already been updated for the `operatorSet`
      * @dev Reverts for:
      *      - InvalidRoot: globalTableRoot is disabled or invalid
      *      - InvalidOperatorSet: operatorSet is the generator (not allowed for regular updates)
