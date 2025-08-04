@@ -5,7 +5,6 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IOperatorTableCalculator.sol";
 
 interface ICrossChainRegistryErrors {
-    /// TODO: add a reason why we throw errors for each error (ie. what would happen if we didn't throw)
     /// @notice Thrown when the chainId is invalid
     /// @dev Error code: 0x7a47c9a2
     error InvalidChainId();
