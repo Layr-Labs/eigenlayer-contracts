@@ -246,6 +246,7 @@ Verifies that a certificate meets specified proportion thresholds as a percentag
  * @dev Reverts for:
  *      - All requirements from verifyCertificate
  *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeNominalThresholds.length
+ */
 function verifyCertificateNominal(
     OperatorSet calldata operatorSet,
     ECDSACertificate memory cert,

@@ -466,6 +466,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
+
+    function testFuzz_BN254_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        bn254CertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
+    }
 }
 
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTableUpdaterUnitTests {
@@ -582,6 +613,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
             )
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_ECDSA_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorInfos and operatorSetConfig
+        ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        bytes memory operatorInfosBytes = abi.encode(operatorInfos);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        ecdsaCertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
     }
 }
 

@@ -91,13 +91,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         );
 
         // Deploy OperatorTableUpdater (placeholder addresses for certificate verifiers initially)
-        operatorTableUpdaterImplementation = new OperatorTableUpdater(
-            IBN254CertificateVerifier(address(0)), IECDSACertificateVerifier(address(0)), eigenLayerPauserReg, "1.0.0"
-        );
-
-        operatorTableUpdater = OperatorTableUpdater(
-            address(new TransparentUpgradeableProxy(address(operatorTableUpdaterImplementation), address(eigenLayerProxyAdmin), ""))
-        );
+        emptyContract = new EmptyContract();
+        operatorTableUpdater =
+            OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy BN254CertificateVerifier
         bn254CertificateVerifierImplementation = new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdater)), "1.0.0");
@@ -122,6 +118,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         );
 
         // Upgrade the proxy to use the new implementation with correct addresses
+        cheats.prank(address(eigenLayerProxyAdmin.owner()));
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(operatorTableUpdater))), address(newOperatorTableUpdaterImplementation)
         );

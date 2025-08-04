@@ -14,6 +14,7 @@ contract ECDSACertificateVerifierMock is Test, IECDSACertificateVerifierTypes {
     mapping(bytes32 certificateHash => bool isValid) internal _isValidCertificate;
 
     mapping(bytes32 operatorSetKey => uint32 latestReferenceTimestamp) internal _latestReferenceTimestamp;
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => bool isSet)) internal _isReferenceTimestampSet;
 
     function setIsValidCertificate(ECDSACertificate memory certificate, bool isValid) public {
         bytes32 certificateHash = keccak256(abi.encode(certificate));
@@ -26,5 +27,13 @@ contract ECDSACertificateVerifierMock is Test, IECDSACertificateVerifierTypes {
 
     function latestReferenceTimestamp(OperatorSet memory operatorSet) external view returns (uint32) {
         return _latestReferenceTimestamp[operatorSet.key()];
+    }
+
+    function setIsReferenceTimestampSet(OperatorSet memory operatorSet, uint32 referenceTimestamp, bool isSet) public {
+        _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp] = isSet;
+    }
+
+    function isReferenceTimestampSet(OperatorSet memory operatorSet, uint32 referenceTimestamp) external view returns (bool) {
+        return _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp];
     }
 }

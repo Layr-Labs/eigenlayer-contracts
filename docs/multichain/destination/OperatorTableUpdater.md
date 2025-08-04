@@ -53,6 +53,13 @@ Global table roots must be confirmed by the `generator` before operator tables c
  * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
  * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp`, whereas
  *      the `referenceTimestamp` passed directly in the calldata is the block timestamp at which the global table root was calculated
+ * @dev Reverts for:
+ *      - GlobalTableRootInFuture: referenceTimestamp is in the future
+ *      - GlobalTableRootStale: referenceTimestamp is not greater than latest reference timestamp
+ *      - InvalidMessageHash: certificate messageHash does not match expected EIP-712 hash
+ *      - CertificateInvalid: certificate verification failed against confirmation threshold
+ * @dev Emits the following events:
+ *      - NewGlobalTableRoot: When global table root is successfully confirmed
  */
 function confirmGlobalTableRoot(
     BN254Certificate calldata globalTableRootCert,
@@ -90,12 +97,21 @@ Once a global root is confirmed, individual operator tables can be updated by pr
 ```solidity
 /**
  * @notice Updates an operator table
- * @param referenceTimestamp the reference block number of the globalTableRoot
+ * @param referenceTimestamp the reference timestamp of the globalTableRoot
  * @param globalTableRoot the new globalTableRoot
  * @param operatorSetIndex the index of the given operatorSet being updated
  * @param proof the proof of the leaf at index against the globalTableRoot
  * @param operatorTableBytes the bytes of the operator table
- * @dev Depending on the decoded KeyType, the tableInfo will be decoded
+ * @dev This function calls `updateOperatorTable` on the `ECDSACertificateVerifier` or `BN254CertificateVerifier`
+ *      depending on the `KeyType` of the operatorSet, which is encoded in the `operatorTableBytes`
+ * @dev Function silently returns if the `referenceTimestamp` has already been updated for the `operatorSet`
+ * @dev Reverts for:
+ *      - InvalidRoot: globalTableRoot is disabled or invalid
+ *      - InvalidOperatorSet: operatorSet is the generator (not allowed for regular updates)
+ *      - TableUpdateForPastTimestamp: referenceTimestamp is not greater than latest for the operatorSet
+ *      - InvalidGlobalTableRoot: provided globalTableRoot does not match stored root for referenceTimestamp
+ *      - InvalidOperatorSetProof: merkle proof verification failed
+ *      - InvalidCurveType: unsupported curve type in operatorTableBytes
  */
 function updateOperatorTable(
     uint32 referenceTimestamp,
@@ -135,14 +151,19 @@ The `owner` can configure the `generator` and confirmation parameters.
 /**
  * @notice Updates the `Generator` to a new operatorSet
  * @param generator The operatorSet which certifies against global roots
- * @param GeneratorInfo The operatorSetInfo for the generator
- * @param GeneratorConfig The operatorSetConfig for the generator
+ * @param generatorInfo The operatorSetInfo for the generator
  * @dev We have a separate function for updating this operatorSet since it's not transported and updated
  *      in the same way as the other operatorSets
  * @dev Only callable by the owner of the contract
  * @dev Uses GENERATOR_GLOBAL_TABLE_ROOT constant to break circular dependency for certificate verification
  * @dev We ensure that there are no collisions with other reference timestamps because we expect the generator to have an initial reference timestamp of 0
  * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
+ * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
+ * @dev Reverts for:
+ *      - "Ownable: caller is not the owner": caller is not the owner
+ *      - InvalidGenerator: generator has a non-zero reference timestamp
+ * @dev Emits the following events:
+ *      - GeneratorUpdated: When generator is successfully updated
  */
 function updateGenerator(
     OperatorSet calldata generator,
@@ -169,8 +190,12 @@ Updates the operator set responsible for confirming global table roots. This fun
 ```solidity
 /**
  * @notice The threshold, in bps, for a global root to be signed off on and updated
- * @param bps The threshold in basis points
  * @dev Only callable by the owner of the contract
+ * @dev Reverts for:
+ *      - "Ownable: caller is not the owner": caller is not the owner
+ *      - InvalidConfirmationThreshold: bps is greater than MAX_BPS (10000)
+ * @dev Emits the following events:
+ *      - GlobalRootConfirmationThresholdUpdated: When threshold is successfully updated
  */
 function setGlobalRootConfirmationThreshold(
     uint16 bps
@@ -194,6 +219,13 @@ Sets the stake proportion threshold required for confirming global table roots.
  * @notice Disables a global table root
  * @param globalTableRoot the global table root to disable
  * @dev Only callable by the pauser
+ * @dev Cannot disable the GENERATOR_GLOBAL_TABLE_ROOT
+ * @dev Reverts for:
+ *      - OnlyPauser: caller is not the pauser
+ *      - InvalidRoot: globalTableRoot is already disabled or does not exist
+ *      - CannotDisableGeneratorRoot: attempting to disable the generator's global table root
+ * @dev Emits the following events:
+ *      - GlobalRootDisabled: When global table root is successfully disabled
  */
 function disableRoot(
     bytes32 globalTableRoot
