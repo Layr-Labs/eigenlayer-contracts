@@ -154,18 +154,18 @@ contract BN254CertificateVerifierUnitTests is
         signature = BN254.hashToG1(defaultMsgHash).scalar_mul(aggSignerPrivKey);
     }
 
-    function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal pure returns (bytes32 root) {
+    function _getMerkleRoot(BN254OperatorInfo[] memory ops) internal view returns (bytes32 root) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = keccak256(abi.encode(ops[i]));
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         root = Merkle.merkleizeKeccak(leaves);
     }
 
-    function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal pure returns (bytes memory proof) {
+    function _getMerkleProof(BN254OperatorInfo[] memory ops, uint32 operatorIndex) internal view returns (bytes memory proof) {
         bytes32[] memory leaves = new bytes32[](ops.length);
         for (uint i = 0; i < ops.length; i++) {
-            leaves[i] = keccak256(abi.encode(ops[i]));
+            leaves[i] = verifier.calculateOperatorInfoLeaf(ops[i]);
         }
         proof = Merkle.getProofKeccak(leaves, operatorIndex);
     }
@@ -632,6 +632,54 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
             cert.nonSignerWitnesses[i].operatorInfo = emptyOperatorInfo;
         }
         verifier.verifyCertificate(defaultOperatorSet, cert);
+    }
+
+    function test_verifyCertificate_olderTimestamp() public {
+        // First update with initial operators
+        uint32 firstTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory firstOperators, uint32[] memory firstNonSignerIndices, BN254.G1Point memory firstSignature) =
+            _createOperatorsWithSplitKeys(123, 3, 1);
+        BN254OperatorSetInfo memory firstOperatorSetInfo = _createOperatorSetInfo(firstOperators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, firstTimestamp, firstOperatorSetInfo, defaultOperatorSetConfig);
+
+        // Advance time and update with new operators (making this the latest timestamp)
+        vm.warp(block.timestamp + 100);
+        uint32 secondTimestamp = uint32(block.timestamp);
+        (BN254OperatorInfo[] memory secondOperators,,) = _createOperatorsWithSplitKeys(456, 2, 2);
+        BN254OperatorSetInfo memory secondOperatorSetInfo = _createOperatorSetInfo(secondOperators);
+
+        vm.prank(address(operatorTableUpdaterMock));
+        verifier.updateOperatorTable(defaultOperatorSet, secondTimestamp, secondOperatorSetInfo, defaultOperatorSetConfig);
+
+        // Verify that the second timestamp is now the latest
+        assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), secondTimestamp, "Second timestamp should be latest");
+
+        // Create certificate for the FIRST (older) timestamp
+        BN254Certificate memory cert =
+            _createCertificate(firstTimestamp, defaultMsgHash, firstNonSignerIndices, firstOperators, firstSignature);
+
+        // Verify certificate for older timestamp should succeed
+        uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
+
+        // Calculate expected signed stakes from first operators (total minus non-signers)
+        uint[] memory expectedSignedStakes = new uint[](2);
+        expectedSignedStakes[0] = firstOperatorSetInfo.totalWeights[0];
+        expectedSignedStakes[1] = firstOperatorSetInfo.totalWeights[1];
+
+        // Subtract non-signer stakes
+        for (uint i = 0; i < firstNonSignerIndices.length; i++) {
+            uint32 nonSignerIndex = firstNonSignerIndices[i];
+            expectedSignedStakes[0] -= firstOperators[nonSignerIndex].weights[0];
+            expectedSignedStakes[1] -= firstOperators[nonSignerIndex].weights[1];
+        }
+
+        assertEq(signedStakes[0], expectedSignedStakes[0], "Wrong signed stake for type 0");
+        assertEq(signedStakes[1], expectedSignedStakes[1], "Wrong signed stake for type 1");
+
+        // Verify the signed stakes match expected calculation
+        assertEq(signedStakes.length, 2, "Wrong number of stake types returned");
     }
 }
 

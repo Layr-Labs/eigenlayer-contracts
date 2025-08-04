@@ -8,6 +8,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
+import "../mixins/LeafCalculatorMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
 contract OperatorTableUpdater is
@@ -16,6 +17,7 @@ contract OperatorTableUpdater is
     Pausable,
     OperatorTableUpdaterStorage,
     SemVerMixin,
+    LeafCalculatorMixin,
     ReentrancyGuardUpgradeable
 {
     /**
@@ -148,7 +150,7 @@ contract OperatorTableUpdater is
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: keccak256(operatorTableBytes)
+            operatorSetLeafHash: calculateOperatorTableLeaf(operatorTableBytes)
         });
 
         // Update the operator table
