@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import {ITaskMailboxTypes} from "./ITaskMailbox.sol";
-import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 /**
  * @title IAVSTaskHook

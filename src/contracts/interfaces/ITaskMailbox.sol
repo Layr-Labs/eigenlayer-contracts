@@ -7,7 +7,7 @@ import {IAVSTaskHook} from "./IAVSTaskHook.sol";
 import {IBN254CertificateVerifierTypes} from "./IBN254CertificateVerifier.sol";
 import {IECDSACertificateVerifierTypes} from "./IECDSACertificateVerifier.sol";
 import {IKeyRegistrarTypes} from "./IKeyRegistrar.sol";
-import {OperatorSet, OperatorSetLib} from "../libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 /**
  * @title ITaskMailboxTypes

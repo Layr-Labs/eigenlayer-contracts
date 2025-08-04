@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 import {IAVSTaskHook} from "src/contracts/interfaces/IAVSTaskHook.sol";
 import {ITaskMailboxTypes} from "src/contracts/interfaces/ITaskMailbox.sol";
 

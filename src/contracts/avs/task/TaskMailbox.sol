@@ -18,7 +18,7 @@ import {
 import {IBaseCertificateVerifier} from "../../interfaces/IBaseCertificateVerifier.sol";
 import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
 import {ITaskMailbox} from "../../interfaces/ITaskMailbox.sol";
-import {OperatorSet, OperatorSetLib} from "../../libraries/OperatorSetLib.sol";
+import {OperatorSet} from "../../libraries/OperatorSetLib.sol";
 import {SemVerMixin} from "../../mixins/SemVerMixin.sol";
 import {TaskMailboxStorage} from "./TaskMailboxStorage.sol";
 
