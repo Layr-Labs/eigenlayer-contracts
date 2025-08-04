@@ -346,7 +346,7 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         uint256 operatorIndex
     ) external view returns (ECDSAOperatorInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
-        require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], "Operator index out of bounds");
+        require(operatorIndex < _numOperators[operatorSetKey][referenceTimestamp], IndexOutOfBounds());
         return _operatorInfos[operatorSetKey][referenceTimestamp][operatorIndex];
     }
 

@@ -63,7 +63,7 @@ interface IOperatorTableCalculatorTypes {
      *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
      *
      * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks.
-     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
+     *      For example, a slashable operatorSet that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
      *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
