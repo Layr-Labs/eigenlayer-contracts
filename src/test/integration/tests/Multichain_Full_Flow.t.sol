@@ -9,18 +9,18 @@ import "../MultichainIntegrationChecks.t.sol";
  * @dev Tests the complete flow: key registration -> table calculation ->
  *      transport simulation -> table update -> certificate verification
  */
-contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
+contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
-    /**
-     * @notice Test complete BN254 multichain happy path flow
-     * @dev Covers key registration, table generation, cross-chain transport simulation,
-     *      table updates, and certificate verification
-     */
-    function test_BN254_MultichainStandard() external {
-        console.log("Testing BN254 multichain flow:");
-        vm.warp(50_000);
+    OperatorSet operatorSet;
+    User[] operators;
+    IOperatorTableCalculatorTypes.BN254OperatorSetInfo operatorSetInfo;
+
+    function setUp() public override {
+        super.setUp();
+
+        vm.warp(block.timestamp + 50_000);
 
         // Setup test environment
         _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
@@ -32,9 +32,18 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
-        User[] memory operators = _registerBN254Keys(operatorSet);
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
+        operators = _registerBN254Keys(operatorSet);
+        operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
         _createGenerationReservation(operatorSet);
+    }
+
+    /**
+     * @notice Test complete BN254 multichain happy path flow
+     * @dev Covers key registration, table generation, cross-chain transport simulation,
+     *      table updates, and certificate verification
+     */
+    function test_BN254_MultichainStandard() external {
+        console.log("Testing BN254 multichain flow:");
 
         // Simulate cross-chain transport
         console.log("Simulating cross-chain transport from chain 1 to chain 137");
@@ -59,21 +68,6 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
      */
     function test_BN254_MultichainStandard_ProportionalVerification() external {
         console.log("Testing BN254 multichain flow with proportional verification:");
-        vm.warp(50_000);
-
-        // Setup test environment
-        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
-        _createTestOperatorSet(1);
-        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
-
-        // Configure operator set for BN254 curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-        _setupAVSAndChains();
-
-        // Register operator keys and generate operator table
-        User[] memory operators = _registerBN254Keys(operatorSet);
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
-        _createGenerationReservation(operatorSet);
 
         // Simulate cross-chain transport
         console.log("Simulating cross-chain transport from chain 1 to chain 137");
@@ -127,21 +121,6 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
      */
     function test_BN254_MultichainStandard_NominalVerification() external {
         console.log("Testing BN254 multichain flow with nominal verification:");
-        vm.warp(50_000);
-
-        // Setup test environment
-        _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);
-        _createTestOperatorSet(1);
-        OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
-
-        // Configure operator set for BN254 curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
-        _setupAVSAndChains();
-
-        // Register operator keys and generate operator table
-        User[] memory operators = _registerBN254Keys(operatorSet);
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = _generateBN254OperatorTable(operatorSet, operators);
-        _createGenerationReservation(operatorSet);
 
         // Simulate cross-chain transport
         console.log("Simulating cross-chain transport from chain 1 to chain 137");
@@ -191,6 +170,10 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
 
         console.log("BN254 nominal verification tests completed successfully");
     }
+}
+
+contract Integration_Multichain_Full_Flow_ECDSA is MultichainIntegrationCheckUtils {
+    using StdStyle for *;
 
     /**
      * @notice Test complete ECDSA multichain happy path flow
@@ -199,7 +182,7 @@ contract Multichain_Full_Flow is MultichainIntegrationCheckUtils {
      */
     function test_ECDSA_MultichainStandard() external {
         console.log("Testing ECDSA multichain flow:");
-        vm.warp(50_000);
+        vm.warp(block.timestamp + 50_000);
 
         // Setup test environment
         _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);

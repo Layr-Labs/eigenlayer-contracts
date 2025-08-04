@@ -86,12 +86,6 @@ contract OperatorTableUpdater is
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
     ) external onlyWhenNotPaused(PAUSED_GLOBAL_ROOT_UPDATE) nonReentrant {
-        // Silently return if the `globalTableRoot` is already confirmed
-        // We do this to avoid race conditions with the offchain transport of the operator table
-        if (_isRootValid[globalTableRoot]) {
-            return;
-        }
-
         // Table roots can only be updated for current or past timestamps and after the latest reference timestamp
         require(referenceTimestamp <= block.timestamp, GlobalTableRootInFuture());
         require(referenceTimestamp > _latestReferenceTimestamp, GlobalTableRootStale());
@@ -140,6 +134,16 @@ contract OperatorTableUpdater is
 
         // Check that the `operatorSet` is not the `Generator`
         require(operatorSet.key() != _generator.key(), InvalidOperatorSet());
+
+        // Silently return if the `referenceTimestamp` has already been updated for the `operatorSet`
+        // We do this to avoid race conditions with the offchain transport of the operator table
+        if (
+            IBaseCertificateVerifier(getCertificateVerifier(curveType)).isReferenceTimestampSet(
+                operatorSet, referenceTimestamp
+            )
+        ) {
+            return;
+        }
 
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(

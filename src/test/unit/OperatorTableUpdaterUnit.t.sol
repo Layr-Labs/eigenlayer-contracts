@@ -303,80 +303,6 @@ contract OperatorTableUpdaterUnitTests_confirmGlobalTableRoot is OperatorTableUp
         assertEq(operatorTableUpdater.getReferenceBlockNumberByTimestamp(referenceTimestamp), referenceBlockNumber);
         assertEq(operatorTableUpdater.getReferenceTimestampByBlockNumber(referenceBlockNumber), referenceTimestamp);
     }
-
-    function testFuzz_silentReturn_alreadyConfirmed(Randomness r) public rand(r) {
-        uint32 referenceTimestamp = r.Uint32(operatorTableUpdater.getLatestReferenceTimestamp() + 1, type(uint32).max);
-        uint32 referenceBlockNumber = r.Uint32();
-        cheats.warp(uint(referenceTimestamp));
-        bytes32 globalTableRoot = bytes32(r.Uint256(1, type(uint).max));
-        mockCertificate.messageHash =
-            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
-        _setIsValidCertificate(mockCertificate, true);
-
-        // First confirmation should succeed and emit event
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
-
-        // Verify the root is now valid
-        assertTrue(operatorTableUpdater.isRootValid(globalTableRoot), "Global table root should be valid after first confirmation");
-
-        // Store initial state to verify it doesn't change
-        bytes32 initialCurrentRoot = operatorTableUpdater.getCurrentGlobalTableRoot();
-        uint32 initialLatestTimestamp = operatorTableUpdater.getLatestReferenceTimestamp();
-        uint32 initialLatestBlockNumber = operatorTableUpdater.getLatestReferenceBlockNumber();
-
-        // Second confirmation with the same root should silently return without emitting events
-        // We should NOT expect any events to be emitted
-        cheats.recordLogs();
-        operatorTableUpdater.confirmGlobalTableRoot(mockCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
-
-        // Verify no events were emitted on the second call
-        Vm.Log[] memory logs = cheats.getRecordedLogs();
-        assertEq(logs.length, 0, "No events should be emitted when confirming an already valid root");
-
-        // Verify state remains unchanged after silent return
-        assertEq(operatorTableUpdater.getCurrentGlobalTableRoot(), initialCurrentRoot, "Current root should remain unchanged");
-        assertEq(operatorTableUpdater.getLatestReferenceTimestamp(), initialLatestTimestamp, "Latest timestamp should remain unchanged");
-        assertEq(
-            operatorTableUpdater.getLatestReferenceBlockNumber(), initialLatestBlockNumber, "Latest block number should remain unchanged"
-        );
-        assertTrue(operatorTableUpdater.isRootValid(globalTableRoot), "Global table root should still be valid");
-    }
-
-    function test_silentReturn_alreadyConfirmed_differentCertificate() public {
-        uint32 referenceTimestamp = uint32(block.timestamp);
-        uint32 referenceBlockNumber = uint32(block.number);
-        bytes32 globalTableRoot = bytes32(uint(12_345));
-
-        // First certificate
-        BN254Certificate memory firstCertificate;
-        firstCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
-        firstCertificate.messageHash =
-            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, referenceTimestamp, referenceBlockNumber);
-        _setIsValidCertificate(firstCertificate, true);
-
-        // Confirm with first certificate
-        cheats.expectEmit(true, true, true, true);
-        emit NewGlobalTableRoot(referenceTimestamp, globalTableRoot);
-        operatorTableUpdater.confirmGlobalTableRoot(firstCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
-
-        // Create a different certificate for the same global table root
-        BN254Certificate memory secondCertificate;
-        secondCertificate.referenceTimestamp = 1; // GENERATOR_REFERENCE_TIMESTAMP
-        secondCertificate.messageHash = firstCertificate.messageHash; // Same message hash
-        secondCertificate.signature = BN254.G1Point({X: 999, Y: 888}); // Different signature to make it a different certificate
-        _setIsValidCertificate(secondCertificate, true);
-
-        // Second confirmation with different certificate but same root should silently return
-        cheats.recordLogs();
-        operatorTableUpdater.confirmGlobalTableRoot(secondCertificate, globalTableRoot, referenceTimestamp, referenceBlockNumber);
-
-        // Verify no events were emitted
-        Vm.Log[] memory logs = cheats.getRecordedLogs();
-        assertEq(logs.length, 0, "No events should be emitted when confirming an already valid root with different certificate");
-
-        // Verify the root is still valid
-        assertTrue(operatorTableUpdater.isRootValid(globalTableRoot), "Global table root should still be valid");
-    }
 }
 
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTableUpdaterUnitTests {
@@ -540,6 +466,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
+
+    function testFuzz_BN254_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        bn254CertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
+    }
 }
 
 contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTableUpdaterUnitTests {
@@ -656,6 +613,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
             )
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_ECDSA_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorInfos and operatorSetConfig
+        ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        bytes memory operatorInfosBytes = abi.encode(operatorInfos);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        ecdsaCertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
     }
 }
 
