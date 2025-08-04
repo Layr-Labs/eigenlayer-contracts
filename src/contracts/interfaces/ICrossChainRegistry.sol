@@ -53,9 +53,13 @@ interface ICrossChainRegistryErrors {
     error InvalidTableUpdateCadence();
 
     /// @notice Thrown when the range is invalid for the `getActiveGenerationReservations` function
+    /// @dev A valid range is defined as `startIndex` <= `endIndex` in `getActiveGenerationReservationsByRange`
+    /// @dev Error Code: 0x561ce9bb
     error InvalidRange();
 
     /// @notice Thrown when the end index is invalid for the `getActiveGenerationReservations` function
+    /// @dev A valid end index is defined as `endIndex` <= `getActiveGenerationReservationCount()` in `getActiveGenerationReservationsByRange`
+    /// @dev Error Code: 0xb68d84c0
     error InvalidEndIndex();
 }
 
