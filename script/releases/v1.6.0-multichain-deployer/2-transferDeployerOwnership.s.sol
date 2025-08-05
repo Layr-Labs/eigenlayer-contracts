@@ -63,7 +63,7 @@ contract TransferDeployerOwnership is MultisigBuilder, DeployMultichainDeployer 
 
     /// @dev Get the owners from the TOML file
     function _getMultisigOwners() internal view returns (address[] memory) {
-        string memory path = "script/operations/multichain-deployer/owners.toml";
+        string memory path = "script/releases/v1.6.0-multichain-deployer/owners.toml";
         // Read the TOML file
         string memory root = vm.projectRoot();
         string memory fullPath = string.concat(root, "/", path);
