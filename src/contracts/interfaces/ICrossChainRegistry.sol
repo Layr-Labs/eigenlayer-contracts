@@ -270,8 +270,18 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external view returns (OperatorSet[] memory);
 
     /**
+     * @notice Checks if a given operatorSet has an active generation reservation
+     * @param operatorSet the operatorSet to check
+     * @return True if the operatorSet has an active generation reservation, false otherwise
+     */
+    function hasActiveGenerationReservation(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
+
+    /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @return The operatorTableCalculator for the given operatorSet
      */
     function getOperatorTableCalculator(
@@ -281,6 +291,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorSetConfig for
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @return The operatorSetConfig for the given operatorSet
      */
     function getOperatorSetConfig(
@@ -295,6 +306,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *         - curve type from KeyRegistrar
      *         - operator set configuration
      *         - calculated operator table from the calculator contract
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @dev This function aggregates data from multiple sources for cross-chain transport
      * @dev Reverts when the call to the operatorTableCalculator contract call fails
      */
