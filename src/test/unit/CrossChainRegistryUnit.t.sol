@@ -1046,3 +1046,20 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is Cros
         assertEq(count, numReservations, "Count should match expected number");
     }
 }
+
+contract CrossChainRegistryUnitTests_hasActiveGenerationReservation is CrossChainRegistryUnitTests {
+    function test_hasActiveGenerationReservation_Single() public {
+        bool hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertFalse(hasReservation, "Should not have any reservations");
+
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertTrue(hasReservation, "Should have a reservation");
+
+        crossChainRegistry.removeGenerationReservation(defaultOperatorSet);
+
+        hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertFalse(hasReservation, "Should not have a reservation");
+    }
+}

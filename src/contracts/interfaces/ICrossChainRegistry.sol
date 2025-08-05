@@ -270,7 +270,17 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
     ) external view returns (OperatorSet[] memory);
 
     /**
+     * @notice Checks if a given operatorSet has an active generation reservation
+     * @param operatorSet the operatorSet to check
+     * @return True if the operatorSet has an active generation reservation, false otherwise
+     */
+    function hasActiveGenerationReservation(
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
+
+    /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
+     * @dev You may want to query `hasActiveGenerationReservation` before calling this method
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
      * @return The operatorTableCalculator for the given operatorSet
      */
@@ -280,6 +290,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
 
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
+     * @dev You may want to query `hasActiveGenerationReservation` before calling this method.
      * @param operatorSet the operatorSet to get the operatorSetConfig for
      * @return The operatorSetConfig for the given operatorSet
      */
@@ -289,6 +300,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
 
     /**
      * @notice Calculates the operatorTableBytes for a given operatorSet
+     * @dev You may want to query `hasActiveGenerationReservation` before calling this method.
      * @param operatorSet the operatorSet to calculate the operator table for
      * @return the encoded operatorTableBytes containing:
      *         - operatorSet details
