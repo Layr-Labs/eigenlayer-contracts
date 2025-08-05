@@ -273,19 +273,22 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @notice Gets the operatorTableCalculator for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
      * @return The operatorTableCalculator for the given operatorSet
+     * @return Whether the operatorSet has an active generation reservation
+     * @dev If the operatorSet does not have an active generation reservation, the operatorTableCalculator is set to the zero address
      */
     function getOperatorTableCalculator(
         OperatorSet memory operatorSet
-    ) external view returns (IOperatorTableCalculator);
+    ) external view returns (IOperatorTableCalculator, bool);
 
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
      * @param operatorSet the operatorSet to get the operatorSetConfig for
      * @return The operatorSetConfig for the given operatorSet
+     * @return Whether the operatorSet has an active generation reservation
      */
     function getOperatorSetConfig(
         OperatorSet memory operatorSet
-    ) external view returns (OperatorSetConfig memory);
+    ) external view returns (OperatorSetConfig memory, bool);
 
     /**
      * @notice Calculates the operatorTableBytes for a given operatorSet
@@ -296,7 +299,8 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *         - operator set configuration
      *         - calculated operator table from the calculator contract
      * @dev This function aggregates data from multiple sources for cross-chain transport
-     * @dev Reverts when the call to the operatorTableCalculator contract call fails
+     * @dev Reverts when the call to the operatorTableCalculator contract call fails,
+     *      which is expected when the operatorSet does not have an active generation reservation
      */
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet

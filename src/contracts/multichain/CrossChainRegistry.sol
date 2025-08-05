@@ -315,26 +315,30 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function getOperatorTableCalculator(
         OperatorSet memory operatorSet
-    ) public view returns (IOperatorTableCalculator) {
-        return _operatorTableCalculators[operatorSet.key()];
+    ) public view override returns (IOperatorTableCalculator, bool) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return (_operatorTableCalculators[operatorSetKey], _activeGenerationReservations.contains(operatorSetKey));
     }
 
     /// @inheritdoc ICrossChainRegistry
     function getOperatorSetConfig(
         OperatorSet memory operatorSet
-    ) public view returns (OperatorSetConfig memory) {
-        return _operatorSetConfigs[operatorSet.key()];
+    ) public view override returns (OperatorSetConfig memory, bool) {
+        bytes32 operatorSetKey = operatorSet.key();
+        return (_operatorSetConfigs[operatorSetKey], _activeGenerationReservations.contains(operatorSetKey));
     }
 
     /// @inheritdoc ICrossChainRegistry
     function calculateOperatorTableBytes(
         OperatorSet calldata operatorSet
     ) external view returns (bytes memory) {
+        (OperatorSetConfig memory config,) = getOperatorSetConfig(operatorSet);
+        (IOperatorTableCalculator calculator,) = getOperatorTableCalculator(operatorSet);
         return abi.encode(
             operatorSet,
             keyRegistrar.getOperatorSetCurveType(operatorSet),
-            getOperatorSetConfig(operatorSet),
-            getOperatorTableCalculator(operatorSet).calculateOperatorTableBytes(operatorSet)
+            config,
+            calculator.calculateOperatorTableBytes(operatorSet)
         );
     }
 

@@ -169,12 +169,15 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
     }
 
     function check_OperatorSetConfig_Cleared_State(OperatorSet memory operatorSet) internal {
-        IOperatorTableCalculator calculator = crossChainRegistry.getOperatorTableCalculator(operatorSet);
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) = crossChainRegistry.getOperatorTableCalculator(operatorSet);
         assertEq(address(calculator), address(0), "Operator table calculator should be cleared");
+        assertFalse(hasActiveReservation, "Should not have active reservation");
 
-        ICrossChainRegistryTypes.OperatorSetConfig memory config = crossChainRegistry.getOperatorSetConfig(operatorSet);
+        (ICrossChainRegistryTypes.OperatorSetConfig memory config, bool hasActiveReservationConfig) =
+            crossChainRegistry.getOperatorSetConfig(operatorSet);
         assertEq(config.owner, address(0), "Operator set config owner should be cleared");
         assertEq(config.maxStalenessPeriod, 0, "Max staleness period should be cleared");
+        assertFalse(hasActiveReservationConfig, "Should not have active reservation");
     }
 
     /**

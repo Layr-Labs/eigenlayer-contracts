@@ -252,11 +252,13 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
         assertEq(activeReservations[0].avs, defaultOperatorSet.avs, "AVS mismatch");
         assertEq(activeReservations[0].id, defaultOperatorSet.id, "OperatorSetId mismatch");
 
-        assertEq(
-            address(crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet)), address(defaultCalculator), "Calculator not set"
-        );
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) = crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        assertEq(address(calculator), address(defaultCalculator), "Calculator not set");
+        assertTrue(hasActiveReservation, "Should have active reservation");
 
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservationConfig) =
+            crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        assertTrue(hasActiveReservationConfig, "Should have active reservation");
         assertEq(retrievedConfig.owner, defaultConfig.owner, "Config owner mismatch");
         assertEq(retrievedConfig.maxStalenessPeriod, defaultConfig.maxStalenessPeriod, "Config staleness period mismatch");
     }
@@ -323,9 +325,13 @@ contract CrossChainRegistryUnitTests_removeGenerationReservation is CrossChainRe
         OperatorSet[] memory activeReservations = crossChainRegistry.getActiveGenerationReservations();
         assertEq(activeReservations.length, 0, "Should have no active reservations");
 
-        assertEq(address(crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet)), address(0), "Calculator should be removed");
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) = crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        assertEq(address(calculator), address(0), "Calculator should be removed");
+        assertFalse(hasActiveReservation, "Should not have active reservation");
 
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservationConfig) =
+            crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        assertFalse(hasActiveReservationConfig, "Should not have active reservation");
         assertEq(retrievedConfig.owner, address(0), "Config owner should be zero");
         assertEq(retrievedConfig.maxStalenessPeriod, 0, "Config staleness period should be zero");
     }
@@ -386,9 +392,9 @@ contract CrossChainRegistryUnitTests_setOperatorTableCalculator is CrossChainReg
         crossChainRegistry.setOperatorTableCalculator(defaultOperatorSet, newCalculator);
 
         // Verify state
-        assertEq(
-            address(crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet)), address(newCalculator), "Calculator not updated"
-        );
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) = crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        assertEq(address(calculator), address(newCalculator), "Calculator not updated");
+        assertTrue(hasActiveReservation, "Should have active reservation");
     }
 
     function testFuzz_setOperatorTableCalculator_MultipleUpdates(uint8 numUpdates) public {
@@ -397,7 +403,10 @@ contract CrossChainRegistryUnitTests_setOperatorTableCalculator is CrossChainReg
         for (uint i = 0; i < numUpdates; i++) {
             OperatorTableCalculatorMock calc = new OperatorTableCalculatorMock();
             crossChainRegistry.setOperatorTableCalculator(defaultOperatorSet, calc);
-            assertEq(address(crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet)), address(calc), "Calculator not updated");
+            (IOperatorTableCalculator calculator, bool hasActiveReservation) =
+                crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+            assertEq(address(calculator), address(calc), "Calculator not updated");
+            assertTrue(hasActiveReservation, "Should have active reservation");
         }
     }
 }
@@ -457,9 +466,10 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, newConfig);
 
         // Verify state
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
         assertEq(retrievedConfig.owner, newConfig.owner, "Config owner not updated");
         assertEq(retrievedConfig.maxStalenessPeriod, newConfig.maxStalenessPeriod, "Config staleness period not updated");
+        assertTrue(hasActiveReservation, "Should have active reservation");
     }
 
     function testFuzz_setOperatorSetConfig_StalenessPeriod(uint32 stalenessPeriod) public {
@@ -468,8 +478,9 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
 
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, fuzzConfig);
 
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
         assertEq(retrievedConfig.maxStalenessPeriod, stalenessPeriod, "Staleness period not set correctly");
+        assertTrue(hasActiveReservation, "Should have active reservation");
     }
 
     function test_Revert_InvalidStalenessPeriod() public {
@@ -496,8 +507,9 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, zeroStalenessConfig);
 
         // Verify the config was set
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
         assertEq(retrievedConfig.maxStalenessPeriod, 0, "Zero staleness period should be allowed");
+        assertTrue(hasActiveReservation, "Should have active reservation");
     }
 }
 
@@ -833,8 +845,9 @@ contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistry
         OperatorSetConfig memory validConfig = _createOperatorSetConfig(cheats.randomAddress(), 3 days);
         crossChainRegistry.setOperatorSetConfig(defaultOperatorSet, validConfig);
 
-        OperatorSetConfig memory retrievedConfig = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        (OperatorSetConfig memory retrievedConfig, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
         assertEq(retrievedConfig.maxStalenessPeriod, 3 days, "Valid config should be set");
+        assertTrue(hasActiveReservation, "Should have active reservation");
     }
 
     function testFuzz_setTableUpdateCadence(uint32 tableUpdateCadence) public {
@@ -979,6 +992,76 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
             assertEq(singleResult[0].avs, allReservations[i].avs, "Single item AVS should match");
             assertEq(singleResult[0].id, allReservations[i].id, "Single item ID should match");
         }
+    }
+}
+
+/**
+ * @title CrossChainRegistryUnitTests_introspectionMethods
+ * @notice Unit tests for the introspection capabilities of getOperatorTableCalculator and getOperatorSetConfig
+ */
+contract CrossChainRegistryUnitTests_introspectionMethods is CrossChainRegistryUnitTests {
+    function test_getOperatorTableCalculator_NoActiveReservation() public {
+        // Test with operator set that doesn't have an active reservation
+        OperatorSet memory nonExistentOperatorSet = _createOperatorSet(defaultAVS, 999);
+        allocationManagerMock.setIsOperatorSet(nonExistentOperatorSet, true);
+
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) =
+            crossChainRegistry.getOperatorTableCalculator(nonExistentOperatorSet);
+        assertEq(address(calculator), address(0), "Calculator should be zero address");
+        assertFalse(hasActiveReservation, "Should not have active reservation");
+    }
+
+    function test_getOperatorTableCalculator_WithActiveReservation() public {
+        // Create reservation
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        (IOperatorTableCalculator calculator, bool hasActiveReservation) = crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        assertEq(address(calculator), address(defaultCalculator), "Calculator should match");
+        assertTrue(hasActiveReservation, "Should have active reservation");
+    }
+
+    function test_getOperatorSetConfig_NoActiveReservation() public {
+        // Test with operator set that doesn't have an active reservation
+        OperatorSet memory nonExistentOperatorSet = _createOperatorSet(defaultAVS, 999);
+        allocationManagerMock.setIsOperatorSet(nonExistentOperatorSet, true);
+
+        (OperatorSetConfig memory config, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(nonExistentOperatorSet);
+        assertEq(config.owner, address(0), "Config owner should be zero address");
+        assertEq(config.maxStalenessPeriod, 0, "Config staleness period should be zero");
+        assertFalse(hasActiveReservation, "Should not have active reservation");
+    }
+
+    function test_getOperatorSetConfig_WithActiveReservation() public {
+        // Create reservation
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        (OperatorSetConfig memory config, bool hasActiveReservation) = crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+        assertEq(config.owner, defaultConfig.owner, "Config owner should match");
+        assertEq(config.maxStalenessPeriod, defaultConfig.maxStalenessPeriod, "Config staleness period should match");
+        assertTrue(hasActiveReservation, "Should have active reservation");
+    }
+
+    function test_introspection_AfterRemovalReservation() public {
+        // Create reservation
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        // Verify it has active reservation
+        (, bool hasActiveReservationBefore) = crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        assertTrue(hasActiveReservationBefore, "Should have active reservation before removal");
+
+        // Remove reservation
+        crossChainRegistry.removeGenerationReservation(defaultOperatorSet);
+
+        // Verify it no longer has active reservation
+        (IOperatorTableCalculator calculator, bool hasActiveReservationAfter) =
+            crossChainRegistry.getOperatorTableCalculator(defaultOperatorSet);
+        (OperatorSetConfig memory config, bool hasActiveReservationConfigAfter) =
+            crossChainRegistry.getOperatorSetConfig(defaultOperatorSet);
+
+        assertEq(address(calculator), address(0), "Calculator should be cleared");
+        assertEq(config.owner, address(0), "Config owner should be cleared");
+        assertFalse(hasActiveReservationAfter, "Should not have active reservation after removal");
+        assertFalse(hasActiveReservationConfigAfter, "Should not have active reservation after removal");
     }
 }
 
