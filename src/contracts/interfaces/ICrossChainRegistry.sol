@@ -280,8 +280,8 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
 
     /**
      * @notice Gets the operatorTableCalculator for a given operatorSet
-     * @dev You may want to query `hasActiveGenerationReservation` before calling this method
      * @param operatorSet the operatorSet to get the operatorTableCalculator for
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @return The operatorTableCalculator for the given operatorSet
      */
     function getOperatorTableCalculator(
@@ -290,8 +290,8 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
 
     /**
      * @notice Gets the operatorSetConfig for a given operatorSet
-     * @dev You may want to query `hasActiveGenerationReservation` before calling this method.
      * @param operatorSet the operatorSet to get the operatorSetConfig for
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @return The operatorSetConfig for the given operatorSet
      */
     function getOperatorSetConfig(
@@ -300,13 +300,13 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
 
     /**
      * @notice Calculates the operatorTableBytes for a given operatorSet
-     * @dev You may want to query `hasActiveGenerationReservation` before calling this method.
      * @param operatorSet the operatorSet to calculate the operator table for
      * @return the encoded operatorTableBytes containing:
      *         - operatorSet details
      *         - curve type from KeyRegistrar
      *         - operator set configuration
      *         - calculated operator table from the calculator contract
+     * @dev You should check if an operatorSet has an active generation reservation prior to calling this method
      * @dev This function aggregates data from multiple sources for cross-chain transport
      * @dev Reverts when the call to the operatorTableCalculator contract call fails
      */
