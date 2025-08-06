@@ -20,6 +20,8 @@ pragma solidity ^0.8.0;
 library Merkle {
     error InvalidProofLength();
     error InvalidIndex();
+    error LeavesNotPowerOfTwo();
+
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
@@ -132,13 +134,16 @@ library Merkle {
 
     /**
      * @notice this function returns the merkle root of a tree created from a set of leaves using sha256 as its hash function
-     *  @param leaves the leaves of the merkle tree
-     *  @return The computed Merkle root of the tree.
-     *  @dev A pre-condition to this function is that leaves.length is a power of two.  If not, the function will merkleize the inputs incorrectly.
+     * @param leaves the leaves of the merkle tree
+     * @return The computed Merkle root of the tree.
+     * @dev Reverts for:
+     *      - LeavesNotPowerOfTwo: leaves.length is not a power of two.
      */
     function merkleizeSha256(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
+        require(isPowerOfTwo(leaves.length), LeavesNotPowerOfTwo());
+
         //there are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
         //create a layer to store the internal nodes
@@ -170,28 +175,34 @@ library Merkle {
     function merkleizeKeccak(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
-        // TODO: very inefficient, use ZERO_HASHES
-        // pad to the next power of 2
-        uint256 numNodesInLayer = 1;
-        while (numNodesInLayer < leaves.length) {
-            numNodesInLayer *= 2;
+        uint256 numNodesInLayer;
+        if (!isPowerOfTwo(leaves.length)) {
+            // Pad to the next power of 2
+            numNodesInLayer = 1;
+            while (numNodesInLayer < leaves.length) {
+                numNodesInLayer *= 2;
+            }
+        } else {
+            numNodesInLayer = leaves.length;
         }
+
+        // Create a layer to store the internal nodes
         bytes32[] memory layer = new bytes32[](numNodesInLayer);
         for (uint256 i = 0; i < leaves.length; i++) {
             layer[i] = leaves[i];
         }
 
-        //while we haven't computed the root
+        // While we haven't computed the root
         while (numNodesInLayer != 1) {
             uint256 numNodesInNextLayer = numNodesInLayer / 2;
-            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInNextLayer; i++) {
                 layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
-            //the next layer above has half as many nodes
+            // The next layer above has half as many nodes
             numNodesInLayer = numNodesInNextLayer;
         }
-        //the first node in the layer is the root
+        // The first node in the layer is the root
         return layer[0];
     }
 
@@ -224,5 +235,9 @@ library Merkle {
                 layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
         }
+    }
+
+    function isPowerOfTwo(uint256 value) internal pure returns (bool) {
+        return value != 0 && (value & (value - 1)) == 0;
     }
 }
