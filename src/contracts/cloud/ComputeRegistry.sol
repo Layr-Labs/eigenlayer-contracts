@@ -2,10 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
+import "../mixins/SignatureUtilsMixin.sol";
 import "./ComputeRegistryStorage.sol";
 
 /**
@@ -15,9 +14,8 @@ import "./ComputeRegistryStorage.sol";
  * @notice This contract handles permissionless (de)registration of AVS operator sets to the EigenCompute Operator.
  * It enables AVSs to easily access managed operator infrastructure as part of EigenCloud for quick bootstrapping.
  */
-contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionControllerMixin, SemVerMixin {
+contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionControllerMixin, SignatureUtilsMixin {
     using OperatorSetLib for OperatorSet;
-    using ECDSA for bytes32;
 
     /**
      *
@@ -35,7 +33,11 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         IReleaseManager _releaseManager,
         IPermissionController _permissionController,
         string memory _version
-    ) ComputeRegistryStorage(_releaseManager) PermissionControllerMixin(_permissionController) SemVerMixin(_version) {
+    )
+        ComputeRegistryStorage(_releaseManager)
+        PermissionControllerMixin(_permissionController)
+        SignatureUtilsMixin(_version)
+    {
         _disableInitializers();
     }
 
@@ -46,7 +48,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
     function initialize(
         string memory _tos
     ) external initializer {
-        TOS = _tos;
+        tos = _tos;
     }
 
     /**
@@ -63,14 +65,15 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         bytes calldata tosSignature
     ) external checkCanCall(operatorSet.avs) {
         // Check if there is at least one release for the operator set
-        // The ReleaseManager will revert with `NoReleases()`if there are no releases for the operator set
+        // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
         releaseManager.getLatestRelease(operatorSet);
 
-        // Verify the TOS signature
-        bytes32 tosHash = keccak256(bytes(TOS));
-        address signer = tosHash.toEthSignedMessageHash().recover(tosSignature);
-
-        require(signer == msg.sender, InvalidTOSSignature());
+        // Decode signature and expiry
+        (bytes memory signature, uint256 expiry) = abi.decode(tosSignature, (bytes, uint256));
+        // Calculate the signable digest
+        bytes32 digestHash = calculateTOSAgreementDigest(operatorSet, msg.sender, expiry);
+        // Verify the signature
+        _checkIsValidSignatureNow(msg.sender, digestHash, signature, expiry);
 
         // Check if already registered
         bytes32 operatorSetKey = operatorSet.key();
@@ -96,5 +99,44 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         isOperatorSetRegistered[operatorSetKey] = false;
 
         emit OperatorSetDeregistered(operatorSet);
+    }
+
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
+
+    /**
+     * @notice Calculates the EIP-712 struct hash for a tos agreement
+     * @param operatorSet The operator set that is agreeing to the tos
+     * @param signer The address that is signing the agreement
+     * @param expiry The timestamp when the signature expires
+     * @return The EIP-712 struct hash
+     */
+    function calculateTOSAgreementHash(
+        OperatorSet memory operatorSet,
+        address signer,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        return keccak256(
+            abi.encode(TOS_AGREEMENT_TYPEHASH, keccak256(bytes(tos)), operatorSet.avs, operatorSet.id, signer, expiry)
+        );
+    }
+
+    /**
+     * @notice Calculates the EIP-712 digest hash that should be signed
+     * @param operatorSet The operator set that is agreeing to the tos
+     * @param signer The address that is signing the agreement
+     * @param expiry The timestamp when the signature expires
+     * @return The EIP-712 digest hash ready for signing
+     */
+    function calculateTOSAgreementDigest(
+        OperatorSet memory operatorSet,
+        address signer,
+        uint256 expiry
+    ) public view returns (bytes32) {
+        bytes32 structHash = calculateTOSAgreementHash(operatorSet, signer, expiry);
+        return _calculateSignableDigest(structHash);
     }
 }

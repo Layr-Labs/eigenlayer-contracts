@@ -35,10 +35,11 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     /**
      * @notice Registers an operator set for compute services
      * @param operatorSet The operator set to register
-     * @param tosSignature The signature of the Terms of Service
+     * @param tosSignature The encoded signature data containing (signature, expiry)
      * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
      * @dev The operator set must have at least one release available
-     * @dev The signature must be a valid ECDSA signature of the Terms of Service
+     * @dev The signature must be a valid EIP-712 signature of the Terms of Service
+     * @dev tosSignature should be abi.encode(signature, expiry) where signature is the EIP-712 signature bytes
      */
     function registerForCompute(OperatorSet calldata operatorSet, bytes calldata tosSignature) external;
 
@@ -62,7 +63,7 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @notice Returns the Terms of Service string
      * @return The Terms of Service that must be signed
      */
-    function TOS() external view returns (string memory);
+    function tos() external view returns (string memory);
 
     /**
      * @notice Checks if an operator set is registered for compute
@@ -81,4 +82,36 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     function operatorSetTosSignature(
         bytes32 operatorSetKey
     ) external view returns (bytes memory);
+
+    /**
+     * @notice Calculates the EIP-712 struct hash for a TOS agreement
+     * @param operatorSet The operator set that is agreeing to the TOS
+     * @param signer The address that is signing the agreement
+     * @param expiry The timestamp when the signature expires
+     * @return The EIP-712 struct hash
+     */
+    function calculateTOSAgreementHash(
+        OperatorSet memory operatorSet,
+        address signer,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Calculates the EIP-712 digest hash that should be signed
+     * @param operatorSet The operator set that is agreeing to the TOS
+     * @param signer The address that is signing the agreement
+     * @param expiry The timestamp when the signature expires
+     * @return The EIP-712 digest hash ready for signing
+     */
+    function calculateTOSAgreementDigest(
+        OperatorSet memory operatorSet,
+        address signer,
+        uint256 expiry
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Returns the EIP-712 type hash used for TOS agreements
+     * @return The TOS_AGREEMENT_TYPEHASH constant
+     */
+    function TOS_AGREEMENT_TYPEHASH() external view returns (bytes32);
 }
