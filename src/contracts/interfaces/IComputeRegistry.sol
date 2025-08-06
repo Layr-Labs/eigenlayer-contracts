@@ -88,10 +88,10 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     function ALLOCATION_MANAGER() external view returns (IAllocationManager);
 
     /**
-     * @notice Returns the Terms of Service string
-     * @return The Terms of Service that must be signed
+     * @notice Returns the hash of the Terms of Service
+     * @return The hash of the Terms of Service that must be signed
      */
-    function tos() external view returns (string memory);
+    function tosHash() external view returns (bytes32);
 
     /**
      * @notice Checks if an operator set is registered for compute
