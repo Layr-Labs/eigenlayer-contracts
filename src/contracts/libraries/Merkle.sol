@@ -209,20 +209,20 @@ library Merkle {
 
         if (index >= layer.length) revert InvalidIndex();
 
-        //while we haven't computed the root
+        // While we haven't computed the root
         while (numNodesInLayer != 1) {
-            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            // Flip the least significant bit of index to get the sibling index
             uint256 siblingIndex = index ^ 1;
+            // Add the sibling to the proof
             proof = abi.encodePacked(proof, layer[siblingIndex]);
             index /= 2;
 
-            uint256 numNodesInNextLayer = numNodesInLayer / 2;
-            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            for (uint256 i = 0; i < numNodesInNextLayer; i++) {
+            // The next layer above has half as many nodes
+            numNodesInLayer /= 2;
+            // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
-            //the next layer above has half as many nodes
-            numNodesInLayer = numNodesInNextLayer;
         }
     }
 }
