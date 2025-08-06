@@ -6,7 +6,11 @@ import "../interfaces/IReleaseManager.sol";
 import "../libraries/OperatorSetLib.sol";
 
 abstract contract ComputeRegistryStorage is IComputeRegistry {
-    // Immutables
+    // Constants and Immutables
+
+    // EIP-712 Type Hash for TOS Agreement
+    bytes32 public constant TOS_AGREEMENT_TYPEHASH =
+        keccak256("TOSAgreement(string tos,address avs,uint32 operatorSetId,address signer,uint256 expiry)");
 
     /// @notice The ReleaseManager contract
     IReleaseManager public immutable releaseManager;
@@ -14,7 +18,7 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
     // Storage
 
     /// @notice The Terms of Service that AVS operators must sign
-    string public TOS;
+    string public tos;
 
     /// @notice Mapping to track if an operator set is registered for compute
     /// @dev operatorSetKey => isRegistered
