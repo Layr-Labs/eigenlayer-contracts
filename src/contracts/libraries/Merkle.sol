@@ -26,7 +26,7 @@ library Merkle {
      * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
      *
-     * Note this is for a Merkle tree using the keccak/sha3 hash function
+     * Note this is for a Merkle tree using the keccak256 hash function
      */
     function verifyInclusionKeccak(
         bytes memory proof,
@@ -46,7 +46,7 @@ library Merkle {
      *
      * _Available since v4.4._
      *
-     * Note this is for a Merkle tree using the keccak/sha3 hash function
+     * Note this is for a Merkle tree using the keccak256 hash function
      */
     function processInclusionProofKeccak(
         bytes memory proof,
