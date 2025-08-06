@@ -25,6 +25,10 @@ library Merkle {
     // @dev Error code: 0xf6558f51
     error LeavesNotPowerOfTwo();
 
+    // @notice Thrown when the provided leaves' length was 0.
+    // @dev Error code: 0xbaec3d9a
+    error NoLeaves();
+
     /**
      * @notice Verifies that a given leaf is included in a Merkle tree
      * @param proof The proof of inclusion for the leaf
@@ -167,11 +171,13 @@ library Merkle {
      * @param leaves the leaves of the Merkle tree
      * @return The computed Merkle root of the tree.
      * @dev Reverts for:
+     *      - NoLeaves: leaves.length is 0.
      *      - LeavesNotPowerOfTwo: leaves.length is not a power of two.
      */
     function merkleizeSha256(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
+        require(leaves.length > 0, NoLeaves());
         require(isPowerOfTwo(leaves.length), LeavesNotPowerOfTwo());
 
         //there are half as many nodes in the layer above the leaves
@@ -201,10 +207,14 @@ library Merkle {
      * @notice Returns the Merkle root of a tree created from a set of leaves using keccak as its hash function
      * @param leaves the leaves of the Merkle tree
      * @return The computed Merkle root of the tree.
+     * @dev Reverts for:
+     *      - NoLeaves: leaves.length is 0.
      */
     function merkleizeKeccak(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
+        require(leaves.length > 0, NoLeaves());
+
         uint256 numNodesInLayer;
         if (!isPowerOfTwo(leaves.length)) {
             // Pad to the next power of 2
@@ -245,6 +255,7 @@ library Merkle {
      *      - InvalidIndex: index is outside the max index for the tree.
      */
     function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+        require(leaves.length > 0, NoLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
         uint256 numNodesInLayer = 1;
@@ -284,6 +295,7 @@ library Merkle {
      *      - InvalidIndex: index is outside the max index for the tree.
      */
     function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+        require(leaves.length > 0, NoLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
         uint256 numNodesInLayer = 1;
