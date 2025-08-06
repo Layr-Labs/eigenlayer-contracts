@@ -30,7 +30,6 @@ library Merkle {
      *
      * Note this is for a Merkle tree using the keccak256 hash function
      */
-
     function verifyInclusionKeccak(
         bytes memory proof,
         bytes32 root,
@@ -46,6 +45,8 @@ library Merkle {
      * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
      * @dev If the proof length is 0 then the leaf hash is returned.
+     * @dev Reverts for:
+     *      - InvalidProofLength: proof.length is not a multiple of 32.
      *
      * Note this is for a Merkle tree using the keccak256 hash function
      */
@@ -54,7 +55,12 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal pure returns (bytes32) {
+        if (proof.length == 0) {
+            return leaf;
+        }
+
         require(proof.length % 32 == 0, InvalidProofLength());
+
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
@@ -237,7 +243,9 @@ library Merkle {
         }
     }
 
-    function isPowerOfTwo(uint256 value) internal pure returns (bool) {
+    function isPowerOfTwo(
+        uint256 value
+    ) internal pure returns (bool) {
         return value != 0 && (value & (value - 1)) == 0;
     }
 }
