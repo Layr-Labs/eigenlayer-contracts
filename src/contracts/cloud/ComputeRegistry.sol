@@ -89,7 +89,7 @@ contract ComputeRegistry is
      */
     function registerForCompute(
         OperatorSet memory operatorSet,
-        bytes memory tosSignature
+        bytes memory signature
     ) external checkCanCall(operatorSet.avs) isValidOperatorSet(operatorSet) {
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
@@ -99,7 +99,7 @@ contract ComputeRegistry is
         _checkIsValidSignatureNow({
             signer: msg.sender,
             signableDigest: calculateTOSAgreementDigest(operatorSet, msg.sender),
-            signature: tosSignature,
+            signature: signature,
             expiry: MAX_EXPIRY
         });
 
@@ -109,9 +109,10 @@ contract ComputeRegistry is
 
         // Register the operator set
         isOperatorSetRegistered[operatorSetKey] = true;
-        operatorSetTosSignature[operatorSetKey] = tosSignature;
+        _operatorSetTosSignature[operatorSetKey] =
+            TOSSignature({signer: msg.sender, tosHash: tosHash, signature: signature});
 
-        emit OperatorSetRegistered(operatorSet, tosSignature);
+        emit OperatorSetRegistered(operatorSet, msg.sender, tosHash, signature);
     }
 
     /**
@@ -162,6 +163,15 @@ contract ComputeRegistry is
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @inheritdoc IComputeRegistry
+     */
+    function getOperatorSetTosSignature(
+        OperatorSet memory operatorSet
+    ) external view returns (TOSSignature memory) {
+        return _operatorSetTosSignature[operatorSet.key()];
+    }
 
     /**
      * @notice Calculates the EIP-712 digest hash that should be signed
