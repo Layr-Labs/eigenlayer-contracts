@@ -47,6 +47,7 @@ library Merkle {
      * @dev If the proof length is 0 then the leaf hash is returned.
      * @dev Reverts for:
      *      - InvalidProofLength: proof.length is not a multiple of 32.
+     *      - InvalidIndex: index is not 0 at conclusion of computation.
      *
      * Note this is for a Merkle tree using the keccak256 hash function
      */
@@ -81,6 +82,10 @@ library Merkle {
                 }
             }
         }
+
+        // Confirm proof was fully consumed by end of computation
+        require(index == 0, InvalidIndex());
+
         return computedHash;
     }
 
@@ -106,6 +111,9 @@ library Merkle {
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
      * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
+     * @dev Reverts for:
+     *      - InvalidProofLength: proof.length is not a multiple of 32.
+     *      - InvalidIndex: index is not 0 at conclusion of computation.
      *
      * Note this is for a Merkle tree using the sha256 hash function
      */
@@ -135,6 +143,10 @@ library Merkle {
                 }
             }
         }
+
+        // Confirm proof was fully consumed by end of computation
+        require(index == 0, InvalidIndex());
+
         return computedHash[0];
     }
 
