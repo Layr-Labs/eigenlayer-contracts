@@ -109,20 +109,6 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      */
 
     /**
-     * @notice Calculates the EIP-712 struct hash for a tos agreement
-     * @param operatorSet The operator set that is agreeing to the tos
-     * @param signer The address that is signing the agreement
-     * @return The EIP-712 struct hash
-     */
-    function calculateTOSAgreementHash(OperatorSet memory operatorSet, address signer) public view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                TOS_AGREEMENT_TYPEHASH, keccak256(bytes(tos)), operatorSet.avs, operatorSet.id, signer, MAX_EXPIRY
-            )
-        );
-    }
-
-    /**
      * @notice Calculates the EIP-712 digest hash that should be signed
      * @param operatorSet The operator set that is agreeing to the tos
      * @param signer The address that is signing the agreement
@@ -132,7 +118,18 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         OperatorSet memory operatorSet,
         address signer
     ) public view returns (bytes32) {
-        bytes32 structHash = calculateTOSAgreementHash(operatorSet, signer);
-        return _calculateSignableDigest(structHash);
+        /// forgefmt: disable-next-item
+        return _calculateSignableDigest(
+            keccak256(
+                abi.encode(
+                    TOS_AGREEMENT_TYPEHASH,
+                    keccak256(bytes(tos)),
+                    operatorSet.avs,
+                    operatorSet.id,
+                    signer,
+                    MAX_EXPIRY
+                )
+            )
+        );
     }
 }
