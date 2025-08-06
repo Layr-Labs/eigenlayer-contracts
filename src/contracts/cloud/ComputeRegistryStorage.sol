@@ -29,11 +29,11 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
 
     /// @notice Mapping to track if an operator set is registered for compute
     /// @dev operatorSetKey => isRegistered
-    mapping(bytes32 => bool) public isOperatorSetRegistered;
+    mapping(bytes32 operatorSetKey => bool isRegistered) public isOperatorSetRegistered;
 
     /// @notice Mapping to store the Terms of Service signature for each registered operator set
     /// @dev operatorSetKey => tosSignature
-    mapping(bytes32 => bytes) public operatorSetTosSignature;
+    mapping(bytes32 operatorSetKey => TOSSignature tosSignature) internal _operatorSetTosSignature;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

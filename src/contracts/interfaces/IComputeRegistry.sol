@@ -5,6 +5,15 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {IReleaseManager} from "./IReleaseManager.sol";
 import {IAllocationManager} from "./IAllocationManager.sol";
 
+interface IComputeRegistryTypes {
+    /// @notice The Terms of Service signature
+    struct TOSSignature {
+        address signer;
+        bytes32 tosHash;
+        bytes signature;
+    }
+}
+
 interface IComputeRegistryErrors {
     /// @dev Thrown when the provided signature does not match the expected Terms of Service signature
     error InvalidTOSSignature();
@@ -22,8 +31,12 @@ interface IComputeRegistryErrors {
 interface IComputeRegistryEvents {
     /// @notice Emitted when an operator set is registered for compute
     /// @param operatorSet The operator set that was registered
-    /// @param tosSignature The signature of the Terms of Service
-    event OperatorSetRegistered(OperatorSet indexed operatorSet, bytes tosSignature);
+    /// @param signer The address that signed the Terms of Service
+    /// @param tosHash The hash of the Terms of Service
+    /// @param signature The signature of the Terms of Service
+    event OperatorSetRegistered(
+        OperatorSet indexed operatorSet, address indexed signer, bytes32 indexed tosHash, bytes signature
+    );
 
     /// @notice Emitted when an operator set is deregistered from compute
     /// @param operatorSet The operator set that was deregistered
@@ -34,7 +47,7 @@ interface IComputeRegistryEvents {
     event TosHashSet(bytes32 tosHash);
 }
 
-interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
+interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IComputeRegistryTypes {
     /**
      *
      *                         WRITE FUNCTIONS
@@ -44,12 +57,12 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     /**
      * @notice Registers an operator set for compute services
      * @param operatorSet The operator set to register
-     * @param tosSignature The EIP-712 signature of the Terms of Service
+     * @param signature The EIP-712 signature of the Terms of Service
      * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
      * @dev The operator set must have at least one release available in the ReleaseManager
      * @dev The signature must be a valid EIP-712 signature of the Terms of Service with expiry set to MAX_EXPIRY
      */
-    function registerForCompute(OperatorSet calldata operatorSet, bytes memory tosSignature) external;
+    function registerForCompute(OperatorSet calldata operatorSet, bytes memory signature) external;
 
     /**
      * @notice Deregisters an operator set from compute services
@@ -116,13 +129,13 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     ) external view returns (bool);
 
     /**
-     * @notice Returns the Terms of Service signature for a registered operator set
-     * @param operatorSetKey The key of the operator set to query
+     * @notice Returns the Terms of Service signature for an operator set
+     * @param operatorSet The operator set to query
      * @return The Terms of Service signature
      */
-    function operatorSetTosSignature(
-        bytes32 operatorSetKey
-    ) external view returns (bytes memory);
+    function getOperatorSetTosSignature(
+        OperatorSet memory operatorSet
+    ) external view returns (TOSSignature memory);
 
     /**
      * @notice Calculates the EIP-712 digest hash that should be signed
