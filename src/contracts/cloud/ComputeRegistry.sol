@@ -62,12 +62,12 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
 
     /**
      * @notice Initializes the contract
-     * @param _tos The Terms of Service string that AVS operators must sign
+     * @param _tosHash The hash of the Terms of Service that AVS operators must sign
      */
     function initialize(
-        string memory _tos
+        bytes32 _tosHash
     ) external initializer {
-        tos = _tos;
+        tosHash = _tosHash;
     }
 
     /**
@@ -129,7 +129,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
 
     /**
      * @notice Calculates the EIP-712 digest hash that should be signed
-     * @param operatorSet The operator set that is agreeing to the tos
+     * @param operatorSet The operator set that is agreeing to the TOS
      * @param signer The address that is signing the agreement
      * @return The EIP-712 digest hash ready for signing
      */
@@ -142,7 +142,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
             keccak256(
                 abi.encode(
                     TOS_AGREEMENT_TYPEHASH,
-                    keccak256(bytes(tos)),
+                    tosHash,
                     operatorSet.avs,
                     operatorSet.id,
                     signer,

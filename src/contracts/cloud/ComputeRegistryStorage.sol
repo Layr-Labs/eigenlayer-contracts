@@ -11,7 +11,7 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
 
     /// @notice EIP-712 Type Hash for TOS Agreement
     bytes32 public constant TOS_AGREEMENT_TYPEHASH =
-        keccak256("TOSAgreement(string tos,address avs,uint32 operatorSetId,address signer,uint256 expiry)");
+        keccak256("TOSAgreement(bytes32 tosHash,address avs,uint32 operatorSetId,address signer,uint256 expiry)");
 
     /// @notice Maximum expiry value for signatures (effectively never expires)
     uint256 public constant MAX_EXPIRY = type(uint256).max;
@@ -24,8 +24,8 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
 
     // Storage
 
-    /// @notice The Terms of Service that AVS operators must sign
-    string public tos;
+    /// @notice The hash of the Terms of Service that AVS operators must sign
+    bytes32 public tosHash;
 
     /// @notice Mapping to track if an operator set is registered for compute
     /// @dev operatorSetKey => isRegistered
