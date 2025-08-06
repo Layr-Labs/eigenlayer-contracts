@@ -212,7 +212,7 @@ library Merkle {
         //while we haven't computed the root
         while (numNodesInLayer != 1) {
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            uint256 siblingIndex = index + 1 - 2 * (index % 2);
+            uint256 siblingIndex = index ^ 1;
             proof = abi.encodePacked(proof, layer[siblingIndex]);
             index /= 2;
 
