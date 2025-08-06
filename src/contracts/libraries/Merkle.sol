@@ -44,8 +44,6 @@ library Merkle {
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
      * @dev If the proof length is 0 then the leaf hash is returned.
      *
-     * _Available since v4.4._
-     *
      * Note this is for a Merkle tree using the keccak256 hash function
      */
     function processInclusionProofKeccak(
@@ -99,8 +97,6 @@ library Merkle {
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
      * hash matches the root of the tree. The tree is built assuming `leaf` is
      * the 0 indexed `index`'th leaf from the bottom left of the tree.
-     *
-     * _Available since v4.4._
      *
      * Note this is for a Merkle tree using the sha256 hash function
      */
