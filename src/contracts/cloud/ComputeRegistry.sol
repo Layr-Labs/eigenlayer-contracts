@@ -61,19 +61,20 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      * @inheritdoc IComputeRegistry
      */
     function registerForCompute(
-        OperatorSet calldata operatorSet,
-        bytes calldata tosSignature
+        OperatorSet memory operatorSet,
+        bytes memory tosSignature
     ) external checkCanCall(operatorSet.avs) {
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
         RELEASE_MANAGER.getLatestRelease(operatorSet);
 
-        // Decode signature and expiry
-        (bytes memory signature, uint256 expiry) = abi.decode(tosSignature, (bytes, uint256));
-        // Calculate the signable digest
-        bytes32 digestHash = calculateTOSAgreementDigest(operatorSet, msg.sender, expiry);
         // Verify the signature
-        _checkIsValidSignatureNow(msg.sender, digestHash, signature, expiry);
+        _checkIsValidSignatureNow({
+            signer: msg.sender,
+            signableDigest: calculateTOSAgreementDigest(operatorSet, msg.sender),
+            signature: tosSignature,
+            expiry: MAX_EXPIRY
+        });
 
         // Check if already registered
         bytes32 operatorSetKey = operatorSet.key();
@@ -90,7 +91,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      * @inheritdoc IComputeRegistry
      */
     function deregisterFromCompute(
-        OperatorSet calldata operatorSet
+        OperatorSet memory operatorSet
     ) external checkCanCall(operatorSet.avs) {
         bytes32 operatorSetKey = operatorSet.key();
         require(isOperatorSetRegistered[operatorSetKey], OperatorSetNotRegistered());
@@ -111,16 +112,13 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      * @notice Calculates the EIP-712 struct hash for a tos agreement
      * @param operatorSet The operator set that is agreeing to the tos
      * @param signer The address that is signing the agreement
-     * @param expiry The timestamp when the signature expires
      * @return The EIP-712 struct hash
      */
-    function calculateTOSAgreementHash(
-        OperatorSet memory operatorSet,
-        address signer,
-        uint256 expiry
-    ) public view returns (bytes32) {
+    function calculateTOSAgreementHash(OperatorSet memory operatorSet, address signer) public view returns (bytes32) {
         return keccak256(
-            abi.encode(TOS_AGREEMENT_TYPEHASH, keccak256(bytes(tos)), operatorSet.avs, operatorSet.id, signer, expiry)
+            abi.encode(
+                TOS_AGREEMENT_TYPEHASH, keccak256(bytes(tos)), operatorSet.avs, operatorSet.id, signer, MAX_EXPIRY
+            )
         );
     }
 
@@ -128,15 +126,13 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      * @notice Calculates the EIP-712 digest hash that should be signed
      * @param operatorSet The operator set that is agreeing to the tos
      * @param signer The address that is signing the agreement
-     * @param expiry The timestamp when the signature expires
      * @return The EIP-712 digest hash ready for signing
      */
     function calculateTOSAgreementDigest(
         OperatorSet memory operatorSet,
-        address signer,
-        uint256 expiry
+        address signer
     ) public view returns (bytes32) {
-        bytes32 structHash = calculateTOSAgreementHash(operatorSet, signer, expiry);
+        bytes32 structHash = calculateTOSAgreementHash(operatorSet, signer);
         return _calculateSignableDigest(structHash);
     }
 }

@@ -8,9 +8,12 @@ import "../libraries/OperatorSetLib.sol";
 abstract contract ComputeRegistryStorage is IComputeRegistry {
     // Constants and Immutables
 
-    // EIP-712 Type Hash for TOS Agreement
+    /// @notice EIP-712 Type Hash for TOS Agreement
     bytes32 public constant TOS_AGREEMENT_TYPEHASH =
         keccak256("TOSAgreement(string tos,address avs,uint32 operatorSetId,address signer,uint256 expiry)");
+
+    /// @notice Maximum expiry value for signatures (effectively never expires)
+    uint256 public constant MAX_EXPIRY = type(uint256).max;
 
     /// @notice The ReleaseManager contract
     IReleaseManager public immutable RELEASE_MANAGER;
