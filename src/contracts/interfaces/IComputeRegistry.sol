@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import {IReleaseManager} from "./IReleaseManager.sol";
 
 interface IComputeRegistryErrors {
     /// @dev Thrown when the provided signature does not match the expected Terms of Service signature
@@ -83,17 +84,6 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     ) external view returns (bytes memory);
 
     /**
-     * @notice Calculates the EIP-712 struct hash for a TOS agreement
-     * @param operatorSet The operator set that is agreeing to the TOS
-     * @param signer The address that is signing the agreement
-     * @return The EIP-712 struct hash
-     */
-    function calculateTOSAgreementHash(
-        OperatorSet memory operatorSet,
-        address signer
-    ) external view returns (bytes32);
-
-    /**
      * @notice Calculates the EIP-712 digest hash that should be signed
      * @param operatorSet The operator set that is agreeing to the TOS
      * @param signer The address that is signing the agreement
@@ -115,4 +105,10 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @return The MAX_EXPIRY constant (type(uint256).max)
      */
     function MAX_EXPIRY() external view returns (uint256);
+
+    /**
+     * @notice Returns the ReleaseManager contract
+     * @return The ReleaseManager contract
+     */
+    function RELEASE_MANAGER() external view returns (IReleaseManager);
 }
