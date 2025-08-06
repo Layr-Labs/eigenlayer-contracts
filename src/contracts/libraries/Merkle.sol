@@ -19,7 +19,7 @@ pragma solidity ^0.8.0;
  */
 library Merkle {
     error InvalidProofLength();
-
+    error InvalidIndex();
     /**
      * @dev Returns the rebuilt hash obtained by traversing a Merkle tree up
      * from `leaf` using `proof`. A `proof` is valid if and only if the rebuilt
@@ -28,6 +28,7 @@ library Merkle {
      *
      * Note this is for a Merkle tree using the keccak256 hash function
      */
+
     function verifyInclusionKeccak(
         bytes memory proof,
         bytes32 root,
@@ -206,14 +207,14 @@ library Merkle {
             layer[i] = leaves[i];
         }
 
+        if (index >= layer.length) revert InvalidIndex();
+
         //while we haven't computed the root
         while (numNodesInLayer != 1) {
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            if (index < layer.length) {
-                uint256 siblingIndex = index + 1 - 2 * (index % 2);
-                proof = abi.encodePacked(proof, layer[siblingIndex]);
-                index /= 2;
-            }
+            uint256 siblingIndex = index + 1 - 2 * (index % 2);
+            proof = abi.encodePacked(proof, layer[siblingIndex]);
+            index /= 2;
 
             uint256 numNodesInNextLayer = numNodesInLayer / 2;
             //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
