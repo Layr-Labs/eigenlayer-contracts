@@ -517,7 +517,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
             nonSignerWitnesses: witnesses
         });
 
-        vm.expectRevert(VerificationFailed.selector);
+        vm.expectRevert(Merkle.InvalidIndex.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 
