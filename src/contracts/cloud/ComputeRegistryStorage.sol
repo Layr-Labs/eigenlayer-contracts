@@ -13,7 +13,7 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
         keccak256("TOSAgreement(string tos,address avs,uint32 operatorSetId,address signer,uint256 expiry)");
 
     /// @notice The ReleaseManager contract
-    IReleaseManager public immutable releaseManager;
+    IReleaseManager public immutable RELEASE_MANAGER;
 
     // Storage
 
@@ -38,6 +38,6 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
     constructor(
         IReleaseManager _releaseManager
     ) {
-        releaseManager = _releaseManager;
+        RELEASE_MANAGER = _releaseManager;
     }
 }

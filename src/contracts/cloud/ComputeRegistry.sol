@@ -66,7 +66,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
     ) external checkCanCall(operatorSet.avs) {
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
-        releaseManager.getLatestRelease(operatorSet);
+        RELEASE_MANAGER.getLatestRelease(operatorSet);
 
         // Decode signature and expiry
         (bytes memory signature, uint256 expiry) = abi.decode(tosSignature, (bytes, uint256));
