@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "../interfaces/IComputeRegistry.sol";
 import "../interfaces/IReleaseManager.sol";
+import "../interfaces/IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
 
 abstract contract ComputeRegistryStorage is IComputeRegistry {
@@ -17,6 +18,9 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
 
     /// @notice The ReleaseManager contract
     IReleaseManager public immutable RELEASE_MANAGER;
+
+    /// @notice The AllocationManager contract
+    IAllocationManager public immutable ALLOCATION_MANAGER;
 
     // Storage
 
@@ -38,9 +42,8 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
      */
     uint256[47] private __gap;
 
-    constructor(
-        IReleaseManager _releaseManager
-    ) {
+    constructor(IReleaseManager _releaseManager, IAllocationManager _allocationManager) {
         RELEASE_MANAGER = _releaseManager;
+        ALLOCATION_MANAGER = _allocationManager;
     }
 }

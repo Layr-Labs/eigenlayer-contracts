@@ -19,6 +19,23 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
 
     /**
      *
+     *                         MODIFIERS
+     *
+     */
+
+    /**
+     * @dev Validates that the operator set exists in the AllocationManager
+     * @param operatorSet The operator set to validate
+     */
+    modifier isValidOperatorSet(
+        OperatorSet memory operatorSet
+    ) {
+        require(ALLOCATION_MANAGER.isOperatorSet(operatorSet), InvalidOperatorSet());
+        _;
+    }
+
+    /**
+     *
      *                         INITIALIZING FUNCTIONS
      *
      */
@@ -26,15 +43,17 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
     /**
      * @dev Initializes the contract with immutable values
      * @param _releaseManager The ReleaseManager contract address
+     * @param _allocationManager The AllocationManager contract address
      * @param _permissionController The PermissionController contract address
      * @param _version The semantic version of the contract
      */
     constructor(
         IReleaseManager _releaseManager,
+        IAllocationManager _allocationManager,
         IPermissionController _permissionController,
         string memory _version
     )
-        ComputeRegistryStorage(_releaseManager)
+        ComputeRegistryStorage(_releaseManager, _allocationManager)
         PermissionControllerMixin(_permissionController)
         SignatureUtilsMixin(_version)
     {
@@ -63,7 +82,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
     function registerForCompute(
         OperatorSet memory operatorSet,
         bytes memory tosSignature
-    ) external checkCanCall(operatorSet.avs) {
+    ) external checkCanCall(operatorSet.avs) isValidOperatorSet(operatorSet) {
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
         RELEASE_MANAGER.getLatestRelease(operatorSet);
@@ -92,7 +111,7 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
      */
     function deregisterFromCompute(
         OperatorSet memory operatorSet
-    ) external checkCanCall(operatorSet.avs) {
+    ) external checkCanCall(operatorSet.avs) isValidOperatorSet(operatorSet) {
         bytes32 operatorSetKey = operatorSet.key();
         require(isOperatorSetRegistered[operatorSetKey], OperatorSetNotRegistered());
 

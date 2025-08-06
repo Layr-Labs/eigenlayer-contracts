@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {IReleaseManager} from "./IReleaseManager.sol";
+import {IAllocationManager} from "./IAllocationManager.sol";
 
 interface IComputeRegistryErrors {
     /// @dev Thrown when the provided signature does not match the expected Terms of Service signature
@@ -13,6 +14,9 @@ interface IComputeRegistryErrors {
 
     /// @dev Thrown when an operator set is not registered but expected to be
     error OperatorSetNotRegistered();
+
+    /// @dev Thrown when an invalid operator set is provided
+    error InvalidOperatorSet();
 }
 
 interface IComputeRegistryEvents {
@@ -76,6 +80,12 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @return The ReleaseManager contract
      */
     function RELEASE_MANAGER() external view returns (IReleaseManager);
+
+    /**
+     * @notice Returns the AllocationManager contract
+     * @return The AllocationManager contract
+     */
+    function ALLOCATION_MANAGER() external view returns (IAllocationManager);
 
     /**
      * @notice Returns the Terms of Service string
