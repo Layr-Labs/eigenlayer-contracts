@@ -38,7 +38,7 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @param operatorSet The operator set to register
      * @param tosSignature The EIP-712 signature of the Terms of Service
      * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
-     * @dev The operator set must have at least one release available
+     * @dev The operator set must have at least one release available in the ReleaseManager
      * @dev The signature must be a valid EIP-712 signature of the Terms of Service with expiry set to MAX_EXPIRY
      */
     function registerForCompute(OperatorSet calldata operatorSet, bytes memory tosSignature) external;
@@ -58,6 +58,24 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      *                         VIEW FUNCTIONS
      *
      */
+
+    /**
+     * @notice Returns the EIP-712 type hash used for TOS agreements
+     * @return The TOS_AGREEMENT_TYPEHASH constant
+     */
+    function TOS_AGREEMENT_TYPEHASH() external view returns (bytes32);
+
+    /**
+     * @notice Returns the maximum expiry value used for signatures
+     * @return The MAX_EXPIRY constant (type(uint256).max)
+     */
+    function MAX_EXPIRY() external view returns (uint256);
+
+    /**
+     * @notice Returns the ReleaseManager contract
+     * @return The ReleaseManager contract
+     */
+    function RELEASE_MANAGER() external view returns (IReleaseManager);
 
     /**
      * @notice Returns the Terms of Service string
@@ -93,22 +111,4 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
         OperatorSet memory operatorSet,
         address signer
     ) external view returns (bytes32);
-
-    /**
-     * @notice Returns the EIP-712 type hash used for TOS agreements
-     * @return The TOS_AGREEMENT_TYPEHASH constant
-     */
-    function TOS_AGREEMENT_TYPEHASH() external view returns (bytes32);
-
-    /**
-     * @notice Returns the maximum expiry value used for signatures
-     * @return The MAX_EXPIRY constant (type(uint256).max)
-     */
-    function MAX_EXPIRY() external view returns (uint256);
-
-    /**
-     * @notice Returns the ReleaseManager contract
-     * @return The ReleaseManager contract
-     */
-    function RELEASE_MANAGER() external view returns (IReleaseManager);
 }
