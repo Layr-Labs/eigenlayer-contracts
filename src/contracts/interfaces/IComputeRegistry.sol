@@ -28,6 +28,10 @@ interface IComputeRegistryEvents {
     /// @notice Emitted when an operator set is deregistered from compute
     /// @param operatorSet The operator set that was deregistered
     event OperatorSetDeregistered(OperatorSet indexed operatorSet);
+
+    /// @notice Emitted when the Terms of Service hash is updated
+    /// @param tosHash The new Terms of Service hash
+    event TosHashSet(bytes32 tosHash);
 }
 
 interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
@@ -55,6 +59,15 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      */
     function deregisterFromCompute(
         OperatorSet calldata operatorSet
+    ) external;
+
+    /**
+     * @notice Updates the Terms of Service hash
+     * @param tosHash The new Terms of Service hash
+     * @dev Only callable by the contract owner
+     */
+    function setTosHash(
+        bytes32 tosHash
     ) external;
 
     /**

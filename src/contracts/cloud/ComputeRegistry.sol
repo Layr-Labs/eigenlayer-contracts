@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SignatureUtilsMixin.sol";
@@ -14,7 +15,13 @@ import "./ComputeRegistryStorage.sol";
  * @notice This contract handles permissionless (de)registration of AVS operator sets to the EigenCompute Operator.
  * It enables AVSs to easily access managed operator infrastructure as part of EigenCloud for quick bootstrapping.
  */
-contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionControllerMixin, SignatureUtilsMixin {
+contract ComputeRegistry is
+    Initializable,
+    OwnableUpgradeable,
+    ComputeRegistryStorage,
+    PermissionControllerMixin,
+    SignatureUtilsMixin
+{
     using OperatorSetLib for OperatorSet;
 
     /**
@@ -62,12 +69,13 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
 
     /**
      * @notice Initializes the contract
+     * @param _owner The owner of the contract
      * @param _tosHash The hash of the Terms of Service that AVS operators must sign
      */
-    function initialize(
-        bytes32 _tosHash
-    ) external initializer {
-        tosHash = _tosHash;
+    function initialize(address _owner, bytes32 _tosHash) external initializer {
+        __Ownable_init();
+        transferOwnership(_owner);
+        _setTosHash(_tosHash);
     }
 
     /**
@@ -119,6 +127,34 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         isOperatorSetRegistered[operatorSetKey] = false;
 
         emit OperatorSetDeregistered(operatorSet);
+    }
+
+    /**
+     * @notice Updates the Terms of Service hash
+     * @param _tosHash The new Terms of Service hash
+     * @dev Only callable by the contract owner
+     */
+    function setTosHash(
+        bytes32 _tosHash
+    ) external onlyOwner {
+        _setTosHash(_tosHash);
+    }
+
+    /**
+     *
+     *                         INTERNAL FUNCTIONS
+     *
+     */
+
+    /**
+     * @dev Internal function to set the Terms of Service hash
+     * @param _tosHash The new Terms of Service hash
+     */
+    function _setTosHash(
+        bytes32 _tosHash
+    ) internal {
+        tosHash = _tosHash;
+        emit TosHashSet(_tosHash);
     }
 
     /**
