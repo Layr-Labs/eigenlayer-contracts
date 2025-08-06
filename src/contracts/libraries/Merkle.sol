@@ -55,7 +55,7 @@ library Merkle {
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
-                // if ith bit of index is 0, then computedHash is a left sibling
+                // if index is even, then computedHash is a left sibling
                 assembly {
                     mstore(0x00, computedHash)
                     mstore(0x20, mload(add(proof, i)))
@@ -63,7 +63,7 @@ library Merkle {
                     index := div(index, 2)
                 }
             } else {
-                // if ith bit of index is 1, then computedHash is a right sibling
+                // if index is odd, then computedHash is a right sibling
                 assembly {
                     mstore(0x00, mload(add(proof, i)))
                     mstore(0x20, computedHash)
@@ -109,7 +109,7 @@ library Merkle {
         bytes32[1] memory computedHash = [leaf];
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {
-                // if ith bit of index is 0, then computedHash is a left sibling
+                // if index is even, then computedHash is a left sibling
                 assembly {
                     mstore(0x00, mload(computedHash))
                     mstore(0x20, mload(add(proof, i)))
@@ -117,7 +117,7 @@ library Merkle {
                     index := div(index, 2)
                 }
             } else {
-                // if ith bit of index is 1, then computedHash is a right sibling
+                // if index is odd, then computedHash is a right sibling
                 assembly {
                     mstore(0x00, mload(add(proof, i)))
                     mstore(0x20, mload(computedHash))
