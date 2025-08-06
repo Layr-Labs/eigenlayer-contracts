@@ -35,13 +35,12 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
     /**
      * @notice Registers an operator set for compute services
      * @param operatorSet The operator set to register
-     * @param tosSignature The encoded signature data containing (signature, expiry)
+     * @param tosSignature The EIP-712 signature of the Terms of Service
      * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
      * @dev The operator set must have at least one release available
-     * @dev The signature must be a valid EIP-712 signature of the Terms of Service
-     * @dev tosSignature should be abi.encode(signature, expiry) where signature is the EIP-712 signature bytes
+     * @dev The signature must be a valid EIP-712 signature of the Terms of Service with expiry set to MAX_EXPIRY
      */
-    function registerForCompute(OperatorSet calldata operatorSet, bytes calldata tosSignature) external;
+    function registerForCompute(OperatorSet calldata operatorSet, bytes memory tosSignature) external;
 
     /**
      * @notice Deregisters an operator set from compute services
@@ -87,26 +86,22 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @notice Calculates the EIP-712 struct hash for a TOS agreement
      * @param operatorSet The operator set that is agreeing to the TOS
      * @param signer The address that is signing the agreement
-     * @param expiry The timestamp when the signature expires
      * @return The EIP-712 struct hash
      */
     function calculateTOSAgreementHash(
         OperatorSet memory operatorSet,
-        address signer,
-        uint256 expiry
+        address signer
     ) external view returns (bytes32);
 
     /**
      * @notice Calculates the EIP-712 digest hash that should be signed
      * @param operatorSet The operator set that is agreeing to the TOS
      * @param signer The address that is signing the agreement
-     * @param expiry The timestamp when the signature expires
      * @return The EIP-712 digest hash ready for signing
      */
     function calculateTOSAgreementDigest(
         OperatorSet memory operatorSet,
-        address signer,
-        uint256 expiry
+        address signer
     ) external view returns (bytes32);
 
     /**
@@ -114,4 +109,10 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents {
      * @return The TOS_AGREEMENT_TYPEHASH constant
      */
     function TOS_AGREEMENT_TYPEHASH() external view returns (bytes32);
+
+    /**
+     * @notice Returns the maximum expiry value used for signatures
+     * @return The MAX_EXPIRY constant (type(uint256).max)
+     */
+    function MAX_EXPIRY() external view returns (uint256);
 }
