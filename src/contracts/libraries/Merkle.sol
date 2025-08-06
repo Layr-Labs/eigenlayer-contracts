@@ -29,6 +29,11 @@ library Merkle {
     // @dev Error code: 0xbaec3d9a
     error NoLeaves();
 
+    // @notice Thrown when the provided leaves' length was insufficient.
+    // @dev Error code: 0xf8ef0367
+    // @dev This is used for the SHA256 Merkle tree, where the tree must have more than 1 leaf.
+    error NotEnoughLeaves();
+
     /**
      * @notice Verifies that a given leaf is included in a Merkle tree
      * @param proof The proof of inclusion for the leaf
@@ -167,17 +172,18 @@ library Merkle {
     }
 
     /**
-     * @notice Returns the Merkle root of a tree created from a set of leaves using sha256 as its hash function
+     * @notice Returns the Merkle root of a tree created from a set of leaves using SHA-256 as its hash function
      * @param leaves the leaves of the Merkle tree
      * @return The computed Merkle root of the tree.
      * @dev Reverts for:
-     *      - NoLeaves: leaves.length is 0.
+     *      - NotEnoughLeaves: leaves.length is less than 2.
      *      - LeavesNotPowerOfTwo: leaves.length is not a power of two.
+     * @dev Unlike the Keccak version, this function does not allow a single-leaf tree.
      */
     function merkleizeSha256(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
-        require(leaves.length > 0, NoLeaves());
+        require(leaves.length > 1, NotEnoughLeaves());
         require(isPowerOfTwo(leaves.length), LeavesNotPowerOfTwo());
 
         //there are half as many nodes in the layer above the leaves
@@ -204,7 +210,7 @@ library Merkle {
     }
 
     /**
-     * @notice Returns the Merkle root of a tree created from a set of leaves using keccak as its hash function
+     * @notice Returns the Merkle root of a tree created from a set of leaves using Keccak as its hash function
      * @param leaves the leaves of the Merkle tree
      * @return The computed Merkle root of the tree.
      * @dev Reverts for:
@@ -247,7 +253,7 @@ library Merkle {
     }
 
     /**
-     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using keccak as its hash function
+     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using Keccak as its hash function
      * @param leaves the leaves of the Merkle tree
      * @param index the index of the leaf to get the proof for
      * @return proof The computed Merkle proof for the leaf at index.
@@ -287,15 +293,16 @@ library Merkle {
     }
 
     /**
-     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using sha256 as its hash function
+     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using SHA-256 as its hash function
      * @param leaves the leaves of the Merkle tree
      * @param index the index of the leaf to get the proof for
      * @return proof The computed Merkle proof for the leaf at index.
      * @dev Reverts for:
-     *      - InvalidIndex: index is outside the max index for the tree.
+     *      - NotEnoughLeaves: leaves.length is less than 2.
+     * @dev Unlike the Keccak version, this function does not allow a single-leaf proof.
      */
     function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
-        require(leaves.length > 0, NoLeaves());
+        require(leaves.length > 1, NotEnoughLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
         uint256 numNodesInLayer = 1;
