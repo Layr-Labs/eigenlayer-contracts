@@ -12,9 +12,6 @@ interface IComputeRegistryErrors {
 
     /// @dev Thrown when an operator set is not registered but expected to be
     error OperatorSetNotRegistered();
-
-    /// @dev Thrown when an operator set has no releases available
-    error NoReleasesForOperatorSet();
 }
 
 interface IComputeRegistryEvents {
