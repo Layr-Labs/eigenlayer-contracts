@@ -39,6 +39,13 @@ library Merkle {
     /// @dev Empty roots should never be valid. We prevent them to avoid issues like the Nomad bridge attack: <https://medium.com/nomad-xyz-blog/nomad-bridge-hack-root-cause-analysis-875ad2e5aacd>
     error EmptyRoot();
 
+    /// @notice The placeholder hash for padding a Merkle tree.
+    /// @dev A precomputed hash provides both security and efficiency:
+    /// - Security: Prevents leaves with 0 bytes from being used within proofs.
+    /// - Efficiency: Precomputing avoids the cost of recomputing the constant for each use.
+    /// @dev Value derived from keccak256("MERKLE_ZERO_HASH") = 0xd21c...
+    bytes32 internal constant MERKLE_ZERO_HASH = 0xd21c27d0acfb2fc1f5d48b2e52dc8739b69286faa37d59ef24839395abdf7d96;
+
     /**
      * @notice Verifies that a given leaf is included in a Merkle tree
      * @param proof The proof of inclusion for the leaf
@@ -227,22 +234,8 @@ library Merkle {
     ) internal pure returns (bytes32) {
         require(leaves.length > 0, NoLeaves());
 
-        uint256 numNodesInLayer;
-        if (!isPowerOfTwo(leaves.length)) {
-            // Pad to the next power of 2
-            numNodesInLayer = 1;
-            while (numNodesInLayer < leaves.length) {
-                numNodesInLayer *= 2;
-            }
-        } else {
-            numNodesInLayer = leaves.length;
-        }
-
-        // Create a layer to store the internal nodes
-        bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        for (uint256 i = 0; i < leaves.length; i++) {
-            layer[i] = leaves[i];
-        }
+        bytes32[] memory layer = constructPaddedLayer(leaves);
+        uint256 numNodesInLayer = layer.length;
 
         // While we haven't computed the root
         while (numNodesInLayer != 1) {
@@ -267,16 +260,9 @@ library Merkle {
      */
     function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
         require(leaves.length > 0, NoLeaves());
-        // TODO: very inefficient, use ZERO_HASHES
-        // pad to the next power of 2
-        uint256 numNodesInLayer = 1;
-        while (numNodesInLayer < leaves.length) {
-            numNodesInLayer *= 2;
-        }
-        bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        for (uint256 i = 0; i < leaves.length; i++) {
-            layer[i] = leaves[i];
-        }
+
+        bytes32[] memory layer = constructPaddedLayer(leaves);
+        uint256 numNodesInLayer = layer.length;
 
         if (index >= layer.length) revert InvalidIndex();
 
@@ -308,16 +294,9 @@ library Merkle {
      */
     function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
         require(leaves.length > 1, NotEnoughLeaves());
-        // TODO: very inefficient, use ZERO_HASHES
-        // pad to the next power of 2
-        uint256 numNodesInLayer = 1;
-        while (numNodesInLayer < leaves.length) {
-            numNodesInLayer *= 2;
-        }
-        bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        for (uint256 i = 0; i < leaves.length; i++) {
-            layer[i] = leaves[i];
-        }
+
+        bytes32[] memory layer = constructPaddedLayer(leaves);
+        uint256 numNodesInLayer = layer.length;
 
         if (index >= layer.length) revert InvalidIndex();
 
@@ -336,6 +315,24 @@ library Merkle {
                 layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
         }
+    }
+
+    function constructPaddedLayer(
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32[] memory) {
+        uint256 numNodesInLayer = 1;
+        while (numNodesInLayer < leaves.length) {
+            numNodesInLayer *= 2;
+        }
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            layer[i] = leaves[i];
+        }
+
+        for (uint256 i = leaves.length; i < numNodesInLayer; i++) {
+            layer[i] = MERKLE_ZERO_HASH;
+        }
+        return layer;
     }
 
     /**
