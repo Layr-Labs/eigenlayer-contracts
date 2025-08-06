@@ -242,7 +242,7 @@ library Merkle {
      * @param index the index of the leaf to get the proof for
      * @return proof The computed Merkle proof for the leaf at index.
      * @dev Reverts for:
-     *      - InvalidIndex: index is greater than or equal to the number of leaves.
+     *      - InvalidIndex: index is outside the max index for the tree.
      */
     function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
         // TODO: very inefficient, use ZERO_HASHES
@@ -271,6 +271,45 @@ library Merkle {
             // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
+            }
+        }
+    }
+
+    /**
+     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using sha256 as its hash function
+     * @param leaves the leaves of the Merkle tree
+     * @param index the index of the leaf to get the proof for
+     * @return proof The computed Merkle proof for the leaf at index.
+     * @dev Reverts for:
+     *      - InvalidIndex: index is outside the max index for the tree.
+     */
+    function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+        // TODO: very inefficient, use ZERO_HASHES
+        // pad to the next power of 2
+        uint256 numNodesInLayer = 1;
+        while (numNodesInLayer < leaves.length) {
+            numNodesInLayer *= 2;
+        }
+        bytes32[] memory layer = new bytes32[](numNodesInLayer);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            layer[i] = leaves[i];
+        }
+
+        if (index >= layer.length) revert InvalidIndex();
+
+        // While we haven't computed the root
+        while (numNodesInLayer != 1) {
+            // Flip the least significant bit of index to get the sibling index
+            uint256 siblingIndex = index ^ 1;
+            // Add the sibling to the proof
+            proof = abi.encodePacked(proof, layer[siblingIndex]);
+            index /= 2;
+
+            // The next layer above has half as many nodes
+            numNodesInLayer /= 2;
+            // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
+                layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
         }
     }
