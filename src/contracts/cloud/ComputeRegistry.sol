@@ -63,11 +63,8 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         bytes calldata tosSignature
     ) external checkCanCall(operatorSet.avs) {
         // Check if there is at least one release for the operator set
-        try releaseManager.getLatestRelease(operatorSet) returns (uint256, IReleaseManagerTypes.Release memory) {
-            // Release exists, continue
-        } catch {
-            revert NoReleasesForOperatorSet();
-        }
+        // The ReleaseManager will revert with `NoReleases()`if there are no releases for the operator set
+        releaseManager.getLatestRelease(operatorSet);
 
         // Verify the TOS signature
         bytes32 tosHash = keccak256(bytes(TOS));
