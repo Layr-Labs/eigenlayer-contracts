@@ -36,7 +36,7 @@ contract DeployGovernance is EOADeployer {
         if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "base")) {
             return;
         }
-        
+
         runAsEOA();
 
         // Assert that the multisigs have the proper owners - protocolCouncilMultisig and communityMultisig have the same owners & threshold
