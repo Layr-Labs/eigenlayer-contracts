@@ -186,26 +186,25 @@ library Merkle {
         require(leaves.length > 1, NotEnoughLeaves());
         require(isPowerOfTwo(leaves.length), LeavesNotPowerOfTwo());
 
-        //there are half as many nodes in the layer above the leaves
+        // There are half as many nodes in the layer above the leaves
         uint256 numNodesInLayer = leaves.length / 2;
-        //create a layer to store the internal nodes
+        // Create a layer to store the internal nodes
         bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        //fill the layer with the pairwise hashes of the leaves
+        // Fill the layer with the pairwise hashes of the leaves
         for (uint256 i = 0; i < numNodesInLayer; i++) {
             layer[i] = sha256(abi.encodePacked(leaves[2 * i], leaves[2 * i + 1]));
         }
-        //the next layer above has half as many nodes
-        numNodesInLayer /= 2;
-        //while we haven't computed the root
-        while (numNodesInLayer != 0) {
-            //overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
+
+        // While we haven't computed the root
+        while (numNodesInLayer != 1) {
+            // The next layer above has half as many nodes
+            numNodesInLayer /= 2;
+            // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
             for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = sha256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
-            //the next layer above has half as many nodes
-            numNodesInLayer /= 2;
         }
-        //the first node in the layer is the root
+        // The first node in the layer is the root
         return layer[0];
     }
 
@@ -240,13 +239,12 @@ library Merkle {
 
         // While we haven't computed the root
         while (numNodesInLayer != 1) {
-            uint256 numNodesInNextLayer = numNodesInLayer / 2;
+            // The next layer above has half as many nodes
+            numNodesInLayer /= 2;
             // Overwrite the first numNodesInLayer nodes in layer with the pairwise hashes of their children
-            for (uint256 i = 0; i < numNodesInNextLayer; i++) {
+            for (uint256 i = 0; i < numNodesInLayer; i++) {
                 layer[i] = keccak256(abi.encodePacked(layer[2 * i], layer[2 * i + 1]));
             }
-            // The next layer above has half as many nodes
-            numNodesInLayer = numNodesInNextLayer;
         }
         // The first node in the layer is the root
         return layer[0];
