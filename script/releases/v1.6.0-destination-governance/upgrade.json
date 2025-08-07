@@ -1,0 +1,15 @@
+{
+    "name": "v1.6.0-destination-governance",
+    "from": ">0.0.0",
+    "to": "1.8.0-rc.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployGovernance.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-transferOwnership.s.sol"
+        }
+    ]
+}

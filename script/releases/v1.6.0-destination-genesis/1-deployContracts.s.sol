@@ -21,11 +21,11 @@ contract DeployDestinationGenesis is EOADeployer {
 
         // Setup ops multisig initial owners
         address[] memory opsMultisigInitialOwners;
-        opsMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-multichain-genesis/opsOwners.toml");
+        opsMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-destination-genesis/opsOwners.toml");
 
         // Setup pauser multisig initial owners
         address[] memory pauserMultisigInitialOwners;
-        pauserMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-multichain-genesis/pauserOwners.toml");
+        pauserMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-destination-genesis/pauserOwners.toml");
 
         vm.startBroadcast();
 

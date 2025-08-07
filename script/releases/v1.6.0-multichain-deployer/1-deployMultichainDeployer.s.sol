@@ -7,6 +7,8 @@ import "../../releases/Env.sol";
 
 /// @notice Deploy the multichain deployer multisig
 /// @dev This script is used to deploy the multichain deployer multisig on the destination chain
+/// @dev This script should ONLY be used for mainnet environments. Testnet environments should follow our notion guide
+/// TODO: Add a testnet version of this script
 /// @dev The SAFE version is 1.4.1
 contract DeployMultichainDeployer is EOADeployer {
     using Env for *;
