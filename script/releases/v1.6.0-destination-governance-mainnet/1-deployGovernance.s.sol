@@ -37,6 +37,8 @@ contract DeployGovernance is EOADeployer {
             return;
         }
 
+        require(Env._strEq(Env.version(), Env.deployVersion()), "must deploy to the same version as the env");
+
         runAsEOA();
 
         // Assert that the multisigs have the proper owners - protocolCouncilMultisig and communityMultisig have the same owners & threshold
