@@ -36,6 +36,10 @@ contract DeployGovernance is EOADeployer {
             return;
         }
 
+        if (Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "testnet-holesky") || Env._strEq(Env.env(), "testnet-hoodi")) {
+            return;
+        }
+
         require(
             Env._strEq(Env.env(), "testnet-base-sepolia") || Env._strEq(Env.env(), "base"),
             "only testnet-base-sepolia and base are supported"
