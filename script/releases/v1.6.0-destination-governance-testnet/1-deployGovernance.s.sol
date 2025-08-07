@@ -6,19 +6,17 @@ import "../Env.sol";
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
-// For TOML parsing
-import {stdToml} from "forge-std/StdToml.sol";
-
-/// @notice This script is used to deploy the governance contracts for the destination chain.
+/// @notice This script is used to deploy the governance contracts for the testnet destination chain.
 contract DeployGovernance is EOADeployer {
     using Env for *;
-    using stdToml for string;
 
-    uint256 public constant PROTOCOL_COUNCIL_AND_COMMUNITY_THRESHOLD = 3;
-    uint256 public constant EXECUTOR_THRESHOLD = 1;
+    // Testnet constants
+    address public constant TESTNET_OWNER = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
+    uint256 public constant TESTNET_THRESHOLD = 1;
 
     function _runAsEOA() internal override {
-        if (!Env.isDestinationChain()) {
+        // If we are not on testnet-base-sepolia, return
+        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
             return;
         }
 
@@ -32,23 +30,10 @@ contract DeployGovernance is EOADeployer {
     }
 
     function testDeploy() public virtual {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
             return;
         }
-
-        if (
-            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
-                || Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "testnet-holesky")
-                || Env._strEq(Env.env(), "testnet-hoodi")
-        ) {
-            return;
-        }
-
-        require(
-            Env._strEq(Env.env(), "testnet-base-sepolia") || Env._strEq(Env.env(), "base"),
-            "only testnet-base-sepolia and base are supported"
-        );
-
+        
         runAsEOA();
 
         // Assert that the multisigs have the proper owners - protocolCouncilMultisig and communityMultisig have the same owners & threshold
@@ -85,24 +70,18 @@ contract DeployGovernance is EOADeployer {
         // pseudorandom number for salt
         uint256 salt = uint256(keccak256(abi.encode(block.chainid, block.timestamp))); // Pseudo-random salt
 
-        // Set the initial owner of the multisig to the deployer
-        address[] memory initialOwners =
-            _getMultisigOwner("script/releases/v1.6.0-destination-governance/pcAndCommunityOwners.toml");
+        // Set the initial owner of the multisig to the testnet owner
+        address[] memory initialOwners = new address[](1);
+        initialOwners[0] = TESTNET_OWNER;
 
         // 1. Deploy protocolCouncilMultisig
-        address protocolCouncilMultisig = deployMultisig({
-            initialOwners: initialOwners,
-            initialThreshold: PROTOCOL_COUNCIL_AND_COMMUNITY_THRESHOLD,
-            salt: ++salt
-        });
+        address protocolCouncilMultisig =
+            deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
         zUpdate("protocolCouncilMultisig", protocolCouncilMultisig);
 
         // 2. Deploy communityMultisig
-        address communityMultisig = deployMultisig({
-            initialOwners: initialOwners,
-            initialThreshold: PROTOCOL_COUNCIL_AND_COMMUNITY_THRESHOLD,
-            salt: ++salt
-        });
+        address communityMultisig =
+            deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
         zUpdate("communityMultisig", communityMultisig);
 
         // 3. Deploy primary executorMultisig
@@ -114,7 +93,7 @@ contract DeployGovernance is EOADeployer {
         owners_executorMultisig[1] = Env.communityMultisig();
 
         address executorMultisig =
-            deployMultisig({initialOwners: owners_executorMultisig, initialThreshold: EXECUTOR_THRESHOLD, salt: ++salt});
+            deployMultisig({initialOwners: owners_executorMultisig, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
         zUpdate("executorMultisig", executorMultisig);
     }
 
@@ -203,16 +182,8 @@ contract DeployGovernance is EOADeployer {
             AccessControl.grantRole.selector, timelockController.TIMELOCK_ADMIN_ROLE(), Env.communityMultisig()
         );
 
-        uint256 delayToSet;
-        // If we are on BASE, the delay is 1 day, else 1 second
-        // Check the delays based on the network name
-        if (Env._strEq(Env.env(), "testnet-base-sepolia")) {
-            delayToSet = 1;
-        } else if (Env._strEq(Env.env(), "base")) {
-            delayToSet = 1 days;
-        } else {
-            revert("invalid network");
-        }
+        // For testnet, the delay is 1 second
+        uint256 delayToSet = 1;
 
         require(delayToSet != 0, "delay not calculated");
         // 10. set min delay to appropriate length
@@ -248,12 +219,13 @@ contract DeployGovernance is EOADeployer {
     function checkMultisig(
         Multisig multisig
     ) public view {
-        // Check threshold
-        assertEq(multisig.getThreshold(), PROTOCOL_COUNCIL_AND_COMMUNITY_THRESHOLD);
+        // Check threshold for testnet
+        assertEq(multisig.getThreshold(), TESTNET_THRESHOLD);
 
         // Check owners
-        address[] memory expectedOwners =
-            _getMultisigOwner("script/releases/v1.6.0-destination-governance/pcAndCommunityOwners.toml");
+        address[] memory expectedOwners = new address[](1);
+        expectedOwners[0] = TESTNET_OWNER;
+
         for (uint256 i = 0; i < expectedOwners.length; i++) {
             assertTrue(multisig.isOwner(expectedOwners[i]), "owner mismatch");
         }
@@ -264,7 +236,7 @@ contract DeployGovernance is EOADeployer {
 
     function checkExecutorMultisig() public view {
         // Check threshold
-        assertEq(Multisig(Env.executorMultisig()).getThreshold(), EXECUTOR_THRESHOLD);
+        assertEq(Multisig(Env.executorMultisig()).getThreshold(), TESTNET_THRESHOLD);
 
         // Check owner count
         assertEq(Multisig(Env.executorMultisig()).getOwners().length, 2, "executorMultisig owner count mismatch");
@@ -333,28 +305,8 @@ contract DeployGovernance is EOADeployer {
             "deployer erroenously retains CANCELLER_ROLE on timelockController"
         );
 
-        // Check the delays based on the network name
-        if (Env._strEq(Env.env(), "testnet-base-sepolia")) {
-            assertEq(timelockController.getMinDelay(), 1);
-        } else if (Env._strEq(Env.env(), "base")) {
-            assertEq(timelockController.getMinDelay(), 1 days);
-        } else {
-            revert("invalid network");
-        }
-    }
-
-    function _getMultisigOwner(
-        string memory path
-    ) internal view returns (address[] memory) {
-        // Read the TOML file
-        string memory root = vm.projectRoot();
-        string memory fullPath = string.concat(root, "/", path);
-        string memory toml = vm.readFile(fullPath);
-
-        // Parse the owners array from the TOML
-        address[] memory owners = toml.readAddressArray(".owners");
-
-        return owners;
+        // Check the delay for testnet (1 second)
+        assertEq(timelockController.getMinDelay(), 1);
     }
 }
 

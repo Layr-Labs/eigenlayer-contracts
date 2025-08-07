@@ -6,39 +6,23 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "../../releases/Env.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-/// @notice Transfers ownership of the proxyAdmin to the executorMultisig
+/// @notice Transfers ownership of the proxyAdmin to the executorMultisig for testnet
 /// @dev Assumes that the proxyAdmin has been deployed and that the opsMultisig has been configured
-/// @dev For base, the ops multisig is 3/n, so we have to manually propose the transfer of ownership
-///      In this case, the ownership will have to be updated via the safe UI and script validated here
-///      to complete the upgrade
 contract TransferOwnership is MultisigBuilder, DeployGovernance {
     using Env for *;
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
-        if (!Env.isDestinationChain()) { 
+        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
             return;
         }
 
-        // For base, the ops multisig is 3/n, so we have to manually propose the transfer of ownership, due to 
-        // being unable to do a delegateCall from the SAFE UI
-        if (Env._strEq(Env.env(), "base")) { 
-            return;
-        }
         // Transfer ownership of the proxyAdmin to the executorMultisig
         ProxyAdmin(address(Env.proxyAdmin())).transferOwnership(Env.executorMultisig());
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
-            return;
-        }
-
-        if (
-            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
-                || Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "testnet-holesky")
-                || Env._strEq(Env.env(), "testnet-hoodi")
-        ) {
+        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
             return;
         }
 
