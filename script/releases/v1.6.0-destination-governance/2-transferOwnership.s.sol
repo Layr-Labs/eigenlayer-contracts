@@ -34,7 +34,11 @@ contract TransferOwnership is MultisigBuilder, DeployGovernance {
             return;
         }
 
-        if (Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "testnet-holesky") || Env._strEq(Env.env(), "testnet-hoodi")) {
+        if (
+            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
+                || Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "testnet-holesky")
+                || Env._strEq(Env.env(), "testnet-hoodi")
+        ) {
             return;
         }
 
