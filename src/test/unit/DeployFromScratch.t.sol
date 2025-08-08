@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {DeployFromScratch} from "script/deploy/local/deploy_from_scratch.slashing.s.sol";
 
 // NOTE: Run the following command to deploy from scratch in an anvil instance:

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IECDSACertificateVerifier, IECDSACertificateVerifierTypes} from "src/contracts/interfaces/IECDSACertificateVerifier.sol";
+import {IECDSACertificateVerifier} from "src/contracts/interfaces/IECDSACertificateVerifier.sol";
 import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 
 contract MockECDSACertificateVerifier is IECDSACertificateVerifier {

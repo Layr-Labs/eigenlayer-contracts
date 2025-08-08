@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "src/contracts/interfaces/IBN254CertificateVerifier.sol";
+import {IBN254CertificateVerifier} from "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IOperatorTableCalculatorTypes} from "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "src/contracts/libraries/BN254.sol";

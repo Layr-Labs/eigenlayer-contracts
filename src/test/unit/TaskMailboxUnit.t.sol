@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import {Test, console, Vm} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -13,7 +13,7 @@ import {OperatorSet, OperatorSetLib} from "src/contracts/libraries/OperatorSetLi
 import {BN254} from "src/contracts/libraries/BN254.sol";
 import {IKeyRegistrarTypes} from "src/contracts/interfaces/IKeyRegistrar.sol";
 import {TaskMailbox} from "src/contracts/avs/task/TaskMailbox.sol";
-import {ITaskMailbox, ITaskMailboxTypes, ITaskMailboxErrors, ITaskMailboxEvents} from "src/contracts/interfaces/ITaskMailbox.sol";
+import {ITaskMailboxTypes, ITaskMailboxErrors, ITaskMailboxEvents} from "src/contracts/interfaces/ITaskMailbox.sol";
 import {IAVSTaskHook} from "src/contracts/interfaces/IAVSTaskHook.sol";
 
 import {MockAVSTaskHook} from "src/test/mocks/MockAVSTaskHook.sol";

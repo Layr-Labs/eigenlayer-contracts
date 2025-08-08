@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import {ITaskMailbox} from "../../interfaces/ITaskMailbox.sol";
-import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
 
 /**
  * @title TaskMailboxStorage
