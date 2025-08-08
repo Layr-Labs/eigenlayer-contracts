@@ -426,15 +426,60 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
         _updateGlobalTableRoot(globalTableRoot);
 
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
         // Generate an invalid proof
-        bytes memory invalidProof = new bytes(32 * r.Uint256(1, 10));
+        bytes memory invalidProof = new bytes(proof.length);
         for (uint i = 0; i < invalidProof.length; i++) {
             invalidProof[i] = bytes1(uint8(r.Uint256(0, 255)));
         }
 
-        // Try to update with invalid proof
+        // Always expect InvalidOperatorSetProof for invalid random data
         cheats.expectRevert(InvalidOperatorSetProof.selector);
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, invalidProof, operatorTable);
+    }
+
+    function testFuzz_BN254_revert_invalidOperatorSetProof_length(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof for the operatorSetInfo and operatorSetConfig
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Try to update with a proof that is too short
+        bytes memory invalidProof = new bytes(proof.length - 1);
+        cheats.expectRevert(Merkle.InvalidProofLength.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, invalidProof, operatorTable);
+    }
+
+    function testFuzz_BN254_revert_invalidOperatorSetProof_index(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+
+        // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+
+        // Guarantee that index is beyond max index for the tree
+        uint32 invalidOperatorSetIndex = uint32(leaves.length) + 1;
+
+        // Always expect InvalidIndex for index beyond max index for the tree
+        cheats.expectRevert(Merkle.InvalidIndex.selector);
+        operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, invalidOperatorSetIndex, proof, operatorTable);
     }
 
     function testFuzz_BN254_correctness(Randomness r) public rand(r) {
