@@ -77,7 +77,7 @@ interface IOperatorTableCalculatorTypes {
 }
 
 /// @notice A base operator table calculator that all operator table calculators (ECDSA, BN254) must implement
-/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Lay-Labs/middleware repository for an example implementation
+/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Layr-Labs/eigenlayer-middleware repository for an example implementation
 /// @dev Once deployed, the AVS will set the `OperatorTableCalculator` via `CrossChainRegistry.createGenerationReservation`
 interface IOperatorTableCalculator {
     /// @notice The OperatorTableCalculator calculates the stake weights to generate an operator table for a given operatorSet
