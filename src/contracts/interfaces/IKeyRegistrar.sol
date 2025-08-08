@@ -177,6 +177,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return g2Point The BN254 G2 public key
      * @dev Reverts for:
      *      - InvalidCurveType: The operatorSet is not configured for BN254
+     * @dev Returns empty points if the operator has not registered a key for the operatorSet. We 
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getBN254Key(
         OperatorSet memory operatorSet,
@@ -190,6 +192,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return pubkey The ECDSA public key in bytes format
      * @dev Reverts for:
      *      - InvalidCurveType: The operatorSet is not configured for ECDSA
+     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We 
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
 
@@ -200,6 +204,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return pubkey The ECDSA public key in address format
      * @dev Reverts for:
      *      - InvalidCurveType: The operatorSet is not configured for ECDSA
+     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We 
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
 
