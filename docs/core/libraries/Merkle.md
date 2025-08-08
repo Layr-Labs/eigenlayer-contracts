@@ -36,7 +36,7 @@ The Merkle library is used extensively throughout EigenLayer for various proof s
 
 ### **Zero Hash Padding**
 
-When trees are not perfect powers of 2, the library pads with `bytes32(0)` values. For security-critical applications, consider using unique filler values to prevent potential collision attacks with legitimate zero-valued leaves.
+When trees are not perfect powers of 2, the library pads with `MERKLE_ZERO_HASH` (derived from `keccak256("MERKLE_ZERO_HASH")`) instead of `bytes32(0)`. This prevents collision attacks where legitimate zero-valued leaves could be confused with padding values, enhancing security for proof systems.
 
 ---
 
@@ -86,6 +86,7 @@ Returns the computed root hash by traversing up the tree from the leaf.
 *Requirements:*
 * Proof length MUST be a multiple of 32 bytes (reverts with `InvalidProofLength` otherwise)
 * Index MUST reach 0 after processing all proof elements (reverts with `InvalidIndex` if proof length mismatch)
+* For empty proofs (single-leaf trees), returns the leaf itself as the root
 
 ### **SHA-256 Proof Verification**
 
@@ -129,6 +130,7 @@ Returns the computed root hash by traversing up the tree from the leaf using SHA
 *Requirements:*
 * Proof length MUST be non-zero and a multiple of 32 bytes (reverts with `InvalidProofLength` otherwise)
 * Index MUST reach 0 after processing all proof elements (reverts with `InvalidIndex` if proof length mismatch)
+* Cannot process empty proofs (unlike Keccak256 version)
 
 ---
 
@@ -142,18 +144,22 @@ Returns the computed root hash by traversing up the tree from the leaf using SHA
 function merkleizeKeccak(bytes32[] memory leaves) internal pure returns (bytes32)
 ```
 
-Constructs a Merkle tree root from an array of leaves using Keccak256. Accepts any non-empty array of leaves, including single-leaf trees, and automatically pads to the next power of 2 using `bytes32(0)` values.
+Constructs a Merkle tree root from an array of leaves using Keccak256. Accepts any non-empty array of leaves, including single-leaf trees, and automatically pads to the next power of 2 using `MERKLE_ZERO_HASH` values.
 
 *Effects:*
-* Pads input array to next power of 2 (if needed) using `bytes32(0)` values
+* Uses `constructPaddedLayer` to pad input array to next power of 2 with `MERKLE_ZERO_HASH` values
 * Constructs binary Merkle tree bottom-up by hashing pairs using in-place array modification
 * For single-leaf arrays, returns the leaf itself as the root
 * Returns the single root hash representing the entire tree
 
+*Requirements:*
+* Input array MUST be non-empty (reverts with `NoLeaves` otherwise)
+
 *Algorithm:*
-1. Pad leaves array to next power of 2
-2. Iteratively hash pairs level by level until single root remains
-3. Uses in-place array modification for gas efficiency
+1. Validate input is non-empty
+2. Create padded layer using `constructPaddedLayer`
+3. Iteratively hash pairs level by level until single root remains
+4. Uses in-place array modification for gas efficiency
 
 *Used in:*
 * [`BN254CertificateVerifier`](../../../src/contracts/multichain/BN254CertificateVerifier.sol) for operator info trees
@@ -174,7 +180,7 @@ Constructs a Merkle tree root using SHA-256 hash function.
 * Constructs binary Merkle tree bottom-up using SHA-256 hashing
 * Returns the single root hash representing the entire tree
 
-*Requirements*:
+*Requirements:*
 * Input array MUST contain at least 2 leaves (rejects single-leaf trees with `NotEnoughLeaves` error)
 * Input array length MUST be an exact power of 2 (validates with `LeavesNotPowerOfTwo` error)
 * No auto-padding available - stricter requirements for beacon chain compatibility
@@ -197,17 +203,23 @@ function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure re
 Generates an inclusion proof for a specific leaf in a Keccak256 tree. Supports single-leaf trees (returns empty proof) and automatically handles non-power-of-2 leaf arrays through padding.
 
 *Effects:*
+* Creates padded layer using `constructPaddedLayer`
 * Constructs a Merkle tree from the provided leaves with automatic padding
 * Traverses from specified leaf to root, collecting sibling hashes at each level
 * For single-leaf trees, returns empty proof since root equals leaf
 * Returns concatenated proof bytes for verification
 
+*Requirements:*
+* Input array MUST be non-empty (reverts with `NoLeaves` otherwise)
+* Index MUST be within bounds of padded layer (reverts with `InvalidIndex` otherwise)
+
 *Algorithm:*
-1. Pad leaves to next power of 2
-2. For each tree level, find sibling of current index
-3. Append sibling to proof bytes
-4. Move up tree by dividing index by 2
-5. Continue until reaching root
+1. Create padded layer using `constructPaddedLayer`
+2. Validate index is within bounds
+3. For each tree level, find sibling using XOR operation (`index ^ 1`)
+4. Append sibling to proof bytes
+5. Move up tree by dividing index by 2
+6. Continue until reaching root
 
 *Used in:*
 * Test frameworks for generating proofs
@@ -224,19 +236,47 @@ function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure re
 Generates SHA-256 inclusion proof with same algorithm as Keccak version but using SHA-256 hashing.
 
 *Effects:*
+* Creates padded layer using `constructPaddedLayer`
 * Validates input meets SHA-256 requirements (minimum 2 leaves)
 * Constructs a Merkle tree using SHA-256 hashing
-* Traverses from specified leaf to root, collecting sibling hashes
+* Traverses from specified leaf to root, collecting sibling hashes using XOR operation
 * Returns concatenated proof bytes for verification
 
-*Requirements*:
+*Requirements:*
 * Input array MUST contain at least 2 leaves (rejects single-leaf trees with `NotEnoughLeaves` error)
+* Index MUST be within bounds of padded layer (reverts with `InvalidIndex` otherwise)
 * Cannot generate proofs for single-element arrays
 * Follows stricter validation for beacon chain compatibility
+
+*Used in:*
+* Test frameworks for generating SHA-256 proofs
+* Off-chain proof generation systems requiring beacon chain compatibility
 
 ---
 
 ## Utility Functions
+
+### **Layer Construction**
+
+#### `constructPaddedLayer`
+
+```solidity
+function constructPaddedLayer(bytes32[] memory leaves) internal pure returns (bytes32[] memory)
+```
+
+Constructs a padded layer for Merkle tree operations by padding the input array to the next power of 2 using `MERKLE_ZERO_HASH`.
+
+*Effects:*
+* Finds the next power of 2 greater than or equal to `leaves.length`
+* Creates new array of that size
+* Copies original leaves to the beginning of the array
+* Pads remaining positions with `MERKLE_ZERO_HASH`
+* Returns the padded layer ready for tree construction
+
+*Used in:*
+* `merkleizeKeccak` for tree construction
+* `getProofKeccak` for proof generation
+* `getProofSha256` for proof generation
 
 ### **Power of Two Check**
 
@@ -246,10 +286,11 @@ Generates SHA-256 inclusion proof with same algorithm as Keccak version but usin
 function isPowerOfTwo(uint256 value) internal pure returns (bool)
 ```
 
-Efficiently determines if a value is a power of 2 using bit manipulation.
+Efficiently determines if a value is a power of 2 using bit manipulation (`value != 0 && (value & (value - 1)) == 0`).
 
 *Effects:*
 * Performs bitwise operations to check power-of-2 property
+* Returns false for zero (edge case)
 
 *Used internally* for validation in `merkleizeSha256` and optimization paths.
 
@@ -277,7 +318,7 @@ Efficiently determines if a value is a power of 2 using bit manipulation.
 ### **Memory Efficiency**
 - Tree construction reuses input array space
 - In-place modifications reduce memory allocation costs
-- Sibling calculation uses XOR instead of arithmetic operations
+- Sibling calculation uses XOR (`index ^ 1`) instead of arithmetic operations
 
 ### **Precompile Handling**
 - SHA-256 functions reserve gas before precompile calls
@@ -303,8 +344,8 @@ The library provides two distinct implementations with different design philosop
 ### **Tree Padding Strategy**
 The library uses different padding strategies for different hash functions:
 
-- **Keccak256**: Pads with `bytes32(0)` to next power of 2
-- **SHA-256**: Requires exact power of 2, no padding
+- **Keccak256**: Pads with `MERKLE_ZERO_HASH` to next power of 2 using `constructPaddedLayer`
+- **SHA-256**: Requires exact power of 2, no padding (but uses `constructPaddedLayer` for proof generation)
 
 ### **Index Validation**
 Index validation occurs during proof processing rather than upfront, allowing the tree traversal algorithm to naturally detect out-of-bounds conditions.
