@@ -13,26 +13,31 @@ pragma solidity ^0.8.0;
  * be reinterpreted as a leaf value.
  */
 library Merkle {
-    // @notice Thrown when the provided proof was not a multiple of 32, or was empty for SHA256.
-    // @dev Error code: 0x4dc5f6a4
+    /// @notice Thrown when the provided proof was not a multiple of 32, or was empty for SHA256.
+    /// @dev Error code: 0x4dc5f6a4
     error InvalidProofLength();
 
-    // @notice Thrown when the provided index was outside the max index for the tree.
-    // @dev Error code: 0x63df8171
+    /// @notice Thrown when the provided index was outside the max index for the tree.
+    /// @dev Error code: 0x63df8171
     error InvalidIndex();
 
-    // @notice Thrown when the provided leaves' length was not a power of two.
-    // @dev Error code: 0xf6558f51
+    /// @notice Thrown when the provided leaves' length was not a power of two.
+    /// @dev Error code: 0xf6558f51
     error LeavesNotPowerOfTwo();
 
-    // @notice Thrown when the provided leaves' length was 0.
-    // @dev Error code: 0xbaec3d9a
+    /// @notice Thrown when the provided leaves' length was 0.
+    /// @dev Error code: 0xbaec3d9a
     error NoLeaves();
 
-    // @notice Thrown when the provided leaves' length was insufficient.
-    // @dev Error code: 0xf8ef0367
-    // @dev This is used for the SHA256 Merkle tree, where the tree must have more than 1 leaf.
+    /// @notice Thrown when the provided leaves' length was insufficient.
+    /// @dev Error code: 0xf8ef0367
+    /// @dev This is used for the SHA256 Merkle tree, where the tree must have more than 1 leaf.
     error NotEnoughLeaves();
+
+    /// @notice Thrown when the root is empty.
+    /// @dev Error code: 0x53ce4ece
+    /// @dev Empty roots should never be valid. We prevent them to avoid issues like the Nomad bridge attack: <https://medium.com/nomad-xyz-blog/nomad-bridge-hack-root-cause-analysis-875ad2e5aacd>
+    error EmptyRoot();
 
     /**
      * @notice Verifies that a given leaf is included in a Merkle tree
@@ -52,6 +57,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal pure returns (bool) {
+        require(root != bytes32(0), EmptyRoot());
         return processInclusionProofKeccak(proof, leaf, index) == root;
     }
 
@@ -123,6 +129,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal view returns (bool) {
+        require(root != bytes32(0), EmptyRoot());
         return processInclusionProofSha256(proof, leaf, index) == root;
     }
 
