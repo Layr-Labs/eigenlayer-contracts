@@ -110,6 +110,7 @@ contract StrategyManager is
             expiry: expiry
         });
         // Increment the nonce for the staker.
+        require(nonce < type(uint256).max, "NonceOverflow");
         unchecked {
             nonces[staker] = nonce + 1;
         }
@@ -365,6 +366,10 @@ contract StrategyManager is
     function _removeStrategyFromStakerStrategyList(address staker, IStrategy strategy) internal {
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
+        
+        // Additional safety check for empty array
+        require(stratsLength > 0, "EmptyStrategyList");
+        
         uint256 j = 0;
         for (; j < stratsLength; ++j) {
             if (stakerStrategyList[staker][j] == strategy) {
