@@ -15,15 +15,45 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     /// Keccak + Sha256 Tests
     /// -----------------------------------------------------------------------
 
-    /// @notice Verifies that Murky's proofs are compatible with our tree and proof verification.
-    function test_verifyInclusion_ValidProof() public {
-        assertValidProofs();
+    /// @notice Verifies that (Murky's) proofs are compatible with our implementation.
+    function testFuzz_verifyInclusion_ValidProof(uint) public {
+        checkAllProofs(true);
     }
 
     /// @notice Verifies that an empty proof(s) is invalid.
-    function test_verifyInclusion_EmptyProofs() public {
+    function testFuzz_verifyInclusion_EmptyProofs(uint) public {
         proofs = new bytes[](proofs.length);
-        assertInvalidProofs();
+        checkAllProofs(false);
+    }
+
+    /// @notice Verifies valid proofs cannot be used to prove invalid leaves.
+    function testFuzz_verifyInclusion_WrongProofs(uint) public {
+        bytes memory proof0 = proofs[0];
+        bytes memory proof1 = proofs[1];
+        (proofs[0], proofs[1]) = (proof1, proof0);
+        checkSingleProof(false, 0);
+        checkSingleProof(false, 1);
+    }
+
+    /// @notice Verifies that a valid proof with excess data appended is invalid.
+    function testFuzz_verifyInclusion_ExcessProofLength(uint) public {
+        unchecked {
+            proofs[0] = abi.encodePacked(proofs[0], vm.randomBytes(vm.randomUint(1, 10) * 32));
+        }
+        checkSingleProof(false, 0);
+    }
+
+    /// @notice Verifies that a valid proof with a manipulated word is invalid.
+    function testFuzz_verifyInclusion_ManipulatedProof(uint) public {
+        bytes memory proof = proofs[0];
+        /// @solidity memory-safe-assembly
+        assembly {
+            let m := add(proof, 0x20)
+            let manipulated := shr(8, mload(m)) // Shift the first word to the right by 8 bits.
+            mstore(m, manipulated)
+        }
+        proofs[0] = proof;
+        checkSingleProof(false, 0);
     }
 
     /// -----------------------------------------------------------------------
@@ -31,21 +61,19 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     /// -----------------------------------------------------------------------
 
     /// @dev Checks that all proofs are valid for their respective leaves.
-    function assertValidProofs() internal virtual {
+    function checkAllProofs(bool status) internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
         for (uint i = 0; i < leaves.length; ++i) {
-            assertTrue(verifyInclusion(proofs[i], root, leaves[i], i), "invalid proof");
+            assertEq(verifyInclusion(proofs[i], root, leaves[i], i), status);
         }
     }
 
-    /// @dev Checks that all proofs are invalid for their respective leaves.
-    function assertInvalidProofs() internal virtual {
+    /// @dev Checks that a single proof is valid for its respective leaf.
+    function checkSingleProof(bool status, uint index) internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
-        for (uint i = 0; i < leaves.length; ++i) {
-            assertFalse(verifyInclusion(proofs[i], root, leaves[i], i), "valid proof");
-        }
+        assertEq(verifyInclusion(proofs[index], root, leaves[index], index), status);
     }
 
     /// -----------------------------------------------------------------------
