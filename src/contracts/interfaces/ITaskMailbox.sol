@@ -301,7 +301,7 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
     /**
      * @notice Registers an executor operator set with the TaskMailbox
      * @param operatorSet The operator set to register
-     * @param isRegistered Whether the operator set is registered
+     * @param isRegistered Whether the operator set is going to be (de)registered
      * @dev This function can be called to toggle the registration once the task config has been set.
      */
     function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external;
