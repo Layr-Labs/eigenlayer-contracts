@@ -11,6 +11,11 @@ interface IKeyRegistrarErrors {
     /// @dev We prevent duplicate key registrations to maintain global key uniqueness and avoid conflicting operator-key mappings
     error KeyAlreadyRegistered();
 
+    /// @notice Error thrown when an operator is already registered
+    /// @dev Error code: 0x42ee68b5
+    /// @dev We prevent duplicate operator registrations to prevent re-registrations with a new key
+    error OperatorAlreadyRegistered();
+
     /// @notice Error thrown when the key format is invalid
     /// @dev Error code: 0xd1091181
     /// @dev We enforce proper key formats (20 bytes for ECDSA, valid G1/G2 points for BN254) to ensure cryptographic validity and prevent malformed key data
@@ -115,7 +120,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Reverts for:
      *      - InvalidPermissions: Caller is not the operator or authorized via the PermissionController
      *      - OperatorSetNotConfigured: The operator set is not configured
-     *      - KeyAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
+     *      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
      *      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
      *      - ZeroAddress: For ECDSA: The key is the zero address
      *      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
