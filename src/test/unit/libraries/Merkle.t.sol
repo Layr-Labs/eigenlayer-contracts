@@ -6,20 +6,35 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/test/utils/Murky.sol";
 
 abstract contract MerkleBaseTest is Test, MurkyBase {
+    /// @dev Whether to use Keccak or Sha256 for tree + proof generation.
     bool usingSha;
+    /// @notice The contents of the merkle tree (unsorted).
     bytes32[] leaves;
+    /// @notice The root of the merkle tree.
     bytes32 root;
+    /// @notice The proofs for each leaf in the tree.
     bytes[] proofs;
 
+    /// -----------------------------------------------------------------------
+    /// Keccak + Sha256 Tests
+    /// -----------------------------------------------------------------------
+
+    /// @notice Verifies that Murky's proofs are compatible with our tree and proof verification.
     function test_verifyInclusion_ValidProof() public {
         assertValidProofs();
     }
 
+    /// @notice Verifies that an empty proof(s) is invalid.
     function test_verifyInclusion_EmptyProofs() public {
         proofs = new bytes[](proofs.length);
         assertInvalidProofs();
     }
 
+    /// -----------------------------------------------------------------------
+    /// Assertions
+    /// -----------------------------------------------------------------------
+
+    /// @dev Checks that all proofs are valid for their respective leaves.
     function assertValidProofs() internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
@@ -28,6 +43,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         }
     }
 
+    /// @dev Checks that all proofs are invalid for their respective leaves.
     function assertInvalidProofs() internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
@@ -36,6 +52,11 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         }
     }
 
+    /// -----------------------------------------------------------------------
+    /// Helpers
+    /// -----------------------------------------------------------------------
+
+    /// @dev Effeciently generates a random list of leaves without iterative hashing.
     function getLeaves(uint numLeaves) internal view virtual returns (bytes32[] memory leaves) {
         bytes memory _leavesAsBytes = vm.randomBytes(numLeaves * 32);
         /// @solidity memory-safe-assembly
@@ -45,6 +66,8 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         }
     }
 
+    /// @dev Generates proofs for each leaf in the tree.
+    ///         Intended to be overridden by the below child contracts.
     function getProofs(bytes32[] memory leaves) public view virtual returns (bytes[] memory proofs);
 }
 
@@ -78,7 +101,7 @@ contract MerkleKeccakTest is MerkleBaseTest, MerkleKeccak {
         // Merkle.merkleizeKeccak pads to next power of 2, so we need to match that.
         uint numLeaves = nextPowerOf2(leaves.length);
         bytes32[] memory paddedLeaves = new bytes32[](numLeaves);
-        for (uint i = 0; i < leaves.length; ++i) {
+        for (uint i = 0; i < leaves.length; ++i) { // TODO: Point leaves to paddedLeaves using assembly to avoid loop.
             paddedLeaves[i] = leaves[i];
         }
 
