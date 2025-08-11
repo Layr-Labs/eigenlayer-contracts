@@ -119,15 +119,26 @@ contract TaskMailbox is
             _executorOperatorSetTaskConfigs[taskParams.executorOperatorSet.key()];
         require(_isConfigPopulated(taskConfig), ExecutorOperatorSetTaskConfigNotSet());
 
+        // Get the operator table reference timestamp and max staleness period
+        IBaseCertificateVerifier certificateVerifier =
+            IBaseCertificateVerifier(_getCertificateVerifier(taskConfig.curveType));
+        uint32 operatorTableReferenceTimestamp =
+            certificateVerifier.latestReferenceTimestamp(taskParams.executorOperatorSet);
+        {
+            // Scoping to prevent `Stack too deep` error during compilation
+            uint32 maxStaleness = certificateVerifier.maxOperatorTableStaleness(taskParams.executorOperatorSet);
+            require(
+                maxStaleness == 0
+                    || (block.timestamp + taskConfig.taskSLA <= operatorTableReferenceTimestamp + maxStaleness),
+                CertificateStale()
+            );
+        }
+
         // Pre-task submission checks: AVS can validate the caller and task params.
         taskConfig.taskHook.validatePreTaskCreation(msg.sender, taskParams);
 
         // Calculate the AVS fee using the task hook
         uint96 avsFee = taskConfig.taskHook.calculateTaskFee(taskParams);
-
-        // Get the operator table reference timestamp
-        uint32 operatorTableReferenceTimestamp = IBaseCertificateVerifier(_getCertificateVerifier(taskConfig.curveType))
-            .latestReferenceTimestamp(taskParams.executorOperatorSet);
 
         bytes32 taskHash = keccak256(abi.encode(_globalTaskCount, address(this), block.chainid, taskParams));
         _globalTaskCount = _globalTaskCount + 1;

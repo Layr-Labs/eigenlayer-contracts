@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IECDSACertificateVerifier, IECDSACertificateVerifierTypes} from "src/contracts/interfaces/IECDSACertificateVerifier.sol";
+import {IOperatorTableCalculatorTypes} from "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {OperatorSet, OperatorSetLib} from "src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "src/contracts/libraries/BN254.sol";
 import {IKeyRegistrarTypes} from "src/contracts/interfaces/IKeyRegistrar.sol";
@@ -874,6 +875,154 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
 
         // Verify that the global feeSplitCollector is used (not captured in task)
         assertEq(taskMailbox.feeSplitCollector(), newFeeSplitCollector);
+    }
+
+    function test_createTask_CertificateStaleness_NoStalenessCheck() public {
+        // Test when maxOperatorTableStaleness is 0 (no staleness check)
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(100); // Set reference timestamp to 100
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(0); // No staleness check when 0
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 3600; // 1 hour SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time far in the future, making the reference timestamp stale
+        vm.warp(100_000); // Reference timestamp (100) + taskSLA (3600) = 3700, current time = 100000
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because maxOperatorTableStaleness is 0 (no check)
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
+    }
+
+    function test_createTask_CertificateStaleness_WithinStalenessWindow() public {
+        // Test when certificate is within the staleness window
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that certificate is within staleness window:
+        // referenceTimestamp (1000) + maxStaleness (3600) = 4600
+        // current time + taskSLA (1800) = 3000 + 1800 = 4800
+        // Since 4800 <= 4600 is false, this should be within limits
+        // Let's adjust: current time + taskSLA should be <= referenceTimestamp + maxStaleness
+        // So: current time + 1800 <= 1000 + 3600 = 4600
+        // current time <= 2800
+        vm.warp(2500); // Well within limits (2500 + 1800 = 4300 <= 4600)
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because certificate is within staleness window
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
+    }
+
+    function test_Revert_createTask_CertificateStale() public {
+        // Test when certificate is stale (outside the staleness window)
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that certificate is outside staleness window:
+        // We need: current time + taskSLA > referenceTimestamp + maxStaleness
+        // current time + 1800 > 1000 + 3600 = 4600
+        // current time > 2800
+        vm.warp(3000); // 3000 + 1800 = 4800 > 4600, so certificate is stale
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should revert with CertificateStale error
+        vm.prank(creator);
+        vm.expectRevert(CertificateStale.selector);
+        taskMailbox.createTask(taskParams);
+    }
+
+    function test_createTask_CertificateStaleness_EdgeCase_ExactBoundary() public {
+        // Test edge case where current time + taskSLA equals referenceTimestamp + maxStaleness
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that current time + taskSLA exactly equals referenceTimestamp + maxStaleness
+        // referenceTimestamp (1000) + maxStaleness (3600) = 4600
+        // current time + taskSLA (1800) = 4600
+        // current time = 2800
+        vm.warp(2800); // 2800 + 1800 = 4600, exactly at the boundary
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because the condition is <= (current time + taskSLA <= referenceTimestamp + maxStaleness)
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
     }
 }
 

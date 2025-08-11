@@ -172,6 +172,9 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
 
     /// @notice Thrown when a certificate has an invalid message hash
     error InvalidMessageHash();
+
+    /// @notice Thrown when a certificate is stale
+    error CertificateStale();
 }
 
 /**
