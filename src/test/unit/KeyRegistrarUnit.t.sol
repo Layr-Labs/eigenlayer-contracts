@@ -287,7 +287,7 @@ contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
 
         vm.prank(operator1);
-        vm.expectRevert(KeyAlreadyRegistered.selector);
+        vm.expectRevert(OperatorAlreadyRegistered.selector);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, signature);
     }
 
@@ -475,9 +475,9 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
 
-        // Try to register the same key again
+        // Try to register the same operator again
         vm.prank(operator1);
-        vm.expectRevert(KeyAlreadyRegistered.selector);
+        vm.expectRevert(OperatorAlreadyRegistered.selector);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, signature);
     }
 
