@@ -6,14 +6,10 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/test/utils/Murky.sol";
 
 abstract contract MerkleBaseTest is Test, MurkyBase {
-    /// @dev Whether to use Keccak or Sha256 for tree + proof generation.
-    bool usingSha;
-    /// @notice The contents of the merkle tree (unsorted).
-    bytes32[] leaves;
-    /// @notice The root of the merkle tree.
-    bytes32 root;
-    /// @notice The proofs for each leaf in the tree.
-    bytes[] proofs;
+    bool usingSha; // Whether to use Keccak or Sha256 for tree + proof generation.
+    bytes32[] leaves; // The contents of the merkle tree (unsorted).
+    bytes32 root; // The root of the merkle tree.
+    bytes[] proofs; // The proofs for each leaf in the tree.
 
     /// -----------------------------------------------------------------------
     /// Keccak + Sha256 Tests
@@ -101,7 +97,8 @@ contract MerkleKeccakTest is MerkleBaseTest, MerkleKeccak {
         // Merkle.merkleizeKeccak pads to next power of 2, so we need to match that.
         uint numLeaves = nextPowerOf2(leaves.length);
         bytes32[] memory paddedLeaves = new bytes32[](numLeaves);
-        for (uint i = 0; i < leaves.length; ++i) { // TODO: Point leaves to paddedLeaves using assembly to avoid loop.
+        for (uint i = 0; i < leaves.length; ++i) {
+            // TODO: Point leaves to paddedLeaves using assembly to avoid loop.
             paddedLeaves[i] = leaves[i];
         }
 
