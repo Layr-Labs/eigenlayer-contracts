@@ -53,11 +53,12 @@ A generation reservation registers the operatorSet to be included in the `Global
 
 ```solidity
 /**
- * @notice Creates a generation reservation, which transports the operator table
+ * @notice Creates a generation reservation, which transports the operator table of an operatorSet to all whitelisted chains
  * @param operatorSet the operatorSet to make a reservation for
  * @param operatorTableCalculator the address of the operatorTableCalculator. This contract is deployed (or a template is used) by the AVS
  *                                to calculate the stake weights for the operatorSet. See `IOperatorTableCalculator` for more details
- * @param config the config to set for the operatorSet
+ * @param config the config to set for the operatorSet, which includes the owner of the operatorSet and the max staleness period
+ * @dev Tables are transported at a cadence of `tableUpdateCadence` seconds. The `maxStalenessPeriod` is used to determine the maximum
  * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev Once a generation reservation is created, the operator table will be transported to all chains that are whitelisted
  * @dev It is expected that the AVS has:
@@ -65,6 +66,17 @@ A generation reservation registers the operatorSet to be included in the `Global
  *      - Set the `KeyType` for the operatorSet in the `KeyRegistrar`, even if the AVS is not using the `KeyRegistrar` for operator key management
  *           - Valid Key Types are given in the `IKeyRegistrarTypes.CurveType` enum. The `KeyType` must not be `NONE`
  *      - Created an operatorSet in the `AllocationManager`
+ * @dev Reverts for:
+ *      - CurrentlyPaused: Generation reservations are paused
+ *      - InvalidPermissions: Caller is not an authorized caller for operatorSet.avs
+ *      - InvalidOperatorSet: The operatorSet does not exist in the AllocationManager
+ *      - KeyTypeNotSet: The key type is not set for the operatorSet in the KeyRegistrar
+ *      - GenerationReservationAlreadyExists: A generation reservation already exists for the operatorSet
+ *      - InvalidStalenessPeriod: The maxStalenessPeriod is invalid
+ * @dev Emits the following events:
+ *      - GenerationReservationCreated: When the generation reservation is successfully created
+ *      - OperatorTableCalculatorSet: When the operator table calculator is set for the operatorSet
+ *      - OperatorSetConfigSet: When the operator set config is set for the operatorSet
  */
 function createGenerationReservation(
     OperatorSet calldata operatorSet,
@@ -89,8 +101,12 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
 * The global paused status MUST NOT be set: `PAUSED_GENERATION_RESERVATIONS`
 * Caller MUST be an authorized caller for `operatorSet.avs`
 * The `operatorSet` MUST exist in the `AllocationManager`
+* The `KeyType` of the `operatorSet` MUST be set in the `KeyRegistrar`
 * A generation reservation MUST NOT already exist for the `operatorSet`
-
+* The `maxStalenessPeriod` MUST be either:
+  * 0 (special case allowing certificates to always be valid)
+  * Greater than or equal to the table update cadence
+  
 ### `removeGenerationReservation`
 
 ```solidity
@@ -98,6 +114,15 @@ Note that the `operatorTableCalculator` must be deployed by the AVS onto the sou
  * @notice Removes a generation reservation for a given operatorSet
  * @param operatorSet the operatorSet to remove
  * @dev msg.sender must be an authorized caller for operatorSet.avs
+ * @dev Reverts for:
+ *      - CurrentlyPaused: Generation reservations are paused
+ *      - InvalidPermissions: Caller is not an authorized caller for operatorSet.avs
+ *      - InvalidOperatorSet: The operatorSet does not exist in the AllocationManager
+ *      - GenerationReservationDoesNotExist: A generation reservation does not exist for the operatorSet
+ * @dev Emits the following events:
+ *      - OperatorTableCalculatorRemoved: When the operator table calculator is removed
+ *      - OperatorSetConfigRemoved: When the operator set config is removed
+ *      - GenerationReservationRemoved: When the generation reservation is removed
  */
 function removeGenerationReservation(
     OperatorSet calldata operatorSet
@@ -134,6 +159,13 @@ For a given operatorSet, an AVS can set the [`OperatorTableCalculator`](https://
  * @param operatorTableCalculator the contract to call to calculate the operator table
  * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev operatorSet must have an active reservation
+ * @dev Reverts for:
+ *      - CurrentlyPaused: Setting the operatorTableCalculator is paused
+ *      - InvalidPermissions: Caller is not an authorized caller for operatorSet.avs
+ *      - InvalidOperatorSet: The operatorSet does not exist in the AllocationManager
+ *      - GenerationReservationDoesNotExist: A generation reservation does not exist for the operatorSet
+ * @dev Emits the following events:
+ *      - OperatorTableCalculatorSet: When the operator table calculator is successfully set
  */
 function setOperatorTableCalculator(
     OperatorSet calldata operatorSet,
@@ -163,15 +195,20 @@ For more information on the `operatorTableCalculator`, please see full documenta
 /**
  * @notice Sets the operatorSetConfig for a given operatorSet
  * @param operatorSet the operatorSet to set the operatorSetConfig for
- * @param config the config to set
+ * @param config the config to set, which includes the owner of the operatorSet and the max staleness period
  * @dev msg.sender must be an authorized caller for operatorSet.avs
  * @dev operatorSet must have an active generation reservation
  * @dev The max staleness period is NOT checkpointed and is applied globally regardless of the reference timestamp of a certificate
+ * @dev Reverts for:
+ *      - CurrentlyPaused: Setting the operatorSetConfig is paused
+ *      - InvalidPermissions: Caller is not an authorized caller for operatorSet.avs
+ *      - InvalidOperatorSet: The operatorSet does not exist in the AllocationManager
+ *      - GenerationReservationDoesNotExist: A generation reservation does not exist for the operatorSet
+ *      - InvalidStalenessPeriod: The maxStalenessPeriod is invalid
+ * @dev Emits the following events:
+ *      - OperatorSetConfigSet: When the operator set config is successfully set
  */
-function setOperatorSetConfig(
-    OperatorSet calldata operatorSet, 
-    OperatorSetConfig calldata config
-) external;
+function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
 ```
 
 Updates the operator set configuration for a given `operatorSet`. The config contains an `owner` address and `maxStalenessPeriod` that will be transported to destination chains for use in certificate verification.
@@ -204,6 +241,14 @@ The `owner` of the `CrossChainRegistry` can update the whitelisted chain IDs. If
  * @param chainIDs the chainIDs to add to the whitelist
  * @param operatorTableUpdaters the operatorTableUpdaters for each whitelisted chainID
  * @dev msg.sender must be the owner of the CrossChainRegistry
+ * @dev Reverts for:
+ *      - "Ownable: caller is not the owner": Caller is not the owner of the contract
+ *      - CurrentlyPaused: Chain whitelisting is paused
+ *      - ArrayLengthMismatch: The chainIDs and operatorTableUpdaters arrays have different lengths
+ *      - InvalidChainId: Any chainID is zero
+ *      - ChainIDAlreadyWhitelisted: Any chainID is already whitelisted
+ * @dev Emits the following events:
+ *      - ChainIDAddedToWhitelist: When each chainID is successfully added to the whitelist
  */
 function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
 ```
@@ -225,9 +270,15 @@ Adds chain IDs to the global whitelist, enabling them as valid transport destina
 
 ```solidity
 /**
- * @notice Removes chainIDs from the whitelist of chainIDs that can be transported to
+ * @notice Removes chainIDs from the whitelist of chainIDs
  * @param chainIDs the chainIDs to remove from the whitelist
  * @dev msg.sender must be the owner of the CrossChainRegistry
+ * @dev Reverts for:
+ *      - "Ownable: caller is not the owner": Caller is not the owner of the contract
+ *      - CurrentlyPaused: Chain whitelisting is paused
+ *      - ChainIDNotWhitelisted: Any chainID is not currently whitelisted
+ * @dev Emits the following events:
+ *      - ChainIDRemovedFromWhitelist: When each chainID is successfully removed from the whitelist
  */
 function removeChainIDsFromWhitelist(
     uint256[] calldata chainIDs
@@ -249,10 +300,15 @@ Removes chain IDs from the global whitelist, preventing them from being used as 
 
 ```solidity
 /**
- * @notice Sets the table update cadence in seconds
+ * @notice Sets the table update cadence in seconds. This is the frequency at which operator tables are expected to be updated on all destination chains
  * @param tableUpdateCadence the table update cadence
  * @dev msg.sender must be the owner of the CrossChainRegistry
  * @dev The table update cadence cannot be 0
+ * @dev Reverts for:
+ *      - "Ownable: caller is not the owner": Caller is not the owner of the contract
+ *      - InvalidTableUpdateCadence: The tableUpdateCadence is zero
+ * @dev Emits the following events:
+ *      - TableUpdateCadenceSet: When the table update cadence is successfully set
  */
 function setTableUpdateCadence(
     uint32 tableUpdateCadence
@@ -297,6 +353,7 @@ function getActiveGenerationReservations() external view returns (OperatorSet[] 
  *         - operator set configuration
  *         - calculated operator table from the calculator contract
  * @dev This function aggregates data from multiple sources for cross-chain transport
+ * @dev Reverts for the operatorTableCalculator contract call fails or reverts
  */
 function calculateOperatorTableBytes(
     OperatorSet calldata operatorSet
@@ -311,5 +368,5 @@ function calculateOperatorTableBytes(
  * @return An array of chainIDs that are supported by the CrossChainRegistry
  * @return An array of operatorTableUpdaters corresponding to each chainID
  */
-function getSupportedChains() external view returns(uint256[] memory, address[] memory);
+function getSupportedChains() external view returns (uint256[] memory, address[] memory);
 ```

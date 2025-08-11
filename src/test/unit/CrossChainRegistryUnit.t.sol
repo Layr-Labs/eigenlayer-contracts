@@ -84,6 +84,9 @@ contract CrossChainRegistryUnitTests is
         // Make the operator set valid in AllocationManager
         allocationManagerMock.setIsOperatorSet(defaultOperatorSet, true);
 
+        // Set the key type for the operator set in KeyRegistrar
+        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
+
         // Whitelist chain IDs
         crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
     }
@@ -215,6 +218,18 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
 
         cheats.expectRevert(InvalidStalenessPeriod.selector);
         crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, invalidConfig);
+    }
+
+    function test_Revert_KeyTypeNotSet() public {
+        // Create a new operator set that hasn't been configured in KeyRegistrar
+        OperatorSet memory unconfiguredOperatorSet = _createOperatorSet(defaultAVS, 999);
+
+        // Make the operator set valid in AllocationManager but don't configure it in KeyRegistrar
+        allocationManagerMock.setIsOperatorSet(unconfiguredOperatorSet, true);
+
+        // Expect the KeyTypeNotSet error when trying to create generation reservation
+        cheats.expectRevert(KeyTypeNotSet.selector);
+        crossChainRegistry.createGenerationReservation(unconfiguredOperatorSet, defaultCalculator, defaultConfig);
     }
 
     function test_createGenerationReservation_Success() public {
@@ -668,6 +683,8 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
             OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
+            // Set the key type for the operator set in KeyRegistrar
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
@@ -691,8 +708,6 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
 
         // Set up mock data
         defaultCalculator.setOperatorTableBytes(defaultOperatorSet, testOperatorTableBytes);
-        // Configure operator set in KeyRegistrar (permissions already granted in base setUp)
-        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
     }
 
     function test_calculateOperatorTableBytes_Success() public {
@@ -832,5 +847,219 @@ contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistry
     function test_Revert_TableUpdateCadenceZero() public {
         cheats.expectRevert(InvalidTableUpdateCadence.selector);
         crossChainRegistry.setTableUpdateCadence(0);
+    }
+}
+
+/**
+ * @title CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange
+ * @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationsByRange
+ */
+contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is CrossChainRegistryUnitTests {
+    function test_revert_invalidRange_startGreaterThanEnd() public {
+        // Create some reservations first
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        // Test startIndex > endIndex - should revert with InvalidRange
+        cheats.expectRevert(InvalidRange.selector);
+        crossChainRegistry.getActiveGenerationReservationsByRange(1, 0);
+    }
+
+    function test_revert_invalidEndIndex_endGreaterThanLength() public {
+        // Create some reservations first
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        // Test endIndex > length - should revert with InvalidEndIndex
+        cheats.expectRevert(InvalidEndIndex.selector);
+        crossChainRegistry.getActiveGenerationReservationsByRange(0, 2); // length is 1, so endIndex 2 is invalid
+    }
+
+    function test_getActiveGenerationReservationsByRange_emptyRegistry() public {
+        // Test with empty registry
+        cheats.expectRevert(InvalidEndIndex.selector);
+        crossChainRegistry.getActiveGenerationReservationsByRange(0, 1); // length is 0, so endIndex 1 is invalid
+    }
+
+    function test_emptyRange_startEqualEnd() public {
+        // Create some reservations first
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        // Test slice(n,n)
+        OperatorSet[] memory reservations = crossChainRegistry.getActiveGenerationReservationsByRange(0, 0);
+        assertEq(reservations.length, 0, "Should have 0 reservations");
+    }
+
+    function test_getActiveGenerationReservationsByRange_fullRange() public {
+        // Create multiple reservations
+        OperatorSet[] memory operatorSets = new OperatorSet[](5);
+        for (uint i = 0; i < 5; i++) {
+            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
+            _grantUAMRole(address(this), operatorSets[i].avs);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
+            crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
+        }
+
+        // Get full range
+        uint totalCount = crossChainRegistry.getActiveGenerationReservationCount();
+        OperatorSet[] memory rangeResult = crossChainRegistry.getActiveGenerationReservationsByRange(0, totalCount);
+        OperatorSet[] memory fullResult = crossChainRegistry.getActiveGenerationReservations();
+
+        // Verify results are the same
+        assertEq(rangeResult.length, fullResult.length, "Range result should match full result length");
+        assertEq(rangeResult.length, 5, "Should have 5 reservations");
+
+        for (uint i = 0; i < rangeResult.length; i++) {
+            assertEq(rangeResult[i].avs, fullResult[i].avs, "AVS should match");
+            assertEq(rangeResult[i].id, fullResult[i].id, "ID should match");
+        }
+    }
+
+    function test_getActiveGenerationReservationsByRange_DivideInFourths() public {
+        // Create 12 reservations to divide evenly by 4
+        OperatorSet[] memory operatorSets = new OperatorSet[](12);
+        for (uint i = 0; i < 12; i++) {
+            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
+            _grantUAMRole(address(this), operatorSets[i].avs);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
+            crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
+        }
+
+        uint totalCount = crossChainRegistry.getActiveGenerationReservationCount();
+        uint quarterSize = totalCount / 4;
+
+        // Get all reservations to compare against
+        OperatorSet[] memory allReservations = crossChainRegistry.getActiveGenerationReservations();
+
+        // Collect all reservations by quarters
+        OperatorSet[] memory collectedReservations = new OperatorSet[](totalCount);
+        uint collectedIndex = 0;
+
+        // Get each quarter
+        for (uint quarter = 0; quarter < 4; quarter++) {
+            uint startIdx = quarter * quarterSize;
+            uint endIdx = (quarter == 3) ? totalCount : (quarter + 1) * quarterSize; // Handle last quarter
+
+            OperatorSet[] memory quarterResult = crossChainRegistry.getActiveGenerationReservationsByRange(startIdx, endIdx);
+
+            // Copy to collected array
+            for (uint i = 0; i < quarterResult.length; i++) {
+                collectedReservations[collectedIndex] = quarterResult[i];
+                collectedIndex++;
+            }
+        }
+
+        // Verify we collected all reservations and they match
+        assertEq(collectedIndex, totalCount, "Should have collected all reservations");
+
+        for (uint i = 0; i < totalCount; i++) {
+            assertEq(collectedReservations[i].avs, allReservations[i].avs, "Collected AVS should match");
+            assertEq(collectedReservations[i].id, allReservations[i].id, "Collected ID should match");
+        }
+    }
+
+    function test_getActiveGenerationReservationsByRange_SingleItem() public {
+        // Create multiple reservations
+        OperatorSet[] memory operatorSets = new OperatorSet[](3);
+        for (uint i = 0; i < 3; i++) {
+            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
+            _grantUAMRole(address(this), operatorSets[i].avs);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
+            crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
+        }
+
+        // Get each item individually
+        for (uint i = 0; i < 3; i++) {
+            OperatorSet[] memory singleResult = crossChainRegistry.getActiveGenerationReservationsByRange(i, i + 1);
+            assertEq(singleResult.length, 1, "Should return single item");
+
+            // Verify it matches the expected item from full list
+            OperatorSet[] memory allReservations = crossChainRegistry.getActiveGenerationReservations();
+            assertEq(singleResult[0].avs, allReservations[i].avs, "Single item AVS should match");
+            assertEq(singleResult[0].id, allReservations[i].id, "Single item ID should match");
+        }
+    }
+}
+
+/**
+ * @title CrossChainRegistryUnitTests_getActiveGenerationReservationCount
+ * @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationCount
+ */
+contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is CrossChainRegistryUnitTests {
+    function test_getActiveGenerationReservationCount_Empty() public {
+        uint count = crossChainRegistry.getActiveGenerationReservationCount();
+        assertEq(count, 0, "Should have 0 reservations initially");
+    }
+
+    function test_getActiveGenerationReservationCount_Single() public {
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        uint count = crossChainRegistry.getActiveGenerationReservationCount();
+        assertEq(count, 1, "Should have 1 reservation");
+    }
+
+    function test_getActiveGenerationReservationCount_Multiple() public {
+        // Create multiple reservations
+        for (uint i = 0; i < 5; i++) {
+            OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            allocationManagerMock.setIsOperatorSet(operatorSet, true);
+            _grantUAMRole(address(this), operatorSet.avs);
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+            crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
+        }
+
+        uint count = crossChainRegistry.getActiveGenerationReservationCount();
+        assertEq(count, 5, "Should have 5 reservations");
+    }
+
+    function test_getActiveGenerationReservationCount_AddAndRemove() public {
+        // Create reservation
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        uint countAfterAdd = crossChainRegistry.getActiveGenerationReservationCount();
+        assertEq(countAfterAdd, 1, "Should have 1 reservation after add");
+
+        // Remove reservation
+        crossChainRegistry.removeGenerationReservation(defaultOperatorSet);
+
+        uint countAfterRemove = crossChainRegistry.getActiveGenerationReservationCount();
+        assertEq(countAfterRemove, 0, "Should have 0 reservations after remove");
+    }
+
+    function testFuzz_getActiveGenerationReservationCount_consistency(uint8 numReservations) public {
+        numReservations = uint8(bound(numReservations, 0, 20));
+
+        // Create reservations
+        for (uint i = 0; i < numReservations; i++) {
+            OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            allocationManagerMock.setIsOperatorSet(operatorSet, true);
+            _grantUAMRole(address(this), operatorSet.avs);
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+            crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
+        }
+
+        uint count = crossChainRegistry.getActiveGenerationReservationCount();
+        OperatorSet[] memory reservations = crossChainRegistry.getActiveGenerationReservations();
+
+        assertEq(count, reservations.length, "Count should always match array length");
+        assertEq(count, numReservations, "Count should match expected number");
+    }
+}
+
+contract CrossChainRegistryUnitTests_hasActiveGenerationReservation is CrossChainRegistryUnitTests {
+    function test_hasActiveGenerationReservation_Single() public {
+        bool hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertFalse(hasReservation, "Should not have any reservations");
+
+        crossChainRegistry.createGenerationReservation(defaultOperatorSet, defaultCalculator, defaultConfig);
+
+        hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertTrue(hasReservation, "Should have a reservation");
+
+        crossChainRegistry.removeGenerationReservation(defaultOperatorSet);
+
+        hasReservation = crossChainRegistry.hasActiveGenerationReservation(defaultOperatorSet);
+        assertFalse(hasReservation, "Should not have a reservation");
     }
 }

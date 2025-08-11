@@ -14,18 +14,34 @@ interface IBaseCertificateVerifierEvents {
 
 interface IBaseCertificateVerifierErrors {
     /// @notice Thrown when the table updater is not caller
+    /// @dev Error code: 0x061836d6
+    /// @dev We restrict table updates to only come from the `OperatorTableUpdater` contract
     error OnlyTableUpdater();
+
     /// @notice Thrown when the table update is stale
+    /// @dev Error code: 0x2f20889f
+    /// @dev We require newer reference timestamps to ensure that operator tables are append-only
     error TableUpdateStale();
+
     /// @notice Thrown when array lengths mismatch
+    /// @dev Error code: 0xa24a13a6
     error ArrayLengthMismatch();
+
     /// @notice Thrown when the certificate is too stale, per the max staleness period of the operatorSet
+    /// @dev Error code: 0xc81f9ad6
     error CertificateStale();
+
     /// @notice Thrown when the reference timestamp does not exist
+    /// @dev Error code: 0x6568bdb8
+    /// @dev We require valid reference timestamps to ensure certificates reference existing operator table updates
     error ReferenceTimestampDoesNotExist();
     /// @notice Thrown when certificate verification fails
+    /// @dev Error code: 0x439cc0cd
     error VerificationFailed();
+
     /// @notice Thrown when the global table root is disabled
+    /// @dev Error code: 0x1b14174b
+    /// @dev Roots are disabled by governance if a security issue is detected
     error RootDisabled();
 }
 

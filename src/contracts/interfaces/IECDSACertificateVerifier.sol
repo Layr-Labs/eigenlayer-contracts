@@ -7,20 +7,34 @@ import "./IOperatorTableCalculator.sol";
 
 interface IECDSACertificateVerifierErrors {
     /// @notice Thrown when the signature length is invalid
+    /// @dev Error code: 0x4be6321b
+    /// @dev We require valid signature lengths (65 bytes per signature) for proper ECDSA signature verification and recovery
     error InvalidSignatureLength();
-    /// @notice Thrown when the signatures are not ordered by signer address
+
+    /// @notice Thrown when the signatures are not ordered by signer address to validate unique signers
+    /// @dev Error code: 0xb550c570
+    /// @dev We order signers by address as a gas optimization for verification and to ensure unique signers without additional storage
     error SignersNotOrdered();
+
     /// @notice Thrown when the operator count is zero
+    /// @dev Error code: 0x40a42054
+    /// @dev We require a non-zero operator count to ensure there are operators available for certificate verification
     error OperatorCountZero();
+
+    /// @notice Thrown when the operator index is out of bounds
+    /// @dev Error code: 0x40a42054
+    /// @dev We require a valid operator index to ensure the operator exists in the operator table
+    error IndexOutOfBounds();
 }
 
 interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
-     * @notice A Certificate used to verify a set of ECDSA signatures
-     * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
+     * @notice A Certificate used to verify a set of ECDSA signatures for an off-chain task
+     * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet
      * @param messageHash the hash of the message that was signed by the operators. The messageHash
      *        MUST be calculated using `calculateCertificateDigest`
      * @param sig the concatenated signature of each signing operator, in ascending order of signer address
+     * @dev The signers can be sorted via OZ
      * @dev ECDSA certificates DO NOT support smart contract signatures
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
      */
@@ -79,6 +93,11 @@ interface IECDSACertificateVerifier is
      * @dev This function can only be called by the `OperatorTableUpdater` contract, which is itself permissionless to call
      * @dev The `referenceTimestamp` must correspond to a reference timestamp for a globalTableRoot stored in the `OperatorTableUpdater`
      *      In addition, it must be greater than the latest reference timestamp for the given operatorSet
+     * @dev Reverts for:
+     *      - OnlyTableUpdater: Caller is not the operatorTableUpdater
+     *      - TableUpdateStale: The referenceTimestamp is not greater than the latest reference timestamp
+     * @dev Emits the following events:
+     *      - TableUpdated: When the operator table is successfully updated
      */
     function updateOperatorTable(
         OperatorSet calldata operatorSet,
@@ -100,7 +119,16 @@ interface IECDSACertificateVerifier is
      *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
      *         wants to only confirm tasks against the *latest* certificate
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-     * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+     * @dev Reverts for:
+     *      - CertificateStale: The certificate's referenceTimestamp is too stale with respect to the maxStalenessPeriod of the operatorSet
+     *      - ReferenceTimestampDoesNotExist: The root at referenceTimestamp does not exist
+     *      - RootDisabled: The root at referenceTimestamp is not valid
+     *      - InvalidSignatureLength: Signatures are not proper length
+     *      - InvalidSignature: Each signature is not valid
+     *      - SignersNotOrdered: Signatures are not ordered by signer address ascending
+     *      - ReferenceTimestampDoesNotExist: The operatorSet has not been updated for the referenceTimestamp
+     *      - OperatorCountZero: There are zero operators for the referenceTimestamp
+     *      - VerificationFailed: Any signer is not a registered operator
      */
     function verifyCertificate(
         OperatorSet calldata operatorSet,
@@ -123,7 +151,9 @@ interface IECDSACertificateVerifier is
      *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
      *         wants to only confirm tasks against the *latest* certificate
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-     * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+     * @dev Reverts for:
+     *      - All requirements from verifyCertificate
+     *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeProportionThresholds.length
      */
     function verifyCertificateProportion(
         OperatorSet calldata operatorSet,
@@ -147,7 +177,9 @@ interface IECDSACertificateVerifier is
      *      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
      *         wants to only confirm tasks against the *latest* certificate
      *      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-     * @dev Reverts if the certificate's `referenceTimestamp` is too stale with respect to the `maxStalenessPeriod` of the operatorSet
+     * @dev Reverts for:
+     *      - All requirements from verifyCertificate
+     *      - ArrayLengthMismatch: signedStakes.length does not equal totalStakeNominalThresholds.length
      */
     function verifyCertificateNominal(
         OperatorSet calldata operatorSet,
@@ -174,6 +206,8 @@ interface IECDSACertificateVerifier is
      * @return The operator info, empty if the operatorSet has not been updated for the given reference timestamp
      * @dev The index is at most the number of operators in the operatorSet at the given reference timestamp,
      *      which is given by `getOperatorCount`
+     * @dev Reverts for:
+     *      - IndexOutOfBounds: operatorIndex is greater than or equal to the number of operators
      */
     function getOperatorInfo(
         OperatorSet calldata operatorSet,
@@ -190,10 +224,11 @@ interface IECDSACertificateVerifier is
     function domainSeparator() external view returns (bytes32);
 
     /**
-     * @notice Calculate the EIP-712 digest bytes for a certificate
+     * @notice Calculate the EIP-712 digest bytes for a certificate, returning the raw bytes of the digest
      * @param referenceTimestamp The reference timestamp
-     * @param messageHash The message hash
+     * @param messageHash The message hash of the task
      * @return The EIP-712 digest
+     * @dev EIP-712 is a standard ECDSA signature verification framework. See https://eips.ethereum.org/EIPS/eip-712 for more details
      * @dev This function is public to allow offchain tools to calculate the same digest
      * @dev Note: This does not support smart contract based signatures for multichain
      * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
@@ -207,10 +242,11 @@ interface IECDSACertificateVerifier is
     ) external view returns (bytes memory);
 
     /**
-     * @notice Calculate the EIP-712 digest for a certificate
+     * @notice Calculate the EIP-712 digest for a certificate, returning the hash of the digest
      * @param referenceTimestamp The reference timestamp
-     * @param messageHash The message hash
+     * @param messageHash The message hash of the task
      * @return The EIP-712 digest
+     * @dev EIP-712 is a standard ECDSA signature verification framework. See https://eips.ethereum.org/EIPS/eip-712 for more details
      * @dev This function is public to allow offchain tools to calculate the same digest
      * @dev Note: This does not support smart contract based signatures for multichain
      * @dev This is a chain-agnostic digest, so it can be used to verify certificates across

@@ -8,6 +8,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "../mixins/SemVerMixin.sol";
+import "../mixins/LeafCalculatorMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
 contract OperatorTableUpdater is
@@ -16,6 +17,7 @@ contract OperatorTableUpdater is
     Pausable,
     OperatorTableUpdaterStorage,
     SemVerMixin,
+    LeafCalculatorMixin,
     ReentrancyGuardUpgradeable
 {
     /**
@@ -133,6 +135,16 @@ contract OperatorTableUpdater is
         // Check that the `operatorSet` is not the `Generator`
         require(operatorSet.key() != _generator.key(), InvalidOperatorSet());
 
+        // Silently return if the `referenceTimestamp` has already been updated for the `operatorSet`
+        // We do this to avoid race conditions with the offchain transport of the operator table
+        if (
+            IBaseCertificateVerifier(getCertificateVerifier(curveType)).isReferenceTimestampSet(
+                operatorSet, referenceTimestamp
+            )
+        ) {
+            return;
+        }
+
         // Check that the `referenceTimestamp` is greater than the latest reference timestamp
         require(
             referenceTimestamp
@@ -148,7 +160,7 @@ contract OperatorTableUpdater is
             globalTableRoot: globalTableRoot,
             operatorSetIndex: operatorSetIndex,
             proof: proof,
-            operatorSetLeafHash: keccak256(operatorTableBytes)
+            operatorSetLeafHash: calculateOperatorTableLeaf(operatorTableBytes)
         });
 
         // Update the operator table

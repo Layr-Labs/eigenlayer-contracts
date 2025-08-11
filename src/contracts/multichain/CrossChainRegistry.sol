@@ -45,10 +45,10 @@ contract CrossChainRegistry is
         _;
     }
 
-    modifier hasActiveGenerationReservation(
+    modifier checkHasActiveGenerationReservation(
         OperatorSet calldata operatorSet
     ) {
-        require(_activeGenerationReservations.contains(operatorSet.key()), GenerationReservationDoesNotExist());
+        require(hasActiveGenerationReservation(operatorSet), GenerationReservationDoesNotExist());
         _;
     }
 
@@ -114,6 +114,9 @@ contract CrossChainRegistry is
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
     {
+        // Validate the the KeyType has been set in the KeyRegistrar for the OperatorSet
+        require(keyRegistrar.getOperatorSetCurveType(operatorSet) != IKeyRegistrarTypes.CurveType.NONE, KeyTypeNotSet());
+
         // Add to active generation reservations
         require(_activeGenerationReservations.add(operatorSet.key()), GenerationReservationAlreadyExists());
         emit GenerationReservationCreated(operatorSet);
@@ -132,7 +135,7 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_GENERATION_RESERVATIONS)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
-        hasActiveGenerationReservation(operatorSet)
+        checkHasActiveGenerationReservation(operatorSet)
     {
         bytes32 operatorSetKey = operatorSet.key();
 
@@ -159,7 +162,7 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_OPERATOR_TABLE_CALCULATOR)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
-        hasActiveGenerationReservation(operatorSet)
+        checkHasActiveGenerationReservation(operatorSet)
     {
         // Set the operator table calculator
         _setOperatorTableCalculator(operatorSet, operatorTableCalculator);
@@ -174,7 +177,7 @@ contract CrossChainRegistry is
         onlyWhenNotPaused(PAUSED_OPERATOR_SET_CONFIG)
         checkCanCall(operatorSet.avs)
         isValidOperatorSet(operatorSet)
-        hasActiveGenerationReservation(operatorSet)
+        checkHasActiveGenerationReservation(operatorSet)
     {
         // Set the operator set config
         _setOperatorSetConfig(operatorSet, config);
@@ -289,6 +292,34 @@ contract CrossChainRegistry is
     }
 
     /// @inheritdoc ICrossChainRegistry
+    function hasActiveGenerationReservation(
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
+        return _activeGenerationReservations.contains(operatorSet.key());
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getActiveGenerationReservationsByRange(
+        uint256 startIndex,
+        uint256 endIndex
+    ) external view returns (OperatorSet[] memory) {
+        require(startIndex <= endIndex, InvalidRange());
+        require(endIndex <= _activeGenerationReservations.length(), InvalidEndIndex());
+
+        uint256 length = endIndex - startIndex;
+        OperatorSet[] memory operatorSets = new OperatorSet[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            bytes32 operatorSetKey = _activeGenerationReservations.at(startIndex + i);
+            OperatorSet memory operatorSet = OperatorSetLib.decode(operatorSetKey);
+
+            operatorSets[i] = operatorSet;
+        }
+
+        return operatorSets;
+    }
+
+    /// @inheritdoc ICrossChainRegistry
     function getOperatorTableCalculator(
         OperatorSet memory operatorSet
     ) public view returns (IOperatorTableCalculator) {
@@ -332,5 +363,10 @@ contract CrossChainRegistry is
     /// @inheritdoc ICrossChainRegistry
     function getTableUpdateCadence() external view returns (uint32) {
         return _tableUpdateCadence;
+    }
+
+    /// @inheritdoc ICrossChainRegistry
+    function getActiveGenerationReservationCount() external view returns (uint256) {
+        return _activeGenerationReservations.length();
     }
 }

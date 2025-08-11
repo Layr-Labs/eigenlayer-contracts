@@ -7,24 +7,55 @@ import "./ISemVerMixin.sol";
 
 interface IKeyRegistrarErrors {
     /// @notice Error thrown when a key is already registered
+    /// @dev Error code: 0x18f78402
+    /// @dev We prevent duplicate key registrations to maintain global key uniqueness and avoid conflicting operator-key mappings
     error KeyAlreadyRegistered();
+
+    /// @notice Error thrown when an operator is already registered
+    /// @dev Error code: 0x42ee68b5
+    /// @dev We prevent duplicate operator registrations to prevent re-registrations with a new key
+    error OperatorAlreadyRegistered();
+
     /// @notice Error thrown when the key format is invalid
+    /// @dev Error code: 0xd1091181
+    /// @dev We enforce proper key formats (20 bytes for ECDSA, valid G1/G2 points for BN254) to ensure cryptographic validity and prevent malformed key data
     error InvalidKeyFormat();
+
     /// @notice Error thrown when the address is zero
+    /// @dev Error code: 0xd92e233d
     error ZeroAddress();
+
     /// @notice Error thrown when the public key is zero
+    /// @dev Error code: 0x4935505f
     error ZeroPubkey();
+
     /// @notice Error thrown when the curve type is invalid
+    /// @dev Error code: 0xfdea7c09
+    /// @dev We require valid curve types (ECDSA or BN254)
     error InvalidCurveType();
+
     /// @notice Error thrown when the keypair is invalid
+    /// @dev Error code: 0x1b56a68b
     error InvalidKeypair();
+
     /// @notice Error thrown when the configuration is already set
+    /// @dev Error code: 0x0081f09f
+    /// @dev We prevent reconfiguration of operator sets to maintain consistency and avoid conflicting curve type settings
     error ConfigurationAlreadySet();
+
     /// @notice Error thrown when the operator set is not configured
+    /// @dev Error code: 0xb9a620da
+    /// @dev We require operator sets to be configured before key operations to ensure proper curve type validation and prevent operations on unconfigured sets
     error OperatorSetNotConfigured();
+
     /// @notice Error thrown when the key is not found
+    /// @dev Error code: 0x2e40e187
+    /// @dev We require existing key registrations for deregistration operations to ensure meaningful state changes and prevent operations on non-existent keys
     error KeyNotFound(OperatorSet operatorSet, address operator);
+
     /// @notice Error thrown when the operator is still slashable when trying to deregister a key
+    /// @dev Error code: 0x10702879
+    /// @dev We prevent key deregistration while operators are slashable to avoid race conditions and ensure operators cannot escape slashing by deregistering keys
     error OperatorStillSlashable(OperatorSet operatorSet, address operator);
 }
 
@@ -67,6 +98,12 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to configure
      * @param curveType Type of curve (ECDSA, BN254)
      * @dev Only authorized callers for the AVS can configure operator sets
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
+     *      - InvalidCurveType: The curve type is not ECDSA or BN254
+     *      - ConfigurationAlreadySet: The operator set is already configured
+     * @dev Emits the following events:
+     *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
      */
     function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
 
@@ -77,10 +114,24 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
      * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
      * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
-     * @dev Reverts if key is already registered
      * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
      *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
      * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not the operator or authorized via the PermissionController
+     *      - OperatorSetNotConfigured: The operator set is not configured
+     *      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
+     *      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
+     *      - ZeroAddress: For ECDSA: The key is the zero address
+     *      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
+     *      - InvalidSignature: For ECDSA: The signature is not valid
+     *      - InvalidKeyFormat: For BN254: The key data is not exactly 192 bytes
+     *      - InvalidSignature: For BN254: The signature is not exactly 64 bytes
+     *      - ZeroPubkey: For BN254: The G1 point is the zero point
+     *      - InvalidSignature: For BN254: The signature is not valid
+     *      - KeyAlreadyRegistered: For BN254: The key is already registered globally by hash
+     * @dev Emits the following events:
+     *      - KeyRegistered: When the key is successfully registered for the operator and operatorSet
      */
     function registerKey(
         address operator,
@@ -94,9 +145,14 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator to deregister key for
      * @param operatorSet The operator set to deregister the key from
      * @dev Can be called by the operator directly or by addresses they've authorized via the `PermissionController`
-     * @dev Reverts if key was not registered
-     * @dev Reverts if operator is still slashable for the operator set (prevents key rotation while slashable)
      * @dev Keys remain in global key registry to prevent reuse
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+     *      - OperatorStillSlashable: The operator is still slashable for the AVS
+     *      - OperatorSetNotConfigured: The operator set is not configured
+     *      - KeyNotFound: The operator does not have a registered key for this operator set
+     * @dev Emits the following events:
+     *      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
      */
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
 
@@ -124,7 +180,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return g1Point The BN254 G1 public key
      * @return g2Point The BN254 G2 public key
-     * @dev Reverts if the operatorSet is not configured for BN254
+     * @dev Reverts for:
+     *      - InvalidCurveType: The operatorSet is not configured for BN254
+     * @dev Returns empty points if the operator has not registered a key for the operatorSet. We
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getBN254Key(
         OperatorSet memory operatorSet,
@@ -136,7 +195,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key in bytes format
-     * @dev Reverts if the operatorSet is not configured for ECDSA
+     * @dev Reverts for:
+     *      - InvalidCurveType: The operatorSet is not configured for ECDSA
+     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
 
@@ -145,7 +207,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get the key for
      * @param operator Address of the operator
      * @return pubkey The ECDSA public key in address format
-     * @dev Reverts if the operatorSet is not configured for ECDSA
+     * @dev Reverts for:
+     *      - InvalidCurveType: The operatorSet is not configured for ECDSA
+     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
+     *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
     function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
 
@@ -163,7 +228,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to get the key hash for
      * @param operator Address of the operator
      * @return keyHash The key hash
-     * @dev Reverts if the operatorSet is not configured
      */
     function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
 
@@ -175,6 +239,8 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return status registration status. Returns false if the key is not registered
      * @dev This function decodes the key data based on the curve type of the operator set
      * @dev This function will return the operator address even if the operator is not registered for the operator set
+     * @dev Reverts for:
+     *      - InvalidCurveType: The CurveType is not configured
      */
     function getOperatorFromSigningKey(
         OperatorSet memory operatorSet,

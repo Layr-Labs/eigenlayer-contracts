@@ -8,7 +8,7 @@ import "../MultichainIntegrationChecks.t.sol";
  * @notice Integration tests for generation reservation removal functionality
  * @dev Tests the behavior when generation reservations are removed and tables can no longer be transported
  */
-contract Multichain_Generation_Reservation_Removal is MultichainIntegrationCheckUtils {
+contract Integration_Multichain_Generation_Reservation_Removal is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
@@ -17,8 +17,8 @@ contract Multichain_Generation_Reservation_Removal is MultichainIntegrationCheck
      * @dev Test case 2: Verify that after removing generation reservation, tables are not transported
      */
     function test_RemoveGenerationReservation_TablesNotTransported() external {
+        vm.warp(block.timestamp + 50_000);
         console.log("Testing generation reservation removal - tables not transported:");
-        vm.warp(50_000);
 
         // Setup test environment with staker having nonzero shares
         _configAssetTypes(HOLDS_LST | HOLDS_ETH | HOLDS_ALL);

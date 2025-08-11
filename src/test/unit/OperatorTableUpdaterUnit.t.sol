@@ -444,7 +444,7 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
         bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
         bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
 
         // Include the operatorSetInfo and operatorSetConfig in the global table root & set it
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
@@ -465,6 +465,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_BN254 is OperatorTabl
             )
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_BN254_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorSetInfo and operatorSetConfig
+        BN254OperatorSetInfo memory operatorSetInfo = _generateRandomBN254OperatorSetInfo(r);
+        bytes memory operatorSetInfoBytes = abi.encode(operatorSetInfo);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.BN254, operatorSetConfig, operatorSetInfoBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        bn254CertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
     }
 }
 
@@ -540,7 +571,7 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
 
         // Encode the operator table using the generator as the operatorSet
         bytes memory operatorTable = abi.encode(currentGenerator, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
 
         // Create a global table root containing this operator set
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
@@ -561,7 +592,7 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
         bytes memory operatorInfosBytes = abi.encode(operatorInfos);
         OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
         bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
-        bytes32 operatorSetLeafHash = keccak256(operatorTable);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
 
         // Include the operatorInfos and operatorSetConfig in the global table root & set it
         (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
@@ -582,6 +613,37 @@ contract OperatorTableUpdaterUnitTests_updateOperatorTable_ECDSA is OperatorTabl
             )
         );
         operatorTableUpdater.updateOperatorTable(uint32(block.timestamp), globalTableRoot, operatorSetIndex, proof, operatorTable);
+    }
+
+    function testFuzz_ECDSA_silentReturn_alreadyUpdated(Randomness r) public rand(r) {
+        // Generate random operatorInfos and operatorSetConfig
+        ECDSAOperatorInfo[] memory operatorInfos = _generateRandomECDSAOperatorInfos(r);
+        bytes memory operatorInfosBytes = abi.encode(operatorInfos);
+        OperatorSetConfig memory operatorSetConfig = _generateRandomOperatorSetConfig(r);
+        bytes memory operatorTable = abi.encode(defaultOperatorSet, CurveType.ECDSA, operatorSetConfig, operatorInfosBytes);
+        bytes32 operatorSetLeafHash = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable);
+
+        // Create global table root and update it
+        (bytes32 globalTableRoot, uint32 operatorSetIndex, bytes32[] memory leaves) = _createGlobalTableRoot(r, operatorSetLeafHash);
+        _updateGlobalTableRoot(globalTableRoot);
+
+        // Generate proof
+        bytes memory proof = Merkle.getProofKeccak(leaves, operatorSetIndex);
+        uint32 referenceTimestamp = uint32(block.timestamp);
+
+        // First update should succeed
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Set the reference timestamp as already updated in the certificate verifier mock
+        ecdsaCertificateVerifierMock.setIsReferenceTimestampSet(defaultOperatorSet, referenceTimestamp, true);
+
+        // Second update with same reference timestamp should silently return
+        cheats.recordLogs();
+        operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
+
+        // Verify no events were emitted on the second call
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        assertEq(logs.length, 0, "No events should be emitted when updating with an already set reference timestamp");
     }
 }
 
@@ -631,8 +693,8 @@ contract OperatorTableUpdaterUnitTests_multipleCurveTypes is OperatorTableUpdate
 
         // Include the operatorInfos and operatorSetConfig in the global table root & set it
         bytes32[] memory operatorSetLeafHashes = new bytes32[](2);
-        operatorSetLeafHashes[0] = keccak256(bn254OperatorTable);
-        operatorSetLeafHashes[1] = keccak256(ecdsaOperatorTable);
+        operatorSetLeafHashes[0] = operatorTableUpdater.calculateOperatorTableLeaf(bn254OperatorTable);
+        operatorSetLeafHashes[1] = operatorTableUpdater.calculateOperatorTableLeaf(ecdsaOperatorTable);
         (bytes32 globalTableRoot, uint32[] memory operatorSetIndices, bytes32[] memory leaves) =
             _createGlobalTableRoot(r, operatorSetLeafHashes);
         _updateGlobalTableRoot(globalTableRoot);
@@ -1017,7 +1079,7 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         // Encode the operator table
         bytes memory operatorSetInfoBytes1 = abi.encode(operatorSetInfo1);
         bytes memory operatorTable1 = abi.encode(operatorSet1, CurveType.BN254, operatorSetConfig1, operatorSetInfoBytes1);
-        bytes32 operatorSetLeafHash1 = keccak256(operatorTable1);
+        bytes32 operatorSetLeafHash1 = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable1);
 
         // Create a global table root containing this operator set
         bytes32[] memory leaves = new bytes32[](4); // Simple 4-leaf tree
@@ -1090,7 +1152,7 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
         // Encode the new operator table
         bytes memory operatorSetInfoBytes2 = abi.encode(operatorSetInfo2);
         bytes memory operatorTable2 = abi.encode(operatorSet2, CurveType.BN254, operatorSetConfig2, operatorSetInfoBytes2);
-        bytes32 operatorSetLeafHash2 = keccak256(operatorTable2);
+        bytes32 operatorSetLeafHash2 = operatorTableUpdater.calculateOperatorTableLeaf(operatorTable2);
 
         // Create a new global table root
         bytes32[] memory leaves2 = new bytes32[](4);

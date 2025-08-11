@@ -63,7 +63,7 @@ interface IOperatorTableCalculatorTypes {
      *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
      *
      * @dev An AVS defines the `weights` array based on the criteria it wants to use for distribution and verification of off-chain tasks.
-     *      For example, a slashable that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
+     *      For example, a slashable operatorSet that wants to distribute some tasks based on `EIGEN` stake and other based on `stETH` stake would
      *      use [slashable_EIGEN_stake, slashable_stETH_stake] as the `weights` array
      *
      * @dev It is up to the AVS to define the `weights` array, which is used by the `IECDSACertificateVerifier` to verify Certificates
@@ -77,7 +77,7 @@ interface IOperatorTableCalculatorTypes {
 }
 
 /// @notice A base operator table calculator that all operator table calculators (ECDSA, BN254) must implement
-/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the Lay-Labs/middleware repository for an example implementation
+/// @dev This interface is implemented by the AVS in their own `OperatorTableCalculator` contract, see the https://github.com/Layr-Labs/eigenlayer-middleware repository for an example implementation
 /// @dev Once deployed, the AVS will set the `OperatorTableCalculator` via `CrossChainRegistry.createGenerationReservation`
 interface IOperatorTableCalculator {
     /// @notice The OperatorTableCalculator calculates the stake weights to generate an operator table for a given operatorSet
