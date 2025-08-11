@@ -399,7 +399,7 @@ contract TaskMailbox is
     ) internal pure {
         require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
         require(cert.messageHash == resultHash, InvalidMessageHash());
-        require(cert.signature.X != 0 && cert.signature.Y != 0, EmptyCertificateSignature());
+        require(!(cert.signature.X == 0 && cert.signature.Y == 0), EmptyCertificateSignature());
     }
 
     /**
