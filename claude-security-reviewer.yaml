@@ -1,0 +1,22 @@
+name: Security Review
+
+permissions:
+  pull-requests: write
+  contents: read
+
+on:
+  pull_request:
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 2
+          
+
+      - uses: Layr-Labs/security-shared-workflows/actions/claude-pr-review@713409e1ebdd156dcc1b5dced0f0fbb063b0fee5
+        with:
+          claude-api-key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
