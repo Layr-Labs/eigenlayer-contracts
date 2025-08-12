@@ -15,8 +15,8 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal override prank(Env.multichainDeployerMultisig()) {
-        // If we're not on a destination chain, we don't need to do anything
-        if (!Env.isDestinationChain()) {
+        // If we're not on a destination chain or we're on the 1.8.0-rc.0 version, we don't need to do anything
+        if (!Env.isDestinationChain() || keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.8.0-rc.0"))) {
             return;
         }
 
@@ -44,7 +44,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     }
 
     function testScript() public virtual override {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.8.0-rc.0"))) {
             return;
         }
 
