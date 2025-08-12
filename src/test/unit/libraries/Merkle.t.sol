@@ -61,6 +61,17 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         _checkSingleProof(false, 0);
     }
 
+    /// @notice Verifies that an out-of-bounds index reverts.
+    function testFuzz_verifyInclusion_IndexOutOfBounds(uint) public {
+        uint index = vm.randomUint(leaves.length, type(uint).max);
+        vm.expectRevert(stdError.indexOOBError);
+        _checkSingleProof(false, index);
+    }
+
+    function testFuzz_verifyInclusion_InternalNodeAsProof(uint) public {
+        // TODO
+    }
+
     /// -----------------------------------------------------------------------
     /// Assertions
     /// -----------------------------------------------------------------------
@@ -70,12 +81,8 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha() ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
         for (uint i = 0; i < leaves.length; ++i) {
-            if (proofs[i].length == 0) {
-                vm.expectRevert(Merkle.InvalidProofLength.selector);
-                verifyInclusion(proofs[i], root, leaves[i], i);
-            } else {
-                assertEq(verifyInclusion(proofs[i], root, leaves[i], i), status);
-            }
+            if (proofs[i].length == 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
+            assertEq(verifyInclusion(proofs[i], root, leaves[i], i), status);
         }
     }
 
@@ -83,12 +90,8 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     function _checkSingleProof(bool status, uint index) internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) view returns (bool) verifyInclusion =
             usingSha() ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
-        if (proofs[index].length == 0) {
-            vm.expectRevert(Merkle.InvalidProofLength.selector);
-            verifyInclusion(proofs[index], root, leaves[index], index);
-        } else {
-            assertEq(verifyInclusion(proofs[index], root, leaves[index], index), status);
-        }
+        if (proofs[index].length == 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
+        assertEq(verifyInclusion(proofs[index], root, leaves[index], index), status);
     }
 
     /// -----------------------------------------------------------------------
