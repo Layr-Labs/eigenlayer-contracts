@@ -184,6 +184,11 @@ library Env {
         return _envU32("TABLE_UPDATE_CADENCE");
     }
 
+    function MAX_TASK_SLA() internal view returns (uint96) {
+        // MAX_TASK_SLA is stored as uint256 in zeus env, cast to uint96
+        return uint96(_envU256("MAX_TASK_SLA"));
+    }
+
     function isSourceChain() internal view returns (bool) {
         return _envBool("SOURCE_CHAIN");
     }

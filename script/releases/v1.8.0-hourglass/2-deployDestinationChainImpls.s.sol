@@ -18,6 +18,9 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             return;
         }
 
+        // Initialize MAX_TASK_SLA if not already set
+        _initializeMaxTaskSLA();
+
         vm.startBroadcast();
 
         // Deploy the implementation
@@ -27,7 +30,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 new TaskMailbox({
                     _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),
                     _ecdsaCertificateVerifier: address(Env.proxy.ecdsaCertificateVerifier()),
-                    _maxTaskSLA: 7 days,
+                    _maxTaskSLA: Env.MAX_TASK_SLA(),
                     _version: Env.deployVersion()
                 })
             )
@@ -78,6 +81,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == expectedECDSA, "taskMailbox.ECDSA_CERTIFICATE_VERIFIER invalid"
         );
         assertEq(taskMailbox.version(), Env.deployVersion(), "taskMailbox.version failed");
+        assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox.MAX_TASK_SLA failed");
     }
 
     /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
@@ -99,5 +103,20 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         string memory expected = Env.deployVersion();
 
         assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
+    }
+
+    /**
+     * @notice Initialize MAX_TASK_SLA in zeus environment if not already set
+     * @dev Sets MAX_TASK_SLA to 7 days (604800 seconds) by default
+     */
+    function _initializeMaxTaskSLA() internal {
+        // Try to read MAX_TASK_SLA, if it fails, set it to default
+        try vm.envUint("ZEUS_ENV_MAX_TASK_SLA") returns (uint256) {
+            // MAX_TASK_SLA is already set, nothing to do
+        } catch {
+            // MAX_TASK_SLA is not set, initialize it to 7 days
+            uint256 defaultMaxTaskSLA = 7 days; // 604800 seconds
+            zUpdateUint256("MAX_TASK_SLA", defaultMaxTaskSLA);
+        }
     }
 }

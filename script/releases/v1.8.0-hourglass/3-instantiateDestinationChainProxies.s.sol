@@ -103,6 +103,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
             "taskMailbox.ECDSA_CERTIFICATE_VERIFIER mismatch"
         );
+        assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox.MAX_TASK_SLA mismatch");
     }
 
     function _validateProxiesInitialized() internal {
