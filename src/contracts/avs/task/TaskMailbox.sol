@@ -41,13 +41,15 @@ contract TaskMailbox is
      * @notice Constructor for TaskMailbox
      * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
      * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
+     * @param _maxTaskSLA Maximum task SLA in seconds
      * @param _version The semantic version of the contract
      */
     constructor(
         address _bn254CertificateVerifier,
         address _ecdsaCertificateVerifier,
+        uint96 _maxTaskSLA,
         string memory _version
-    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier) SemVerMixin(_version) {
+    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier, _maxTaskSLA) SemVerMixin(_version) {
         _disableInitializers();
     }
 
@@ -78,6 +80,9 @@ contract TaskMailbox is
     ) external {
         // Validate config is populated with non-zero values
         require(_isConfigPopulated(config), ExecutorOperatorSetTaskConfigNotSet());
+
+        // Validate task SLA is within maximum limit
+        require(config.taskSLA <= MAX_TASK_SLA, TaskSLAExceedsMaximum());
 
         // Validate consensus enum within range
         _validateConsensus(config.consensus);

@@ -18,6 +18,10 @@ abstract contract TaskMailboxStorage is ITaskMailbox {
     /// @notice Immutable ECDSA certificate verifier
     address public immutable ECDSA_CERTIFICATE_VERIFIER;
 
+    /// @notice Maximum task SLA in seconds.
+    /// @dev This will be set to `DEALLOCATION_DELAY / 2` so that AVSs can still slash operators in case of stake deallocation during inflight tasks.
+    uint96 public immutable MAX_TASK_SLA;
+
     /// @notice Global counter for tasks created across the TaskMailbox
     uint256 internal _globalTaskCount;
 
@@ -40,10 +44,12 @@ abstract contract TaskMailboxStorage is ITaskMailbox {
      * @notice Constructor for TaskMailboxStorage
      * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
      * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
+     * @param _maxTaskSLA Maximum task SLA in seconds
      */
-    constructor(address _bn254CertificateVerifier, address _ecdsaCertificateVerifier) {
+    constructor(address _bn254CertificateVerifier, address _ecdsaCertificateVerifier, uint96 _maxTaskSLA) {
         BN254_CERTIFICATE_VERIFIER = _bn254CertificateVerifier;
         ECDSA_CERTIFICATE_VERIFIER = _ecdsaCertificateVerifier;
+        MAX_TASK_SLA = _maxTaskSLA;
     }
 
     /**

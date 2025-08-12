@@ -28,6 +28,9 @@ import {AVSTaskHookReentrantAttacker} from "src/test/mocks/AVSTaskHookReentrantA
 contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, ITaskMailboxEvents {
     using OperatorSetLib for OperatorSet;
 
+    // Constants
+    uint96 public constant MAX_TASK_SLA = 7 days;
+
     // Contracts
     TaskMailbox public taskMailbox;
     ProxyAdmin public proxyAdmin;
@@ -64,7 +67,8 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
 
         // Deploy TaskMailbox with proxy pattern
         proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.0");
+        TaskMailbox taskMailboxImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -170,7 +174,7 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
 
         // Deploy with proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, "1.0.0");
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -184,6 +188,26 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
         assertEq(newTaskMailbox.owner(), owner);
         assertEq(newTaskMailbox.feeSplit(), 0);
         assertEq(newTaskMailbox.feeSplitCollector(), feeSplitCollector);
+    }
+
+    function test_Constructor_SetsMaxTaskSLA() public {
+        // Test that MAX_TASK_SLA is properly set during construction
+        address bn254Verifier = address(0x1234);
+        address ecdsaVerifier = address(0x5678);
+        uint96 customMaxTaskSLA = 14 days;
+
+        // Deploy with custom MAX_TASK_SLA
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, customMaxTaskSLA, "1.0.0");
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(taskMailboxImpl),
+            address(proxyAdmin),
+            abi.encodeWithSelector(TaskMailbox.initialize.selector, owner, 0, feeSplitCollector)
+        );
+        TaskMailbox newTaskMailbox = TaskMailbox(address(proxy));
+
+        // Verify MAX_TASK_SLA is set correctly
+        assertEq(newTaskMailbox.MAX_TASK_SLA(), customMaxTaskSLA);
     }
 }
 
@@ -278,7 +302,8 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         // Bound inputs
         vm.assume(fuzzCertificateVerifier != address(0));
         vm.assume(fuzzTaskHook != address(0));
-        vm.assume(fuzzTaskSLA > 0);
+        // Bound taskSLA to be between 1 and MAX_TASK_SLA
+        fuzzTaskSLA = uint96(bound(fuzzTaskSLA, 1, MAX_TASK_SLA));
         // Bound stake proportion threshold to valid range (0-10000 basis points)
         fuzzStakeProportionThreshold = uint16(bound(fuzzStakeProportionThreshold, 0, 10_000));
 
@@ -490,6 +515,64 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         vm.prank(avs);
         vm.expectRevert(InvalidConsensusValue.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+    }
+
+    function test_Revert_WhenTaskSLAExceedsMaximum() public {
+        // Test that setExecutorOperatorSetTaskConfig reverts when taskSLA > MAX_TASK_SLA
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        // Set taskSLA to exceed MAX_TASK_SLA
+        config.taskSLA = MAX_TASK_SLA + 1;
+
+        vm.prank(avs);
+        vm.expectRevert(TaskSLAExceedsMaximum.selector);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+    }
+
+    function test_setExecutorOperatorSetTaskConfig_WithMaxTaskSLA() public {
+        // Test that setExecutorOperatorSetTaskConfig succeeds when taskSLA equals MAX_TASK_SLA
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        // Set taskSLA to exactly MAX_TASK_SLA
+        config.taskSLA = MAX_TASK_SLA;
+
+        // Should emit events and succeed
+        vm.expectEmit(true, true, true, true);
+        emit ExecutorOperatorSetTaskConfigSet(avs, avs, executorOperatorSetId, config);
+        vm.expectEmit(true, true, true, true);
+        emit ExecutorOperatorSetRegistered(avs, avs, executorOperatorSetId, true);
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Verify the config was set correctly
+        ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+        assertEq(retrievedConfig.taskSLA, MAX_TASK_SLA);
+    }
+
+    function testFuzz_setExecutorOperatorSetTaskConfig_RespectsMaxTaskSLA(uint96 fuzzTaskSLA) public {
+        // Fuzz test to ensure all valid taskSLA values work and invalid ones revert
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        if (fuzzTaskSLA > MAX_TASK_SLA || fuzzTaskSLA == 0) {
+            // Should revert for invalid values
+            config.taskSLA = fuzzTaskSLA;
+            vm.prank(avs);
+            if (fuzzTaskSLA == 0) vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
+            else vm.expectRevert(TaskSLAExceedsMaximum.selector);
+            taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+        } else {
+            // Should succeed for valid values
+            config.taskSLA = fuzzTaskSLA;
+            vm.prank(avs);
+            taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+            ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+            assertEq(retrievedConfig.taskSLA, fuzzTaskSLA);
+        }
     }
 }
 
@@ -1165,7 +1248,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Deploy a new TaskMailbox with the failing verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), "1.0.0");
+        TaskMailbox taskMailboxImpl =
+            new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -1212,7 +1296,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Deploy a new TaskMailbox with the failing ECDSA verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         TaskMailbox taskMailboxImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), "1.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -2835,6 +2919,9 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         // Test fee split getters
         assertEq(taskMailbox.feeSplit(), 0); // Default value from initialization
         assertEq(taskMailbox.feeSplitCollector(), feeSplitCollector); // Default value from initialization
+
+        // Test MAX_TASK_SLA getter
+        assertEq(taskMailbox.MAX_TASK_SLA(), MAX_TASK_SLA); // Should return the configured maximum task SLA
     }
 
     function test_getExecutorOperatorSetTaskConfig() public {
@@ -3093,7 +3180,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
     function test_Implementation_CannotBeInitialized() public {
         // Deploy a new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.1");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.1");
 
         // Try to initialize the implementation directly, should revert
         vm.expectRevert("Initializable: contract is already initialized");
@@ -3104,7 +3192,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         address newOwner = address(0x1234);
 
         // Deploy new implementation with different version
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Check version before upgrade
         assertEq(taskMailbox.version(), "1.0.0");
@@ -3123,7 +3212,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         address attacker = address(0x9999);
 
         // Deploy new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Try to upgrade from non-owner, should revert
         vm.prank(attacker);
@@ -3157,7 +3247,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         assertEq(address(retrievedConfig.taskHook), address(config.taskHook));
 
         // Deploy new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Upgrade
         vm.prank(address(this)); // proxyAdmin owner
@@ -3178,7 +3269,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
     function test_InitializerModifier_PreventsReinitialization() public {
         // Deploy a new proxy without initialization data
         TransparentUpgradeableProxy uninitializedProxy = new TransparentUpgradeableProxy(
-            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.0")),
+            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0")),
             address(new ProxyAdmin()),
             ""
         );

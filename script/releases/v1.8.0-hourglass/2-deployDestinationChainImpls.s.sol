@@ -27,6 +27,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 new TaskMailbox({
                     _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),
                     _ecdsaCertificateVerifier: address(Env.proxy.ecdsaCertificateVerifier()),
+                    _maxTaskSLA: 7 days,
                     _version: Env.deployVersion()
                 })
             )

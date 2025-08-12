@@ -175,6 +175,9 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
 
     /// @notice Thrown when a certificate is stale
     error CertificateStale();
+
+    /// @notice Thrown when task SLA exceeds the maximum allowed
+    error TaskSLAExceedsMaximum();
 }
 
 /**
@@ -447,4 +450,11 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @return The address of the ECDSA certificate verifier
      */
     function ECDSA_CERTIFICATE_VERIFIER() external view returns (address);
+
+    /**
+     * @notice Gets the maximum task SLA allowed
+     * @dev This will be set to `DEALLOCATION_DELAY / 2` so that AVSs can still slash operators in case of stake deallocation during inflight tasks.
+     * @return The maximum task SLA in seconds
+     */
+    function MAX_TASK_SLA() external view returns (uint96);
 }
