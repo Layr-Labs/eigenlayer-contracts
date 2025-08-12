@@ -31,6 +31,12 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         _checkAllProofs(false);
     }
 
+    /// @notice Verifies that using wrong root fails verification
+    function testFuzz_verifyInclusion_WrongRoot(uint) public {
+        root = bytes32(vm.randomUint());
+        _checkAllProofs(false);
+    }
+
     /// @notice Verifies valid proofs cannot be used to prove invalid leaves.
     function testFuzz_verifyInclusion_WrongProofs(uint) public {
         bytes memory proof0 = proofs[0];
@@ -43,8 +49,19 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     /// @notice Verifies that a valid proof with excess data appended is invalid.
     function testFuzz_verifyInclusion_ExcessProofLength(uint) public {
         unchecked {
-            proofs[0] = abi.encodePacked(proofs[0], vm.randomBytes(vm.randomUint(1, 10) * 32));
+            proofs[0] = abi.encodePacked(proofs[0], vm.randomBytes(vm.randomUint(1, 10) * vm.randomUint(31, 32)));
         }
+        _checkSingleProof(false, 0);
+    }
+
+    /// @notice Verifies that a valid proof with a truncated length is invalid.
+    function testFuzz_verifyInclusion_TruncatedProofLength(uint) public {
+        bytes memory proof = proofs[0];
+        /// @solidity memory-safe-assembly
+        assembly {
+            mstore(proof, sub(mload(proof), 32))
+        }
+        proofs[0] = proof;
         _checkSingleProof(false, 0);
     }
 
@@ -68,8 +85,24 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         _checkSingleProof(false, index);
     }
 
+    /// @notice Verifies that an internal node cannot be used as a proof.
     function testFuzz_verifyInclusion_InternalNodeAsProof(uint) public {
-        // TODO
+        // Generate a tree with at least 4 leaves to ensure internal nodes exist
+        leaves = _genLeaves(vm.randomUint(4, 8));
+        proofs = _genProofs(leaves);
+        root = _genRoot(leaves);
+        function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) view returns (bool) verifyInclusion =
+            usingSha() ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
+        assertFalse(verifyInclusion(proofs[2], root, hashLeafPairs(leaves[0], leaves[1]), 2));
+    }
+
+    /// @notice Verifies behavior with duplicate leaves in the tree
+    function testFuzz_verifyInclusion_DuplicateLeaves(uint) public {
+        leaves = _genLeaves(vm.randomUint(4, 8));
+        leaves[0] = leaves[vm.randomUint(1, leaves.length - 1)];
+        proofs = _genProofs(leaves);
+        root = _genRoot(leaves);
+        _checkAllProofs(true);
     }
 
     /// -----------------------------------------------------------------------
@@ -81,7 +114,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) returns (bool) verifyInclusion =
             usingSha() ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
         for (uint i = 0; i < leaves.length; ++i) {
-            if (proofs[i].length == 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
+            if (proofs[i].length == 0 || proofs[i].length % 32 != 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
             assertEq(verifyInclusion(proofs[i], root, leaves[i], i), status);
         }
     }
@@ -90,7 +123,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     function _checkSingleProof(bool status, uint index) internal virtual {
         function (bytes memory proof, bytes32 root, bytes32 leaf, uint256 index) view returns (bool) verifyInclusion =
             usingSha() ? Merkle.verifyInclusionSha256 : Merkle.verifyInclusionKeccak;
-        if (proofs[index].length == 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
+        if (proofs[index].length == 0 || proofs[index].length % 32 != 0) vm.expectRevert(Merkle.InvalidProofLength.selector);
         assertEq(verifyInclusion(proofs[index], root, leaves[index], index), status);
     }
 
@@ -107,7 +140,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
         }
     }
 
-    /// @dev Effeciently generates a random list of leaves without iterative hashing.
+    /// @dev Generates a random list of leaves without iterative hashing.
     function _genLeaves(uint numLeaves) internal view virtual returns (bytes32[] memory leaves) {
         bytes memory _leavesAsBytes = vm.randomBytes(numLeaves * 32);
         /// @solidity memory-safe-assembly
