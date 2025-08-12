@@ -53,7 +53,7 @@ library Merkle {
         bytes32 leaf,
         uint256 index
     ) internal pure returns (bytes32) {
-        require(proof.length % 32 == 0, InvalidProofLength());
+        require(proof.length != 0 && proof.length % 32 == 0, InvalidProofLength());
         bytes32 computedHash = leaf;
         for (uint256 i = 32; i <= proof.length; i += 32) {
             if (index % 2 == 0) {

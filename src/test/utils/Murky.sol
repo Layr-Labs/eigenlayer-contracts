@@ -179,17 +179,11 @@ contract MerkleSha is MurkyBase {
 
     function hashLeafPairs(bytes32 left, bytes32 right) public view override returns (bytes32 _hash) {
         assembly {
-            switch lt(left, right)
-            case 0 {
-                mstore(0x0, right)
-                mstore(0x20, left)
-            }
-            default {
-                mstore(0x0, left)
-                mstore(0x20, right)
-            }
-            _hash := mload(iszero(staticcall(gas(), SHA256_PRECOMPILE, 0x0, 0x40, 0x0, 0x20)))
-            if iszero(returndatasize()) { invalid() }
+            mstore(0x0, left)
+            mstore(0x20, right)
+            let success := staticcall(gas(), SHA256_PRECOMPILE, 0x0, 0x40, 0x0, 0x20)
+            if iszero(success) { revert(0, 0) }
+            _hash := mload(0x0)
         }
     }
 }
