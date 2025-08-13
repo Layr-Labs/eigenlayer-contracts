@@ -330,8 +330,7 @@ contract ReleaseManagerUnitTests_getRelease is ReleaseManagerUnitTests {
 
 contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
     function test_revert_getLatestRelease_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.getLatestRelease(defaultOperatorSet);
     }
 
@@ -444,8 +443,7 @@ contract ReleaseManagerUnitTests_EdgeCases is ReleaseManagerUnitTests {
 
 contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTests {
     function test_revert_getLatestUpgradeByTime_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.getLatestUpgradeByTime(defaultOperatorSet);
     }
 
@@ -471,8 +469,7 @@ contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTes
 
 contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
     function test_revert_isValidRelease_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.isValidRelease(defaultOperatorSet, 0);
     }
 
