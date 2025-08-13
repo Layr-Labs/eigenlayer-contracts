@@ -41,13 +41,15 @@ contract TaskMailbox is
      * @notice Constructor for TaskMailbox
      * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
      * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
+     * @param _maxTaskSLA Maximum task SLA in seconds
      * @param _version The semantic version of the contract
      */
     constructor(
         address _bn254CertificateVerifier,
         address _ecdsaCertificateVerifier,
+        uint96 _maxTaskSLA,
         string memory _version
-    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier) SemVerMixin(_version) {
+    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier, _maxTaskSLA) SemVerMixin(_version) {
         _disableInitializers();
     }
 
@@ -78,6 +80,9 @@ contract TaskMailbox is
     ) external {
         // Validate config is populated with non-zero values
         require(_isConfigPopulated(config), ExecutorOperatorSetTaskConfigNotSet());
+
+        // Validate task SLA is within maximum limit
+        require(config.taskSLA <= MAX_TASK_SLA, TaskSLAExceedsMaximum());
 
         // Validate consensus enum within range
         _validateConsensus(config.consensus);
@@ -119,15 +124,26 @@ contract TaskMailbox is
             _executorOperatorSetTaskConfigs[taskParams.executorOperatorSet.key()];
         require(_isConfigPopulated(taskConfig), ExecutorOperatorSetTaskConfigNotSet());
 
+        // Get the operator table reference timestamp and max staleness period
+        IBaseCertificateVerifier certificateVerifier =
+            IBaseCertificateVerifier(_getCertificateVerifier(taskConfig.curveType));
+        uint32 operatorTableReferenceTimestamp =
+            certificateVerifier.latestReferenceTimestamp(taskParams.executorOperatorSet);
+        {
+            // Scoping to prevent `Stack too deep` error during compilation
+            uint32 maxStaleness = certificateVerifier.maxOperatorTableStaleness(taskParams.executorOperatorSet);
+            require(
+                maxStaleness == 0
+                    || (block.timestamp + taskConfig.taskSLA <= operatorTableReferenceTimestamp + maxStaleness),
+                CertificateStale()
+            );
+        }
+
         // Pre-task submission checks: AVS can validate the caller and task params.
         taskConfig.taskHook.validatePreTaskCreation(msg.sender, taskParams);
 
         // Calculate the AVS fee using the task hook
         uint96 avsFee = taskConfig.taskHook.calculateTaskFee(taskParams);
-
-        // Get the operator table reference timestamp
-        uint32 operatorTableReferenceTimestamp = IBaseCertificateVerifier(_getCertificateVerifier(taskConfig.curveType))
-            .latestReferenceTimestamp(taskParams.executorOperatorSet);
 
         bytes32 taskHash = keccak256(abi.encode(_globalTaskCount, address(this), block.chainid, taskParams));
         _globalTaskCount = _globalTaskCount + 1;
@@ -399,7 +415,7 @@ contract TaskMailbox is
     ) internal pure {
         require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
         require(cert.messageHash == resultHash, InvalidMessageHash());
-        require(cert.signature.X != 0 && cert.signature.Y != 0, EmptyCertificateSignature());
+        require(!(cert.signature.X == 0 && cert.signature.Y == 0), EmptyCertificateSignature());
     }
 
     /**

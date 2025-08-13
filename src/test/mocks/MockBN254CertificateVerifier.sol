@@ -10,8 +10,20 @@ contract MockBN254CertificateVerifier is IBN254CertificateVerifier {
     // Mapping to store operator set owners for testing
     mapping(bytes32 => address) public operatorSetOwners;
 
+    // Configurable values for testing
+    uint32 private _latestReferenceTimestamp;
+    uint32 private _maxOperatorTableStaleness = 86_400; // Default value
+
     function setOperatorSetOwner(OperatorSet memory operatorSet, address owner) external {
         operatorSetOwners[keccak256(abi.encode(operatorSet.avs, operatorSet.id))] = owner;
+    }
+
+    function setLatestReferenceTimestamp(uint32 timestamp) external {
+        _latestReferenceTimestamp = timestamp;
+    }
+
+    function setMaxOperatorTableStaleness(uint32 staleness) external {
+        _maxOperatorTableStaleness = staleness;
     }
 
     function updateOperatorTable(
@@ -60,12 +72,12 @@ contract MockBN254CertificateVerifier is IBN254CertificateVerifier {
         return owner != address(0) ? owner : operatorSet.avs;
     }
 
-    function latestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
-        return 0;
+    function latestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external view returns (uint32) {
+        return _latestReferenceTimestamp;
     }
 
-    function maxOperatorTableStaleness(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
-        return 86_400;
+    function maxOperatorTableStaleness(OperatorSet memory /*operatorSet*/ ) external view returns (uint32) {
+        return _maxOperatorTableStaleness;
     }
 
     function trySignatureVerification(

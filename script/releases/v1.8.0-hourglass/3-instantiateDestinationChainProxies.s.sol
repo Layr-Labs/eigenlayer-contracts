@@ -15,8 +15,8 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal override prank(Env.multichainDeployerMultisig()) {
-        // If we're not on a destination chain, we don't need to do anything
-        if (!Env.isDestinationChain()) {
+        // If we're not on a destination chain or we're on a version that already has these contracts deployed, we don't need to do anything
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
@@ -44,7 +44,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     }
 
     function testScript() public virtual override {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
@@ -103,6 +103,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
             "taskMailbox.ECDSA_CERTIFICATE_VERIFIER mismatch"
         );
+        assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox.MAX_TASK_SLA mismatch");
     }
 
     function _validateProxiesInitialized() internal {

@@ -36,12 +36,23 @@ The `TaskMailbox`'s responsibilities are broken down into the following concepts
 * [Fee Management](#fee-management)
 * [Task Hooks and AVS Integration](#task-hooks-and-avs-integration)
 
+### Immutable Configuration
+
+The `TaskMailbox` contract has the following immutable parameters set at deployment:
+
+* **BN254_CERTIFICATE_VERIFIER**: Address of the BN254 certificate verifier contract
+* **ECDSA_CERTIFICATE_VERIFIER**: Address of the ECDSA certificate verifier contract  
+* **MAX_TASK_SLA**: Maximum allowed task SLA duration (typically set to `DEALLOCATION_DELAY / 2`)
+
+The `MAX_TASK_SLA` parameter is particularly important as it ensures AVSs can still slash operators in case of stake deallocation during inflight tasks. By limiting task SLAs to half the deallocation delay, the system guarantees that operators cannot avoid slashing by deallocating their stake while a task is still pending.
+
 ## Parameterization
 
 The `TaskMailbox` uses the following key parameters:
 
 * **Fee Split**: Configurable percentage (0-10000 basis points) that determines how task fees are split between the protocol fee collector and the AVS fee collector
 * **Task SLA**: Service Level Agreement duration (in seconds) set per executor operator set, defining how long operators have to complete a task
+* **MAX_TASK_SLA**: Maximum allowed task SLA duration (immutable, set at deployment)
 * **Consensus Thresholds**: Configurable per operator set, defining the required stake proportion for result verification
 
 ---
@@ -49,6 +60,16 @@ The `TaskMailbox` uses the following key parameters:
 ## Task Creation and Lifecycle
 
 Tasks in the TaskMailbox system follow a well-defined lifecycle with specific states and transitions. Each task is uniquely identified by a hash computed from the task parameters, block context, and a global counter.
+
+### Certificate Staleness Protection
+
+When creating a task, the system checks that the operator table reference timestamp is fresh enough to remain valid for the entire task SLA duration. This prevents tasks from being created with stale operator sets that might change before the task completes. The check ensures:
+
+```
+block.timestamp + taskSLA <= operatorTableReferenceTimestamp + maxStaleness
+```
+
+If `maxStaleness` is 0 (unconfigured), this check is skipped. Otherwise, if the certificate would become stale before the task SLA expires, the transaction reverts with `CertificateStale()`.
 
 **State Variables:**
 * `_globalTaskCount`: Counter ensuring unique task hashes
@@ -81,12 +102,14 @@ function createTask(TaskParams memory taskParams) external nonReentrant returns 
 Creates a new task in the system. The method performs several validations and operations:
 
 1. Validates that the executor operator set is registered and has a valid configuration
-2. Calls the AVS task hook for pre-creation validation
-3. Calculates the task fee using the AVS task hook
-4. Generates a unique task hash
-5. Transfers the fee from the caller to the TaskMailbox
-6. Stores the task with its current configuration snapshot
-7. Calls the AVS task hook for post-creation handling
+2. Validates that the task SLA does not exceed MAX_TASK_SLA
+3. Checks certificate staleness to ensure the operator table reference timestamp is fresh enough for the task SLA
+4. Calls the AVS task hook for pre-creation validation
+5. Calculates the task fee using the AVS task hook
+6. Generates a unique task hash
+7. Transfers the fee from the caller to the TaskMailbox
+8. Stores the task with its current configuration snapshot
+9. Calls the AVS task hook for post-creation handling
 
 *Effects*:
 * Increments `_globalTaskCount`
@@ -98,6 +121,8 @@ Creates a new task in the system. The method performs several validations and op
 *Requirements*:
 * Executor operator set must be registered
 * Executor operator set must have valid task configuration
+* Task SLA must not exceed MAX_TASK_SLA (reverts with `TaskSLAExceedsMaximum`)
+* Certificate must not be stale (reverts with `CertificateStale` if maxStaleness is exceeded)
 * Task payload must not be empty
 * Fee transfer must succeed
 * AVS validation must pass
@@ -205,7 +230,7 @@ function setExecutorOperatorSetTaskConfig(
 
 Configures how tasks should be executed by a specific operator set. The configuration includes:
 - **Task Hook**: AVS-specific contract for custom validation and handling
-- **Task SLA**: Time limit for task completion
+- **Task SLA**: Time limit for task completion (must not exceed MAX_TASK_SLA)
 - **Fee Token**: Token used for task fees (can be zero address for no fees). **Fees will not be collected if this is the zero address.**
 - **Fee Collector**: Address to receive AVS portion of fees
 - **Curve Type**: Cryptographic curve used by operators (BN254 or ECDSA)
@@ -221,6 +246,7 @@ Configures how tasks should be executed by a specific operator set. The configur
 * Caller must be the operator set owner (verified via certificate verifier)
 * Task hook must not be zero address
 * Task SLA must be greater than zero
+* Task SLA must not exceed MAX_TASK_SLA (reverts with `TaskSLAExceedsMaximum`)
 * Consensus type and curve type must be valid
 * Consensus value must be properly formatted
 
@@ -501,3 +527,5 @@ The TaskMailbox implements several security measures:
 3. **Fee Safety**: Uses OpenZeppelin's `SafeERC20` for all token transfers
 4. **Access Control**: Operator set owners control their configurations; contract owner controls global parameters
 5. **Timestamp Validation**: Tasks cannot be verified at their creation timestamp to prevent same-block manipulation
+6. **Task SLA Limits**: MAX_TASK_SLA immutable constant prevents excessively long task durations
+7. **Certificate Staleness Protection**: Ensures operator table reference timestamps are fresh enough for the task SLA duration

@@ -14,8 +14,8 @@ contract DeployDestinationChainProxies is MultisigBuilder {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override {
-        // If we're not on a destination chain, we don't need to deploy any contracts
-        if (!Env.isDestinationChain()) {
+        // If we're not on a destination chain or we're on a version that already has these contracts deployed, we don't need to deploy any contracts
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
@@ -37,7 +37,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
@@ -100,5 +100,13 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             implementation: emptyContract,
             name: name
         });
+    }
+
+    /// @dev Check if the version is already deployed
+    function _isAlreadyDeployed() internal view returns (bool) {
+        if (keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.8.0-rc.0"))) {
+            return true;
+        }
+        return false;
     }
 }
