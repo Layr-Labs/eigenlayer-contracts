@@ -28,7 +28,7 @@ interface IReleaseManagerTypes {
 
     /// @notice Represents a release containing multiple artifacts and an upgrade deadline.
     /// @param artifacts Array of artifacts included in this release.
-    /// @param upgradeByTime Timestamp by which operators must upgrade to this release.
+    /// @param upgradeByTime Timestamp by which operators must upgrade to this release. A value of 0 signals an instant upgrade requirement.
     struct Release {
         Artifact[] artifacts;
         uint32 upgradeByTime;
