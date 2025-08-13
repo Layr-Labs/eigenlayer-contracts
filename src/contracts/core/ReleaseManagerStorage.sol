@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import "../interfaces/IReleaseManager.sol";
-import "../interfaces/IAllocationManager.sol";
 
 abstract contract ReleaseManagerStorage is IReleaseManager {
     // Mutables
