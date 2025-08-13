@@ -12,8 +12,8 @@ contract DeploySourceChain is EOADeployer {
 
     /// forgefmt: disable-next-item
     function _runAsEOA() internal override {
-        // If we're not on a source chain, we don't need to deploy any contracts
-        if (!Env.isSourceChain()) {
+        // If we're not on a source chain or we're on a version that already has these contracts deployed, we don't need to deploy any contracts
+        if (!Env.isSourceChain() || _isAlreadyDeployedToSourceChain()) {
             return;
         }
 
@@ -100,7 +100,7 @@ contract DeploySourceChain is EOADeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isSourceChain()) {
+        if (!Env.isSourceChain() || _isAlreadyDeployedToSourceChain()) {
             return;
         }
 
@@ -258,5 +258,19 @@ contract DeploySourceChain is EOADeployer {
 
     function _assertFalse(bool b, string memory err) private pure {
         assertFalse(b, err);
+    }
+
+    /// @dev Check if the version is already deployed
+    function _isAlreadyDeployedToSourceChain() private view returns (bool) {
+        if (keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.7.0-rc.0"))) {
+            return true;
+        } else if (keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.7.0-rc.1"))) {
+            return true;
+        } else if (keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.7.0-rc.2"))) {
+            return true;
+        } else if (keccak256(bytes(Env.envVersion())) == keccak256(bytes("1.8.0-rc.0"))) {
+            return true;
+        }
+        return false;
     }
 }
