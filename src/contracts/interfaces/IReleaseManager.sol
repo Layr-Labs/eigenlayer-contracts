@@ -56,6 +56,7 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
      */
 
     /// @notice Publishes a new release for an operator set.
+    /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
     /// @param operatorSet The operator set this release is for.
     /// @param release The release that was published.
     /// @return releaseId The index of the newly published release.
@@ -83,12 +84,14 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     ) external view returns (uint256);
 
     /// @notice Returns a specific release by index.
+    /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
     /// @param operatorSet The operator set to query.
     /// @param releaseId The id of the release to get.
     /// @return The release at the specified index.
     function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory);
 
     /// @notice Returns the latest release for an operator set.
+    /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
     /// @param operatorSet The operator set to query.
     /// @return The id of the latest release.
     /// @return The latest release.
@@ -97,6 +100,7 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     ) external view returns (uint256, Release memory);
 
     /// @notice Returns the upgrade by time for the latest release.
+    /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
     /// @param operatorSet The operator set to query.
     /// @return The upgrade by time for the latest release.
     function getLatestUpgradeByTime(

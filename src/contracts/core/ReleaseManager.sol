@@ -35,7 +35,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
         require(bytes(_operatorSetMetadataURI[operatorSet.key()]).length != 0, MustPublishMetadataURI());
-        require(release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
+        require(release.upgradeByTime == 0 || release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
 
         // New release id is the length of the array before this call.
         releaseId = releases.length;
