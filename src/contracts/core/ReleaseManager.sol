@@ -35,7 +35,7 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
 
         require(bytes(_operatorSetMetadataURI[operatorSet.key()]).length != 0, MustPublishMetadataURI());
-        require(release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
+        require(release.upgradeByTime == 0 || release.upgradeByTime >= block.timestamp, InvalidUpgradeByTime());
 
         // New release id is the length of the array before this call.
         releaseId = releases.length;
@@ -89,13 +89,17 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         OperatorSet memory operatorSet
     ) external view returns (uint32) {
         Release[] storage releases = _operatorSetReleases[operatorSet.key()];
+        require(releases.length > 0, NoReleases());
+
         uint256 latestReleaseId = releases.length - 1;
         return releases[latestReleaseId].upgradeByTime;
     }
 
     /// @inheritdoc IReleaseManager
     function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
-        return releaseId == getTotalReleases(operatorSet) - 1;
+        uint256 totalReleases = getTotalReleases(operatorSet);
+        require(totalReleases > 0, NoReleases());
+        return releaseId == totalReleases - 1;
     }
 
     /// @inheritdoc IReleaseManager

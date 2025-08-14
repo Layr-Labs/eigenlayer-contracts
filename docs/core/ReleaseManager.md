@@ -31,6 +31,7 @@ An AVS in the context of `ReleaseManager` is defined as the `address` of the con
 
 * **Latest Release Validity**: Only the latest release for an operator set is considered valid. Previous releases become obsolete as soon as a new release is published.
 * **Upgrade Deadlines**: The `upgradeByTime` timestamp (in Unix time) is a suggested deadline and is not enforced on-chain or off-chain. It serves as a communication mechanism for AVSs to indicate when operators should complete their upgrades.
+* **Instant Upgrades**: When `upgradeByTime` is set to 0, this signals an instant upgrade requirement.
 * **Multiple Releases in Same Block**: If multiple releases are published in the same block with the same `upgradeByTime`, the last transaction processed in that block will determine the latest valid release.
 
 ---
@@ -58,7 +59,8 @@ struct Artifact {
 /**
  * @notice Represents a release containing multiple artifacts and an upgrade deadline.
  * @param artifacts Array of artifacts included in this release.
- * @param upgradeByTime Timestamp by which operators must upgrade to this release.
+ * @param upgradeByTime Timestamp by which operators must upgrade to this release. 
+ *                      A value of 0 signals an instant upgrade requirement.
  */
 struct Release {
     Artifact[] artifacts;
@@ -90,6 +92,7 @@ mapping(bytes32 operatorSetKey => Release[]) internal _operatorSetReleases;
 ```solidity
 /**
  * @notice Publishes a new release for an operator set.
+ * @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
  * @param operatorSet The operator set this release is for.
  * @param release The release that was published.
  * @return releaseId The index of the newly published release.
@@ -107,6 +110,8 @@ _Note: this method can be called directly by an AVS, or by a caller authorized b
 
 AVSs use this method to publish new software releases for their operator sets. Each release contains one or more artifacts that represent the software components operators must run (e.g., validator clients, network monitors, etc.). The AVS specifies a deadline (`upgradeByTime`) by which all operators in the operator set must upgrade to the new release.
 
+**Special Case - Instant Upgrades**: Setting `upgradeByTime` to 0 signals that this is an instant upgrade that operators should apply immediately. This is typically used for critical security patches or emergency updates.
+
 The `releaseId` returned is the zero-based index of the release in the operator set's release array. This ID can be used to query the release later using [`getRelease`](#getrelease).
 
 *Effects*:
@@ -117,7 +122,8 @@ The `releaseId` returned is the zero-based index of the release in the operator 
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
-* `release.upgradeByTime` MUST be greater than or equal to the current block timestamp
+* Operator set MUST have published metadata URI via `updateOperatorSetMetadataURI`
+* `release.upgradeByTime` MUST be either 0 (instant upgrade) or greater than or equal to the current block timestamp
 ---
 
 ### View Functions
@@ -149,6 +155,7 @@ Returns the total number of releases that have been published for the specified 
 ```solidity
 /**
  * @notice Returns a specific release by index.
+ * @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
  * @param operatorSet The operator set to query.
  * @param releaseId The id of the release to get.
  * @return The release at the specified index.
@@ -166,6 +173,7 @@ Retrieves a specific release by its ID for a given operator set. The `releaseId`
 
 *Returns*:
 * The complete `Release` struct including all artifacts and the upgrade deadline
+* If `upgradeByTime` is 0, this indicates an instant upgrade requirement
 * Reverts if `releaseId` is out of bounds
 
 #### `getLatestRelease`
@@ -173,6 +181,7 @@ Retrieves a specific release by its ID for a given operator set. The `releaseId`
 ```solidity
 /**
  * @notice Returns the latest release for an operator set.
+ * @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
  * @param operatorSet The operator set to query.
  * @return The id of the latest release.
  * @return The latest release.
@@ -188,14 +197,16 @@ function getLatestRelease(
 Retrieves the most recently published release for an operator set. This is typically the release that operators should be running or upgrading to.
 
 *Returns*:
-* The latest `Release` struct from the operator set's release array
-* Reverts if no releases have been published for the operator set
+* The release ID and the latest `Release` struct from the operator set's release array
+* If `upgradeByTime` is 0, this indicates an instant upgrade requirement
+* Reverts with `NoReleases()` if no releases have been published for the operator set
 
 #### `getLatestUpgradeByTime`
 
 ```solidity
 /**
  * @notice Returns the upgrade by time for the latest release.
+ * @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
  * @param operatorSet The operator set to query.
  * @return The upgrade by time for the latest release.
  */
@@ -204,14 +215,15 @@ function getLatestUpgradeByTime(
 ) 
     external 
     view 
-    returns (uint256)
+    returns (uint32)
 ```
 
 A convenience function that returns just the upgrade deadline from the latest release. This can be useful for quickly checking when operators must complete their upgrades.
 
 *Returns*:
 * The `upgradeByTime` timestamp from the latest release
-* Reverts if no releases have been published for the operator set
+* A value of 0 indicates an instant upgrade requirement
+* Reverts with `NoReleases()` if no releases have been published for the operator set
 
 #### `isValidRelease`
 
@@ -238,6 +250,17 @@ Checks whether a given release ID corresponds to the latest release for an opera
 *Returns*:
 * `true` if the `releaseId` matches the latest release index
 * `false` if the `releaseId` refers to an older release
-* Reverts if the operator set has no releases
+* Reverts with `NoReleases()` if the operator set has no releases
+
+---
+
+## Error Definitions
+
+The `ReleaseManager` defines the following custom errors:
+
+* `MustPublishMetadataURI()`: Thrown when attempting to publish a release for an operator set that hasn't published its metadata URI via `updateOperatorSetMetadataURI`.
+* `InvalidUpgradeByTime()`: Thrown when the `upgradeByTime` is in the past (not including 0, which is valid for instant upgrades).
+* `InvalidMetadataURI()`: Thrown when the metadata URI is empty.
+* `NoReleases()`: Thrown when querying release information for an operator set that has no published releases.
 
 ---

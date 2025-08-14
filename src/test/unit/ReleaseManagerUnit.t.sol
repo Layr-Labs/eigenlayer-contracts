@@ -41,6 +41,8 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
 
+        vm.warp(1 days);
+
         // Deploy ReleaseManager
         releaseManager = new ReleaseManager(permissionController, "1.0.0");
 
@@ -127,7 +129,15 @@ contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
         releaseManager.publishRelease(defaultOperatorSet, pastRelease);
     }
 
-    function test_revert_upgradeByTimeEqualToNow() public {
+    function test_UpgradeByTimeEqualToZero() public {
+        // Create release with upgradeByTime 0
+        Release memory instantUpgradeRelease = _createRelease(defaultArtifacts, 0);
+
+        uint releaseId = releaseManager.publishRelease(defaultOperatorSet, instantUpgradeRelease);
+        assertEq(releaseId, 0, "first release should have ID 0");
+    }
+
+    function test_UpgradeByTimeEqualToNow() public {
         // Create release with current timestamp (edge case)
         Release memory currentRelease = _createRelease(defaultArtifacts, uint32(block.timestamp));
 
@@ -161,6 +171,19 @@ contract ReleaseManagerUnitTests_publishRelease is ReleaseManagerUnitTests {
 
         // Verify total releases
         assertEq(releaseManager.getTotalReleases(defaultOperatorSet), 1, "should have 1 release");
+    }
+
+    function testFuzz_publishUpgradeByTime(uint upgradeByTime) public {
+        upgradeByTime = bound(upgradeByTime, 0, type(uint32).max);
+        Release memory release = _createReleaseWithArtifacts(2, uint32(upgradeByTime));
+
+        if (upgradeByTime > 0 && upgradeByTime < block.timestamp) {
+            vm.expectRevert(InvalidUpgradeByTime.selector);
+            _publishRelease(defaultOperatorSet, release);
+        } else {
+            uint releaseId = _publishRelease(defaultOperatorSet, release);
+            assertEq(releaseId, 0, "first release should have ID 0");
+        }
     }
 
     function testFuzz_publishMultipleReleases(uint numReleases) public {
@@ -330,8 +353,7 @@ contract ReleaseManagerUnitTests_getRelease is ReleaseManagerUnitTests {
 
 contract ReleaseManagerUnitTests_getLatestRelease is ReleaseManagerUnitTests {
     function test_revert_getLatestRelease_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.getLatestRelease(defaultOperatorSet);
     }
 
@@ -444,8 +466,7 @@ contract ReleaseManagerUnitTests_EdgeCases is ReleaseManagerUnitTests {
 
 contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTests {
     function test_revert_getLatestUpgradeByTime_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.getLatestUpgradeByTime(defaultOperatorSet);
     }
 
@@ -471,8 +492,7 @@ contract ReleaseManagerUnitTests_getLatestUpgradeByTime is ReleaseManagerUnitTes
 
 contract ReleaseManagerUnitTests_isValidRelease is ReleaseManagerUnitTests {
     function test_revert_isValidRelease_noReleases() public {
-        // Should revert with underflow
-        vm.expectRevert();
+        vm.expectRevert(NoReleases.selector);
         releaseManager.isValidRelease(defaultOperatorSet, 0);
     }
 

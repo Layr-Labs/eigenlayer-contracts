@@ -172,6 +172,12 @@ interface ITaskMailboxErrors is ITaskMailboxTypes {
 
     /// @notice Thrown when a certificate has an invalid message hash
     error InvalidMessageHash();
+
+    /// @notice Thrown when a certificate is stale
+    error CertificateStale();
+
+    /// @notice Thrown when task SLA exceeds the maximum allowed
+    error TaskSLAExceedsMaximum();
 }
 
 /**
@@ -301,7 +307,7 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
     /**
      * @notice Registers an executor operator set with the TaskMailbox
      * @param operatorSet The operator set to register
-     * @param isRegistered Whether the operator set is registered
+     * @param isRegistered Whether the operator set is going to be (de)registered
      * @dev This function can be called to toggle the registration once the task config has been set.
      */
     function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external;
@@ -444,4 +450,11 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @return The address of the ECDSA certificate verifier
      */
     function ECDSA_CERTIFICATE_VERIFIER() external view returns (address);
+
+    /**
+     * @notice Gets the maximum task SLA allowed
+     * @dev This will be set to `DEALLOCATION_DELAY / 2` so that AVSs can still slash operators in case of stake deallocation during inflight tasks.
+     * @return The maximum task SLA in seconds
+     */
+    function MAX_TASK_SLA() external view returns (uint96);
 }

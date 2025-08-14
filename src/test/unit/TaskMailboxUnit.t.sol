@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IBN254CertificateVerifier, IBN254CertificateVerifierTypes} from "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import {IECDSACertificateVerifier, IECDSACertificateVerifierTypes} from "src/contracts/interfaces/IECDSACertificateVerifier.sol";
+import {IOperatorTableCalculatorTypes} from "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import {OperatorSet, OperatorSetLib} from "src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "src/contracts/libraries/BN254.sol";
 import {IKeyRegistrarTypes} from "src/contracts/interfaces/IKeyRegistrar.sol";
@@ -26,6 +27,9 @@ import {AVSTaskHookReentrantAttacker} from "src/test/mocks/AVSTaskHookReentrantA
 
 contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, ITaskMailboxEvents {
     using OperatorSetLib for OperatorSet;
+
+    // Constants
+    uint96 public constant MAX_TASK_SLA = 7 days;
 
     // Contracts
     TaskMailbox public taskMailbox;
@@ -63,7 +67,8 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
 
         // Deploy TaskMailbox with proxy pattern
         proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.0");
+        TaskMailbox taskMailboxImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -169,7 +174,7 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
 
         // Deploy with proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, "1.0.0");
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -183,6 +188,26 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
         assertEq(newTaskMailbox.owner(), owner);
         assertEq(newTaskMailbox.feeSplit(), 0);
         assertEq(newTaskMailbox.feeSplitCollector(), feeSplitCollector);
+    }
+
+    function test_Constructor_SetsMaxTaskSLA() public {
+        // Test that MAX_TASK_SLA is properly set during construction
+        address bn254Verifier = address(0x1234);
+        address ecdsaVerifier = address(0x5678);
+        uint96 customMaxTaskSLA = 14 days;
+
+        // Deploy with custom MAX_TASK_SLA
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, customMaxTaskSLA, "1.0.0");
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
+            address(taskMailboxImpl),
+            address(proxyAdmin),
+            abi.encodeWithSelector(TaskMailbox.initialize.selector, owner, 0, feeSplitCollector)
+        );
+        TaskMailbox newTaskMailbox = TaskMailbox(address(proxy));
+
+        // Verify MAX_TASK_SLA is set correctly
+        assertEq(newTaskMailbox.MAX_TASK_SLA(), customMaxTaskSLA);
     }
 }
 
@@ -277,7 +302,8 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         // Bound inputs
         vm.assume(fuzzCertificateVerifier != address(0));
         vm.assume(fuzzTaskHook != address(0));
-        vm.assume(fuzzTaskSLA > 0);
+        // Bound taskSLA to be between 1 and MAX_TASK_SLA
+        fuzzTaskSLA = uint96(bound(fuzzTaskSLA, 1, MAX_TASK_SLA));
         // Bound stake proportion threshold to valid range (0-10000 basis points)
         fuzzStakeProportionThreshold = uint16(bound(fuzzStakeProportionThreshold, 0, 10_000));
 
@@ -489,6 +515,64 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
         vm.prank(avs);
         vm.expectRevert(InvalidConsensusValue.selector);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+    }
+
+    function test_Revert_WhenTaskSLAExceedsMaximum() public {
+        // Test that setExecutorOperatorSetTaskConfig reverts when taskSLA > MAX_TASK_SLA
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        // Set taskSLA to exceed MAX_TASK_SLA
+        config.taskSLA = MAX_TASK_SLA + 1;
+
+        vm.prank(avs);
+        vm.expectRevert(TaskSLAExceedsMaximum.selector);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+    }
+
+    function test_setExecutorOperatorSetTaskConfig_WithMaxTaskSLA() public {
+        // Test that setExecutorOperatorSetTaskConfig succeeds when taskSLA equals MAX_TASK_SLA
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        // Set taskSLA to exactly MAX_TASK_SLA
+        config.taskSLA = MAX_TASK_SLA;
+
+        // Should emit events and succeed
+        vm.expectEmit(true, true, true, true);
+        emit ExecutorOperatorSetTaskConfigSet(avs, avs, executorOperatorSetId, config);
+        vm.expectEmit(true, true, true, true);
+        emit ExecutorOperatorSetRegistered(avs, avs, executorOperatorSetId, true);
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Verify the config was set correctly
+        ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+        assertEq(retrievedConfig.taskSLA, MAX_TASK_SLA);
+    }
+
+    function testFuzz_setExecutorOperatorSetTaskConfig_RespectsMaxTaskSLA(uint96 fuzzTaskSLA) public {
+        // Fuzz test to ensure all valid taskSLA values work and invalid ones revert
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+
+        if (fuzzTaskSLA > MAX_TASK_SLA || fuzzTaskSLA == 0) {
+            // Should revert for invalid values
+            config.taskSLA = fuzzTaskSLA;
+            vm.prank(avs);
+            if (fuzzTaskSLA == 0) vm.expectRevert(ExecutorOperatorSetTaskConfigNotSet.selector);
+            else vm.expectRevert(TaskSLAExceedsMaximum.selector);
+            taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+        } else {
+            // Should succeed for valid values
+            config.taskSLA = fuzzTaskSLA;
+            vm.prank(avs);
+            taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+            ExecutorOperatorSetTaskConfig memory retrievedConfig = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
+            assertEq(retrievedConfig.taskSLA, fuzzTaskSLA);
+        }
     }
 }
 
@@ -875,6 +959,154 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         // Verify that the global feeSplitCollector is used (not captured in task)
         assertEq(taskMailbox.feeSplitCollector(), newFeeSplitCollector);
     }
+
+    function test_createTask_CertificateStaleness_NoStalenessCheck() public {
+        // Test when maxOperatorTableStaleness is 0 (no staleness check)
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(100); // Set reference timestamp to 100
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(0); // No staleness check when 0
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 3600; // 1 hour SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time far in the future, making the reference timestamp stale
+        vm.warp(100_000); // Reference timestamp (100) + taskSLA (3600) = 3700, current time = 100000
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because maxOperatorTableStaleness is 0 (no check)
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
+    }
+
+    function test_createTask_CertificateStaleness_WithinStalenessWindow() public {
+        // Test when certificate is within the staleness window
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that certificate is within staleness window:
+        // referenceTimestamp (1000) + maxStaleness (3600) = 4600
+        // current time + taskSLA (1800) = 3000 + 1800 = 4800
+        // Since 4800 <= 4600 is false, this should be within limits
+        // Let's adjust: current time + taskSLA should be <= referenceTimestamp + maxStaleness
+        // So: current time + 1800 <= 1000 + 3600 = 4600
+        // current time <= 2800
+        vm.warp(2500); // Well within limits (2500 + 1800 = 4300 <= 4600)
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because certificate is within staleness window
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
+    }
+
+    function test_Revert_createTask_CertificateStale() public {
+        // Test when certificate is stale (outside the staleness window)
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that certificate is outside staleness window:
+        // We need: current time + taskSLA > referenceTimestamp + maxStaleness
+        // current time + 1800 > 1000 + 3600 = 4600
+        // current time > 2800
+        vm.warp(3000); // 3000 + 1800 = 4800 > 4600, so certificate is stale
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should revert with CertificateStale error
+        vm.prank(creator);
+        vm.expectRevert(CertificateStale.selector);
+        taskMailbox.createTask(taskParams);
+    }
+
+    function test_createTask_CertificateStaleness_EdgeCase_ExactBoundary() public {
+        // Test edge case where current time + taskSLA equals referenceTimestamp + maxStaleness
+
+        // Configure the existing mock BN254 certificate verifier
+        mockBN254CertificateVerifier.setLatestReferenceTimestamp(1000); // Reference timestamp
+        mockBN254CertificateVerifier.setMaxOperatorTableStaleness(3600); // 1 hour staleness window
+
+        // Set up executor operator set task config
+        OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
+        ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
+        config.taskSLA = 1800; // 30 minutes SLA
+
+        vm.prank(avs);
+        taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
+
+        // Set time such that current time + taskSLA exactly equals referenceTimestamp + maxStaleness
+        // referenceTimestamp (1000) + maxStaleness (3600) = 4600
+        // current time + taskSLA (1800) = 4600
+        // current time = 2800
+        vm.warp(2800); // 2800 + 1800 = 4600, exactly at the boundary
+
+        TaskParams memory taskParams = _createValidTaskParams();
+
+        // Give creator tokens and approve
+        mockToken.mint(creator, 1000 ether);
+        vm.prank(creator);
+        mockToken.approve(address(taskMailbox), type(uint).max);
+
+        // Should succeed because the condition is <= (current time + taskSLA <= referenceTimestamp + maxStaleness)
+        vm.prank(creator);
+        bytes32 taskHash = taskMailbox.createTask(taskParams);
+
+        // Verify task was created successfully
+        Task memory task = taskMailbox.getTaskInfo(taskHash);
+        assertEq(task.creator, creator);
+        assertEq(uint8(task.status), uint8(TaskStatus.CREATED));
+    }
 }
 
 // Test contract for submitResult
@@ -1016,7 +1248,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Deploy a new TaskMailbox with the failing verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), "1.0.0");
+        TaskMailbox taskMailboxImpl =
+            new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -1063,7 +1296,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Deploy a new TaskMailbox with the failing ECDSA verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         TaskMailbox taskMailboxImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), "1.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), MAX_TASK_SLA, "1.0.0");
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -1345,7 +1578,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         taskMailbox.submitResult(taskHash, abi.encode(cert), result);
     }
 
-    function test_Revert_WhenBN254CertificateHasEmptySignature_OnlyXZero() public {
+    function test_ValidSignature_WhenBN254CertificateHasOnlyXZero() public {
         // Get task creation time
         Task memory task = taskMailbox.getTaskInfo(taskHash);
         uint96 taskCreationTime = task.creationTime;
@@ -1353,23 +1586,26 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Advance time by 1 second to pass TimestampAtCreation check
         vm.warp(block.timestamp + 1);
 
-        // Create BN254 certificate with empty X coordinate
+        // Create BN254 certificate with only X coordinate as zero (valid signature)
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
             referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
-            signature: BN254.G1Point(0, 2), // Only X is zero
+            signature: BN254.G1Point(0, 2), // Only X is zero - this is valid
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
             nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
         });
 
-        // Submit result should fail with EmptyCertificateSignature error
+        // Submit result should succeed since only one coordinate is zero
+        // MockBN254CertificateVerifier returns true by default
         vm.prank(aggregator);
-        vm.expectRevert(EmptyCertificateSignature.selector);
         taskMailbox.submitResult(taskHash, abi.encode(cert), result);
+
+        // Verify task is now verified
+        assertEq(uint8(taskMailbox.getTaskStatus(taskHash)), uint8(TaskStatus.VERIFIED));
     }
 
-    function test_Revert_WhenBN254CertificateHasEmptySignature_OnlyYZero() public {
+    function test_ValidSignature_WhenBN254CertificateHasOnlyYZero() public {
         // Get task creation time
         Task memory task = taskMailbox.getTaskInfo(taskHash);
         uint96 taskCreationTime = task.creationTime;
@@ -1377,20 +1613,23 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Advance time by 1 second to pass TimestampAtCreation check
         vm.warp(block.timestamp + 1);
 
-        // Create BN254 certificate with empty Y coordinate
+        // Create BN254 certificate with only Y coordinate as zero (valid signature)
         bytes memory result = bytes("result");
         IBN254CertificateVerifierTypes.BN254Certificate memory cert = IBN254CertificateVerifierTypes.BN254Certificate({
             referenceTimestamp: _getTaskReferenceTimestamp(taskHash),
             messageHash: keccak256(result),
-            signature: BN254.G1Point(1, 0), // Only Y is zero
+            signature: BN254.G1Point(1, 0), // Only Y is zero - this is valid
             apk: BN254.G2Point([uint(1), uint(2)], [uint(3), uint(4)]),
             nonSignerWitnesses: new IBN254CertificateVerifierTypes.BN254OperatorInfoWitness[](0)
         });
 
-        // Submit result should fail with EmptyCertificateSignature error
+        // Submit result should succeed since only one coordinate is zero
+        // MockBN254CertificateVerifier returns true by default
         vm.prank(aggregator);
-        vm.expectRevert(EmptyCertificateSignature.selector);
         taskMailbox.submitResult(taskHash, abi.encode(cert), result);
+
+        // Verify task is now verified
+        assertEq(uint8(taskMailbox.getTaskStatus(taskHash)), uint8(TaskStatus.VERIFIED));
     }
 
     function test_Revert_WhenECDSACertificateHasEmptySignature() public {
@@ -2680,6 +2919,9 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         // Test fee split getters
         assertEq(taskMailbox.feeSplit(), 0); // Default value from initialization
         assertEq(taskMailbox.feeSplitCollector(), feeSplitCollector); // Default value from initialization
+
+        // Test MAX_TASK_SLA getter
+        assertEq(taskMailbox.MAX_TASK_SLA(), MAX_TASK_SLA); // Should return the configured maximum task SLA
     }
 
     function test_getExecutorOperatorSetTaskConfig() public {
@@ -2938,7 +3180,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
     function test_Implementation_CannotBeInitialized() public {
         // Deploy a new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.1");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.1");
 
         // Try to initialize the implementation directly, should revert
         vm.expectRevert("Initializable: contract is already initialized");
@@ -2949,7 +3192,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         address newOwner = address(0x1234);
 
         // Deploy new implementation with different version
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Check version before upgrade
         assertEq(taskMailbox.version(), "1.0.0");
@@ -2968,7 +3212,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         address attacker = address(0x9999);
 
         // Deploy new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Try to upgrade from non-owner, should revert
         vm.prank(attacker);
@@ -3002,7 +3247,8 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
         assertEq(address(retrievedConfig.taskHook), address(config.taskHook));
 
         // Deploy new implementation
-        TaskMailbox newImpl = new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "2.0.0");
+        TaskMailbox newImpl =
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
 
         // Upgrade
         vm.prank(address(this)); // proxyAdmin owner
@@ -3023,7 +3269,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
     function test_InitializerModifier_PreventsReinitialization() public {
         // Deploy a new proxy without initialization data
         TransparentUpgradeableProxy uninitializedProxy = new TransparentUpgradeableProxy(
-            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), "1.0.0")),
+            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0")),
             address(new ProxyAdmin()),
             ""
         );

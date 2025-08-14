@@ -80,6 +80,10 @@ library Env {
         return _string("ZEUS_ENV");
     }
 
+    function envVersion() internal view returns (string memory) {
+        return _string("ZEUS_ENV_VERSION");
+    }
+
     function deployVersion() internal view returns (string memory) {
         return _string("ZEUS_DEPLOY_TO_VERSION");
     }
@@ -182,6 +186,11 @@ library Env {
 
     function TABLE_UPDATE_CADENCE() internal view returns (uint32) {
         return _envU32("TABLE_UPDATE_CADENCE");
+    }
+
+    function MAX_TASK_SLA() internal view returns (uint96) {
+        // MAX_TASK_SLA is stored as uint256 in zeus env, cast to uint96
+        return uint96(_envU256("MAX_TASK_SLA"));
     }
 
     function isSourceChain() internal view returns (bool) {

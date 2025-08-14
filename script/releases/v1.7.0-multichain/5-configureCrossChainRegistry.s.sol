@@ -13,8 +13,8 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
     using Env for *;
 
     function _runAsMultisig() internal override prank(Env.opsMultisig()) {
-        // If we're not on a source chain, we don't need to run this
-        if (!Env.isSourceChain()) {
+        // If we're not on a source chain or we're on a version that already has these contracts deployed, we don't need to run this
+        if (!Env.isSourceChain() || _isAlreadyDeployed()) {
             return;
         }
 
@@ -30,7 +30,7 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
     }
 
     function testScript() public virtual override(DeploySourceChain, DeployDestinationChainProxies) {
-        if (!Env.isSourceChain()) {
+        if (!Env.isSourceChain() || _isAlreadyDeployed()) {
             return;
         }
 
