@@ -199,8 +199,7 @@ contract BN254CertificateVerifierUnitTests is
         uint32 referenceTimestamp,
         bytes32 messageHash,
         uint32[] memory nonSignerIndices,
-        BN254OperatorInfo[] memory ops,
-        BN254.G1Point memory signature
+        BN254OperatorInfo[] memory ops
     ) internal view returns (BN254Certificate memory) {
         // Create witnesses for non-signers
         BN254OperatorInfoWitness[] memory witnesses = new BN254OperatorInfoWitness[](nonSignerIndices.length);
@@ -213,10 +212,14 @@ contract BN254CertificateVerifierUnitTests is
                 BN254OperatorInfoWitness({operatorIndex: nonSignerIndex, operatorInfoProof: proof, operatorInfo: ops[nonSignerIndex]});
         }
 
+        // Compute EIP-712 digest and corresponding aggregate signature for tests
+        bytes32 digest = verifier.calculateCertificateDigest(referenceTimestamp, messageHash);
+        BN254.G1Point memory aggregateSignature = BN254.hashToG1(digest).scalar_mul(aggSignerPrivKey);
+
         return BN254Certificate({
             referenceTimestamp: referenceTimestamp,
             messageHash: messageHash,
-            signature: signature,
+            signature: aggregateSignature,
             apk: aggSignerApkG2,
             nonSignerWitnesses: witnesses
         });
@@ -408,7 +411,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operatorSetInfo, zeroStalenessConfig);
 
         // Create certificate
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Jump forward in time far beyond any reasonable staleness period
         vm.warp(block.timestamp + 365 days);
@@ -531,14 +534,16 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
 
         // Create certificate with wrong message hash
         bytes32 wrongHash = keccak256("wrong message");
-
         BN254Certificate memory cert = _createCertificate(
             uint32(block.timestamp),
             wrongHash, // Wrong hash
             nonSignerIndices,
-            operatorInfos,
-            signature // Signature is for original defaultMsgHash
+            operatorInfos
         );
+
+        // Overwrite signature to be for the correct digest of defaultMsgHash so it mismatches wrongHash
+        bytes32 correctDigest = verifier.calculateCertificateDigest(uint32(block.timestamp), defaultMsgHash);
+        cert.signature = BN254.scalar_mul(BN254.hashToG1(correctDigest), aggSignerPrivKey);
 
         vm.expectRevert(VerificationFailed.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -549,13 +554,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
             _updateOperatorTable(r, numOperators, 0);
 
         // Create certificate with no non-signers
-        BN254Certificate memory cert = BN254Certificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            signature: signature,
-            apk: aggSignerApkG2,
-            nonSignerWitnesses: new BN254OperatorInfoWitness[](0)
-        });
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, new uint32[](0), new BN254OperatorInfo[](0));
 
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
 
@@ -576,7 +575,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
             BN254.G1Point memory signature
         ) = _updateOperatorTable(r, numSigners, nonSigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
 
@@ -606,7 +605,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, nonSigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // First verification should cache the operator infos
         verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -657,8 +656,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         assertEq(verifier.latestReferenceTimestamp(defaultOperatorSet), secondTimestamp, "Second timestamp should be latest");
 
         // Create certificate for the FIRST (older) timestamp
-        BN254Certificate memory cert =
-            _createCertificate(firstTimestamp, defaultMsgHash, firstNonSignerIndices, firstOperators, firstSignature);
+        BN254Certificate memory cert = _createCertificate(firstTimestamp, defaultMsgHash, firstNonSignerIndices, firstOperators);
 
         // Verify certificate for older timestamp should succeed
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -693,7 +691,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         uint16[] memory wrongLengthThresholds = new uint16[](1); // Should be 2
         wrongLengthThresholds[0] = 6000;
@@ -709,7 +707,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Set thresholds at 60% of total stake for each type
         uint16[] memory thresholds = new uint16[](2);
@@ -738,7 +736,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
             BN254.G1Point memory signature
         ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Try with higher threshold that shouldn't be met
         uint16[] memory thresholds = new uint16[](2);
@@ -769,7 +767,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
             BN254.G1Point memory signature
         ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         threshold0 = uint16(bound(threshold0, 0, 10_000)); // 0% to 100%
         threshold1 = uint16(bound(threshold1, 0, 10_000)); // 0% to 100%
@@ -807,7 +805,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         uint[] memory wrongLengthThresholds = new uint[](1); // Should be 2
         wrongLengthThresholds[0] = 100;
@@ -823,7 +821,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Get the signed stakes for reference
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -844,7 +842,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Get the signed stakes for reference
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -866,7 +864,7 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
         = _updateOperatorTable(r, numSigners, numNonsigners);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Get the signed stakes for reference
         uint[] memory signedStakes = verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -941,7 +939,7 @@ contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVeri
         (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
             _createOperatorsWithSplitKeys(123, 3, 1);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Verify certificate to cache operator info
         verifier.verifyCertificate(defaultOperatorSet, cert);
@@ -961,7 +959,7 @@ contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVeri
         (BN254OperatorInfo[] memory operators, uint32[] memory nonSignerIndices, BN254.G1Point memory signature) =
             _createOperatorsWithSplitKeys(123, 3, 1);
 
-        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators, signature);
+        BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
         // Non-signer index should be not cached prior to verification
         assertFalse(

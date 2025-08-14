@@ -266,8 +266,11 @@ contract BN254CertificateVerifier is
         // Calculate signer aggregate public key by subtracting non-signers from total
         BN254.G1Point memory signerApk = ctx.operatorSetInfo.aggregatePubkey.plus(ctx.nonSignerApk.negate());
 
+        // Compute EIP-712 digest that binds referenceTimestamp and messageHash
+        bytes32 signableDigest = calculateCertificateDigest(cert.referenceTimestamp, cert.messageHash);
+
         (bool pairingSuccessful, bool signatureValid) =
-            trySignatureVerification(cert.messageHash, signerApk, cert.apk, cert.signature);
+            trySignatureVerification(signableDigest, signerApk, cert.apk, cert.signature);
 
         require(pairingSuccessful && signatureValid, VerificationFailed());
     }
@@ -396,5 +399,10 @@ contract BN254CertificateVerifier is
     ) external view returns (BN254OperatorSetInfo memory) {
         bytes32 operatorSetKey = operatorSet.key();
         return _operatorSetInfos[operatorSetKey][referenceTimestamp];
+    }
+
+    /// @inheritdoc IBN254CertificateVerifier
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public pure returns (bytes32) {
+        return keccak256(abi.encode(BN254_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
     }
 }

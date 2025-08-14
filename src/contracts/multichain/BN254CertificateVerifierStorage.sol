@@ -8,6 +8,10 @@ import "../interfaces/IBaseCertificateVerifier.sol";
 abstract contract BN254CertificateVerifierStorage is IBN254CertificateVerifier {
     // Constants
 
+    /// @dev EIP-712 type hash for certificate verification
+    bytes32 internal constant BN254_CERTIFICATE_TYPEHASH =
+        keccak256("BN254Certificate(uint32 referenceTimestamp,bytes32 messageHash)");
+
     /// @dev Gas limit for pairing operations to prevent DoS attacks
     uint256 internal constant PAIRING_EQUALITY_CHECK_GAS = 400_000;
 

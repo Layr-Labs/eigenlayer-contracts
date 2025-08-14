@@ -135,4 +135,8 @@ contract MockBN254CertificateVerifier is IBN254CertificateVerifier {
     function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint) {
         return 0;
     }
+
+    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) external pure returns (bytes32) {
+        return keccak256(abi.encode(referenceTimestamp, messageHash));
+    }
 }

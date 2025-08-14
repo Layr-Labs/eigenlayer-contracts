@@ -268,4 +268,15 @@ interface IBN254CertificateVerifier is
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (BN254OperatorSetInfo memory);
+
+    /**
+     * @notice Calculate the digest for a certificate
+     * @param referenceTimestamp The reference timestamp
+     * @param messageHash The message hash
+     * @return The digest
+     */
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) external pure returns (bytes32);
 }
