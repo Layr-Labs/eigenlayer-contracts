@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SignatureUtilsMixin.sol";
@@ -15,13 +14,7 @@ import "./ComputeRegistryStorage.sol";
  * @notice This contract handles permissionless (de)registration of AVS operator sets to the EigenCompute Operator.
  * It enables AVSs to easily access managed operator infrastructure as part of EigenCloud for quick bootstrapping.
  */
-contract ComputeRegistry is
-    Initializable,
-    OwnableUpgradeable,
-    ComputeRegistryStorage,
-    PermissionControllerMixin,
-    SignatureUtilsMixin
-{
+contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionControllerMixin, SignatureUtilsMixin {
     using OperatorSetLib for OperatorSet;
 
     /**
@@ -52,30 +45,21 @@ contract ComputeRegistry is
      * @param _releaseManager The ReleaseManager contract address
      * @param _allocationManager The AllocationManager contract address
      * @param _permissionController The PermissionController contract address
+     * @param _tosHash The immutable hash of the Terms of Service
      * @param _version The semantic version of the contract
      */
     constructor(
         IReleaseManager _releaseManager,
         IAllocationManager _allocationManager,
         IPermissionController _permissionController,
+        bytes32 _tosHash,
         string memory _version
     )
-        ComputeRegistryStorage(_releaseManager, _allocationManager)
+        ComputeRegistryStorage(_releaseManager, _allocationManager, _tosHash)
         PermissionControllerMixin(_permissionController)
         SignatureUtilsMixin(_version)
     {
         _disableInitializers();
-    }
-
-    /**
-     * @notice Initializes the contract
-     * @param _owner The owner of the contract
-     * @param _tosHash The hash of the Terms of Service that AVS operators must sign
-     */
-    function initialize(address _owner, bytes32 _tosHash) external initializer {
-        __Ownable_init();
-        transferOwnership(_owner);
-        _setTosHash(_tosHash);
     }
 
     /**
@@ -110,9 +94,9 @@ contract ComputeRegistry is
         // Register the operator set
         isOperatorSetRegistered[operatorSetKey] = true;
         _operatorSetTosSignature[operatorSetKey] =
-            TOSSignature({signer: msg.sender, tosHash: tosHash, signature: signature});
+            TOSSignature({signer: msg.sender, tosHash: TOS_HASH, signature: signature});
 
-        emit OperatorSetRegistered(operatorSet, msg.sender, tosHash, signature);
+        emit OperatorSetRegistered(operatorSet, msg.sender, TOS_HASH, signature);
     }
 
     /**
@@ -131,37 +115,8 @@ contract ComputeRegistry is
     }
 
     /**
-     * @notice Updates the Terms of Service hash
-     * @param _tosHash The new Terms of Service hash
-     * @dev Only callable by the contract owner
-     */
-    function setTosHash(
-        bytes32 _tosHash
-    ) external onlyOwner {
-        _setTosHash(_tosHash);
-    }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
-
-    /**
-     * @dev Internal function to set the Terms of Service hash
-     * @param _tosHash The new Terms of Service hash
-     */
-    function _setTosHash(
-        bytes32 _tosHash
-    ) internal {
-        tosHash = _tosHash;
-        emit TosHashSet(_tosHash);
-    }
-
-    /**
      *
      *                         VIEW FUNCTIONS
-     *
      */
 
     /**
@@ -188,7 +143,7 @@ contract ComputeRegistry is
             keccak256(
                 abi.encode(
                     TOS_AGREEMENT_TYPEHASH,
-                    tosHash,
+                    TOS_HASH,
                     operatorSet.avs,
                     operatorSet.id,
                     signer,

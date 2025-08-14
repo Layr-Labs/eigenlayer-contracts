@@ -22,10 +22,10 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
     /// @notice The AllocationManager contract
     IAllocationManager public immutable ALLOCATION_MANAGER;
 
-    // Storage
-
     /// @notice The hash of the Terms of Service that AVS operators must sign
-    bytes32 public tosHash;
+    bytes32 public immutable TOS_HASH;
+
+    // Storage
 
     /// @notice Mapping to track if an operator set is registered for compute
     /// @dev operatorSetKey => isRegistered
@@ -40,10 +40,11 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[47] private __gap;
+    uint256[48] private __gap;
 
-    constructor(IReleaseManager _releaseManager, IAllocationManager _allocationManager) {
+    constructor(IReleaseManager _releaseManager, IAllocationManager _allocationManager, bytes32 _tosHash) {
         RELEASE_MANAGER = _releaseManager;
         ALLOCATION_MANAGER = _allocationManager;
+        TOS_HASH = _tosHash;
     }
 }
