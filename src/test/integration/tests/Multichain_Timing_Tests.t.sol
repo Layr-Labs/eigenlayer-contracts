@@ -199,7 +199,11 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         );
 
         IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate = _generateGlobalRootConfirmationCertificate(
-            operatorTableUpdater.getGenerator(), operatorTableUpdater.getGeneratorReferenceTimestamp(), messageHash
+            operatorTableUpdater.getGenerator(),
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            globalTableRoot,
+            firstReferenceTimestamp,
+            uint32(block.number)
         );
 
         // This should revert with GlobalTableRootStale error
@@ -246,7 +250,11 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, nextReferenceTimestamp, uint32(block.number));
 
         IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate = _generateGlobalRootConfirmationCertificate(
-            operatorTableUpdater.getGenerator(), operatorTableUpdater.getGeneratorReferenceTimestamp(), messageHash
+            operatorTableUpdater.getGenerator(),
+            operatorTableUpdater.getGeneratorReferenceTimestamp(),
+            globalTableRoot,
+            nextReferenceTimestamp,
+            uint32(block.number)
         );
 
         // This should succeed
