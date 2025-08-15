@@ -75,6 +75,10 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         OperatorSet memory operatorSet,
         bytes memory signature
     ) external checkCanCall(operatorSet.avs) isValidOperatorSet(operatorSet) {
+        // Check if already registered
+        bytes32 operatorSetKey = operatorSet.key();
+        require(!isOperatorSetRegistered[operatorSetKey], OperatorSetAlreadyRegistered());
+
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set
         RELEASE_MANAGER.getLatestRelease(operatorSet);
@@ -86,10 +90,6 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
             signature: signature,
             expiry: MAX_EXPIRY
         });
-
-        // Check if already registered
-        bytes32 operatorSetKey = operatorSet.key();
-        require(!isOperatorSetRegistered[operatorSetKey], OperatorSetAlreadyRegistered());
 
         // Register the operator set
         isOperatorSetRegistered[operatorSetKey] = true;
