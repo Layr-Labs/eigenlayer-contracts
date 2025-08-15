@@ -12,7 +12,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 /**
  * Purpose:
  *      * enqueue a multisig transaction which;
- *             - upgrades KeyRegistrar, CrossChainRegistry, ReleaseManager
+ *             - upgrades KeyRegistrar, CrossChainRegistry
  *  This should be run via the protocol council multisig.
  */
 contract QueueSourceChain is MultisigBuilder, DeploySourceChain {
@@ -51,12 +51,6 @@ contract QueueSourceChain is MultisigBuilder, DeploySourceChain {
             data: Encode.proxyAdmin.upgrade({
                 proxy: address(Env.proxy.crossChainRegistry()),
                 impl: address(Env.impl.crossChainRegistry())
-            })
-        }).append({
-            to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.releaseManager()),
-                impl: address(Env.impl.releaseManager())
             })
         });
 

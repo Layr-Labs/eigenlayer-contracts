@@ -49,14 +49,6 @@ contract DeploySourceChain is EOADeployer {
             )
         });
 
-        // Deploy ReleaseManager implementation
-        deployImpl({
-            name: type(ReleaseManager).name,
-            deployedTo: address(
-                new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
-            )
-        });
-
         vm.stopBroadcast();
     }
 
@@ -96,12 +88,6 @@ contract DeploySourceChain is EOADeployer {
             Env._getProxyImpl(address(Env.proxy.crossChainRegistry())) == address(Env.impl.crossChainRegistry()),
             "crossChainRegistry impl failed"
         );
-
-        // ReleaseManager
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.releaseManager())) == address(Env.impl.releaseManager()),
-            "releaseManager impl failed"
-        );
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
@@ -112,7 +98,6 @@ contract DeploySourceChain is EOADeployer {
         assertTrue(
             Env._getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
         );
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.releaseManager())) == pa, "releaseManager proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -152,16 +137,6 @@ contract DeploySourceChain is EOADeployer {
             );
             assertEq(crossChainRegistry.version(), Env.deployVersion(), "ccr.version failed");
         }
-
-        {
-            /// ReleaseManager
-            ReleaseManager releaseManager = Env.impl.releaseManager();
-            assertTrue(
-                releaseManager.permissionController() == Env.proxy.permissionController(),
-                "rm.permissionController invalid"
-            );
-            assertEq(releaseManager.version(), Env.deployVersion(), "rm.version failed");
-        }
     }
 
     /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
@@ -173,7 +148,7 @@ contract DeploySourceChain is EOADeployer {
         vm.expectRevert(errInit);
         crossChainRegistry.initialize(address(0), 1 days, 0);
 
-        // KeyRegistrar and ReleaseManager don't have initialize functions
+        // KeyRegistrar doesn't have initialize functions
     }
 
     function _validateVersion() internal view {
@@ -182,7 +157,6 @@ contract DeploySourceChain is EOADeployer {
 
         assertEq(Env.impl.keyRegistrar().version(), expected, "keyRegistrar version mismatch");
         assertEq(Env.impl.crossChainRegistry().version(), expected, "crossChainRegistry version mismatch");
-        assertEq(Env.impl.releaseManager().version(), expected, "releaseManager version mismatch");
     }
 
     function _assertTrue(bool b, string memory err) internal pure {

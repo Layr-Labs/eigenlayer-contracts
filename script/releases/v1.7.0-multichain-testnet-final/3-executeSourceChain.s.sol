@@ -99,13 +99,6 @@ contract ExecuteSourceChain is QueueSourceChain {
             crossChainRegistry.pauserRegistry() == Env.impl.pauserRegistry(),
             "crossChainRegistry pauserRegistry mismatch"
         );
-
-        ReleaseManager releaseManager = Env.proxy.releaseManager();
-        assertEq(releaseManager.version(), Env.deployVersion(), "releaseManager version mismatch");
-        assertTrue(
-            releaseManager.permissionController() == Env.proxy.permissionController(),
-            "releaseManager permissionController mismatch"
-        );
     }
 
     function _validateProxiesInitialized() internal {
@@ -116,6 +109,6 @@ contract ExecuteSourceChain is QueueSourceChain {
         vm.expectRevert(errInit);
         crossChainRegistry.initialize(address(0), 1 days, 0);
 
-        // ReleaseManager and KeyRegistrar don't have initialize functions
+        // KeyRegistrar doesn't have initialize functions
     }
 }
