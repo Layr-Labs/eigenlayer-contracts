@@ -28,6 +28,8 @@ Certificates can be created at any time, but must contain a `referenceTimestamp`
 
 **Note: Setting a max staleness period to 0 enables certificates to be confirmed against any `referenceTimestamp`. In addition, setting a `maxStalenessPeriod` that is greater than 0 and less than the frequency of table updates (daily on testnet, weekly on mainnet) is impossible due bounds enfroced by the [`CrossChainRegistry`](../source/CrossChainRegistry.md#parameterization).** See the [staleness period](#staleness-period) in the appendix for some examples. 
 
+Both the `BN254CertificateVerifier` and `ECDSACertificateVerifier` contain a `msgHash` parameter. This value is the the hash of a task that was completed by operators. **NOTE: The msgHash is NOT signed by operators as part of completion of a task**. The value signed by operators is the signable digest, which is the hash of the `msgHash` and `referenceTimestamp`. This signable digest is given by `certificateVerifier.calculateCertificateDigest`. 
+
 ---
 
 ## ECDSACertificateVerifier
@@ -117,12 +119,15 @@ For the `msgHash`, it is up to the off-chain AVS software to add relevant metada
 
 ```solidity
 /**
- * @notice A Certificate used to verify a set of ECDSA signatures
- * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
- * @param messageHash the hash of the message that was signed by the operators. 
- * The messageHash should be calculated using `calculateCertificateDigest`
- * @param sig the concatenated signature of each signing operator, in ascending order of signer address
+ * @notice A Certificate used to verify a set of ECDSA signatures for an off-chain task
+ * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet
+ * @param messageHash the hash of a task that was completed by operators. The messageHash is defined by the AVS, see `TaskMailbox.sol` for an example implementation.
+ *                    NOTE: This value is NOT the message that is signed by operators - see `calculateCertificateDigest` for the signable digest.
+ * @param sig the concatenated signature of each signing operator, in ascending order of signer address. The signature should be over the signable digest,
+ *            which is calculated by `calculateCertificateDigest`
+ * @dev The signers can be sorted via OZ sort library
  * @dev ECDSA certificates DO NOT support smart contract signatures
+ * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
  */
 struct ECDSACertificate {
     uint32 referenceTimestamp;
@@ -415,14 +420,14 @@ The contract supports 3 verification patterns:
 
 ```solidity
 /**
- * @notice A struct that contains information about a single operator for a given BN254 operatorSet
- * @param pubkey The G1 public key of the operator
- * @param weights The weights of the operator for a single operatorSet
- *
- * @dev The `weights` array is as a list of arbitrary stake types. For example,
- * it can be [slashable_stake, delegated_stake, strategy_i_stake, ...]
- *
- * @dev It is up to the AVS to define the `weights` array, which is used by the `IBN254CertificateVerifier` to verify Certificates
+ * @notice A BN254 Certificate
+ * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
+ * @param messageHash the hash of a task that was completed by operators. The messageHash is defined by the AVS, see `TaskMailbox.sol` for an example implementation.
+ *                    NOTE: This value is NOT the message that is signed by operators - see `calculateCertificateDigest` for the signable digest.
+ * @param signature the G1 signature of the message. The signature is over the signable digest, which is calculated by `calculateCertificateDigest`
+ * @param apk the G2 aggregate public key
+ * @param nonSignerWitnesses an array of witnesses of non-signing operators
+ * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
  */
 struct BN254Certificate {
     uint32 referenceTimestamp;

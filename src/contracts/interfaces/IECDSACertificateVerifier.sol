@@ -31,10 +31,11 @@ interface IECDSACertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A Certificate used to verify a set of ECDSA signatures for an off-chain task
      * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet
-     * @param messageHash the hash of the message that was signed by the operators. The messageHash
-     *        MUST be calculated using `calculateCertificateDigest`
-     * @param sig the concatenated signature of each signing operator, in ascending order of signer address
-     * @dev The signers can be sorted via OZ
+     * @param messageHash the hash of a task that was completed by operators. The messageHash is defined by the AVS, see `TaskMailbox.sol` for an example implementation.
+     *                    NOTE: This value is NOT the message that is signed by operators - see `calculateCertificateDigest` for the signable digest.
+     * @param sig the concatenated signature of each signing operator, in ascending order of signer address. The signature should be over the signable digest,
+     *            which is calculated by `calculateCertificateDigest`
+     * @dev The signers can be sorted via OZ sort library
      * @dev ECDSA certificates DO NOT support smart contract signatures
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
      */
