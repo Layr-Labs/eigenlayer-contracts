@@ -26,8 +26,9 @@ interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
     /**
      * @notice A BN254 Certificate
      * @param referenceTimestamp a reference timestamp that corresponds to a timestamp at which an operator table was updated for the operatorSet.
-     * @param messageHash the hash of the message that was signed by operators and used to verify the aggregated signature
-     * @param signature the G1 signature of the message
+     * @param messageHash the hash of a task that was completed by operators. The messageHash is defined by the AVS, see `TaskMailbox.sol` for an example implementation.
+     *                    NOTE: This value is NOT the message that is signed by operators - see `calculateCertificateDigest` for the signable digest.
+     * @param signature the G1 signature of the message. The signature is over the signable digest, which is calculated by `calculateCertificateDigest`
      * @param apk the G2 aggregate public key
      * @param nonSignerWitnesses an array of witnesses of non-signing operators
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
@@ -268,4 +269,17 @@ interface IBN254CertificateVerifier is
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (BN254OperatorSetInfo memory);
+
+    /**
+     * @notice Calculate the digest for a certificate, which must be signed over by operators who complete a task
+     * @param referenceTimestamp The reference timestamp
+     * @param messageHash The message hash of the task
+     * @return The digest
+     * @dev This is a chain-agnostic digest, so it can be used to verify certificates across
+     *      multiple destination chains
+     */
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) external pure returns (bytes32);
 }

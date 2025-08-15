@@ -434,9 +434,12 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             aggregatePubkey.Y[0] = 4_185_483_097_059_047_421_902_184_823_581_361_466_320_657_066_600_218_863_748_375_739_772_335_928_910;
         }
 
-        // Generate signatures for each operator
+        // Compute EIP-712 signable digest for BN254 certificate
+        bytes32 signableDigest = bn254CertificateVerifier.calculateCertificateDigest(referenceTimestamp, messageHash);
+
+        // Generate signatures for each operator over the digest
         for (uint i = 0; i < operators.length; i++) {
-            BN254.G1Point memory msgHashG1 = BN254.hashToG1(messageHash);
+            BN254.G1Point memory msgHashG1 = BN254.hashToG1(signableDigest);
             BN254.G1Point memory signature = BN254.scalar_mul(msgHashG1, privateKeys[i]);
             aggregateSignature = BN254.plus(aggregateSignature, signature);
         }
@@ -825,21 +828,30 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, confirmationTimestamp, referenceBlockNumber);
 
         // Create certificate for global table root confirmation using the correct timestamp
-        IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate =
-            _generateGlobalRootConfirmationCertificate(globalRootConfirmerSet, globalRootConfirmerTimestamp, messageHash);
+        IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate = _generateGlobalRootConfirmationCertificate(
+            globalRootConfirmerSet, globalRootConfirmerTimestamp, globalTableRoot, confirmationTimestamp, referenceBlockNumber
+        );
 
         // Verify certificate to confirm global table root
         operatorTableUpdater.confirmGlobalTableRoot(confirmationCertificate, globalTableRoot, confirmationTimestamp, referenceBlockNumber);
     }
 
     /// @dev Generate BN254 certificate for global root confirmation
-    function _generateGlobalRootConfirmationCertificate(OperatorSet memory operatorSet, uint32 referenceTimestamp, bytes32 messageHash)
-        internal
-        view
-        returns (IBN254CertificateVerifierTypes.BN254Certificate memory)
-    {
+    function _generateGlobalRootConfirmationCertificate(
+        OperatorSet memory operatorSet,
+        uint32 referenceTimestamp,
+        bytes32 globalTableRoot,
+        uint32 confirmationTimestamp,
+        uint32 referenceBlockNumber
+    ) internal view returns (IBN254CertificateVerifierTypes.BN254Certificate memory) {
         uint aggSignerPrivKey = 69; // Private key for global root confirmer
-        BN254.G1Point memory aggregateSignature = BN254.hashToG1(messageHash).scalar_mul(aggSignerPrivKey);
+
+        // Build message hash and signable digest; signature must be over the digest
+        bytes32 messageHash =
+            operatorTableUpdater.getGlobalTableUpdateMessageHash(globalTableRoot, confirmationTimestamp, referenceBlockNumber);
+        bytes32 signableDigest =
+            operatorTableUpdater.getGlobalTableUpdateSignableDigest(globalTableRoot, confirmationTimestamp, referenceBlockNumber);
+        BN254.G1Point memory aggregateSignature = BN254.hashToG1(signableDigest).scalar_mul(aggSignerPrivKey);
 
         // Use the hardcoded G2 aggregate public key for private key 69
         BN254.G2Point memory aggregateG2Pubkey;

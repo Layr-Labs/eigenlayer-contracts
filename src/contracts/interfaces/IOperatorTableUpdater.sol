@@ -107,13 +107,14 @@ interface IOperatorTableUpdater is
 {
     /**
      * @notice Sets the global table root
-     * @param globalTableRootCert certificate of the global table root, signed by the `Generator`
+     * @param globalTableRootCert certificate of the global table root, signed by the `Generator`. This is a `BN254Certificate`
      * @param globalTableRoot merkle root of all operatorSet tables
      * @param referenceTimestamp block timestamp at which the global table root was calculated
      * @param referenceBlockNumber block number, corresponding to the `referenceTimestamp` of the global table root
      * @dev Any entity can submit with a valid certificate signed off by the `Generator`
      * @dev The `msgHash` in the `globalOperatorTableRootCert` is the hash of the `globalTableRoot`, `referenceTimestamp`, and `referenceBlockNumber`
-     * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp`, whereas
+     * @dev Per the `BN254CertificateVerifier`, the value that the `Generator` signs over is given by `calculateGlobalTableUpdateSignableDigest`
+     * @dev The `referenceTimestamp` nested in the `globalTableRootCert` should be `getGeneratorReferenceTimestamp` (ie. `GENERATOR_REFERENCE_TIMESTAMP`), whereas
      *      the `referenceTimestamp` passed directly in the calldata is the block timestamp at which the global table root was calculated
      * @dev Reverts for:
      *      - GlobalTableRootInFuture: referenceTimestamp is in the future
@@ -272,6 +273,20 @@ interface IOperatorTableUpdater is
      * @return The message hash for a global table root
      */
     function getGlobalTableUpdateMessageHash(
+        bytes32 globalTableRoot,
+        uint32 referenceTimestamp,
+        uint32 referenceBlockNumber
+    ) external view returns (bytes32);
+
+    /**
+     * @notice Get the signable digest for confirming a global table root update
+     * @param globalTableRoot the global table root
+     * @param referenceTimestamp the reference timestamp used when computing the message hash
+     * @param referenceBlockNumber the reference block number
+     * @return The digest to be signed by the Generator
+     * @dev Calls into the `BN254CertificateVerifier` to calculate the signable digest
+     */
+    function getGlobalTableUpdateSignableDigest(
         bytes32 globalTableRoot,
         uint32 referenceTimestamp,
         uint32 referenceBlockNumber
