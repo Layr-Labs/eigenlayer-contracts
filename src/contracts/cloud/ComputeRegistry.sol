@@ -51,11 +51,13 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
     constructor(
         IReleaseManager _releaseManager,
         IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar,
+        ICrossChainRegistry _crossChainRegistry,
         IPermissionController _permissionController,
         bytes32 _tosHash,
         string memory _version
     )
-        ComputeRegistryStorage(_releaseManager, _allocationManager, _tosHash)
+        ComputeRegistryStorage(_releaseManager, _allocationManager, _keyRegistrar, _crossChainRegistry, _tosHash)
         PermissionControllerMixin(_permissionController)
         SignatureUtilsMixin(_version)
     {
@@ -78,6 +80,13 @@ contract ComputeRegistry is Initializable, ComputeRegistryStorage, PermissionCon
         // Check if already registered
         bytes32 operatorSetKey = operatorSet.key();
         require(!isOperatorSetRegistered[operatorSetKey], OperatorSetAlreadyRegistered());
+
+        // Check if the curve type has been set for the operator set
+        IKeyRegistrarTypes.CurveType curveType = KEY_REGISTRAR.getOperatorSetCurveType(operatorSet);
+        require(curveType != IKeyRegistrarTypes.CurveType.NONE, CurveTypeNotSet());
+
+        // Check if the operator set has an active generation reservation
+        require(CROSS_CHAIN_REGISTRY.hasActiveGenerationReservation(operatorSet), NoActiveGenerationReservation());
 
         // Check if there is at least one release for the operator set
         // The ReleaseManager will revert with `NoReleases()` if there are no releases for the operator set

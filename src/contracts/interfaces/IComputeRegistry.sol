@@ -26,6 +26,12 @@ interface IComputeRegistryErrors {
 
     /// @dev Thrown when an invalid operator set is provided
     error InvalidOperatorSet();
+
+    /// @dev Thrown when the curve type for an operator set has not been set
+    error CurveTypeNotSet();
+
+    /// @dev Thrown when the operator set does not have an active generation reservation
+    error NoActiveGenerationReservation();
 }
 
 interface IComputeRegistryEvents {

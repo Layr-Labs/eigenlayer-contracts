@@ -5,6 +5,8 @@ import "src/contracts/cloud/ComputeRegistry.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 import "src/test/mocks/ReleaseManagerMock.sol";
+import "src/test/mocks/KeyRegistrarMock.sol";
+import "src/test/mocks/CrossChainRegistryMock.sol";
 
 contract ComputeRegistryUnitTests is EigenLayerUnitTestSetup, IComputeRegistryErrors, IComputeRegistryEvents {
     using StdStyle for *;
@@ -19,6 +21,8 @@ contract ComputeRegistryUnitTests is EigenLayerUnitTestSetup, IComputeRegistryEr
     // Contracts
     ComputeRegistry computeRegistry;
     ReleaseManagerMock releaseManagerMock;
+    KeyRegistrarMock keyRegistrarMock;
+    CrossChainRegistryMock crossChainRegistryMock;
 
     // Test variables
     address defaultAVS;
@@ -31,6 +35,8 @@ contract ComputeRegistryUnitTests is EigenLayerUnitTestSetup, IComputeRegistryEr
 
         // Setup mock contracts
         releaseManagerMock = new ReleaseManagerMock();
+        keyRegistrarMock = new KeyRegistrarMock();
+        crossChainRegistryMock = new CrossChainRegistryMock();
 
         // Setup default test accounts
         defaultSignerPrivateKey = 0x1234;
@@ -41,6 +47,8 @@ contract ComputeRegistryUnitTests is EigenLayerUnitTestSetup, IComputeRegistryEr
         computeRegistry = new ComputeRegistry(
             IReleaseManager(address(releaseManagerMock)),
             IAllocationManager(address(allocationManagerMock)),
+            IKeyRegistrar(address(keyRegistrarMock)),
+            ICrossChainRegistry(address(crossChainRegistryMock)),
             IPermissionController(address(permissionController)),
             TOS_HASH,
             VERSION
@@ -52,6 +60,8 @@ contract ComputeRegistryUnitTests is EigenLayerUnitTestSetup, IComputeRegistryEr
         // Configure mocks
         allocationManagerMock.setIsOperatorSet(defaultOperatorSet, true);
         releaseManagerMock.setHasRelease(defaultOperatorSet, true);
+        keyRegistrarMock.setOperatorSetCurveType(defaultOperatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        crossChainRegistryMock.setHasActiveGenerationReservation(defaultOperatorSet, true);
 
         // Setup permissions for default signer to call registerForCompute and deregisterFromCompute
         vm.startPrank(defaultAVS);
@@ -82,6 +92,8 @@ contract ComputeRegistryUnitTests_Initialization is ComputeRegistryUnitTests {
     function test_initialization() public view {
         assertEq(address(computeRegistry.RELEASE_MANAGER()), address(releaseManagerMock));
         assertEq(address(computeRegistry.ALLOCATION_MANAGER()), address(allocationManagerMock));
+        assertEq(address(computeRegistry.KEY_REGISTRAR()), address(keyRegistrarMock));
+        assertEq(address(computeRegistry.CROSS_CHAIN_REGISTRY()), address(crossChainRegistryMock));
         assertEq(address(computeRegistry.permissionController()), address(permissionController));
         assertEq(computeRegistry.TOS_HASH(), TOS_HASH);
         assertEq(computeRegistry.MAX_EXPIRY(), MAX_EXPIRY);
@@ -164,6 +176,9 @@ contract ComputeRegistryUnitTests_RegisterForCompute is ComputeRegistryUnitTests
         OperatorSet memory operatorSet = OperatorSet(defaultAVS, 1);
         allocationManagerMock.setIsOperatorSet(operatorSet, true);
         releaseManagerMock.setHasRelease(operatorSet, false);
+        // Set curve type and generation reservation so we get to the release check
+        keyRegistrarMock.setOperatorSetCurveType(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        crossChainRegistryMock.setHasActiveGenerationReservation(operatorSet, true);
 
         bytes memory signature = _generateTOSSignature(operatorSet, defaultSigner, defaultSignerPrivateKey);
 
@@ -188,6 +203,60 @@ contract ComputeRegistryUnitTests_RegisterForCompute is ComputeRegistryUnitTests
         vm.prank(defaultSigner);
         vm.expectRevert(ISignatureUtilsMixinErrors.InvalidSignature.selector);
         computeRegistry.registerForCompute(defaultOperatorSet, signature);
+    }
+
+    function test_registerForCompute_revert_curveTypeNotSet() public {
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, 2);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        // Curve type defaults to NONE in the mock
+        crossChainRegistryMock.setHasActiveGenerationReservation(operatorSet, true);
+        releaseManagerMock.setHasRelease(operatorSet, true);
+
+        bytes memory signature = _generateTOSSignature(operatorSet, defaultSigner, defaultSignerPrivateKey);
+
+        vm.prank(defaultSigner);
+        vm.expectRevert(CurveTypeNotSet.selector);
+        computeRegistry.registerForCompute(operatorSet, signature);
+    }
+
+    function test_registerForCompute_revert_noActiveGenerationReservation() public {
+        OperatorSet memory operatorSet = OperatorSet(defaultAVS, 3);
+        allocationManagerMock.setIsOperatorSet(operatorSet, true);
+        keyRegistrarMock.setOperatorSetCurveType(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        // Generation reservation defaults to false in the mock
+        releaseManagerMock.setHasRelease(operatorSet, true);
+
+        bytes memory signature = _generateTOSSignature(operatorSet, defaultSigner, defaultSignerPrivateKey);
+
+        vm.prank(defaultSigner);
+        vm.expectRevert(NoActiveGenerationReservation.selector);
+        computeRegistry.registerForCompute(operatorSet, signature);
+    }
+
+    function test_registerForCompute_withDifferentCurveTypes() public {
+        // Test with ECDSA curve type
+        OperatorSet memory ecdsaOperatorSet = OperatorSet(defaultAVS, 4);
+        allocationManagerMock.setIsOperatorSet(ecdsaOperatorSet, true);
+        keyRegistrarMock.setOperatorSetCurveType(ecdsaOperatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        crossChainRegistryMock.setHasActiveGenerationReservation(ecdsaOperatorSet, true);
+        releaseManagerMock.setHasRelease(ecdsaOperatorSet, true);
+
+        bytes memory signature1 = _generateTOSSignature(ecdsaOperatorSet, defaultSigner, defaultSignerPrivateKey);
+        vm.prank(defaultSigner);
+        computeRegistry.registerForCompute(ecdsaOperatorSet, signature1);
+        assertTrue(computeRegistry.isOperatorSetRegistered(ecdsaOperatorSet.key()));
+
+        // Test with BN254 curve type
+        OperatorSet memory bn254OperatorSet = OperatorSet(defaultAVS, 5);
+        allocationManagerMock.setIsOperatorSet(bn254OperatorSet, true);
+        keyRegistrarMock.setOperatorSetCurveType(bn254OperatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        crossChainRegistryMock.setHasActiveGenerationReservation(bn254OperatorSet, true);
+        releaseManagerMock.setHasRelease(bn254OperatorSet, true);
+
+        bytes memory signature2 = _generateTOSSignature(bn254OperatorSet, defaultSigner, defaultSignerPrivateKey);
+        vm.prank(defaultSigner);
+        computeRegistry.registerForCompute(bn254OperatorSet, signature2);
+        assertTrue(computeRegistry.isOperatorSetRegistered(bn254OperatorSet.key()));
     }
 }
 

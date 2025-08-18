@@ -4,6 +4,8 @@ pragma solidity ^0.8.27;
 import "../interfaces/IComputeRegistry.sol";
 import "../interfaces/IReleaseManager.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IKeyRegistrar.sol";
+import "../interfaces/ICrossChainRegistry.sol";
 import "../libraries/OperatorSetLib.sol";
 
 abstract contract ComputeRegistryStorage is IComputeRegistry {
@@ -21,6 +23,12 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
 
     /// @notice The AllocationManager contract
     IAllocationManager public immutable ALLOCATION_MANAGER;
+
+    /// @notice The KeyRegistrar contract
+    IKeyRegistrar public immutable KEY_REGISTRAR;
+
+    /// @notice The CrossChainRegistry contract
+    ICrossChainRegistry public immutable CROSS_CHAIN_REGISTRY;
 
     /// @notice The hash of the Terms of Service that AVS operators must sign
     bytes32 public immutable TOS_HASH;
@@ -42,9 +50,17 @@ abstract contract ComputeRegistryStorage is IComputeRegistry {
      */
     uint256[48] private __gap;
 
-    constructor(IReleaseManager _releaseManager, IAllocationManager _allocationManager, bytes32 _tosHash) {
+    constructor(
+        IReleaseManager _releaseManager,
+        IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar,
+        ICrossChainRegistry _crossChainRegistry,
+        bytes32 _tosHash
+    ) {
         RELEASE_MANAGER = _releaseManager;
         ALLOCATION_MANAGER = _allocationManager;
+        KEY_REGISTRAR = _keyRegistrar;
+        CROSS_CHAIN_REGISTRY = _crossChainRegistry;
         TOS_HASH = _tosHash;
     }
 }
