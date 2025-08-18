@@ -19,7 +19,7 @@ contract DeployGovernance is EOADeployer {
     uint256 public constant EXECUTOR_THRESHOLD = 1;
 
     function _runAsEOA() internal override {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "base")) {
+        if (!Env._strEq(Env.env(), "base")) {
             return;
         }
 
@@ -33,7 +33,7 @@ contract DeployGovernance is EOADeployer {
     }
 
     function testDeploy() public virtual {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "base")) {
+        if (!Env._strEq(Env.env(), "base")) {
             return;
         }
 

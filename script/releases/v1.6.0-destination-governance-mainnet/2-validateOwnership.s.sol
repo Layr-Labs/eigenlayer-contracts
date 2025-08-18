@@ -14,7 +14,7 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
 
     /// @notice This function doesn't actually transfer ownership, it's for manual processes
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
+        if (!Env._strEq(Env.env(), "base")) {
             return;
         }
 
@@ -24,7 +24,7 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "base")) {
+        if (!Env._strEq(Env.env(), "base")) {
             return;
         }
 
