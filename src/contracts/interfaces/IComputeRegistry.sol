@@ -4,6 +4,8 @@ pragma solidity ^0.8.27;
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {IReleaseManager} from "./IReleaseManager.sol";
 import {IAllocationManager} from "./IAllocationManager.sol";
+import {IKeyRegistrar} from "./IKeyRegistrar.sol";
+import {ICrossChainRegistry} from "./ICrossChainRegistry.sol";
 
 interface IComputeRegistryTypes {
     /// @notice The Terms of Service signature
@@ -15,22 +17,22 @@ interface IComputeRegistryTypes {
 }
 
 interface IComputeRegistryErrors {
-    /// @dev Thrown when the provided signature does not match the expected Terms of Service signature
+    /// @notice Error thrown when the provided signature is invalid
     error InvalidTOSSignature();
 
-    /// @dev Thrown when an operator set is already registered for compute
+    /// @notice Error thrown when an operator set is already registered
     error OperatorSetAlreadyRegistered();
 
-    /// @dev Thrown when an operator set is not registered but expected to be
+    /// @notice Error thrown when an operator set is not registered
     error OperatorSetNotRegistered();
 
-    /// @dev Thrown when an invalid operator set is provided
+    /// @notice Error thrown when an invalid operator set is provided
     error InvalidOperatorSet();
 
-    /// @dev Thrown when the curve type for an operator set has not been set
+    /// @notice Error thrown when the curve type has not been set
     error CurveTypeNotSet();
 
-    /// @dev Thrown when the operator set does not have an active generation reservation
+    /// @notice Error thrown when there is no active generation reservation
     error NoActiveGenerationReservation();
 }
 
@@ -59,18 +61,32 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
     /**
      * @notice Registers an operator set for compute services
      * @param operatorSet The operator set to register
-     * @param signature The EIP-712 signature of the Terms of Service
-     * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
-     * @dev The operator set must have at least one release available in the ReleaseManager
+     * @param signature The EIP-712 signature of the Terms of Service agreement
+     * @dev The caller must have permission to call on behalf of the operatorSet.avs through the PermissionController
      * @dev The signature must be a valid EIP-712 signature of the Terms of Service with expiry set to MAX_EXPIRY
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller does not have permission to call on behalf of operatorSet.avs
+     *      - InvalidOperatorSet: The operator set does not exist in the AllocationManager
+     *      - OperatorSetAlreadyRegistered: The operator set is already registered for compute
+     *      - CurveTypeNotSet: The operator set has not configured a curve type in the KeyRegistrar
+     *      - NoActiveGenerationReservation: The operator set does not have an active generation reservation in the CrossChainRegistry
+     *      - NoReleases: The operator set does not have any releases in the ReleaseManager
+     *      - InvalidSignature: The provided signature is invalid or does not match the expected signer
+     * @dev Emits the following events:
+     *      - OperatorSetRegistered: When the operator set is successfully registered with the TOS signature
      */
     function registerForCompute(OperatorSet calldata operatorSet, bytes memory signature) external;
 
     /**
      * @notice Deregisters an operator set from compute services
      * @param operatorSet The operator set to deregister
-     * @dev Requires the caller to have permission to call on behalf of the operatorSet.avs
-     * @dev The operator set must be registered
+     * @dev The caller must have permission to call on behalf of the operatorSet.avs through the PermissionController
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller does not have permission to call on behalf of operatorSet.avs
+     *      - InvalidOperatorSet: The operator set does not exist in the AllocationManager
+     *      - OperatorSetNotRegistered: The operator set is not registered for compute
+     * @dev Emits the following events:
+     *      - OperatorSetDeregistered: When the operator set is successfully deregistered
      */
     function deregisterFromCompute(
         OperatorSet calldata operatorSet
@@ -84,31 +100,50 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
 
     /**
      * @notice Returns the EIP-712 type hash used for TOS agreements
-     * @return The TOS_AGREEMENT_TYPEHASH constant
+     * @return The TOS_AGREEMENT_TYPEHASH constant used in EIP-712 signature verification
+     * @dev This type hash is: keccak256("TOSAgreement(bytes32 tosHash,address avs,uint32 operatorSetId,address signer,uint256 expiry)")
      */
     function TOS_AGREEMENT_TYPEHASH() external view returns (bytes32);
 
     /**
      * @notice Returns the maximum expiry value used for signatures
      * @return The MAX_EXPIRY constant (type(uint256).max)
+     * @dev Signatures use MAX_EXPIRY to indicate they never expire
      */
     function MAX_EXPIRY() external view returns (uint256);
 
     /**
      * @notice Returns the ReleaseManager contract
-     * @return The ReleaseManager contract
+     * @return The ReleaseManager contract address
+     * @dev Used to verify operator sets have at least one release before registration
      */
     function RELEASE_MANAGER() external view returns (IReleaseManager);
 
     /**
      * @notice Returns the AllocationManager contract
-     * @return The AllocationManager contract
+     * @return The AllocationManager contract address
+     * @dev Used to verify operator sets exist and are valid
      */
     function ALLOCATION_MANAGER() external view returns (IAllocationManager);
 
     /**
+     * @notice Returns the KeyRegistrar contract
+     * @return The KeyRegistrar contract address
+     * @dev Used to verify operator sets have configured curve types
+     */
+    function KEY_REGISTRAR() external view returns (IKeyRegistrar);
+
+    /**
+     * @notice Returns the CrossChainRegistry contract
+     * @return The CrossChainRegistry contract address
+     * @dev Used to verify operator sets have active generation reservations
+     */
+    function CROSS_CHAIN_REGISTRY() external view returns (ICrossChainRegistry);
+
+    /**
      * @notice Returns the hash of the Terms of Service
-     * @return The hash of the Terms of Service that must be signed
+     * @return The immutable hash of the Terms of Service that must be signed
+     * @dev This hash is set at contract deployment and cannot be changed
      */
     function TOS_HASH() external view returns (bytes32);
 
@@ -124,7 +159,8 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
     /**
      * @notice Returns the Terms of Service signature for an operator set
      * @param operatorSet The operator set to query
-     * @return The Terms of Service signature
+     * @return The Terms of Service signature including signer, TOS hash, and signature bytes
+     * @dev Returns an empty struct if the operator set is not registered
      */
     function getOperatorSetTosSignature(
         OperatorSet memory operatorSet
@@ -135,6 +171,8 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
      * @param operatorSet The operator set that is agreeing to the TOS
      * @param signer The address that is signing the agreement
      * @return The EIP-712 digest hash ready for signing
+     * @dev The digest includes the TOS hash, operator set details, signer, and MAX_EXPIRY
+     * @dev This digest should be signed according to EIP-712 standards
      */
     function calculateTOSAgreementDigest(
         OperatorSet memory operatorSet,
