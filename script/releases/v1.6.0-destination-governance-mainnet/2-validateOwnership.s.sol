@@ -6,9 +6,7 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "../../releases/Env.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-/// @notice Validates ownership of the proxyAdmin for mainnet (test script only)
-/// @dev This script only validates the ownership transfer was completed correctly
-/// @dev For mainnet, the ownership transfer must be done manually via the Safe UI
+/// @notice Validates ownership of the proxyAdmin for mainnet
 contract ValidateOwnership is MultisigBuilder, DeployGovernance {
     using Env for *;
 
@@ -17,10 +15,9 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
         if (!Env._strEq(Env.env(), "base")) {
             return;
         }
-
-        // For mainnet, ownership transfer must be done manually via Safe UI
-        // This function serves as a placeholder for the manual process
-        // The actual transfer is validated in testScript()
+        
+        ProxyAdmin proxyAdmin = ProxyAdmin(address(Env.proxyAdmin()));
+        proxyAdmin.transferOwnership(Env.executorMultisig());
     }
 
     function testScript() public virtual {
@@ -28,14 +25,16 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
             return;
         }
 
-        // Complete the first step of the upgrade
         runAsEOA();
+
+        // Complete upgrade
+        execute();
 
         // Validate that ownership has been transferred to executorMultisig
         assertEq(
             ProxyAdmin(address(Env.proxyAdmin())).owner(),
             Env.executorMultisig(),
-            "proxyAdmin.owner() != executorMultisig - ownership transfer must be completed manually via Safe UI"
+            "proxyAdmin.owner() != executorMultisig - ownership transfer not completed"
         );
     }
 }
