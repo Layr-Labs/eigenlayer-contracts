@@ -80,7 +80,7 @@ library Env {
         return _string("ZEUS_ENV");
     }
 
-    function envVersion() internal view returns (string memory) {
+    function version() internal view returns (string memory) {
         return _string("ZEUS_ENV_VERSION");
     }
 

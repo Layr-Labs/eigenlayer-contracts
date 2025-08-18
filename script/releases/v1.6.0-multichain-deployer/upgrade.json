@@ -1,0 +1,15 @@
+{
+    "name": "multichain-deployer",
+    "from": ">0.0.0",
+    "to": ">0.0.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployMultichainDeployer.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-transferDeployerOwnership.s.sol"
+        }
+    ]
+}
