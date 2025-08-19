@@ -2,7 +2,9 @@
 
 This document outlines essential procedures for repository maintenance, including PR management, branching strategies, and release processes that maintainers should follow to ensure code quality and stability.
 
-## Code Review Process
+## Code Review
+
+Branch ruleset is configured requiring at least 1 approval to merge a PR.
 
 Code reviewers are responsible for ensuring that PRs meet the following criteria before merging:
 
@@ -12,11 +14,25 @@ Code reviewers are responsible for ensuring that PRs meet the following criteria
 - **Documentation updates** where appropriate
 - **Security considerations** addressed and potential vulnerabilities mitigated
 
+### Code Review of External Contributor
+
 For first-time external contributors, a maintainer must:
 1. Review the PR with additional scrutiny
 2. Verify the contributor has signed the CLA (Contributor License Agreement)
 3. Manually approve CI workflows to run
 4. Provide detailed feedback to help onboard the contributor
+
+
+### Code Review within Protocol Team - Balance Quality VS Velocity
+
+A major pain point of code review within EigenLayer protocol team is, it's sometimes hard to meet 1 approval, since everyone in protocol team is busy and do not have time to review PRs, leaving the owner blocked.
+
+Upon discussing with team, we propose a simple, practical manner to balance review requirement vs velocity:
+
+- all external contributions, and all smart contract changes (both internal or external) MUST get explicit approval
+- docs, CIs, or other non-smart-contract changes, engineers in Protocol can merge PR on their own to unblock themselves and maximize speed
+
+While the autonomy offers maximum velocity, mistakes can occur, e.g. you pushed something wrong and realized later. In such case, best practice is to commit a new change to either revert the last commit or fix it. DO NOT force push to overwrite the problematic commit, because overwrite commit history will disrupt others who may have pulled the commit.
 
 
 ## Branching and Merge Strategy for Development
