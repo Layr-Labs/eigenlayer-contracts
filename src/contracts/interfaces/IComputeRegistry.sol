@@ -17,22 +17,28 @@ interface IComputeRegistryTypes {
 }
 
 interface IComputeRegistryErrors {
-    /// @notice Error thrown when the provided signature is invalid
+    /// @notice Error thrown when the provided signature does not match the expected Terms of Service signature
+    /// @dev Error code: 0x04bf729c
     error InvalidTOSSignature();
 
-    /// @notice Error thrown when an operator set is already registered
+    /// @notice Error thrown when an operator set is already registered for compute
+    /// @dev Error code: 0x1503562a
     error OperatorSetAlreadyRegistered();
 
-    /// @notice Error thrown when an operator set is not registered
+    /// @notice Error thrown when an operator set is not registered but expected to be
+    /// @dev Error code: 0x3a2e3ac6
     error OperatorSetNotRegistered();
 
     /// @notice Error thrown when an invalid operator set is provided
+    /// @dev Error code: 0x7ec5c154
     error InvalidOperatorSet();
 
-    /// @notice Error thrown when the curve type has not been set
+    /// @notice Error thrown when the curve type for an operator set has not been set
+    /// @dev Error code: 0x3104b8e7
     error CurveTypeNotSet();
 
-    /// @notice Error thrown when there is no active generation reservation
+    /// @notice Error thrown when the operator set does not have an active generation reservation
+    /// @dev Error code: 0xd0147d2d
     error NoActiveGenerationReservation();
 }
 
