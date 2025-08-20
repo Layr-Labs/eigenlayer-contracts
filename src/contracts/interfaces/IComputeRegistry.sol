@@ -81,7 +81,7 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
      * @dev Emits the following events:
      *      - OperatorSetRegistered: When the operator set is successfully registered with the TOS signature
      */
-    function registerForCompute(OperatorSet calldata operatorSet, bytes memory signature) external;
+    function registerForCompute(OperatorSet memory operatorSet, bytes memory signature) external;
 
     /**
      * @notice Deregisters an operator set from compute services
@@ -95,7 +95,7 @@ interface IComputeRegistry is IComputeRegistryErrors, IComputeRegistryEvents, IC
      *      - OperatorSetDeregistered: When the operator set is successfully deregistered
      */
     function deregisterFromCompute(
-        OperatorSet calldata operatorSet
+        OperatorSet memory operatorSet
     ) external;
 
     /**
