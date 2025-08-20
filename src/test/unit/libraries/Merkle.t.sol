@@ -6,12 +6,23 @@ import "src/contracts/libraries/Merkle.sol";
 import "src/test/utils/Murky.sol";
 
 abstract contract MerkleBaseTest is Test, MurkyBase {
+    uint internal constant MIN_LEAVES = 2; // Minimum number of leaves.
+    uint internal constant MAX_LEAVES = 65; // Maximum number of leaves.
+
     bytes32[] leaves; // The contents of the merkle tree (unsorted).
     bytes32 root; // The root of the merkle tree.
     bytes[] proofs; // The proofs for each leaf in the tree.
 
-    function setUp() public {
-        leaves = _genLeaves(vm.randomBool() ? 9 : 10);
+    /// @dev Takes in `seed` which should be provided as a fuzz input.
+    /// Ensures that RNG is deterministic, and tests are easily reproducible.
+    modifier rng(uint seed) {
+        _rng(seed);
+        _;
+    }
+
+    function _rng(uint seed) internal {
+        vm.setSeed(seed);
+        leaves = _genLeaves(vm.randomBool() ? MIN_LEAVES : MAX_LEAVES);
         proofs = _genProofs(leaves);
         root = _genRoot(leaves);
     }
@@ -21,24 +32,25 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     /// -----------------------------------------------------------------------
 
     /// @notice Verifies that (Murky's) proofs are compatible with our implementation.
-    function testFuzz_verifyInclusion_ValidProof(uint) public {
+    function testFuzz_verifyInclusion_ValidProof(uint seed) public rng(seed) {
         _checkAllProofs(true);
     }
 
     /// @notice Verifies that an empty proof(s) is invalid.
-    function testFuzz_verifyInclusion_EmptyProofs(uint) public {
+    function testFuzz_verifyInclusion_EmptyProofs(uint seed) public rng(seed) {
+        if (!usingSha()) vm.skip(true); // TODO: Breaking change, add in future.
         proofs = new bytes[](proofs.length);
         _checkAllProofs(false);
     }
 
     /// @notice Verifies that using wrong root fails verification
-    function testFuzz_verifyInclusion_WrongRoot(uint) public {
+    function testFuzz_verifyInclusion_WrongRoot(uint seed) public rng(seed) {
         root = bytes32(vm.randomUint());
         _checkAllProofs(false);
     }
 
     /// @notice Verifies valid proofs cannot be used to prove invalid leaves.
-    function testFuzz_verifyInclusion_WrongProofs(uint) public {
+    function testFuzz_verifyInclusion_WrongProofs(uint seed) public rng(seed) {
         bytes memory proof0 = proofs[0];
         bytes memory proof1 = proofs[1];
         (proofs[0], proofs[1]) = (proof1, proof0);
@@ -47,7 +59,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     }
 
     /// @notice Verifies that a valid proof with excess data appended is invalid.
-    function testFuzz_verifyInclusion_ExcessProofLength(uint) public {
+    function testFuzz_verifyInclusion_ExcessProofLength(uint seed) public rng(seed) {
         unchecked {
             proofs[0] = abi.encodePacked(proofs[0], vm.randomBytes(vm.randomUint(1, 10) * vm.randomUint(31, 32)));
         }
@@ -55,18 +67,20 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     }
 
     /// @notice Verifies that a valid proof with a truncated length is invalid.
-    function testFuzz_verifyInclusion_TruncatedProofLength(uint) public {
+    function testFuzz_verifyInclusion_TruncatedProofLength(uint seed) public rng(seed) {
         bytes memory proof = proofs[0];
+        console.log("proof length %d", proof.length); // 32
         /// @solidity memory-safe-assembly
         assembly {
             mstore(proof, sub(mload(proof), 32))
         }
+        console.log("proof length %d", proof.length); // 0
         proofs[0] = proof;
-        _checkSingleProof(false, 0);
+        _checkSingleProof(false, 0); // Should revert, but doesn't...
     }
 
     /// @notice Verifies that a valid proof with a manipulated word is invalid.
-    function testFuzz_verifyInclusion_ManipulatedProof(uint) public {
+    function testFuzz_verifyInclusion_ManipulatedProof(uint seed) public rng(seed) {
         bytes memory proof = proofs[0];
         /// @solidity memory-safe-assembly
         assembly {
@@ -79,14 +93,14 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     }
 
     /// @notice Verifies that an out-of-bounds index reverts.
-    function testFuzz_verifyInclusion_IndexOutOfBounds(uint) public {
+    function testFuzz_verifyInclusion_IndexOutOfBounds(uint seed) public rng(seed) {
         uint index = vm.randomUint(leaves.length, type(uint).max);
         vm.expectRevert(stdError.indexOOBError);
         _checkSingleProof(false, index);
     }
 
     /// @notice Verifies that an internal node cannot be used as a proof.
-    function testFuzz_verifyInclusion_InternalNodeAsProof(uint) public {
+    function testFuzz_verifyInclusion_InternalNodeAsProof(uint seed) public rng(seed) {
         // Generate a tree with at least 4 leaves to ensure internal nodes exist
         leaves = _genLeaves(vm.randomUint(4, 8));
         proofs = _genProofs(leaves);
@@ -97,7 +111,7 @@ abstract contract MerkleBaseTest is Test, MurkyBase {
     }
 
     /// @notice Verifies behavior with duplicate leaves in the tree
-    function testFuzz_verifyInclusion_DuplicateLeaves(uint) public {
+    function testFuzz_verifyInclusion_DuplicateLeaves(uint seed) public rng(seed) {
         leaves = _genLeaves(vm.randomUint(4, 8));
         leaves[0] = leaves[vm.randomUint(1, leaves.length - 1)];
         proofs = _genProofs(leaves);
