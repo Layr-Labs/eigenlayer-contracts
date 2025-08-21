@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/utils/cryptography/SignatureCheckerUpgradeable.sol";
 
 import "../interfaces/ISignatureUtilsMixin.sol";
