@@ -133,6 +133,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      */
     function verifyCertificate(
@@ -161,6 +162,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeProportionThresholds length
      */
@@ -191,6 +193,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeNominalThresholds length
      */

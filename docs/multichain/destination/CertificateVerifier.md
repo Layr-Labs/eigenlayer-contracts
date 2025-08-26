@@ -475,6 +475,7 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 * The root at the `referenceTimestamp` MUST not be disabled
 * The operator set info MUST exist for the `referenceTimestamp`
 * The `operatorIndex` must be valid for the non signer
+* The non-signer witnesses MUST be strictly increasing by `operatorIndex`
 * All merkle proofs for nonsigners MUST be valid
 * The BLS signature MUST verify correctly
 
