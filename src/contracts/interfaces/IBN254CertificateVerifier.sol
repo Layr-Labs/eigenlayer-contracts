@@ -52,6 +52,11 @@ interface IBN254CertificateVerifierErrors {
     /// @dev Error code: 0x03f4a78e
     /// @dev We enforce that operator indices are within valid bounds to prevent out-of-bounds access in the merkle tree verification
     error InvalidOperatorIndex();
+
+    /// @notice thrown when the non-signer witnesses are not strictly increasing by operatorIndex
+    /// @dev Error code: 0xec6268b8
+    /// @dev We enforce strictly increasing order to prevent duplicates and ensure deterministic processing
+    error NonSignerIndicesNotSorted();
 }
 
 /// @notice An interface for verifying BN254 certificates

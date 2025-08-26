@@ -202,9 +202,15 @@ contract BN254CertificateVerifier is
         BN254Certificate memory cert
     ) internal returns (BN254.G1Point memory nonSignerApk) {
         nonSignerApk = BN254.G1Point(0, 0);
+        uint32 previousOperatorIndex = 0;
 
         for (uint256 i = 0; i < cert.nonSignerWitnesses.length; i++) {
             BN254OperatorInfoWitness memory witness = cert.nonSignerWitnesses[i];
+
+            if (i > 0) {
+                // Enforce strictly increasing order of non-signer operator indices
+                require(witness.operatorIndex > previousOperatorIndex, NonSignerIndicesNotSorted());
+            }
 
             require(witness.operatorIndex < ctx.operatorSetInfo.numOperators, InvalidOperatorIndex());
 
@@ -219,6 +225,8 @@ contract BN254CertificateVerifier is
                     ctx.totalSignedStakeWeights[j] -= operatorInfo.weights[j];
                 }
             }
+
+            previousOperatorIndex = witness.operatorIndex;
         }
     }
 
