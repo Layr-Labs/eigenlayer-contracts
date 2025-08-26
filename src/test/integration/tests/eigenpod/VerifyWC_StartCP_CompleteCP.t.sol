@@ -213,7 +213,13 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         (User staker,,) = _newRandomStaker();
 
         (uint40[] memory validators,,) = staker.startValidators();
-        staker.exitValidators(validators);
+
+        // We use the beacon chain mock directly instead of the user contract since the
+        // user contract uses the precompile to exit validators. The pod expects validators
+        // to be proven to use the precompile.
+        for (uint i = 0; i < validators.length; i++) {
+            beaconChain.exitValidator(validators[i]);
+        }
         beaconChain.advanceEpoch_NoRewards();
 
         cheats.expectRevert(IEigenPodErrors.ValidatorIsExitingBeaconChain.selector);
