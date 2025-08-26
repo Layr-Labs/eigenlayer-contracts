@@ -31,6 +31,7 @@ interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @param signature the G1 signature of the message. The signature is over the signable digest, which is calculated by `calculateCertificateDigest`
      * @param apk the G2 aggregate public key
      * @param nonSignerWitnesses an array of witnesses of non-signing operators
+     * @dev Non-signer witnesses MUST be strictly increasing by `operatorIndex`
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
      */
     struct BN254Certificate {
@@ -52,6 +53,11 @@ interface IBN254CertificateVerifierErrors {
     /// @dev Error code: 0x03f4a78e
     /// @dev We enforce that operator indices are within valid bounds to prevent out-of-bounds access in the merkle tree verification
     error InvalidOperatorIndex();
+
+    /// @notice thrown when the non-signer witnesses are not strictly increasing by operatorIndex
+    /// @dev Error code: 0xec6268b8
+    /// @dev We enforce strictly increasing order to prevent duplicates and ensure deterministic processing
+    error NonSignerIndicesNotSorted();
 }
 
 /// @notice An interface for verifying BN254 certificates
@@ -128,6 +134,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      */
     function verifyCertificate(
@@ -156,6 +163,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeProportionThresholds length
      */
@@ -186,6 +194,7 @@ interface IBN254CertificateVerifier is
      *      - ReferenceTimestampDoesNotExist: No operator table exists for the referenceTimestamp
      *      - RootDisabled: The global table root for this timestamp has been disabled
      *      - InvalidOperatorIndex: Operator index provided in nonSigner witness is invalid
+     *      - NonSignerIndicesNotSorted: Non-signer witnesses are not strictly increasing by operatorIndex
      *      - VerificationFailed: Merkle proof verification failed or BLS signature verification failed
      *      - ArrayLengthMismatch: signedStakes length does not equal totalStakeNominalThresholds length
      */

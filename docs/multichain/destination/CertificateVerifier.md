@@ -427,6 +427,7 @@ The contract supports 3 verification patterns:
  * @param signature the G1 signature of the message. The signature is over the signable digest, which is calculated by `calculateCertificateDigest`
  * @param apk the G2 aggregate public key
  * @param nonSignerWitnesses an array of witnesses of non-signing operators
+ * @dev Non-signer witnesses MUST be strictly increasing by `operatorIndex`
  * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
  */
 struct BN254Certificate {
@@ -475,6 +476,7 @@ Verifies a BN254 certificate by checking the aggregated signature against the op
 * The root at the `referenceTimestamp` MUST not be disabled
 * The operator set info MUST exist for the `referenceTimestamp`
 * The `operatorIndex` must be valid for the non signer
+* The non-signer witnesses MUST be strictly increasing by `operatorIndex`
 * All merkle proofs for nonsigners MUST be valid
 * The BLS signature MUST verify correctly
 
