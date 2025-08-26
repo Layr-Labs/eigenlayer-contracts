@@ -31,6 +31,7 @@ interface IBN254CertificateVerifierTypes is IOperatorTableCalculatorTypes {
      * @param signature the G1 signature of the message. The signature is over the signable digest, which is calculated by `calculateCertificateDigest`
      * @param apk the G2 aggregate public key
      * @param nonSignerWitnesses an array of witnesses of non-signing operators
+     * @dev Non-signer witnesses MUST be strictly increasing by `operatorIndex`
      * @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT the timestamp at which the certificate was generated off-chain
      */
     struct BN254Certificate {
