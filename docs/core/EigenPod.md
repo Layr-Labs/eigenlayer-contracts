@@ -117,7 +117,7 @@ A withdrawal credential proof uses a validator's [`ValidatorIndex`][custom-types
 * `exit_epoch`: Initially set to `type(uint64).max`, this value is updated when a validator initiates exit from the beacon chain. **This method requires that a validator has not initiated an exit from the beacon chain.**
   * If a validator has been exited prior to calling `verifyWithdrawalCredentials`, their ETH can be accounted for, awarded shares, and/or withdrawn via the checkpoint system (see [Checkpointing Validators](#checkpointing-validators)).
 
-_Note that it is not required to verify your validator's withdrawal credentials_, unless you want to receive shares for ETH on the beacon chain. You may choose to use your `EigenPod` without verifying withdrawal credentials; you will still be able to withdraw yield (or receive shares for yield) via the [checkpoint system](#checkpointing-validators).
+_Note that it is not required to verify your validator's withdrawal credentials_, unless you want to receive shares for ETH on the beacon chain. You may choose to use your `EigenPod` without verifying withdrawal credentials; you will still be able to withdraw yield (or receive shares for yield) via the [checkpoint system](#checkpointing-validators). To account for ETH held on the beacon chain and to make execution layer partial withdrawal or full exits, this function *MUST* be called. 
 
 *Effects*:
 * For each set of unique verified withdrawal credentials:
@@ -135,6 +135,7 @@ _Note that it is not required to verify your validator's withdrawal credentials_
 * Input array lengths MUST be equal
 * `beaconTimestamp`:
     * MUST be greater than `currentCheckpointTimestamp`
+    * MUST be greater than `latestCheckpointTimestamp`
     * MUST be queryable via the [EIP-4788 oracle][eip-4788]. Generally, this means `beaconTimestamp` corresponds to a valid beacon block created within the last 8192 blocks (~27 hours).
 * `stateRootProof` MUST verify a `beaconStateRoot` against the `beaconBlockRoot` returned from the EIP-4788 oracle
 * For each validator:
@@ -411,6 +412,7 @@ This method allows the pod owner or proof submitter to submit validator withdraw
 * "Partial withdrawals" will exit a portion of a validator's balance from the beacon chain, down to 32 ETH. Any amount requested that would bring a validator's balance below 32 ETH is ignored.
 
 In order to initiate a withdrawal request:
+* The [`verifyWithdrawalCredentials`](#verifywithdrawalcredentials) function must be called to prove the validator exists within the pod
 * The predeploy requires a fee for each request. The current fee for the block can be queried using `getWithdrawalRequestFee`. This should be multiplied for each request in the passed-in `requests` array and provided as `msg.value`. The predeploy updates its fee each block depending on how many withdrawal requests are queued vs how many are processed.
     * Note that any unused fee is transferred back to `msg.sender` at the end of this method.
 * For partial withdrawals, note that the beacon chain will only process these if the validator has 0x02 withdrawal credentials.
@@ -430,7 +432,8 @@ Note that the beacon chain may "skip" a withdrawal request for many reasons. Thi
 * Pause status MUST NOT be set: `PAUSED_WITHDRAWAL_REQUESTS`
 * `msg.value` MUST be at least `getWithdrawalRequestFee() * requests.length`
 * For each `request` in `requests`:
-    * `request.pubkey` MUST have a length of 48
+    * The validator MUST have been proven to the pod
+    * `request.pubkey` MUST correspond to a validator whose withdrawal credentials are proven to point at the pod (`VALIDATOR_STATUS.ACTIVE`)
 * If excess `msg.value` was provided, the transfer of the excess back to `msg.sender` MUST succeed.
 
 ---

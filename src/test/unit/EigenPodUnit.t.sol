@@ -665,6 +665,20 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         staker.verifyWithdrawalCredentials(validators);
     }
 
+    /// @notice beaconTimestamp must be after the last checkpoint
+    function test_revert_beaconTimestampBeforeCheckpoint() public {
+        (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
+        (uint40[] memory validators,,) = staker.startValidators();
+
+        // Start a checkpoint so `currentCheckpointTimestamp` is nonzero
+        staker.startCheckpoint();
+        assertGt(staker.pod().lastCheckpointTimestamp(), 0, "lastCheckpointTimestamp should be nonzero");
+
+        // Try to verify withdrawal credentials at the current block, right at the checkpoint timestamp
+        cheats.expectRevert(IEigenPodErrors.BeaconTimestampBeforeLatestCheckpoint.selector);
+        staker.verifyWithdrawalCredentials(validators);
+    }
+
     /// @notice Check for revert on input array mismatch lengths
     function testFuzz_revert_inputArrayLengthsMismatch(uint rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
@@ -774,7 +788,11 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         (uint40[] memory validators,,) = staker.startValidators();
 
         // Exit validators from beacon chain and withdraw to pod
-        staker.exitValidators(validators);
+        // We use the beacon chain mock directly instead of the user contract since the
+        // user contract uses the precompile to exit validators.
+        for (uint i = 0; i < validators.length; i++) {
+            beaconChain.exitValidator(validators[i]);
+        }
         beaconChain.advanceEpoch();
 
         // now that validators are exited, ensure we can't verify them
@@ -1745,6 +1763,31 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         cheats.prank(podOwner);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.requestWithdrawal(new WithdrawalRequest[](0));
+    }
+
+    /// @notice Revert when the validator is not active in the pod
+    function testFuzz_revert_validatorNotActiveInPod() public {
+        (EigenPodUser staker,) = _newEigenPodStaker(64 ether);
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+
+        (uint40[] memory validators,,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+
+        WithdrawalRequest[] memory requests = new WithdrawalRequest[](validators.length);
+        for (uint i = 0; i < validators.length; i++) {
+            bytes memory pubkey = validators[i].toPubkey();
+            // Mutate pubkey to be invalid
+            pubkey[0] = bytes1(uint8(pubkey[0]) + 1);
+            requests[i] = WithdrawalRequest({pubkey: pubkey, amountGwei: 0});
+        }
+
+        uint fee = pod.getWithdrawalRequestFee() * requests.length;
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.prank(podOwner);
+        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
+        pod.requestWithdrawal{value: fee}(requests);
     }
 
     /// @notice Revert when the caller does not supply enough msg.value for the fee
