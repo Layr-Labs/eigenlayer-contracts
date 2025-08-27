@@ -61,7 +61,7 @@ contract ExecuteDestinationChain is QueueDestinationChain {
         execute();
         assertTrue(
             timelock.isOperationDone(txHash),
-            "v1.7.0 multichain testnet final destination chain txn should be complete."
+            "v1.8.0 multichain testnet final destination chain txn should be complete."
         );
 
         // 5 - Validate
@@ -98,6 +98,18 @@ contract ExecuteDestinationChain is QueueDestinationChain {
             bn254CertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
             "bn254CertificateVerifier operatorTableUpdater mismatch"
         );
+
+        TaskMailbox taskMailbox = Env.proxy.taskMailbox();
+        assertEq(taskMailbox.version(), Env.deployVersion(), "taskMailbox version mismatch");
+        assertTrue(
+            taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
+            "taskMailbox BN254_CERTIFICATE_VERIFIER mismatch"
+        );
+        assertTrue(
+            taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
+            "taskMailbox ECDSA_CERTIFICATE_VERIFIER mismatch"
+        );
+        assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox MAX_TASK_SLA mismatch");
     }
 
     function _validateProxiesInitialized() internal {
@@ -115,6 +127,15 @@ contract ExecuteDestinationChain is QueueDestinationChain {
             dummyOperatorSet, // globalRootConfirmerSet
             0, // globalRootConfirmationThreshold
             dummyBN254Info // globalRootConfirmerSetInfo
+        );
+
+        /// TaskMailbox
+        TaskMailbox taskMailbox = Env.proxy.taskMailbox();
+        vm.expectRevert(errInit);
+        taskMailbox.initialize(
+            address(0), // owner
+            0, // feeSplit
+            address(0) // feeSplitCollector
         );
 
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions

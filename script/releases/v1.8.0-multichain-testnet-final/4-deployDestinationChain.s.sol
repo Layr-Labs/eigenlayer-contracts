@@ -58,6 +58,19 @@ contract DeployDestinationChain is EOADeployer {
             )
         });
 
+        // Deploy TaskMailbox implementation
+        deployImpl({
+            name: type(TaskMailbox).name,
+            deployedTo: address(
+                new TaskMailbox({
+                    _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),
+                    _ecdsaCertificateVerifier: address(Env.proxy.ecdsaCertificateVerifier()),
+                    _maxTaskSLA: Env.MAX_TASK_SLA(),
+                    _version: Env.deployVersion()
+                })
+            )
+        });
+
         vm.stopBroadcast();
     }
 
@@ -105,6 +118,13 @@ contract DeployDestinationChain is EOADeployer {
                 == address(Env.impl.bn254CertificateVerifier()),
             "bn254CertificateVerifier impl failed"
         );
+
+        // TaskMailbox
+        assertion(
+            Env._getProxyImpl(address(Env.proxy.taskMailbox()))
+                == address(Env.impl.taskMailbox()),
+            "taskMailbox impl failed"
+        );
     }
 
     /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
@@ -122,6 +142,10 @@ contract DeployDestinationChain is EOADeployer {
         assertTrue(
             Env._getProxyAdmin(address(Env.proxy.bn254CertificateVerifier())) == pa,
             "bn254CertificateVerifier proxyAdmin incorrect"
+        );
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.taskMailbox())) == pa,
+            "taskMailbox proxyAdmin incorrect"
         );
     }
 
@@ -162,6 +186,21 @@ contract DeployDestinationChain is EOADeployer {
             );
             assertEq(bn254CertificateVerifier.version(), Env.deployVersion(), "b254cv.version failed");
         }
+
+        {
+            /// TaskMailbox
+            TaskMailbox taskMailbox = Env.impl.taskMailbox();
+            assertTrue(
+                taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
+                "taskMailbox.BN254_CERTIFICATE_VERIFIER invalid"
+            );
+            assertTrue(
+                taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
+                "taskMailbox.ECDSA_CERTIFICATE_VERIFIER invalid"
+            );
+            assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox.MAX_TASK_SLA failed");
+            assertEq(taskMailbox.version(), Env.deployVersion(), "taskMailbox.version failed");
+        }
     }
 
     /// @dev Call initialize on all deployed implementations to ensure initializers are disabled
@@ -182,6 +221,15 @@ contract DeployDestinationChain is EOADeployer {
             dummyBN254Info // globalRootConfirmerSetInfo
         );
 
+        /// TaskMailbox - dummy parameters
+        TaskMailbox taskMailbox = Env.impl.taskMailbox();
+        vm.expectRevert(errInit);
+        taskMailbox.initialize(
+            address(0), // owner
+            0, // feeSplit
+            address(0) // feeSplitCollector
+        );
+
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
     }
 
@@ -192,6 +240,7 @@ contract DeployDestinationChain is EOADeployer {
         assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
         assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
         assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
+        assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
     }
 
     function _assertTrue(bool b, string memory err) internal pure {

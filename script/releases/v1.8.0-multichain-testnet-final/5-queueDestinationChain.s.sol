@@ -58,6 +58,12 @@ contract QueueDestinationChain is MultisigBuilder, DeployDestinationChain {
                 proxy: address(Env.proxy.bn254CertificateVerifier()),
                 impl: address(Env.impl.bn254CertificateVerifier())
             })
+        }).append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin.upgrade({
+                proxy: address(Env.proxy.taskMailbox()),
+                impl: address(Env.impl.taskMailbox())
+            })
         });
 
         return Encode.gnosisSafe.execTransaction({
