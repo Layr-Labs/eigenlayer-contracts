@@ -121,8 +121,7 @@ contract DeployDestinationChain is EOADeployer {
 
         // TaskMailbox
         assertion(
-            Env._getProxyImpl(address(Env.proxy.taskMailbox()))
-                == address(Env.impl.taskMailbox()),
+            Env._getProxyImpl(address(Env.proxy.taskMailbox())) == address(Env.impl.taskMailbox()),
             "taskMailbox impl failed"
         );
     }
@@ -143,10 +142,7 @@ contract DeployDestinationChain is EOADeployer {
             Env._getProxyAdmin(address(Env.proxy.bn254CertificateVerifier())) == pa,
             "bn254CertificateVerifier proxyAdmin incorrect"
         );
-        assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.taskMailbox())) == pa,
-            "taskMailbox proxyAdmin incorrect"
-        );
+        assertTrue(Env._getProxyAdmin(address(Env.proxy.taskMailbox())) == pa, "taskMailbox proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
