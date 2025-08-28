@@ -24,10 +24,11 @@ jobs:
             github.com:443
             release-assets.githubusercontent.com:443
             objects.githubusercontent.com:443
-            raw.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+      
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Run Natspec Lint
-        uses: beeb/lintspec@fd5b71ffc838f63f81caf3e85e90760d124efac2 # v0.4.1
+      - uses: beeb/lintspec@fd5b71ffc838f63f81caf3e85e90760d124efac2 # v0.4.1
+        # all the lines below are optional
         with:
           working-directory: "./"
           paths: "[./src/contracts/]" # Only lint src/contracts/
