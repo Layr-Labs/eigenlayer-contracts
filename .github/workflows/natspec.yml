@@ -12,7 +12,7 @@ jobs:
         # all the lines below are optional
         with:
           working-directory: "./"
-          paths: "[contracts/**/*.sol]"
+          paths: "[./src/contracts/]"
           exclude: "[]"
           extra-args: ""
           version: "latest"
