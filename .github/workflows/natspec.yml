@@ -12,9 +12,8 @@ jobs:
         # all the lines below are optional
         with:
           working-directory: "./"
-          paths: |
-            - "contracts/**/*.sol"
-          exclude: "[]"
+          paths: ["contracts/**/*.sol"]
+          exclude: []
           extra-args: ""
           version: "latest"
           fail-on-problem: "true"
