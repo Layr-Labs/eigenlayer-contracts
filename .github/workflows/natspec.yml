@@ -1,0 +1,19 @@
+name: Lintspec
+
+on:
+  pull_request:
+
+jobs:
+  lintspec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: beeb/lintspec@v0.4.1
+        # all the lines below are optional
+        with:
+          working-directory: "./"
+          paths: "[]"
+          exclude: "[]"
+          extra-args: ""
+          version: "latest"
+          fail-on-problem: "true"
