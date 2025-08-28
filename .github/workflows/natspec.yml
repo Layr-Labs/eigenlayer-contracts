@@ -11,7 +11,7 @@ jobs:
       - uses: beeb/lintspec@v0.4.1
         # all the lines below are optional
         with:
-          working-directory: "./"
+          working-directory: "./src/contracts/"
           paths: "[]"
           exclude: "[]"
           extra-args: ""
