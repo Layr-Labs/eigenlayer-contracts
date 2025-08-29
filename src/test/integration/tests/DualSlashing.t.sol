@@ -327,7 +327,10 @@ contract Integration_DualSlashing_FullSlashes is Integration_DualSlashing_Base {
         );
 
         // 11. Exit remaining validators & checkpoint
-        staker.exitValidators(newValidators);
+        // Exit validators directly on beacon chain
+        for (uint i = 0; i < newValidators.length; ++i) {
+            beaconChain.exitValidator(newValidators[i]);
+        }
         beaconChain.advanceEpoch_NoRewards();
         staker.startCheckpoint();
         check_StartCheckpoint_WithPodBalance_State(staker, addedBeaconBalanceGwei);

@@ -225,6 +225,10 @@ contract EigenPod is
         // on an existing checkpoint.
         require(beaconTimestamp > currentCheckpointTimestamp, BeaconTimestampTooFarInPast());
 
+        // For sanity, we want to ensure that a newly-verified validator cannot be proven against state
+        // that has already been checkpointed. This check makes the state transitions easier to reason about.
+        require(beaconTimestamp > lastCheckpointTimestamp, BeaconTimestampBeforeLatestCheckpoint());
+
         // Verify passed-in `beaconStateRoot` against the beacon block root
         // forgefmt: disable-next-item
         BeaconChainProofs.verifyStateRoot({
@@ -321,8 +325,7 @@ contract EigenPod is
             // Ensure target has verified withdrawal credentials pointed at this pod
             bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
             bytes32 targetPubkeyHash = _calcPubkeyHash(request.targetPubkey);
-            ValidatorInfo memory target = validatorPubkeyHashToInfo(targetPubkeyHash);
-            require(target.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            require(validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
             // Call the predeploy
             bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
@@ -352,6 +355,9 @@ contract EigenPod is
         for (uint256 i = 0; i < requests.length; i++) {
             WithdrawalRequest calldata request = requests[i];
             bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
+
+            // Ensure validator has verified withdrawal credentials pointed at this pod
+            require(validatorStatus(pubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
 
             // Call the predeploy
             bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
@@ -736,7 +742,7 @@ contract EigenPod is
     /// @inheritdoc IEigenPod
     function validatorStatus(
         bytes32 pubkeyHash
-    ) external view returns (VALIDATOR_STATUS) {
+    ) public view returns (VALIDATOR_STATUS) {
         return _validatorPubkeyHashToInfo[pubkeyHash].status;
     }
 

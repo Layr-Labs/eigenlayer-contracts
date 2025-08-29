@@ -76,6 +76,8 @@ interface IEigenPodErrors {
     error MsgValueNot32ETH();
     /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
     error BeaconTimestampTooFarInPast();
+    /// @dev Thrown when provided `beaconTimestamp` is before the last checkpoint
+    error BeaconTimestampBeforeLatestCheckpoint();
     /// @dev Thrown when the pectraForkTimestamp returned from the EigenPodManager is zero
     error ForkTimestampZero();
 }
