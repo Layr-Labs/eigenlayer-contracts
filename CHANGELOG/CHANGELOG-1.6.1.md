@@ -1,6 +1,6 @@
 # v1.6.1 Electra Timing Fix
 
-Fixes a bug on EigenPods regarding partial withdrawals for Electra. Please read our [forum]() for a detailed description of the bug. **No action is needed and no customer funds are at risk.**
+Fixes a bug on EigenPods regarding partial withdrawals for Electra. Please read the [description](https://hackmd.io/@rNlehaDSRBydbF_i_McDcw/ByyodLJ9ex) for a detailed description of the bug. **No action is needed and no customer funds are at risk.**
 
 ## Release Manager
 
