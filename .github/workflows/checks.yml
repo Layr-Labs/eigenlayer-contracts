@@ -28,14 +28,11 @@ jobs:
             release-assets.githubusercontent.com:443
       
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: beeb/lintspec@fd5b71ffc838f63f81caf3e85e90760d124efac2 # v0.4.1
+      - uses: beeb/lintspec@6722a8dd45592fd30f89c51534b3cd35b094e462 # v0.7.0
         # all the lines below are optional
         with:
           working-directory: "./"
-          paths: "[./src/contracts/]" # Only lint src/contracts/
-          exclude: "[]"
-          extra-args: "" # TODO: Config
-          version: "latest"
+          extra-args: "--config=.github/configs/.lintspec.toml"
           fail-on-problem: "true"
 
   typos:
