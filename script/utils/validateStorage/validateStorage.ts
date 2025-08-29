@@ -83,7 +83,7 @@ async function validateStorageSlots() {
     }
   }
 
-  // Check gaps, starting from from the beginning of the old layout
+  // Check gaps, starting from the beginning of the old layout
   for(let slotNumber = 0; slotNumber < oldLayout.length; slotNumber++) {
     // Ignore non gap slots
     if(oldLayout[slotNumber].name !== '__gap') {
