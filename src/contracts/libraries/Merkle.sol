@@ -79,6 +79,7 @@ library Merkle {
         uint256 index
     ) internal pure returns (bytes32) {
         if (proof.length == 0) {
+            require(index == 0, InvalidIndex());
             return leaf;
         }
 
