@@ -1032,6 +1032,7 @@ contract AllocationManager is
             _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
 
+    /// @inheritdoc IAllocationManager
     function previewSlashOperatorShares(
         address operator,
         OperatorSet memory operatorSet,
@@ -1047,7 +1048,7 @@ contract AllocationManager is
         uint64 maxMagnitude = getMaxMagnitude(operator, strategy);
         uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(wadToSlash));
         uint64 newMaxMagnitude = maxMagnitude - slashedMagnitude;
-        
+
         shares = SlashingLib.calcSlashedAmount({
             operatorShares: delegation.operatorShares(operator, strategy),
             prevMaxMagnitude: maxMagnitude,
@@ -1055,6 +1056,7 @@ contract AllocationManager is
         });
     }
 
+    /// @inheritdoc IAllocationManager
     function previewSlashOperatorUnderlying(
         address operator,
         OperatorSet memory operatorSet,
