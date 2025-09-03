@@ -14,9 +14,9 @@ The deployments on `mainnet`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` 
 | -------- | -------- | -------- | -------- | -------- | 
 | Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No (pending) |
 | Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Sepolia | [`v1.8.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-rc.0) | Yes | No | Yes (source & destination) |
+| Testnet Sepolia | [`v1.8.0-testnet-final`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-testnet-final) | Yes | No | Yes (source & destination) |
 | Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Base Sepolia | [`v1.8.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-rc.0) | No | No | Yes (destination) |
+| Testnet Base Sepolia | [`v1.8.0-testnet-final`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-testnet-final) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
