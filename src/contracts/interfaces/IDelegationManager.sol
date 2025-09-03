@@ -426,6 +426,13 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     ) external view returns (address);
 
     /**
+     * @notice Returns the shares that an operator has delegated to them in a strategy
+     * @param operator the operator to get shares for
+     * @param strategy the strategy to get shares for
+     */
+    function operatorShares(address operator, IStrategy strategy) external view returns (uint256);
+
+    /**
      * @notice Returns the shares that an operator has delegated to them in a set of strategies
      * @param operator the operator to get shares for
      * @param strategies the strategies to get shares for
