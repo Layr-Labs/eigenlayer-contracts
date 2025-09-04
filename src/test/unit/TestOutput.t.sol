@@ -15,36 +15,34 @@ contract TestOutput is Test {
 
         // Calculate the balance root
         bytes32 balanceRoot = bytes32(
-            uint256(toLittleEndianUint64(val0Balance)) |
-            (uint256(toLittleEndianUint64(val1Balance)) >> 64) |
-            (uint256(toLittleEndianUint64(val2Balance)) >> 128) |
-            (uint256(toLittleEndianUint64(val3Balance)) >> 192)
+            uint(toLittleEndianUint64(val0Balance)) | (uint(toLittleEndianUint64(val1Balance)) >> 64)
+                | (uint(toLittleEndianUint64(val2Balance)) >> 128) | (uint(toLittleEndianUint64(val3Balance)) >> 192)
         );
 
         // Print the output
         console.log("Balance Root (bytes32):");
         console.logBytes32(balanceRoot);
-        
+
         // Also print individual balances for reference
         console.log("\nIndividual balances:");
         console.log("val0Balance: %s Gwei (%s wei)", val0Balance / 1e9, val0Balance);
         console.log("val1Balance: %s Gwei (%s wei)", val1Balance / 1e9, val1Balance);
         console.log("val2Balance: %s Gwei (%s wei)", val2Balance / 1e9, val2Balance);
         console.log("val3Balance: %s Gwei (%s wei)", val3Balance / 1e9, val3Balance);
-        
+
         // Print the hex values of each balance for clarity
         console.log("\nBalances in hex:");
         console.log("val0Balance: 0x%x", val0Balance);
         console.log("val1Balance: 0x%x", val1Balance);
         console.log("val2Balance: 0x%x", val2Balance);
         console.log("val3Balance: 0x%x", val3Balance);
-        
+
         // Show the shifted values
         console.log("\nShifted values:");
-        console.log("val0Balance (no shift): 0x%x", uint256(val0Balance));
-        console.log("val1Balance >> 64: 0x%x", uint256(val1Balance) >> 64);
-        console.log("val2Balance >> 128: 0x%x", uint256(val2Balance) >> 128);
-        console.log("val3Balance >> 192: 0x%x", uint256(val3Balance) >> 192);
+        console.log("val0Balance (no shift): 0x%x", uint(val0Balance));
+        console.log("val1Balance >> 64: 0x%x", uint(val1Balance) >> 64);
+        console.log("val2Balance >> 128: 0x%x", uint(val2Balance) >> 128);
+        console.log("val3Balance >> 192: 0x%x", uint(val3Balance) >> 192);
     }
 
     /// @dev Opposite of Endian.fromLittleEndianUint64

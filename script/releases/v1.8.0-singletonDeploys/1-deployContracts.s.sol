@@ -68,7 +68,7 @@ contract DeploySourceChain is EOADeployer {
 
     function testScript() public virtual {
         // If we ARE on a source or destination chain, we don't need to deploy any contracts
-        if (Env.isSourceChain() || Env.isDestinationChain()) {   
+        if (Env.isSourceChain() || Env.isDestinationChain()) {
             return;
         }
 
@@ -146,6 +146,7 @@ contract DeploySourceChain is EOADeployer {
             "releaseManager permissionController mismatch"
         );
     }
+
     function _assertTrue(bool b, string memory err) private pure {
         assertTrue(b, err);
     }
