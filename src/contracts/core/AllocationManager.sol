@@ -1031,4 +1031,42 @@ contract AllocationManager is
         return
             _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
+
+    /// @inheritdoc IAllocationManager
+    function previewSlashOperatorShares(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 wadToSlash
+    ) public view returns (uint256 shares) {
+        // Fetch operator's allocation details.
+        Allocation memory allocation = getAllocation(operator, operatorSet, strategy);
+
+        // Skip if no slashable allocation.
+        if (allocation.currentMagnitude == 0) return 0;
+
+        uint64 maxMagnitude = getMaxMagnitude(operator, strategy);
+        uint64 slashedMagnitude = uint64(uint256(allocation.currentMagnitude).mulWadRoundUp(wadToSlash));
+        uint64 newMaxMagnitude = maxMagnitude - slashedMagnitude;
+
+        shares = SlashingLib.calcSlashedAmount({
+            operatorShares: delegation.operatorShares(operator, strategy),
+            prevMaxMagnitude: maxMagnitude,
+            newMaxMagnitude: newMaxMagnitude
+        });
+    }
+
+    /// @inheritdoc IAllocationManager
+    function previewSlashOperatorUnderlying(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 wadToSlash
+    ) external view returns (uint256 underlying) {
+        uint256 shares = previewSlashOperatorShares(operator, operatorSet, strategy, wadToSlash);
+        // Skip if no shares to slash.
+        if (shares == 0) return 0;
+        // Otherwise, return slashed shares as underlying tokens.
+        return strategy.sharesToUnderlyingView(shares);
+    }
 }
