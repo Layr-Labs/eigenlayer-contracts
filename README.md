@@ -390,7 +390,7 @@ Branches we use:
 
 [Our documentation](https://docs.eigenlayer.xyz/) is a great place to start to understand EigenLayer and the Eigen ecosystem. If you are an audio/visual learner, check out the "[You Could've Invented EigenLayer](https://www.blog.eigenlayer.xyz/ycie/)" video. 
 
-To understand more about how our ecosystem and its participants work, checkout the guides below. These are split out by who you are: AVS developers, restakers and Operators. All have different roles and interactioons with EigenLayer:
+To understand more about how our ecosystem and its participants work, checkout the guides below. These are split out by who you are: AVS developers, restakers and Operators. All have different roles and interactions with EigenLayer:
 
 * [AVS Developer Guide](https://docs.eigenlayer.xyz/developers/Concepts/avs-developer-guide)
 * [Operator Guide](https://docs.eigenlayer.xyz/operators/concepts/operator-introduction)
