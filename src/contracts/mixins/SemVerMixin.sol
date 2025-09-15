@@ -29,10 +29,18 @@ abstract contract SemVerMixin is ISemVerMixin {
     }
 
     /// @notice Returns the major version of the contract.
-    /// @dev Supports single digit major versions (e.g., "1" for version "1.2.3")
+    /// @dev Supports multi-digit major versions (e.g., "10" for version "10.2.3").
     /// @return The major version string (e.g., "1" for version "1.2.3")
     function _majorVersion() internal view returns (string memory) {
         bytes memory v = bytes(_VERSION.toString());
-        return string(abi.encodePacked(v[0]));
+        uint256 end;
+        while (end < v.length && v[end] != 0x2e) { // '.'
+            end++;
+        }
+        bytes memory major = new bytes(end);
+        for (uint256 i = 0; i < end; i++) {
+            major[i] = v[i];
+        }
+        return string(major);
     }
 }
