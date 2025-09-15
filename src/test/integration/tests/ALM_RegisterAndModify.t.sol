@@ -18,7 +18,7 @@ contract Integration_ALMBase is IntegrationCheckUtils {
     /// Shared setup:
     ///
     /// 1. Generate staker with deposited assets, operator, and AVS
-    /// 2. Deposit asssets and delegate to operator
+    /// 2. Deposit assets and delegate to operator
     /// 3. AVS creates an operator set containing the strategies held by the staker
     function _init() internal virtual override {
         (staker, strategies, initTokenBalances) = _newRandomStaker();
