@@ -1605,7 +1605,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Try to use the certificate from task1 for task2
         // This creates a certificate with messageHash for task1 but tries to use it for task2
-        IBN254CertificateVerifierTypes.BN254Certificate memory replayedCert = 
+        IBN254CertificateVerifierTypes.BN254Certificate memory replayedCert =
             _createValidBN254CertificateForResult(taskHash, result, _getTaskReferenceTimestamp(taskHash2));
 
         // Attacker tries to submit result for task2 using certificate signed for task1
@@ -1649,7 +1649,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Try to use certificate from task1 for task2
         // This creates a certificate with messageHash for task1 but tries to use it for task2
-        IECDSACertificateVerifierTypes.ECDSACertificate memory replayedCert = 
+        IECDSACertificateVerifierTypes.ECDSACertificate memory replayedCert =
             _createValidECDSACertificateForResult(taskHash1, result, _getTaskReferenceTimestamp(taskHash2));
 
         // Attacker tries to submit result for task2 using certificate signed for task1
@@ -1924,7 +1924,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Calculate expected amounts
         uint expectedFeeSplitAmount = (avsFee * feeSplit) / 10_000;
@@ -1976,7 +1977,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Calculate expected amounts - should be equal split
         uint expectedFeeSplitAmount = avsFee / 2;
@@ -2028,7 +2030,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Expect Transfer event for fee transfer to fee collector only (no fee split)
         // Since feeSplit is 0, all avsFee goes to feeCollector
@@ -2073,7 +2076,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Expect Transfer event for fee transfer to fee split collector only
         // Since feeSplit is 100%, all avsFee goes to feeSplitCollector
@@ -2116,7 +2120,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         vm.prank(aggregator);
         taskMailbox.submitResult(newTaskHash, executorCert, result);
@@ -2160,7 +2165,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (smallFee * feeSplit) / 10_000; // 33 wei
@@ -2213,7 +2219,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Calculate expected fee distribution
         uint expectedFeeSplitAmount = (oddFee * feeSplit) / 10_000; // 1 wei (rounded down from 1.0001)
@@ -2276,7 +2283,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Submit result
         vm.warp(block.timestamp + 1);
         bytes memory result = bytes("result");
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, result, _getTaskReferenceTimestamp(newTaskHash)));
 
         // Calculate expected amounts
         uint expectedFeeSplitAmount = (uint(_avsFee) * _feeSplit) / 10_000;
@@ -2345,7 +2353,8 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
 
         // Submit result
         vm.warp(block.timestamp + 1);
-        bytes memory executorCert = abi.encode(_createValidBN254CertificateForResult(newTaskHash, bytes("result"), _getTaskReferenceTimestamp(newTaskHash)));
+        bytes memory executorCert =
+            abi.encode(_createValidBN254CertificateForResult(newTaskHash, bytes("result"), _getTaskReferenceTimestamp(newTaskHash)));
 
         // Expect Transfer events for fee distribution
         // First, transfer to current fee split collector (not the initial one)
