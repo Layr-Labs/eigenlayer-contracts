@@ -231,7 +231,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             }
             assertEq(
                 bn254CertificateVerifier.getOperatorSetOwner(generator),
-                address(Env.proxy.operatorTableUpdater()),
+                address(Env.proxy.operatorTableUpdater()), // OperatorTableUpdater is the owner of the generator
                 "bn254CertificateVerifier.operatorSetOwner invalid"
             );
             assertEq(
