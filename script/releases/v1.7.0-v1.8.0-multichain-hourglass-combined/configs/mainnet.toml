@@ -1,15 +1,15 @@
 
 globalRootConfirmationThreshold = 10000
 # Global root confirmer set configuration
-[globalRootConfirmerSet]
+[generator]
 avs = "0xBE1685C81aA44FF9FB319dD389addd9374383e90"
 id = 0
 
 # Global root confirmer set info
-[globalRootConfirmerSetInfo]
+[generatorInfo]
 numOperators = 1
 operatorInfoTreeRoot = "0x0000000000000000000000000000000000000000000000000000000000000001"
 totalWeights = [1]
-[globalRootConfirmerSetInfo.aggregatePubkey]
+[generatorInfo.aggregatePubkey]
 X = "8045752976001954565743564925836749899871734869304640210865855307842893376971"
 Y = "18028308048793265578696180464653843195691592204712511507243767388557280593470"

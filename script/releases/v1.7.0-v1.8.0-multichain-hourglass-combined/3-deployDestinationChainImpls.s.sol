@@ -173,9 +173,9 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         operatorTableUpdater.initialize(
             address(0), // owner
             0, // initial paused status
-            dummyOperatorSet, // globalRootConfirmerSet
+            dummyOperatorSet, // generator
             0, // globalRootConfirmationThreshold
-            dummyBN254Info // globalRootConfirmerSetInfo
+            dummyBN254Info // generatorInfo
         );
 
         /// TaskMailbox

@@ -152,7 +152,7 @@ An AVS is an entity that uses delegated or slashable security from operators to 
 The `Generator` is an EigenLabs-operated entity that calculates and signs off on the `GlobalTableRoot` for all operatorSets that have requested to be transported to a `DestinationChain`. For the pilot program, there is no stake backing the `Generator` and it is not slashable. 
 
 *Offchain Flows:*
-* The generator **calculates** and **signs** the `GlobalTableRoot`. Within the contracts, this is referred to as the `globalRootConfirmerSet`. 
+* The generator **calculates** and **signs** the `GlobalTableRoot`. Within the contracts, this is referred to as the `generator`. 
 
 #### Transporter
 

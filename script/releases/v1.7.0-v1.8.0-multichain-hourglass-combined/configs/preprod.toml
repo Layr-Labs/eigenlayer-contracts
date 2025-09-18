@@ -1,13 +1,13 @@
 globalRootConfirmationThreshold = 10000
-[globalRootConfirmerSet]
+[generator]
 avs = "0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608"
 id = 0
 
-[globalRootConfirmerSetInfo]
+[generatorInfo]
 numOperators = 1
 operatorInfoTreeRoot = "0x6d21ed659a9acccca4443b68c0b3aabcadc31620dbf2251c9a185c6319e9a1a8"
 totalWeights = [1]
 
-[globalRootConfirmerSetInfo.aggregatePubkey]
+[generatorInfo.aggregatePubkey]
 X = "9941189650747726451303775443623061707910951271949068512442450197223668673568"
 Y = "5041694324356096998110119720271096366683853466230696458772488018696667354744"
