@@ -126,7 +126,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             assertEq(generator.key(), initParams.generator.key(), "operatorTableUpdater.generator invalid");
             assertEq(
                 generator.avs,
-                Env.opsMultisig(), // The generator is set to the ops multisig on initialization
+                _getGeneratorAddress(), // The generator is set to the ops multisig of the *source* chain, hence we cannot use Env.opsMultisig().
                 "operatorTableUpdater.generator.avs invalid"
             );
             assertEq(
@@ -387,6 +387,18 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         }
 
         return initParams;
+    }
+
+    function _getGeneratorAddress() internal view returns (address generatorAddress) {
+        if (Env._strEq(Env.env(), "preprod")) {
+            generatorAddress = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
+        } else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
+            generatorAddress = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "mainnet-base")) {
+            generatorAddress = 0xBE1685C81aA44FF9FB319dD389addd9374383e90;
+        }
+        require(generatorAddress != address(0), "Invalid network");
+        return generatorAddress;
     }
 
     function _parseToml(
