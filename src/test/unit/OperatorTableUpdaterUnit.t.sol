@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/interfaces/IOperatorTableUpdater.sol";
 import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
+import "src/contracts/multichain/BN254CertificateVerifier.sol";
 
 contract OperatorTableUpdaterUnitTests is
     EigenLayerMultichainUnitTestSetup,
@@ -20,6 +21,7 @@ contract OperatorTableUpdaterUnitTests is
     /// @notice Pointers to the operatorTableUpdater and its implementation
     OperatorTableUpdater operatorTableUpdater;
     OperatorTableUpdater operatorTableUpdaterImplementation;
+    BN254OperatorSetInfo initialOperatorSetInfo;
 
     /// @notice The default operatorSet
     OperatorSet defaultOperatorSet = OperatorSet({avs: address(this), id: 0});
@@ -32,7 +34,7 @@ contract OperatorTableUpdaterUnitTests is
         EigenLayerMultichainUnitTestSetup.setUp();
 
         // Setup a mock Bn254OperatorSetInfo for the initial table update on initialization
-        BN254OperatorSetInfo memory initialOperatorSetInfo = BN254OperatorSetInfo({
+        initialOperatorSetInfo = BN254OperatorSetInfo({
             operatorInfoTreeRoot: bytes32(0),
             numOperators: 1,
             aggregatePubkey: BN254.G1Point({X: 1, Y: 2}),
@@ -188,9 +190,9 @@ contract OperatorTableUpdaterUnitTests is
 
 contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTests {
     function test_initialize_success() public view {
-        OperatorSet memory confirmerSet = operatorTableUpdater.getGenerator();
-        assertEq(confirmerSet.avs, address(0xDEADBEEF));
-        assertEq(confirmerSet.id, 0);
+        OperatorSet memory generator = operatorTableUpdater.getGenerator();
+        assertEq(generator.avs, address(0xDEADBEEF));
+        assertEq(generator.id, 0);
         // _latestReferenceTimestamp is set to block.timestamp during initialization
         assertEq(
             operatorTableUpdater.getLatestReferenceTimestamp(),
@@ -213,6 +215,54 @@ contract OperatorTableUpdaterUnitTests_initialize is OperatorTableUpdaterUnitTes
         OperatorSetConfig memory generatorConfig = operatorTableUpdater.getGeneratorConfig();
         assertEq(generatorConfig.maxStalenessPeriod, 0, "Generator maxStalenessPeriod should be 0");
         assertEq(generatorConfig.owner, address(operatorTableUpdater), "Generator owner should be operatorTableUpdater");
+
+        // Check the storage of the mock Bn254CertificateVerifier
+        assertEq(
+            bn254CertificateVerifierMock.getLatestReferenceTimestamp(generator),
+            1,
+            "BN254CertificateVerifier latestReferenceTimestamp should be > 0"
+        );
+        assertEq(
+            bn254CertificateVerifierMock.getOperatorSetOwner(generator),
+            address(operatorTableUpdater),
+            "BN254CertificateVerifier operatorSetOwner should be operatorTableUpdater"
+        );
+        assertEq(
+            bn254CertificateVerifierMock.getMaxStalenessPeriod(generator), 0, "BN254CertificateVerifier maxStalenessPeriod should be 0"
+        );
+        BN254OperatorSetInfo memory info = bn254CertificateVerifierMock.getOperatorSetInfos(generator, 1);
+        assertEq(
+            info.operatorInfoTreeRoot,
+            initialOperatorSetInfo.operatorInfoTreeRoot,
+            "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+        );
+        assertEq(
+            info.numOperators,
+            initialOperatorSetInfo.numOperators,
+            "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+        );
+        assertEq(
+            info.aggregatePubkey.X,
+            initialOperatorSetInfo.aggregatePubkey.X,
+            "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+        );
+        assertEq(
+            info.aggregatePubkey.Y,
+            initialOperatorSetInfo.aggregatePubkey.Y,
+            "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+        );
+        assertEq(
+            info.totalWeights.length,
+            initialOperatorSetInfo.totalWeights.length,
+            "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+        );
+        for (uint i = 0; i < info.totalWeights.length; i++) {
+            assertEq(
+                info.totalWeights[i],
+                initialOperatorSetInfo.totalWeights[i],
+                "BN254CertificateVerifier operatorSetInfos should be initialOperatorSetInfo"
+            );
+        }
     }
 
     function test_initialize_revert_reinitialization() public {
@@ -801,9 +851,9 @@ contract OperatorTableUpdaterUnitTests_getters is OperatorTableUpdaterUnitTests 
     }
 
     function test_getGenerator() public view {
-        OperatorSet memory confirmerSet = operatorTableUpdater.getGenerator();
-        assertEq(confirmerSet.avs, generator.avs);
-        assertEq(confirmerSet.id, generator.id);
+        OperatorSet memory generator = operatorTableUpdater.getGenerator();
+        assertEq(generator.avs, generator.avs);
+        assertEq(generator.id, generator.id);
     }
 
     function test_getGeneratorReferenceTimestamp() public view {
@@ -1055,7 +1105,7 @@ contract OperatorTableUpdaterUnitTests_IntegrationScenarios is OperatorTableUpda
     }
 
     /// @notice This test simulates a real-world ops scenario of disabling a root, updating the generator, and confirming a new global table root
-    function test_disableRoot_updateConfirmerSet_confirmGlobalTableRoot() public {
+    function test_disableRoot_updategenerator_confirmGlobalTableRoot() public {
         // Step 1: Set an initial global table root at a different timestamp to avoid conflicting with generator
         vm.warp(100); // Use a different timestamp
         bytes32 oldGlobalTableRoot = bytes32(uint(999)); // Use a different value to avoid conflicts
