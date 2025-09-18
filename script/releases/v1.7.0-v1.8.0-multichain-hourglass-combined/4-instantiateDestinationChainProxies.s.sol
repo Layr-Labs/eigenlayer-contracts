@@ -186,10 +186,64 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
             BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
             assertTrue(address(bn254CertificateVerifier) != address(0), "bn254CertificateVerifier not deployed");
+
+            // Check the generator info
+            OperatorSet memory generator = initParams.globalRootConfirmerSet;
             assertEq(
-                bn254CertificateVerifier.latestReferenceTimestamp(initParams.globalRootConfirmerSet),
+                bn254CertificateVerifier.latestReferenceTimestamp(generator),
                 1,
                 "bn254CertificateVerifier.latestReferenceTimestamp invalid"
+            );
+            IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory generatorInfo =
+                initParams.globalRootConfirmerSetInfo;
+            IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory returnedGeneratorInfo =
+                bn254CertificateVerifier.getOperatorSetInfo(generator, 1);
+            assertEq(
+                returnedGeneratorInfo.operatorInfoTreeRoot,
+                generatorInfo.operatorInfoTreeRoot,
+                "bn254CertificateVerifier.operatorSetInfo.operatorInfoTreeRoot invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.numOperators,
+                generatorInfo.numOperators,
+                "bn254CertificateVerifier.operatorSetInfo.numOperators invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.aggregatePubkey.X,
+                generatorInfo.aggregatePubkey.X,
+                "bn254CertificateVerifier.operatorSetInfo.aggregatePubkey.X invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.aggregatePubkey.Y,
+                generatorInfo.aggregatePubkey.Y,
+                "bn254CertificateVerifier.operatorSetInfo.aggregatePubkey.Y invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.totalWeights.length,
+                generatorInfo.totalWeights.length,
+                "bn254CertificateVerifier.operatorSetInfo.totalWeights.length invalid"
+            );
+            for (uint256 i = 0; i < returnedGeneratorInfo.totalWeights.length; i++) {
+                assertEq(
+                    returnedGeneratorInfo.totalWeights[i],
+                    generatorInfo.totalWeights[i],
+                    "bn254CertificateVerifier.operatorSetInfo.totalWeights invalid"
+                );
+            }
+            assertEq(
+                bn254CertificateVerifier.getOperatorSetOwner(generator),
+                Env.opsMultisig(),
+                "bn254CertificateVerifier.operatorSetOwner invalid"
+            );
+            assertEq(
+                bn254CertificateVerifier.maxOperatorTableStaleness(generator),
+                0,
+                "bn254CertificateVerifier.maxOperatorTableStaleness invalid"
+            );
+            assertEq(
+                bn254CertificateVerifier.isReferenceTimestampSet(generator, 1),
+                true,
+                "bn254CertificateVerifier.isReferenceTimestampSet invalid"
             );
         }
 
