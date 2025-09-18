@@ -120,18 +120,18 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
         string memory fullPath = string.concat(root, "/", path);
         string memory toml = vm.readFile(fullPath);
 
-        // Parse globalRootConfirmerSet
-        address avs = toml.readAddress(".globalRootConfirmerSet.avs");
-        uint32 id = uint32(toml.readUint(".globalRootConfirmerSet.id"));
+        // Parse generator
+        address avs = toml.readAddress(".generator.avs");
+        uint32 id = uint32(toml.readUint(".generator.id"));
         generatorParams.generator = OperatorSet({avs: avs, id: id});
 
-        // Parse globalRootConfirmerSetInfo
-        generatorParams.generatorInfo.numOperators = uint256(toml.readUint(".globalRootConfirmerSetInfo.numOperators"));
+        // Parse generatorInfo
+        generatorParams.generatorInfo.numOperators = uint256(toml.readUint(".generatorInfo.numOperators"));
         generatorParams.generatorInfo.operatorInfoTreeRoot =
-            toml.readBytes32(".globalRootConfirmerSetInfo.operatorInfoTreeRoot");
-        generatorParams.generatorInfo.totalWeights = toml.readUintArray(".globalRootConfirmerSetInfo.totalWeights");
-        uint256 apkX = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.X");
-        uint256 apkY = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.Y");
+            toml.readBytes32(".generatorInfo.operatorInfoTreeRoot");
+        generatorParams.generatorInfo.totalWeights = toml.readUintArray(".generatorInfo.totalWeights");
+        uint256 apkX = toml.readUint(".generatorInfo.aggregatePubkey.X");
+        uint256 apkY = toml.readUint(".generatorInfo.aggregatePubkey.Y");
         generatorParams.generatorInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
 
         return generatorParams;

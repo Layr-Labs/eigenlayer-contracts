@@ -71,17 +71,17 @@ contract CreateGeneratorConfig is Script, Test {
         // Top level fields
         vm.serializeUint(json_obj, "globalRootConfirmationThreshold", 10_000);
 
-        // globalRootConfirmerSet object
-        string memory confirmerSet_obj = "globalRootConfirmerSet";
-        vm.serializeString(confirmerSet_obj, "avs", _getAVS(network).toHexString());
-        string memory confirmerSetOutput = vm.serializeUint(confirmerSet_obj, "id", 0);
-        vm.serializeString(json_obj, "globalRootConfirmerSet", confirmerSetOutput);
+        // generator object
+        string memory generatorSet_obj = "generator";
+        vm.serializeString(generatorSet_obj, "avs", _getAVS(network).toHexString());
+        string memory generatorOutput = vm.serializeUint(generatorSet_obj, "id", 0);
+        vm.serializeString(json_obj, "generator", generatorOutput);
 
-        // globalRootConfirmerSetInfo object
-        string memory confirmerSetInfo_obj = "globalRootConfirmerSetInfo";
-        vm.serializeUint(confirmerSetInfo_obj, "numOperators", operatorSetInfo.numOperators);
-        vm.serializeBytes32(confirmerSetInfo_obj, "operatorInfoTreeRoot", operatorSetInfo.operatorInfoTreeRoot);
-        vm.serializeUint(confirmerSetInfo_obj, "totalWeights", operatorSetInfo.totalWeights);
+        // generatorInfo object
+        string memory generatorInfo_obj = "generatorInfo";
+        vm.serializeUint(generatorInfo_obj, "numOperators", operatorSetInfo.numOperators);
+        vm.serializeBytes32(generatorInfo_obj, "operatorInfoTreeRoot", operatorSetInfo.operatorInfoTreeRoot);
+        vm.serializeUint(generatorInfo_obj, "totalWeights", operatorSetInfo.totalWeights);
 
         // aggregatePubkey nested object
         string memory aggregatePubkey_obj = "aggregatePubkey";
@@ -89,9 +89,9 @@ contract CreateGeneratorConfig is Script, Test {
         string memory aggregatePubkeyOutput =
             vm.serializeString(aggregatePubkey_obj, "Y", operatorSetInfo.aggregatePubkey.Y.toString());
 
-        string memory confirmerSetInfoOutput =
-            vm.serializeString(confirmerSetInfo_obj, "aggregatePubkey", aggregatePubkeyOutput);
-        string memory finalJson = vm.serializeString(json_obj, "globalRootConfirmerSetInfo", confirmerSetInfoOutput);
+        string memory generatorInfoOutput =
+            vm.serializeString(generatorInfo_obj, "aggregatePubkey", aggregatePubkeyOutput);
+        string memory finalJson = vm.serializeString(json_obj, "generatorInfo", generatorInfoOutput);
 
         // Write TOML file using writeToml
         string memory outputPath =
