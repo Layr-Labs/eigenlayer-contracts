@@ -208,7 +208,7 @@ contract TaskMailbox is
             task.executorOperatorSetTaskConfig.consensus,
             executorOperatorSet,
             task.operatorTableReferenceTimestamp,
-            keccak256(result),
+            getMessageHash(taskHash, result),
             executorCert
         );
 
@@ -406,15 +406,15 @@ contract TaskMailbox is
      * @notice Validates a BN254 certificate's basic requirements
      * @param cert The BN254 certificate to validate
      * @param operatorTableReferenceTimestamp The expected reference timestamp
-     * @param resultHash The expected message hash
+     * @param messageHash The expected message hash
      */
     function _validateBN254Certificate(
         IBN254CertificateVerifierTypes.BN254Certificate memory cert,
         uint32 operatorTableReferenceTimestamp,
-        bytes32 resultHash
+        bytes32 messageHash
     ) internal pure {
         require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-        require(cert.messageHash == resultHash, InvalidMessageHash());
+        require(cert.messageHash == messageHash, InvalidMessageHash());
         require(!(cert.signature.X == 0 && cert.signature.Y == 0), EmptyCertificateSignature());
     }
 
@@ -422,15 +422,15 @@ contract TaskMailbox is
      * @notice Validates an ECDSA certificate's basic requirements
      * @param cert The ECDSA certificate to validate
      * @param operatorTableReferenceTimestamp The expected reference timestamp
-     * @param resultHash The expected message hash
+     * @param messageHash The expected message hash
      */
     function _validateECDSACertificate(
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert,
         uint32 operatorTableReferenceTimestamp,
-        bytes32 resultHash
+        bytes32 messageHash
     ) internal pure {
         require(cert.referenceTimestamp == operatorTableReferenceTimestamp, InvalidReferenceTimestamp());
-        require(cert.messageHash == resultHash, InvalidMessageHash());
+        require(cert.messageHash == messageHash, InvalidMessageHash());
         require(cert.sig.length > 0, EmptyCertificateSignature());
     }
 
@@ -440,7 +440,7 @@ contract TaskMailbox is
      * @param consensus The consensus configuration
      * @param executorOperatorSet The executor operator set
      * @param operatorTableReferenceTimestamp The reference timestamp of the operator table
-     * @param resultHash The hash of the result of the task
+     * @param messageHash The hash of the message that was signed by the operators
      * @param executorCert The executor certificate to verify
      */
     function _verifyExecutorCertificate(
@@ -448,7 +448,7 @@ contract TaskMailbox is
         Consensus memory consensus,
         OperatorSet memory executorOperatorSet,
         uint32 operatorTableReferenceTimestamp,
-        bytes32 resultHash,
+        bytes32 messageHash,
         bytes memory executorCert
     ) internal {
         if (consensus.consensusType == ConsensusType.NONE) {
@@ -462,7 +462,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
                 // Validate the certificate
-                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, resultHash);
+                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, messageHash);
 
                 IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificate(executorOperatorSet, bn254Cert);
             } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
@@ -471,7 +471,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
                 // Validate the certificate
-                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, resultHash);
+                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, messageHash);
 
                 IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificate(executorOperatorSet, ecdsaCert);
             } else {
@@ -493,7 +493,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IBN254CertificateVerifierTypes.BN254Certificate));
 
                 // Validate the certificate
-                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, resultHash);
+                _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, messageHash);
 
                 isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
                     executorOperatorSet, bn254Cert, totalStakeProportionThresholds
@@ -504,7 +504,7 @@ contract TaskMailbox is
                     abi.decode(executorCert, (IECDSACertificateVerifierTypes.ECDSACertificate));
 
                 // Validate the certificate
-                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, resultHash);
+                _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, messageHash);
 
                 (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificateProportion(
                     executorOperatorSet, ecdsaCert, totalStakeProportionThresholds
@@ -585,5 +585,10 @@ contract TaskMailbox is
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert
     ) external pure returns (bytes memory) {
         return abi.encode(cert);
+    }
+
+    /// @inheritdoc ITaskMailbox
+    function getMessageHash(bytes32 taskHash, bytes memory result) public pure returns (bytes32) {
+        return keccak256(abi.encode(taskHash, result));
     }
 }

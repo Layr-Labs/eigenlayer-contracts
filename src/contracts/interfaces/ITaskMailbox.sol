@@ -428,6 +428,14 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
     ) external pure returns (bytes memory);
 
     /**
+     * @notice Gets the message hash for a task that needs to be signed by operators
+     * @param taskHash Unique identifier of the task
+     * @param result Task execution result data
+     * @return The message hash for the task that needs to be signed by operators
+     */
+    function getMessageHash(bytes32 taskHash, bytes memory result) external pure returns (bytes32);
+
+    /**
      * @notice Gets the current fee split percentage
      * @return The fee split in basis points
      */
