@@ -127,8 +127,7 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
 
         // Parse generatorInfo
         generatorParams.generatorInfo.numOperators = uint256(toml.readUint(".generatorInfo.numOperators"));
-        generatorParams.generatorInfo.operatorInfoTreeRoot =
-            toml.readBytes32(".generatorInfo.operatorInfoTreeRoot");
+        generatorParams.generatorInfo.operatorInfoTreeRoot = toml.readBytes32(".generatorInfo.operatorInfoTreeRoot");
         generatorParams.generatorInfo.totalWeights = toml.readUintArray(".generatorInfo.totalWeights");
         uint256 apkX = toml.readUint(".generatorInfo.aggregatePubkey.X");
         uint256 apkY = toml.readUint(".generatorInfo.aggregatePubkey.Y");
