@@ -1,8 +1,8 @@
 globalRootConfirmationThreshold = 10000
 
 [globalRootConfirmerSet]
-avs = "0xda29bb71669f46f2a779b4b62f03644a84ee3479"
-id = 1
+avs = "0xb094ba769b4976dc37fc689a76675f31bc4923b0"
+id = 0
 
 [globalRootConfirmerSetInfo]
 numOperators = 1

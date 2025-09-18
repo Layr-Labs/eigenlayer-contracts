@@ -122,10 +122,17 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
 
             // Checks on the generator
             OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
+            OperatorSet memory generator = operatorTableUpdater.getGenerator();
+            assertEq(generator.key(), initParams.globalRootConfirmerSet.key(), "operatorTableUpdater.generator invalid");
             assertEq(
-                operatorTableUpdater.getGenerator().key(),
-                initParams.globalRootConfirmerSet.key(),
-                "operatorTableUpdater.generator invalid"
+                generator.avs,
+                Env.opsMultisig(), // The generator is set to the ops multisig on initialization
+                "operatorTableUpdater.generator.avs invalid"
+            );
+            assertEq(
+                generator.id,
+                0, // The generator is set to 0 on initialization
+                "operatorTableUpdater.generator.id invalid"
             );
             assertEq(
                 operatorTableUpdater.getGeneratorReferenceTimestamp(),
@@ -159,6 +166,13 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                 operatorTableUpdater.getGeneratorConfig();
             assertEq(generatorConfig.maxStalenessPeriod, 0, "generatorConfig.maxStalenessPeriod invalid");
             assertEq(generatorConfig.owner, address(operatorTableUpdater), "generatorConfig.owner invalid");
+
+            // Check the global root confirmation threshold is 10000
+            assertEq(
+                operatorTableUpdater.globalRootConfirmationThreshold(),
+                10_000,
+                "operatorTableUpdater.globalRootConfirmationThreshold invalid"
+            );
         }
 
         // Validate ECDSACertificateVerifier

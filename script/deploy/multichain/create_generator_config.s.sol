@@ -16,21 +16,9 @@ contract CreateGeneratorConfig is Script, Test {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    address internal constant AVS = 0xDA29BB71669f46F2a779b4b62f03644A84eE3479;
-
     function run(string memory network, uint256 xCoord, uint256 yCoord) public {
-        /**
-         *
-         *                     VALIDATION
-         *
-         */
-        require(_strEq(network, "preprod") || _strEq(network, "testnet"), "Invalid network");
-        
         // Create G1Point from provided coordinates
-        BN254.G1Point memory publicKeyG1 = BN254.G1Point({
-            X: xCoord,
-            Y: yCoord
-        });
+        BN254.G1Point memory publicKeyG1 = BN254.G1Point({X: xCoord, Y: yCoord});
 
         /**
          *
@@ -53,12 +41,7 @@ contract CreateGeneratorConfig is Script, Test {
         // 4. Set the operatorInfoTreeRoot
         bytes32[] memory operatorInfoLeaves = new bytes32[](1);
         operatorInfoLeaves[0] = keccak256(
-            abi.encode(
-                IOperatorTableCalculatorTypes.BN254OperatorInfo({
-                    pubkey: publicKeyG1,
-                    weights: weights
-                })
-            )
+            abi.encode(IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: publicKeyG1, weights: weights}))
         );
         operatorSetInfo.operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
 
@@ -70,7 +53,7 @@ contract CreateGeneratorConfig is Script, Test {
 
         // Write operator set info to TOML file
         _writeOperatorSetToml(network, operatorSetInfo);
-        
+
         // Log the generated config
         console.log("Generated operator set config for network:", network);
         console.log("Public key G1 - X:", xCoord);
@@ -90,7 +73,7 @@ contract CreateGeneratorConfig is Script, Test {
 
         // globalRootConfirmerSet object
         string memory confirmerSet_obj = "globalRootConfirmerSet";
-        vm.serializeString(confirmerSet_obj, "avs", AVS.toHexString());
+        vm.serializeString(confirmerSet_obj, "avs", _getAVS(network).toHexString());
         string memory confirmerSetOutput = vm.serializeUint(confirmerSet_obj, "id", 0);
         vm.serializeString(json_obj, "globalRootConfirmerSet", confirmerSetOutput);
 
@@ -111,11 +94,28 @@ contract CreateGeneratorConfig is Script, Test {
         string memory finalJson = vm.serializeString(json_obj, "globalRootConfirmerSetInfo", confirmerSetInfoOutput);
 
         // Write TOML file using writeToml
-        string memory outputPath = string.concat("script/releases/v1.7.0-multichain/configs/", network, ".toml");
+        string memory outputPath =
+            string.concat("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/", network, ".toml");
         vm.writeToml(finalJson, outputPath);
     }
 
     function _strEq(string memory a, string memory b) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+    }
+
+    /// @dev Returns the ops multisig address for the given network
+    function _getAVS(
+        string memory network
+    ) internal pure returns (address avs) {
+        avs = address(0);
+        if (_strEq(network, "preprod")) {
+            avs = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
+        } else if (_strEq(network, "testnet")) {
+            avs = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
+        } else if (_strEq(network, "mainnet")) {
+            avs = 0xBE1685C81aA44FF9FB319dD389addd9374383e90;
+        }
+        require(avs != address(0), "Invalid network");
+        return avs;
     }
 }

@@ -2,7 +2,7 @@
 globalRootConfirmationThreshold = 10000
 # Global root confirmer set configuration
 [globalRootConfirmerSet]
-avs = "0x0000000000000000000000000000000000000042"
+avs = "0xBE1685C81aA44FF9FB319dD389addd9374383e90"
 id = 0
 
 # Global root confirmer set info
