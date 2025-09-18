@@ -382,7 +382,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // NOTE: For testnet-holesky and testnet-hoodi, the operator table updater is not used
         else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
             initParams = _parseToml("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/testnet.toml");
-        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "mainnet-base")) {
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "base")) {
             initParams = _parseToml("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/mainnet.toml");
         }
 
@@ -394,7 +394,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             generatorAddress = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
         } else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
             generatorAddress = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
-        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "mainnet-base")) {
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "base")) {
             generatorAddress = 0xBE1685C81aA44FF9FB319dD389addd9374383e90;
         }
         require(generatorAddress != address(0), "Invalid network");
