@@ -104,7 +104,7 @@ contract CreateGeneratorConfig is Script, Test {
     }
 
     /// @dev Returns the ops multisig address for the given network
-    function _getGeneratorAddress()(
+    function _getGeneratorAddress(
         string memory network
     ) internal pure returns (address avs) {
         avs = address(0);
