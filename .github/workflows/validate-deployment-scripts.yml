@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia]
+        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base]
 
     steps:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
@@ -91,6 +91,8 @@ jobs:
             RPC_URL="${{ secrets.RPC_BASE_SEPOLIA }}"
           elif [ "${{ matrix.env }}" = "mainnet" ]; then
             RPC_URL="${{ secrets.RPC_MAINNET }}"
+          elif [ "${{ matrix.env }}" = "base" ]; then
+            RPC_URL="${{ secrets.RPC_BASE }}"
           fi
           
           # Run zeus test on each file with the specified environment and RPC URL

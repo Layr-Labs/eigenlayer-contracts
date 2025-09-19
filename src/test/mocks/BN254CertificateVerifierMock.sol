@@ -96,4 +96,24 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
     function validateCertificateTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) external view {
         _validateCertificateTimestamp(operatorSet.key(), referenceTimestamp);
     }
+
+    function getLatestReferenceTimestamp(OperatorSet memory operatorSet) external view returns (uint32) {
+        return _latestReferenceTimestamp[operatorSet.key()];
+    }
+
+    function getOperatorSetOwner(OperatorSet memory operatorSet) external view returns (address) {
+        return _operatorSetOwners[operatorSet.key()];
+    }
+
+    function getMaxStalenessPeriod(OperatorSet memory operatorSet) external view returns (uint32) {
+        return _maxStalenessPeriods[operatorSet.key()];
+    }
+
+    function getOperatorSetInfos(OperatorSet memory operatorSet, uint32 referenceTimestamp)
+        external
+        view
+        returns (BN254OperatorSetInfo memory)
+    {
+        return _operatorSetInfos[operatorSet.key()][referenceTimestamp];
+    }
 }

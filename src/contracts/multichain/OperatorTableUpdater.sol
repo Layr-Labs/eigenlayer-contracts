@@ -57,6 +57,11 @@ contract OperatorTableUpdater is
     ) external initializer {
         _transferOwnership(_owner);
         _setPausedStatus(initialPausedStatus);
+
+        // Set the `operatorSetConfig` for the `Generator`
+        _generatorConfig.maxStalenessPeriod = GENERATOR_MAX_STALENESS_PERIOD;
+        _generatorConfig.owner = address(this);
+
         _updateGenerator(_initialGenerator, generatorInfo);
         _setGlobalRootConfirmationThreshold(_globalRootConfirmationThreshold);
 
@@ -64,10 +69,6 @@ contract OperatorTableUpdater is
         // The constant is used to enable the call to `confirmGlobalTableRoot` to pass since the `BN254CertificateVerifier` expects the `Generator` to have a valid root associated with it.
         _globalTableRoots[GENERATOR_REFERENCE_TIMESTAMP] = GENERATOR_GLOBAL_TABLE_ROOT;
         _isRootValid[GENERATOR_GLOBAL_TABLE_ROOT] = true;
-
-        // Set the `operatorSetConfig` for the `Generator`
-        _generatorConfig.maxStalenessPeriod = GENERATOR_MAX_STALENESS_PERIOD;
-        _generatorConfig.owner = address(this);
 
         // Set the `latestReferenceTimestamp` so that only *new* roots can be confirmed
         _latestReferenceTimestamp = uint32(block.timestamp);
