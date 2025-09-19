@@ -676,4 +676,34 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool);
+
+    /**
+     * @notice Returns the number of shares that would be slashed for an operator in a given strategy.
+     * @param operator The address of the operator to preview slashed shares for.
+     * @param operatorSet The operator set to preview slashed shares for.
+     * @param strategy The strategy to preview slashed shares for.
+     * @param wadToSlash The proportion (in wad) of the operator's allocation to be slashed.
+     * @return shares The number of shares that would be slashed.
+     */
+    function previewSlashOperatorShares(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 wadToSlash
+    ) external view returns (uint256 shares);
+
+    /**
+     * @notice Returns the amount of underlying tokens that would be slashed for an operator in a given strategy.
+     * @param operator The address of the operator to preview slashed underlying for.
+     * @param operatorSet The operator set to preview slashed underlying for.
+     * @param strategy The strategy to preview slashed underlying for.
+     * @param wadToSlash The proportion (in wad) of the operator's allocation to be slashed.
+     * @return underlying The amount of underlying tokens that would be slashed.
+     */
+    function previewSlashOperatorUnderlying(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        uint256 wadToSlash
+    ) external view returns (uint256 underlying);
 }
