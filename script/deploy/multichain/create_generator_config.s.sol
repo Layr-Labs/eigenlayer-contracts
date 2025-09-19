@@ -73,7 +73,7 @@ contract CreateGeneratorConfig is Script, Test {
 
         // generator object
         string memory generatorSet_obj = "generator";
-        vm.serializeString(generatorSet_obj, "avs", _getAVS(network).toHexString());
+        vm.serializeString(generatorSet_obj, "avs", _getGeneratorAddress()(network).toHexString());
         string memory generatorOutput = vm.serializeUint(generatorSet_obj, "id", 0);
         vm.serializeString(json_obj, "generator", generatorOutput);
 
@@ -104,7 +104,7 @@ contract CreateGeneratorConfig is Script, Test {
     }
 
     /// @dev Returns the ops multisig address for the given network
-    function _getAVS(
+    function _getGeneratorAddress()(
         string memory network
     ) internal pure returns (address avs) {
         avs = address(0);
