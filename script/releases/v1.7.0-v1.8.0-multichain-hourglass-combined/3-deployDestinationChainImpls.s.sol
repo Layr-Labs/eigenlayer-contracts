@@ -2,28 +2,34 @@
 pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
+import {DeployDestinationChainProxies} from "./2-deployDestinationChainProxies.s.sol";
+import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
+import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "../Env.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 /**
- * Purpose: use an EOA to deploy all of the new destination chain contracts for this upgrade.
+ * Purpose: Deploy implementation contracts for the destination chain using an EOA.
+ * Multichain:
+ * - OperatorTableUpdater
+ * - ECDSACertificateVerifier
+ * - BN254CertificateVerifier
+ * Hourglass:
+ * - TaskMailbox
  */
-contract DeployDestinationChain is EOADeployer {
+contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxies {
     using Env for *;
 
-    /// forgefmt: disable-next-item
     function _runAsEOA() internal override {
-        // If we're not on a destination chain, we don't need to deploy any contracts
-        if (!Env.isDestinationChain()) {
+        // If we're not on a destination chain or we're on a version that already has these contracts deployed, we don't need to deploy any contracts
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
         vm.startBroadcast();
 
-        // Deploy OperatorTableUpdater implementation
+        // Deploy the implementations
+
+        // OperatorTableUpdater
         deployImpl({
             name: type(OperatorTableUpdater).name,
             deployedTo: address(
@@ -36,7 +42,7 @@ contract DeployDestinationChain is EOADeployer {
             )
         });
 
-        // Deploy ECDSACertificateVerifier implementation
+        // ECDSACertificateVerifier
         deployImpl({
             name: type(ECDSACertificateVerifier).name,
             deployedTo: address(
@@ -47,7 +53,7 @@ contract DeployDestinationChain is EOADeployer {
             )
         });
 
-        // Deploy BN254CertificateVerifier implementation
+        // BN254CertificateVerifier
         deployImpl({
             name: type(BN254CertificateVerifier).name,
             deployedTo: address(
@@ -58,7 +64,8 @@ contract DeployDestinationChain is EOADeployer {
             )
         });
 
-        // Deploy TaskMailbox implementation
+        // TaskMailbox
+
         deployImpl({
             name: type(TaskMailbox).name,
             deployedTo: address(
@@ -74,75 +81,29 @@ contract DeployDestinationChain is EOADeployer {
         vm.stopBroadcast();
     }
 
-    function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
+    function testScript() public virtual override {
+        if (!Env.isDestinationChain() || _isAlreadyDeployed()) {
             return;
         }
 
-        // Set the mode to EOA so we can deploy the contracts
-        runAsEOA();
+        // 1. Deploy destination chain proxies
+        // Only deploy the proxies if they haven't been deployed yet
+        /// @dev This is needed in the production environment tests since this step would fail if the proxies are already deployed
+        if (!_areProxiesDeployed()) {
+            DeployDestinationChainProxies._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it in the execute()
+        } else {
+            // Since the proxies are already deployed, we need to update the env with the proper addresses
+            _addContractsToEnv();
+        }
 
-        _validateNewImplAddresses({areMatching: false});
-        _validateProxyAdmins();
+        // 2. Deploy destination chain impls
+        super.runAsEOA();
+
+        // Validate the destination chain
         _validateImplConstructors();
         _validateImplsInitialized();
         _validateVersion();
-    }
-
-    /// @dev Validate that the `Env.impl` addresses are updated to be distinct from what the proxy
-    /// admin reports as the current implementation address.
-    ///
-    /// Note: The upgrade script can call this with `areMatching == true` to check that these impl
-    /// addresses _are_ matches.
-    function _validateNewImplAddresses(
-        bool areMatching
-    ) internal view {
-        function (bool, string memory) internal pure assertion = areMatching ? _assertTrue : _assertFalse;
-
-        // OperatorTableUpdater
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.operatorTableUpdater())) == address(Env.impl.operatorTableUpdater()),
-            "operatorTableUpdater impl failed"
-        );
-
-        // ECDSACertificateVerifier
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.ecdsaCertificateVerifier()))
-                == address(Env.impl.ecdsaCertificateVerifier()),
-            "ecdsaCertificateVerifier impl failed"
-        );
-
-        // BN254CertificateVerifier
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.bn254CertificateVerifier()))
-                == address(Env.impl.bn254CertificateVerifier()),
-            "bn254CertificateVerifier impl failed"
-        );
-
-        // TaskMailbox
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.taskMailbox())) == address(Env.impl.taskMailbox()),
-            "taskMailbox impl failed"
-        );
-    }
-
-    /// @dev Ensure each deployed TUP/beacon is owned by the proxyAdmin/executorMultisig
-    function _validateProxyAdmins() internal view {
-        address pa = Env.proxyAdmin();
-
-        assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.operatorTableUpdater())) == pa,
-            "operatorTableUpdater proxyAdmin incorrect"
-        );
-        assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.ecdsaCertificateVerifier())) == pa,
-            "ecdsaCertificateVerifier proxyAdmin incorrect"
-        );
-        assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.bn254CertificateVerifier())) == pa,
-            "bn254CertificateVerifier proxyAdmin incorrect"
-        );
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.taskMailbox())) == pa, "taskMailbox proxyAdmin incorrect");
     }
 
     /// @dev Validate the immutables set in the new implementation constructors
@@ -187,15 +148,15 @@ contract DeployDestinationChain is EOADeployer {
             /// TaskMailbox
             TaskMailbox taskMailbox = Env.impl.taskMailbox();
             assertTrue(
-                taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
-                "taskMailbox.BN254_CERTIFICATE_VERIFIER invalid"
+                address(taskMailbox.BN254_CERTIFICATE_VERIFIER()) == address(Env.proxy.bn254CertificateVerifier()),
+                "tm.bn254CertificateVerifier invalid"
             );
             assertTrue(
-                taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
-                "taskMailbox.ECDSA_CERTIFICATE_VERIFIER invalid"
+                address(taskMailbox.ECDSA_CERTIFICATE_VERIFIER()) == address(Env.proxy.ecdsaCertificateVerifier()),
+                "tm.ecdsaCertificateVerifier invalid"
             );
-            assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "taskMailbox.MAX_TASK_SLA failed");
-            assertEq(taskMailbox.version(), Env.deployVersion(), "taskMailbox.version failed");
+            assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "tm.maxTaskSLA failed");
+            assertEq(taskMailbox.version(), Env.deployVersion(), "tm.version failed");
         }
     }
 
@@ -217,8 +178,9 @@ contract DeployDestinationChain is EOADeployer {
             dummyBN254Info // globalRootConfirmerSetInfo
         );
 
-        /// TaskMailbox - dummy parameters
+        /// TaskMailbox
         TaskMailbox taskMailbox = Env.impl.taskMailbox();
+
         vm.expectRevert(errInit);
         taskMailbox.initialize(
             address(0), // owner
@@ -230,20 +192,11 @@ contract DeployDestinationChain is EOADeployer {
     }
 
     function _validateVersion() internal view {
-        // On future upgrades, just tick the major/minor/patch to validate
         string memory expected = Env.deployVersion();
 
         assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
         assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
         assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
         assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
-    }
-
-    function _assertTrue(bool b, string memory err) internal pure {
-        assertTrue(b, err);
-    }
-
-    function _assertFalse(bool b, string memory err) internal pure {
-        assertFalse(b, err);
     }
 }
