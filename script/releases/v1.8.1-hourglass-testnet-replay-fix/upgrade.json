@@ -1,0 +1,19 @@
+{
+    "name": "hourglass-testnet-replay-fix-v1.8.1",
+    "from": "1.8.0",
+    "to": "1.8.1",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployTaskMailboxImpl.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueTaskMailboxUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-executeTaskMailboxUpgrade.s.sol"
+        }
+    ]
+}
