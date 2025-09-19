@@ -128,7 +128,7 @@ contract DeployGenerator is Script, Test {
 
         // generator object
         string memory generator_obj = "generator";
-        vm.serializeString(generator_obj, "avs", _getGeneratorAddress()(network).toHexString());
+        vm.serializeString(generator_obj, "avs", _getGeneratorAddress(network).toHexString());
         string memory generatorOutput = vm.serializeUint(generator_obj, "id", 0);
         vm.serializeString(json_obj, "generator", generatorOutput);
 
