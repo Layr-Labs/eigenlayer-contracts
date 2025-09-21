@@ -232,17 +232,11 @@ library Random {
     {
         allocateParams = new IAllocationManagerTypes.AllocateParams[](numAllocations);
 
-        // TODO: Randomize magnitudes such that they sum to 1e18 (100%).
-        uint64 magnitudePerSet = uint64(WAD / numStrats);
-
         for (uint i; i < numAllocations; ++i) {
             allocateParams[i].operatorSet = OperatorSet(avs, r.Uint32());
             allocateParams[i].strategies = r.StrategyArray(numStrats);
-            allocateParams[i].newMagnitudes = new uint64[](numStrats);
-
-            for (uint j; j < numStrats; ++j) {
-                allocateParams[i].newMagnitudes[j] = magnitudePerSet;
-            }
+            // Generate random magnitudes that sum to WAD (1e18)
+            allocateParams[i].newMagnitudes = r.RandomMagnitudes(numStrats);
         }
     }
 
@@ -333,6 +327,46 @@ library Random {
     /// -----------------------------------------------------------------------
     /// Helpers
     /// -----------------------------------------------------------------------
+
+    /// @dev Generates random magnitudes that sum to WAD (1e18).
+    /// @param r Randomness source
+    /// @param numStrats Number of strategies to generate magnitudes for
+    /// @return magnitudes Array of magnitudes that sum to WAD
+    function RandomMagnitudes(Randomness r, uint numStrats) internal returns (uint64[] memory magnitudes) {
+        if (numStrats == 0) {
+            return new uint64[](0);
+        }
+        
+        if (numStrats == 1) {
+            magnitudes = new uint64[](1);
+            magnitudes[0] = uint64(WAD);
+            return magnitudes;
+        }
+
+        magnitudes = new uint64[](numStrats);
+        
+        // Generate random weights for each strategy
+        uint[] memory weights = new uint[](numStrats);
+        uint totalWeight = 0;
+        
+        for (uint i = 0; i < numStrats; ++i) {
+            // Generate random weight between 1 and 1000 to avoid zero weights
+            weights[i] = r.Uint256(1, 1000);
+            totalWeight += weights[i];
+        }
+        
+        // Convert weights to magnitudes that sum to WAD
+        uint remainingWad = WAD;
+        for (uint i = 0; i < numStrats - 1; ++i) {
+            // Calculate magnitude based on proportional weight
+            uint magnitude = (weights[i] * WAD) / totalWeight;
+            magnitudes[i] = uint64(magnitude);
+            remainingWad -= magnitude;
+        }
+        
+        // Assign remaining WAD to the last strategy to ensure exact sum
+        magnitudes[numStrats - 1] = uint64(remainingWad);
+    }
 
     function wrap(uint r) internal pure returns (Randomness) {
         return Randomness.wrap(r);
