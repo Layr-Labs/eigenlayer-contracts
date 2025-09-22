@@ -19,7 +19,7 @@ contract QueueTaskMailboxUpgrade is MultisigBuilder, DeployTaskMailboxImpl {
     using Encode for *;
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
-        if (!Env.isDestinationChain()) {
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 
@@ -56,7 +56,7 @@ contract QueueTaskMailboxUpgrade is MultisigBuilder, DeployTaskMailboxImpl {
     }
 
     function testScript() public virtual override {
-        if (!Env.isDestinationChain()) {
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 

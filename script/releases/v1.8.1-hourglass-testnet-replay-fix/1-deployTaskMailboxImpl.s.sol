@@ -15,8 +15,8 @@ contract DeployTaskMailboxImpl is EOADeployer {
 
     /// forgefmt: disable-next-item
     function _runAsEOA() internal override {
-        // If we're not on a destination chain, we don't need to deploy any contracts
-        if (!Env.isDestinationChain()) {
+        // If we're not on a destination chain and not on version 1.8.0, we don't need to deploy any contracts
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 
@@ -39,7 +39,7 @@ contract DeployTaskMailboxImpl is EOADeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 

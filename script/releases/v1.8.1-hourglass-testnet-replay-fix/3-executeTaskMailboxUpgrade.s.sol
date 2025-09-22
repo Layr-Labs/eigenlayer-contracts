@@ -16,7 +16,7 @@ contract ExecuteTaskMailboxUpgrade is QueueTaskMailboxUpgrade {
     using Encode for *;
 
     function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
-        if (!Env.isDestinationChain()) {
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 
@@ -33,7 +33,7 @@ contract ExecuteTaskMailboxUpgrade is QueueTaskMailboxUpgrade {
     }
 
     function testScript() public virtual override {
-        if (!Env.isDestinationChain()) {
+        if (!(Env.isDestinationChain() && Env._strEq(Env.envVersion(), "1.8.0"))) {
             return;
         }
 
