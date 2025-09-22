@@ -210,6 +210,12 @@ contract User is Logger, TypeImporter {
         print.gasUsed();
     }
 
+    function registerAsOperator(uint32 allocDelay) public virtual createSnapshot {
+        print.method("registerAsOperator");
+        delegationManager.registerAsOperator(address(0), allocDelay, "metadata");
+        print.gasUsed();
+    }
+
     /// @dev Delegate to the operator without a signature
     function delegateTo(User operator) public virtual createSnapshot {
         print.method("delegateTo", operator.NAME_COLORED());
