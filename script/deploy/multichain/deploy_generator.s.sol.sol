@@ -149,7 +149,8 @@ contract DeployGenerator is Script, Test {
         string memory finalJson = vm.serializeString(json_obj, "generatorInfo", generatorInfoOutput);
 
         // Write TOML file using writeToml
-        string memory outputPath = string.concat("script/releases/v1.7.0-multichain/configs/", network, ".toml");
+        string memory outputPath =
+            string.concat("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/", network, ".toml");
         vm.writeToml(finalJson, outputPath);
     }
 

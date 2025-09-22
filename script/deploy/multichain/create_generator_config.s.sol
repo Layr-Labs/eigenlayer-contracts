@@ -58,7 +58,10 @@ contract CreateGeneratorConfig is Script, Test {
         console.log("Generated operator set config for network:", network);
         console.log("Public key G1 - X:", xCoord);
         console.log("Public key G1 - Y:", yCoord);
-        console.log("Config written to:", string.concat("script/releases/v1.7.0-multichain/configs/", network, ".toml"));
+        console.log(
+            "Config written to:",
+            string.concat("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/", network, ".toml")
+        );
     }
 
     function _writeOperatorSetToml(
