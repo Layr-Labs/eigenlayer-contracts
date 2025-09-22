@@ -21,7 +21,8 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
 
-    string private constant TESTNET_CONFIG_PATH = "script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/preprod.toml";
+    string private constant TESTNET_CONFIG_PATH =
+        "script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/preprod.toml";
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         GeneratorParams memory generatorParams = _getGeneratorParams(TESTNET_CONFIG_PATH);
@@ -31,7 +32,8 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
     function testScript() public virtual {
         // Require that the environment is a testnet environment supported by multichain
         require(
-            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia"),
+            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
+                || Env._strEq(Env.env(), "testnet-base-sepolia"),
             "Environment must be a preprod/testnet environment"
         );
 
