@@ -14,14 +14,14 @@ import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import {stdToml} from "forge-std/StdToml.sol";
 
 /**
- * Purpose: Update the generator on a TESTNET environment
+ * Purpose: Update the generator on a PREPROD/TESTNET environment
  */
 contract QueueTransferProxyAdmin is MultisigBuilder {
     using Env for *;
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
 
-    string private constant TESTNET_CONFIG_PATH = "script/releases/v1.7.0-multichain/configs/testnet.toml";
+    string private constant TESTNET_CONFIG_PATH = "script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/preprod.toml";
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         GeneratorParams memory generatorParams = _getGeneratorParams(TESTNET_CONFIG_PATH);
@@ -31,8 +31,8 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
     function testScript() public virtual {
         // Require that the environment is a testnet environment supported by multichain
         require(
-            Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia"),
-            "Environment must be a testnet environment"
+            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia"),
+            "Environment must be a preprod/testnet environment"
         );
 
         // Update the generator
