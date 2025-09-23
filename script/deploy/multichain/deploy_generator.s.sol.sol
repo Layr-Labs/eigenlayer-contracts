@@ -8,11 +8,12 @@ import "src/contracts/interfaces/IOperatorTableCalculator.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
 import "src/contracts/libraries/Merkle.sol";
+import {Env} from "../../releases/Env.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/Test.sol";
 
-// forge script script/deploy/multichain/deploy_generator.s.sol --sig "run(string memory)" $NETWORK
+// zeus run --command 'forge script script/deploy/multichain/deploy_generator.s.sol --sig "run(string memory,string memory)" $NETWORK $SALT' --env $NETWORK
 contract DeployGenerator is Script, Test {
     using Strings for *;
     using Merkle for bytes32[];
@@ -24,7 +25,10 @@ contract DeployGenerator is Script, Test {
          *                     WALLET CREATION
          *
          */
-        require(_strEq(network, "preprod") || _strEq(network, "testnet"), "Invalid network");
+        require(
+            _strEq(network, "preprod") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
+            "Invalid network"
+        );
 
         // 1. Create a BN254 Wallet using random salt
         Operator memory operator = OperatorWalletLib.createOperator(salt);
@@ -128,7 +132,7 @@ contract DeployGenerator is Script, Test {
 
         // generator object
         string memory generator_obj = "generator";
-        vm.serializeString(generator_obj, "avs", _getGeneratorAddress(network).toHexString());
+        vm.serializeString(generator_obj, "avs", _getGeneratorAddress().toHexString());
         string memory generatorOutput = vm.serializeUint(generator_obj, "id", 0);
         vm.serializeString(json_obj, "generator", generatorOutput);
 
@@ -149,6 +153,10 @@ contract DeployGenerator is Script, Test {
         string memory finalJson = vm.serializeString(json_obj, "generatorInfo", generatorInfoOutput);
 
         // Write TOML file using writeToml
+        // If we are on testnet-sepolia, write to testnet.toml
+        if (_strEq(network, "testnet-sepolia")) {
+            network = "testnet";
+        }
         string memory outputPath =
             string.concat("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/", network, ".toml");
         vm.writeToml(finalJson, outputPath);
@@ -159,18 +167,7 @@ contract DeployGenerator is Script, Test {
     }
 
     /// @dev Returns the ops multisig address for the given network
-    function _getGeneratorAddress(
-        string memory network
-    ) internal pure returns (address avs) {
-        avs = address(0);
-        if (_strEq(network, "preprod")) {
-            avs = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
-        } else if (_strEq(network, "testnet")) {
-            avs = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
-        } else if (_strEq(network, "mainnet")) {
-            avs = 0xBE1685C81aA44FF9FB319dD389addd9374383e90;
-        }
-        require(avs != address(0), "Invalid network");
-        return avs;
+    function _getGeneratorAddress() internal view returns (address generatorAddress) {
+        generatorAddress = Env.opsMultisig();
     }
 }
