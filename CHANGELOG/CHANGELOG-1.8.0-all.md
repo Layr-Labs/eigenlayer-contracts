@@ -62,5 +62,3 @@ The below release notes cover the updated version release candidate for multicha
 - fix: correct ecdsa message hash check [PR #1563](https://github.com/layr-labs/eigenlayer-contracts/pull/1563)
 - fix: Release Manager internal review fixes [PR #1571](https://github.com/layr-labs/eigenlayer-contracts/pull/1571)
 - docs: multichain [PR #1567](https://github.com/layr-labs/eigenlayer-contracts/pull/1567)
-
-# Hourglass
