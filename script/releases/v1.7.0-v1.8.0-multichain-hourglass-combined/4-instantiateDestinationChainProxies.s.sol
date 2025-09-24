@@ -52,9 +52,9 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                 (
                     Env.opsMultisig(),
                     0, // initial paused status
-                    operatorTableUpdaterInitParams.globalRootConfirmerSet,
+                    operatorTableUpdaterInitParams.generator,
                     operatorTableUpdaterInitParams.globalRootConfirmationThreshold,
-                    operatorTableUpdaterInitParams.globalRootConfirmerSetInfo
+                    operatorTableUpdaterInitParams.generatorInfo
                 )
             )
         );
@@ -122,10 +122,17 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
 
             // Checks on the generator
             OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
+            OperatorSet memory generator = operatorTableUpdater.getGenerator();
+            assertEq(generator.key(), initParams.generator.key(), "operatorTableUpdater.generator invalid");
             assertEq(
-                operatorTableUpdater.getGenerator().key(),
-                initParams.globalRootConfirmerSet.key(),
-                "operatorTableUpdater.generator invalid"
+                generator.avs,
+                _getGeneratorAddress(), // The generator is set to the ops multisig of the *source* chain, hence we cannot use Env.opsMultisig().
+                "operatorTableUpdater.generator.avs invalid"
+            );
+            assertEq(
+                generator.id,
+                0, // The generator is set to 0 on initialization
+                "operatorTableUpdater.generator.id invalid"
             );
             assertEq(
                 operatorTableUpdater.getGeneratorReferenceTimestamp(),
@@ -159,6 +166,13 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
                 operatorTableUpdater.getGeneratorConfig();
             assertEq(generatorConfig.maxStalenessPeriod, 0, "generatorConfig.maxStalenessPeriod invalid");
             assertEq(generatorConfig.owner, address(operatorTableUpdater), "generatorConfig.owner invalid");
+
+            // Check the global root confirmation threshold is 10000
+            assertEq(
+                operatorTableUpdater.globalRootConfirmationThreshold(),
+                10_000,
+                "operatorTableUpdater.globalRootConfirmationThreshold invalid"
+            );
         }
 
         // Validate ECDSACertificateVerifier
@@ -172,10 +186,63 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
             OperatorTableUpdaterInitParams memory initParams = _getTableUpdaterInitParams();
             BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
             assertTrue(address(bn254CertificateVerifier) != address(0), "bn254CertificateVerifier not deployed");
+
+            // Check the generator info
+            OperatorSet memory generator = initParams.generator;
             assertEq(
-                bn254CertificateVerifier.latestReferenceTimestamp(initParams.globalRootConfirmerSet),
+                bn254CertificateVerifier.latestReferenceTimestamp(generator),
                 1,
                 "bn254CertificateVerifier.latestReferenceTimestamp invalid"
+            );
+            IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory generatorInfo = initParams.generatorInfo;
+            IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory returnedGeneratorInfo =
+                bn254CertificateVerifier.getOperatorSetInfo(generator, 1);
+            assertEq(
+                returnedGeneratorInfo.operatorInfoTreeRoot,
+                generatorInfo.operatorInfoTreeRoot,
+                "bn254CertificateVerifier.operatorSetInfo.operatorInfoTreeRoot invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.numOperators,
+                generatorInfo.numOperators,
+                "bn254CertificateVerifier.operatorSetInfo.numOperators invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.aggregatePubkey.X,
+                generatorInfo.aggregatePubkey.X,
+                "bn254CertificateVerifier.operatorSetInfo.aggregatePubkey.X invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.aggregatePubkey.Y,
+                generatorInfo.aggregatePubkey.Y,
+                "bn254CertificateVerifier.operatorSetInfo.aggregatePubkey.Y invalid"
+            );
+            assertEq(
+                returnedGeneratorInfo.totalWeights.length,
+                generatorInfo.totalWeights.length,
+                "bn254CertificateVerifier.operatorSetInfo.totalWeights.length invalid"
+            );
+            for (uint256 i = 0; i < returnedGeneratorInfo.totalWeights.length; i++) {
+                assertEq(
+                    returnedGeneratorInfo.totalWeights[i],
+                    generatorInfo.totalWeights[i],
+                    "bn254CertificateVerifier.operatorSetInfo.totalWeights invalid"
+                );
+            }
+            assertEq(
+                bn254CertificateVerifier.getOperatorSetOwner(generator),
+                address(Env.proxy.operatorTableUpdater()), // OperatorTableUpdater is the owner of the generator
+                "bn254CertificateVerifier.operatorSetOwner invalid"
+            );
+            assertEq(
+                bn254CertificateVerifier.maxOperatorTableStaleness(generator),
+                0,
+                "bn254CertificateVerifier.maxOperatorTableStaleness invalid"
+            );
+            assertEq(
+                bn254CertificateVerifier.isReferenceTimestampSet(generator, 1),
+                true,
+                "bn254CertificateVerifier.isReferenceTimestampSet invalid"
             );
         }
 
@@ -279,9 +346,9 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         operatorTableUpdater.initialize(
             address(0), // owner
             0, // initial paused status
-            dummyOperatorSet, // globalRootConfirmerSet
+            dummyOperatorSet, // generator
             0, // globalRootConfirmationThreshold
-            dummyBN254Info // globalRootConfirmerSetInfo
+            dummyBN254Info // generatorInfo
         );
 
         /// TaskMailbox
@@ -315,11 +382,23 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // NOTE: For testnet-holesky and testnet-hoodi, the operator table updater is not used
         else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
             initParams = _parseToml("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/testnet.toml");
-        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "mainnet-base")) {
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "base")) {
             initParams = _parseToml("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/mainnet.toml");
         }
 
         return initParams;
+    }
+
+    function _getGeneratorAddress() internal view returns (address generatorAddress) {
+        if (Env._strEq(Env.env(), "preprod")) {
+            generatorAddress = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
+        } else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
+            generatorAddress = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
+        } else if (Env._strEq(Env.env(), "mainnet") || Env._strEq(Env.env(), "base")) {
+            generatorAddress = 0xBE1685C81aA44FF9FB319dD389addd9374383e90;
+        }
+        require(generatorAddress != address(0), "Invalid network");
+        return generatorAddress;
     }
 
     function _parseToml(
@@ -333,29 +412,26 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // Parse globalRootConfirmationThreshold
         initParams.globalRootConfirmationThreshold = uint16(toml.readUint(".globalRootConfirmationThreshold"));
 
-        // Parse globalRootConfirmerSet
-        address avs = toml.readAddress(".globalRootConfirmerSet.avs");
-        uint32 id = uint32(toml.readUint(".globalRootConfirmerSet.id"));
-        initParams.globalRootConfirmerSet = OperatorSet({avs: avs, id: id});
+        // Parse generator
+        address avs = toml.readAddress(".generator.avs");
+        uint32 id = uint32(toml.readUint(".generator.id"));
+        initParams.generator = OperatorSet({avs: avs, id: id});
 
-        // Parse globalRootConfirmerSetInfo
-        initParams.globalRootConfirmerSetInfo.numOperators =
-            uint256(toml.readUint(".globalRootConfirmerSetInfo.numOperators"));
-        initParams.globalRootConfirmerSetInfo.operatorInfoTreeRoot =
-            toml.readBytes32(".globalRootConfirmerSetInfo.operatorInfoTreeRoot");
-        initParams.globalRootConfirmerSetInfo.totalWeights =
-            toml.readUintArray(".globalRootConfirmerSetInfo.totalWeights");
-        uint256 apkX = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.X");
-        uint256 apkY = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.Y");
-        initParams.globalRootConfirmerSetInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
+        // Parse generatorInfo
+        initParams.generatorInfo.numOperators = uint256(toml.readUint(".generatorInfo.numOperators"));
+        initParams.generatorInfo.operatorInfoTreeRoot = toml.readBytes32(".generatorInfo.operatorInfoTreeRoot");
+        initParams.generatorInfo.totalWeights = toml.readUintArray(".generatorInfo.totalWeights");
+        uint256 apkX = toml.readUint(".generatorInfo.aggregatePubkey.X");
+        uint256 apkY = toml.readUint(".generatorInfo.aggregatePubkey.Y");
+        initParams.generatorInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
 
         return initParams;
     }
 
     struct OperatorTableUpdaterInitParams {
         uint16 globalRootConfirmationThreshold;
-        OperatorSet globalRootConfirmerSet;
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo globalRootConfirmerSetInfo;
+        OperatorSet generator;
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo generatorInfo;
     }
 
     // Define TaskMailbox initialization parameters

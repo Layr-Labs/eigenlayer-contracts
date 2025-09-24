@@ -161,12 +161,11 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         ICrossChainRegistryTypes.OperatorSetConfig memory initialOperatorSetConfig =
             ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 0});
 
-        OperatorSet memory globalRootConfirmerSet = OperatorSet({avs: address(0x6), id: 1});
+        OperatorSet memory generator = OperatorSet({avs: address(0x6), id: 1});
 
         // Compute the initial global table root containing the global root confirmer set
-        bytes memory globalRootConfirmerTable = abi.encode(
-            globalRootConfirmerSet, IKeyRegistrarTypes.CurveType.BN254, initialOperatorSetConfig, abi.encode(initialOperatorSetInfo)
-        );
+        bytes memory globalRootConfirmerTable =
+            abi.encode(generator, IKeyRegistrarTypes.CurveType.BN254, initialOperatorSetConfig, abi.encode(initialOperatorSetInfo));
         bytes32 globalRootConfirmerLeafHash = keccak256(globalRootConfirmerTable);
 
         // Create a simple merkle tree with just the global root confirmer set
@@ -178,9 +177,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         operatorTableUpdater.initialize(
             address(this), // owner
             0, // initialPausedStatus
-            globalRootConfirmerSet, // globalRootConfirmerSet
+            generator, // generator
             6600, // globalRootConfirmationThreshold (66%)
-            initialOperatorSetInfo // globalRootConfirmerSetInfo
+            initialOperatorSetInfo // generatorInfo
         );
 
         console.log("Multichain contracts deployed successfully");
@@ -818,7 +817,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         uint32 referenceBlockNumber = uint32(block.number);
 
         // Get the actual global root confirmer set from the OperatorTableUpdater
-        OperatorSet memory globalRootConfirmerSet = operatorTableUpdater.getGenerator();
+        OperatorSet memory generator = operatorTableUpdater.getGenerator();
 
         // Get the global root confirmer set's reference timestamp (from initialization)
         uint32 globalRootConfirmerTimestamp = operatorTableUpdater.getGeneratorReferenceTimestamp();
@@ -829,7 +828,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Create certificate for global table root confirmation using the correct timestamp
         IBN254CertificateVerifierTypes.BN254Certificate memory confirmationCertificate = _generateGlobalRootConfirmationCertificate(
-            globalRootConfirmerSet, globalRootConfirmerTimestamp, globalTableRoot, confirmationTimestamp, referenceBlockNumber
+            generator, globalRootConfirmerTimestamp, globalTableRoot, confirmationTimestamp, referenceBlockNumber
         );
 
         // Verify certificate to confirm global table root

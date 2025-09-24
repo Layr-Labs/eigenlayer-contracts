@@ -14,14 +14,15 @@ import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import {stdToml} from "forge-std/StdToml.sol";
 
 /**
- * Purpose: Update the generator on a TESTNET environment
+ * Purpose: Update the generator on a PREPROD/TESTNET environment
  */
 contract QueueTransferProxyAdmin is MultisigBuilder {
     using Env for *;
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
 
-    string private constant TESTNET_CONFIG_PATH = "script/releases/v1.7.0-multichain/configs/testnet.toml";
+    string private constant TESTNET_CONFIG_PATH =
+        "script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/preprod.toml";
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         GeneratorParams memory generatorParams = _getGeneratorParams(TESTNET_CONFIG_PATH);
@@ -31,8 +32,9 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
     function testScript() public virtual {
         // Require that the environment is a testnet environment supported by multichain
         require(
-            Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia"),
-            "Environment must be a testnet environment"
+            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
+                || Env._strEq(Env.env(), "testnet-base-sepolia"),
+            "Environment must be a preprod/testnet environment"
         );
 
         // Update the generator
@@ -120,18 +122,17 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
         string memory fullPath = string.concat(root, "/", path);
         string memory toml = vm.readFile(fullPath);
 
-        // Parse globalRootConfirmerSet
-        address avs = toml.readAddress(".globalRootConfirmerSet.avs");
-        uint32 id = uint32(toml.readUint(".globalRootConfirmerSet.id"));
+        // Parse generator
+        address avs = toml.readAddress(".generator.avs");
+        uint32 id = uint32(toml.readUint(".generator.id"));
         generatorParams.generator = OperatorSet({avs: avs, id: id});
 
-        // Parse globalRootConfirmerSetInfo
-        generatorParams.generatorInfo.numOperators = uint256(toml.readUint(".globalRootConfirmerSetInfo.numOperators"));
-        generatorParams.generatorInfo.operatorInfoTreeRoot =
-            toml.readBytes32(".globalRootConfirmerSetInfo.operatorInfoTreeRoot");
-        generatorParams.generatorInfo.totalWeights = toml.readUintArray(".globalRootConfirmerSetInfo.totalWeights");
-        uint256 apkX = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.X");
-        uint256 apkY = toml.readUint(".globalRootConfirmerSetInfo.aggregatePubkey.Y");
+        // Parse generatorInfo
+        generatorParams.generatorInfo.numOperators = uint256(toml.readUint(".generatorInfo.numOperators"));
+        generatorParams.generatorInfo.operatorInfoTreeRoot = toml.readBytes32(".generatorInfo.operatorInfoTreeRoot");
+        generatorParams.generatorInfo.totalWeights = toml.readUintArray(".generatorInfo.totalWeights");
+        uint256 apkX = toml.readUint(".generatorInfo.aggregatePubkey.X");
+        uint256 apkY = toml.readUint(".generatorInfo.aggregatePubkey.Y");
         generatorParams.generatorInfo.aggregatePubkey = BN254.G1Point({X: apkX, Y: apkY});
 
         return generatorParams;
