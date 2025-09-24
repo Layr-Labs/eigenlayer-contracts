@@ -101,7 +101,7 @@ The multichain protocol expects AVSs to register on the source chain. AVS's stak
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- |
-| [`CrossChainRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/CrossChainRegistry.sol) | [`0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b`](https://etherscan.io/address/0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b) | [`0x18e7...1ba4`](https://etherscan.io/address/0x18e7389659De5dd24adfb0f432591973799B1ba4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`CrossChainRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/CrossChainRegistry.sol) | [`0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b`](https://etherscan.io/address/0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b) | [`0x18e7...a4`](https://etherscan.io/address/0x18e7389659De5dd24adfb0f432591973799B1ba4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`KeyRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/permissions/KeyRegistrar.sol) | [`0x54f4bC6bDEbe479173a2bbDc31dD7178408A57A4`](https://etherscan.io/address/0x54f4bC6bDEbe479173a2bbDc31dD7178408A57A4) | [`0x047b...136b`](https://etherscan.io/address/0x047bEc3D8C19D70BA81d61a48Bf9dC63A3E9136b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multichain - Destination
