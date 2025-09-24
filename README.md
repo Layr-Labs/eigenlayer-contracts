@@ -8,15 +8,16 @@ EigenLayer brings together Restakers, Operators, and Autonomous Verifiable Servi
 
 ## Deployments
 
-The deployments on `mainnet`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` are on the below versions:
+The deployments on `mainnet`, `base`, `holesky`, `sepolia`, `hoodi`, and `base sepolia` are on the below versions:
 
 | Environment | Version | Core Protocol Deployed | Supports Native Restaking | Supports Multichain |
 | -------- | -------- | -------- | -------- | -------- | 
-| Mainnet Ethereum | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No (pending) |
-| Testnet Holesky | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Sepolia | [`v1.8.0-testnet-final`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-testnet-final) | Yes | No | Yes (source & destination) |
-| Testnet Hoodi | [`v1.6.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
-| Testnet Base Sepolia | [`v1.8.0-testnet-final`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0-testnet-final) | No | No | Yes (destination) |
+| Mainnet Ethereum | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | Yes | Yes (source & destination) |
+| Base | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
+| Testnet Holesky | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | Yes | No |
+| Testnet Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | No | Yes (source & destination) |
+| Testnet Hoodi | [`v1.8.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0) | Yes | Yes | No |
+| Testnet Base Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
@@ -82,21 +83,92 @@ The following strategies differ significantly from the other strategies deployed
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
 | [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0/src/contracts/token/Eigen.sol) | [`0xec53bf9167f50cdeb3ae105f56099aaab9061f83`](https://etherscan.io/address/0xec53bf9167f50cdeb3ae105f56099aaab9061f83) | [`0x2C4A...2E50`](https://etherscan.io/address/0x2C4A81e257381F87F5A5C4bd525116466D972E50) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/mainnet/src/contracts/token/BackingEigen.sol) | [`0x83E9115d334D248Ce39a6f36144aEaB5b3456e75`](https://etherscan.io/address/0x83E9115d334D248Ce39a6f36144aEaB5b3456e75) | [`0xF2b2...9b17`](https://etherscan.io/address/0xF2b225815F70c9b327DC9db758A36c92A4279b17) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.6.0/src/contracts/token/BackingEigen.sol) | [`0x83E9115d334D248Ce39a6f36144aEaB5b3456e75`](https://etherscan.io/address/0x83E9115d334D248Ce39a6f36144aEaB5b3456e75) | [`0xF2b2...9b17`](https://etherscan.io/address/0xF2b225815F70c9b327DC9db758A36c92A4279b17) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`SignedDistributor`](https://etherscan.io/address/0x035bdAeaB85E47710C27EdA7FD754bA80aD4ad02#code) | - | [`0x035b...ad02`](https://etherscan.io/address/0x035bdAeaB85E47710C27EdA7FD754bA80aD4ad02) | - |
+
+###### AVS
+
+The following contracts are used by AVSs.
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`ReleaseManager`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/core/ReleaseManager.sol) | [`0xeDA3CAd031c0cf367cF3f517Ee0DC98F9bA80C8F`](https://etherscan.io/address/0xeDA3CAd031c0cf367cF3f517Ee0DC98F9bA80C8F) | [`0x888f...8A3`](https://etherscan.io/address/0x888fE518e321301975A21A7ffE0C898d453c58A3) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`TaskMailbox`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/avs/task/TaskMailbox.sol) | [`0x132b466d9d5723531F68797519DfED701aC2C749`](https://etherscan.io/address/0x132b466d9d5723531F68797519DfED701aC2C749) | [`0x7610...0150`](https://etherscan.io/address/0x76106801F287236Abe0799B1FAb7f7F39AD50150) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multichain - Source
+
+The multichain protocol expects AVSs to register on the source chain. AVS's stakes are then transported to supported destination chains. For the mainnet Ethereum network, the destination chains include Base.
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`CrossChainRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/CrossChainRegistry.sol) | [`0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b`](https://etherscan.io/address/0x9376A5863F2193cdE13e1aB7c678F22554E2Ea2b) | [`0x18e7...a4`](https://etherscan.io/address/0x18e7389659De5dd24adfb0f432591973799B1ba4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`KeyRegistrar`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/permissions/KeyRegistrar.sol) | [`0x54f4bC6bDEbe479173a2bbDc31dD7178408A57A4`](https://etherscan.io/address/0x54f4bC6bDEbe479173a2bbDc31dD7178408A57A4) | [`0x047b...136b`](https://etherscan.io/address/0x047bEc3D8C19D70BA81d61a48Bf9dC63A3E9136b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multichain - Destination
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`OperatorTableUpdater`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/OperatorTableUpdater.sol) | [`0x5557E1fE3068A1e823cE5Dcd052c6C352E2617B5`](https://etherscan.io/address/0x5557E1fE3068A1e823cE5Dcd052c6C352E2617B5) | [`0x64ad...f22b`](https://etherscan.io/address/0x64ad668f6Ca7104E452041555a857CCE6267f22b) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`ECDSACertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/ECDSACertificateVerifier.sol) | [`0xd0930ee96D07de4F9d493c259232222e46B6EC25`](https://etherscan.io/address/0xd0930ee96D07de4F9d493c259232222e46B6EC25) | [`0x6A74...1A6`](https://etherscan.io/address/0x6A74CA72cdF26F3E8a9684E0Ef2F36d1bd2AA1A6) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/BN254CertificateVerifier.sol) | [`0x3F55654b2b2b86bB11bE2f72657f9C33bf88120A`](https://etherscan.io/address/0x3F55654b2b2b86bB11bE2f72657f9C33bf88120A) | [`0x7b82...6c66`](https://etherscan.io/address/0x7b8231f0652943734682C87C01D3169b19006c66) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0xB876...2806`](https://etherscan.io/address/0xB8765ed72235d279c3Fb53936E4606db0Ef12806) | |
-| [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x5050389572f2d220ad927CcbeA0D406831012390`](https://etherscan.io/address/0x5050389572f2d220ad927CcbeA0D406831012390) | [`0xd9db...9552`](https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552) | Proxy: [`Gnosis@1.3.0`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/proxies/GnosisSafeProxy.sol) |
-| [`Community Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xFEA47018D632A77bA579846c840d5706705Dc598`](https://etherscan.io/address/0xFEA47018D632A77bA579846c840d5706705Dc598) | [`0xd9db...9552`](https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552) | Proxy: [`Gnosis@1.3.0`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/proxies/GnosisSafeProxy.sol) |
-| [`Executor Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x369e6F597e22EaB55fFb173C6d9cD234BD699111`](https://etherscan.io/address/0x369e6F597e22EaB55fFb173C6d9cD234BD699111) | [`0xd9db...9552`](https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552) | Proxy: [`Gnosis@1.3.0`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/proxies/GnosisSafeProxy.sol) |
-| [`Operations Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xBE1685C81aA44FF9FB319dD389addd9374383e90`](https://etherscan.io/address/0xBE1685C81aA44FF9FB319dD389addd9374383e90) | [`0xd9db...9552`](https://etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552) | Proxy: [`Gnosis@1.3.0`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/proxies/GnosisSafeProxy.sol) |
-| [`Compound: Timelock`](https://github.com/compound-finance/compound-protocol/blob/a3214f67b73310d547e00fc578e8355911c9d376/contracts/Timelock.sol) | - | [`0xA6Db...0EAF`](https://etherscan.io/address/0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/permissions/PauserRegistry.sol) | - | [`0xB876...2806`](https://etherscan.io/address/0xB8765ed72235d279c3Fb53936E4606db0Ef12806) | |
+| [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xC06F...Aa2d`](https://etherscan.io/address/0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d) | |
+| [`OZ: TimelockController (BEIGEN)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x7381...bc53`](https://etherscan.io/address/0x738130BC8eADe1Bc65A9c056DEa636835896bc53) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8b95...2444`](https://etherscan.io/address/0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444) | |
+| [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x5050389572f2d220ad927CcbeA0D406831012390`](https://etherscan.io/address/0x5050389572f2d220ad927CcbeA0D406831012390) | - | |
+| [`Community Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xFEA47018D632A77bA579846c840d5706705Dc598`](https://etherscan.io/address/0xFEA47018D632A77bA579846c840d5706705Dc598) | - | |
+| [`Executor Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x369e6F597e22EaB55fFb173C6d9cD234BD699111`](https://etherscan.io/address/0x369e6F597e22EaB55fFb173C6d9cD234BD699111) | - | |
+| [`Operations Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xBE1685C81aA44FF9FB319dD389addd9374383e90`](https://etherscan.io/address/0xBE1685C81aA44FF9FB319dD389addd9374383e90) | - | |
+| [`Protocol Council Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x461854d84ee845f905e0ecf6c288ddeeb4a9533f`](https://etherscan.io/address/0x461854d84ee845f905e0ecf6c288ddeeb4a9533f) | - | |
+| [`Foundation Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xbb00DDa2832850a43840A3A86515E3Fe226865F2`](https://etherscan.io/address/0xbb00DDa2832850a43840A3A86515E3Fe226865F2) | - | |
+| [`BEIGEN Executor Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x942eaF324971440384e4cA0ffA39fC3bb369D67d`](https://etherscan.io/address/0x942eaF324971440384e4cA0ffA39fC3bb369D67d) | - | |
+| [`Multichain Deployer Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xa3053EF25F1F7d9D55a7655372B8a31D0f40eCA9`](https://etherscan.io/address/0xa3053EF25F1F7d9D55a7655372B8a31D0f40eCA9) | - | |
 
+
+</details>
+
+
+
+<details>
+    <summary>Base</summary>
+
+
+**Note: Base only supports verification of tasks from stake that lives on Mainnet Ethereum. Standard core protocol functionality (restaking, slashing) does not exist on Base.**
+
+###### Multichain - Destination
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`OperatorTableUpdater`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/OperatorTableUpdater.sol) | [`0x5557E1fE3068A1e823cE5Dcd052c6C352E2617B5`](https://basescan.org/address/0x5557E1fE3068A1e823cE5Dcd052c6C352E2617B5) | [`0xEd18...fdA9`](https://basescan.org/address/0xEd18bAa093164fF477996c4b957F806b4A0ffdA9) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`ECDSACertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/ECDSACertificateVerifier.sol) | [`0xd0930ee96D07de4F9d493c259232222e46B6EC25`](https://basescan.org/address/0xd0930ee96D07de4F9d493c259232222e46B6EC25) | [`0x3cf9...b3C`](https://basescan.org/address/0x3cf9F2F82AAB604C347ec03A5C642D6a9eac1b3C) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`BN254CertificateVerifier`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/multichain/BN254CertificateVerifier.sol) | [`0x3F55654b2b2b86bB11bE2f72657f9C33bf88120A`](https://basescan.org/address/0x3F55654b2b2b86bB11bE2f72657f9C33bf88120A) | [`0x48F0...4Ec`](https://basescan.org/address/0x48F0a11AADc9c687410A3664A4fDD61DAf6904Ec) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### AVS
+
+The following contracts are used by AVSs.
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- |
+| [`TaskMailbox`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/avs/task/TaskMailbox.sol) | [`0x132b466d9d5723531F68797519DfED701aC2C749`](https://basescan.org/address/0x132b466d9d5723531F68797519DfED701aC2C749) | [`0x9c2A...c84A`](https://basescan.org/address/0x9c2A1F3a47b2f6607a8511DF753F7B8Ca952c84A) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+
+###### Multisigs
+
+| Name | Proxy | Implementation | Notes |
+| -------- | -------- | -------- | -------- | 
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.8.1/src/contracts/permissions/PauserRegistry.sol) | - | [`0xb175...6ea`](https://basescan.org/address/0xb1754226917e866c1701f1d9F9E135D88f2e86ea) | |
+| [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xE48D...ABd`](https://basescan.org/address/0xE48D7CaeC1790b293667e4bB2dE1E00536F2bABd) | |
+| [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xDb00...9CE`](https://basescan.org/address/0xDb0052E272D1D126617c36A9D6d65C801d1549CE) | |
+| [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x1a051eF1524cbaEa57Ca04319ef93fE78903D5E6`](https://basescan.org/address/0x1a051eF1524cbaEa57Ca04319ef93fE78903D5E6) | - | |
+| [`Operations Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x8eD55c7640497Db15aC32c698c1a06E2E604d865`](https://basescan.org/address/0x8eD55c7640497Db15aC32c698c1a06E2E604d865) | - | |
+| [`Protocol Council Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x841B988aaEafce13b6456ff34015FBc42Aedb7e6`](https://basescan.org/address/0x841B988aaEafce13b6456ff34015FBc42Aedb7e6) | - | |
+| [`Community Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xC107547924C7D1d3E2d10eA8DF534BBfC5F373e6`](https://basescan.org/address/0xC107547924C7D1d3E2d10eA8DF534BBfC5F373e6) | - | |
+| [`Executor Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x5d808608Ad70873ca4dE50F83416264dc15264C2`](https://basescan.org/address/0x5d808608Ad70873ca4dE50F83416264dc15264C2) | - | |
+| [`Multichain Deployer Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0xa3053EF25F1F7d9D55a7655372B8a31D0f40eCA9`](https://basescan.org/address/0xa3053EF25F1F7d9D55a7655372B8a31D0f40eCA9) | - | |
 
 </details>
 
