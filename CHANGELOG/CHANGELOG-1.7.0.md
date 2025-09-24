@@ -6,7 +6,7 @@ The multichain release enables AVSs to launch their services and make verified O
 2. AVS Contracts
 3. Offchain Infrastructure
 
-The below release notes cover Core Contracts. For more information on the end to end protocol, see our [docs](../docs/multichain/README.md) and [ELIP-008](https://github.com/eigenfoundation/ELIPs/blob/elip-008v1/ELIPs/ELIP-008.md).
+The below release notes cover Core Contracts. For more information on the end to end protocol, see our [docs](../docs/multichain/README.md) and [ELIP-008](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-008.md).
 
 ## Release Manager
 
