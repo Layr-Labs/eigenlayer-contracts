@@ -162,8 +162,9 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
         // if transfer restrictions are enabled
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted
+            // Allow burns when restrictions are enabled (permit to == address(0))
             require(
-                allowedFrom[from] || allowedTo[to] || from == address(0),
+                allowedFrom[from] || allowedTo[to] || from == address(0) || to == address(0),
                 "BackingEigen._beforeTokenTransfer: from or to must be whitelisted"
             );
         }
