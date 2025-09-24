@@ -16,7 +16,7 @@ The deployments on `mainnet`, `base`, `holesky`, `sepolia`, `hoodi`, and `base s
 | Base | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
 | Testnet Holesky | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | Yes | No |
 | Testnet Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | No | Yes (source & destination) |
-| Testnet Hoodi | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.6.0) | Yes | Yes | No |
+| Testnet Hoodi | [`v1.8.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0) | Yes | Yes | No |
 | Testnet Base Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
