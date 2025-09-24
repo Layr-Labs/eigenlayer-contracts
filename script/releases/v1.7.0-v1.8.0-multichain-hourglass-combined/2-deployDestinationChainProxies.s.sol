@@ -174,6 +174,10 @@ contract DeployDestinationChainProxies is MultisigBuilder {
             type(BN254CertificateVerifier).name,
             _computeExpectedProxyAddress(type(BN254CertificateVerifier).name, emptyContract)
         );
+        _unsafeAddProxyContract(
+            type(TaskMailbox).name,
+            _computeExpectedProxyAddress(type(TaskMailbox).name, emptyContract)
+        );
     }
 
     /// @dev Compute the expected proxy address for a given name and empty contract
