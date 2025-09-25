@@ -1786,6 +1786,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     using OperatorSetLib for *;
     using SlashingLib for *;
 
+    /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
+    error InvalidPermissions();
+
     function test_revert_paused() public {
         allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -1794,7 +1797,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
     function test_revert_InvalidCaller() public {
         address invalidOperator = address(0x2);
-        cheats.expectRevert(InvalidCaller.selector);
+        cheats.expectRevert(InvalidPermissions.selector);
         allocationManager.modifyAllocations(invalidOperator, new AllocateParams[](0));
     }
 
@@ -3263,7 +3266,8 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     /// -----------------------------------------------------------------------
     /// setAllocationDelay() + getAllocationDelay()
     /// -----------------------------------------------------------------------
-
+    /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
+    error InvalidPermissions();
     address operatorToSet = address(0x1);
 
     function setUp() public override {
@@ -3279,7 +3283,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     }
 
     function test_revert_callerNotAuthorized() public {
-        cheats.expectRevert(InvalidCaller.selector);
+        cheats.expectRevert(InvalidPermissions.selector);
         allocationManager.setAllocationDelay(operatorToSet, 1);
     }
 

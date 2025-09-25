@@ -20,7 +20,7 @@ abstract contract PermissionControllerMixin {
     modifier checkCanCall(
         address account
     ) {
-        require(_checkCanCall(account), InvalidPermissions());
+        _checkCanCall(account);
         _;
     }
 
@@ -32,7 +32,13 @@ abstract contract PermissionControllerMixin {
      */
     function _checkCanCall(
         address account
-    ) internal returns (bool) {
+    ) internal view {
+        require(_canCall(account), InvalidPermissions());
+    }
+
+    function _canCall(
+        address account
+    ) internal view returns (bool) {
         return permissionController.canCall(account, msg.sender, address(this), msg.sig);
     }
 }
