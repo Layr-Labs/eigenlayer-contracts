@@ -3268,6 +3268,7 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     /// -----------------------------------------------------------------------
     /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
     error InvalidPermissions();
+
     address operatorToSet = address(0x1);
 
     function setUp() public override {
