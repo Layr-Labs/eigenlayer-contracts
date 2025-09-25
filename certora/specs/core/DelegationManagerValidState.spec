@@ -56,7 +56,6 @@ methods {
     function isDelegated(address staker) external returns (bool) envfree;
     function isOperator(address operator) external returns (bool) envfree;
     function delegationApproverSaltIsSpent(address delegationApprover, bytes32 salt) external returns (bool) envfree;
-    function owner() external returns (address) envfree;
     function strategyManager() external returns (address) envfree;
     function eigenPodManager() external returns (address) envfree;
     function calculateWithdrawalRoot(IDelegationManagerTypes.Withdrawal) external returns (bytes32) envfree;
