@@ -8,7 +8,6 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 
 import "../libraries/SlashingLib.sol";
-import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
@@ -29,8 +28,7 @@ contract EigenPodManager is
     Pausable,
     EigenPodPausingConstants,
     EigenPodManagerStorage,
-    ReentrancyGuardUpgradeable,
-    SemVerMixin
+    ReentrancyGuardUpgradeable
 {
     using SlashingLib for *;
     using Math for *;
@@ -57,13 +55,8 @@ contract EigenPodManager is
         IETHPOSDeposit _ethPOS,
         IBeacon _eigenPodBeacon,
         IDelegationManager _delegationManager,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
-    )
-        EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager)
-        Pausable(_pauserRegistry)
-        SemVerMixin(_version)
-    {
+        IPauserRegistry _pauserRegistry
+    ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager) Pausable(_pauserRegistry) {
         _disableInitializers();
     }
 

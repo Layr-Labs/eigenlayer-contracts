@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import {BN254} from "../libraries/BN254.sol";
-import "./ISemVerMixin.sol";
 
 interface IKeyRegistrarErrors {
     /// @notice Error thrown when a key is already registered
@@ -92,7 +91,7 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 /// @dev This contract requires that keys are unique across all operatorSets, globally
 /// @dev For the multichain protocol, the key type of the operatorSet must be set in the `KeyRegistrar`, but the
 ///      AVS is not required to use the KeyRegistrar for operator key management and can implement its own registry
-interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixin {
+interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
     /**
      * @notice Configures an operator set with curve type
      * @param operatorSet The operator set to configure

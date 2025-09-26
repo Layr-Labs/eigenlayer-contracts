@@ -29,8 +29,7 @@ contract DeployTaskMailboxImpl is EOADeployer {
                 new TaskMailbox({
                     _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),
                     _ecdsaCertificateVerifier: address(Env.proxy.ecdsaCertificateVerifier()),
-                    _maxTaskSLA: Env.MAX_TASK_SLA(),
-                    _version: Env.deployVersion()
+                    _maxTaskSLA: Env.MAX_TASK_SLA()
                 })
             )
         });
@@ -72,13 +71,6 @@ contract DeployTaskMailboxImpl is EOADeployer {
     function _validateImplConstructor() internal view {
         TaskMailbox taskMailboxImpl = Env.impl.taskMailbox();
 
-        // Validate version
-        assertEq(
-            keccak256(bytes(taskMailboxImpl.version())),
-            keccak256(bytes(Env.deployVersion())),
-            "TaskMailbox impl version mismatch"
-        );
-
         // Validate certificate verifiers
         assertTrue(
             taskMailboxImpl.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
@@ -108,11 +100,5 @@ contract DeployTaskMailboxImpl is EOADeployer {
     }
 
     /// @dev Validate the version is correctly set
-    function _validateVersion() internal view {
-        assertEq(
-            keccak256(bytes(Env.impl.taskMailbox().version())),
-            keccak256(bytes(Env.deployVersion())),
-            "TaskMailbox version should match deploy version"
-        );
-    }
+    function _validateVersion() internal view {}
 }

@@ -5,7 +5,6 @@ import "./IStrategy.sol";
 import "./IShareManager.sol";
 import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
-import "./ISemVerMixin.sol";
 
 interface IStrategyManagerErrors {
     /// @dev Thrown when total strategies deployed exceeds max.
@@ -67,7 +66,7 @@ interface IStrategyManagerEvents {
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice See the `StrategyManager` contract itself for implementation details.
  */
-interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager, ISemVerMixin {
+interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
     /**
      * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
      * and transfers contract ownership to the specified `initialOwner`.

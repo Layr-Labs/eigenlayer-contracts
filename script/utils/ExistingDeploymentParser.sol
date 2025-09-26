@@ -220,7 +220,7 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
 
         // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController(SEMVER);
+        permissionControllerImplementation = new PermissionController();
         permissionController = PermissionController(
             address(
                 new TransparentUpgradeableProxy(

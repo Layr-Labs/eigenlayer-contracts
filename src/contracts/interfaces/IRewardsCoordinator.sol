@@ -10,7 +10,6 @@ import "./IStrategyManager.sol";
 import "./IPauserRegistry.sol";
 import "./IPermissionController.sol";
 import "./IStrategy.sol";
-import "./ISemVerMixin.sol";
 
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
@@ -272,7 +271,6 @@ interface IRewardsCoordinatorTypes {
         uint32 MAX_RETROACTIVE_LENGTH;
         uint32 MAX_FUTURE_LENGTH;
         uint32 GENESIS_REWARDS_TIMESTAMP;
-        string version;
     }
 }
 
@@ -427,7 +425,7 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
  * Calculations are performed based on the completed RewardsSubmission, with the results posted in
  * a Merkle root against which Stakers & Operators can make claims.
  */
-interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents, ISemVerMixin {
+interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorEvents {
     /**
      * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
      * configures the initial paused status, activationDelay, and defaultOperatorSplitBips.

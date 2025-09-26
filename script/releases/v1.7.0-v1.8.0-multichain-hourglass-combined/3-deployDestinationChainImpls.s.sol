@@ -36,8 +36,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 new OperatorTableUpdater({
                     _bn254CertificateVerifier: Env.proxy.bn254CertificateVerifier(),
                     _ecdsaCertificateVerifier: Env.proxy.ecdsaCertificateVerifier(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _version: Env.deployVersion()
+                    _pauserRegistry: Env.impl.pauserRegistry()
                 })
             )
         });
@@ -56,12 +55,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         // BN254CertificateVerifier
         deployImpl({
             name: type(BN254CertificateVerifier).name,
-            deployedTo: address(
-                new BN254CertificateVerifier({
-                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(),
-                    _version: Env.deployVersion()
-                })
-            )
+            deployedTo: address(new BN254CertificateVerifier({_operatorTableUpdater: Env.proxy.operatorTableUpdater()}))
         });
 
         // TaskMailbox
@@ -72,8 +66,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 new TaskMailbox({
                     _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),
                     _ecdsaCertificateVerifier: address(Env.proxy.ecdsaCertificateVerifier()),
-                    _maxTaskSLA: Env.MAX_TASK_SLA(),
-                    _version: Env.deployVersion()
+                    _maxTaskSLA: Env.MAX_TASK_SLA()
                 })
             )
         });
@@ -121,7 +114,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                     == address(Env.proxy.ecdsaCertificateVerifier()),
                 "out.ecdsaCertificateVerifier invalid"
             );
-            assertEq(operatorTableUpdater.version(), Env.deployVersion(), "out.version failed");
         }
 
         {
@@ -141,7 +133,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 address(bn254CertificateVerifier.operatorTableUpdater()) == address(Env.proxy.operatorTableUpdater()),
                 "b254cv.operatorTableUpdater invalid"
             );
-            assertEq(bn254CertificateVerifier.version(), Env.deployVersion(), "b254cv.version failed");
         }
 
         {
@@ -156,7 +147,6 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
                 "tm.ecdsaCertificateVerifier invalid"
             );
             assertEq(taskMailbox.MAX_TASK_SLA(), Env.MAX_TASK_SLA(), "tm.maxTaskSLA failed");
-            assertEq(taskMailbox.version(), Env.deployVersion(), "tm.version failed");
         }
     }
 
@@ -194,9 +184,9 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
     function _validateVersion() internal view {
         string memory expected = Env.deployVersion();
 
-        assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
-        assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
-        assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
-        assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
+        // assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
+        // assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
+        // assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
+        // assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
     }
 }

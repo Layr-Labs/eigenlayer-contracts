@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../interfaces/IKeyRegistrar.sol";
 import "./CrossChainRegistryStorage.sol";
@@ -20,8 +19,7 @@ contract CrossChainRegistry is
     OwnableUpgradeable,
     Pausable,
     CrossChainRegistryStorage,
-    PermissionControllerMixin,
-    SemVerMixin
+    PermissionControllerMixin
 {
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -64,19 +62,16 @@ contract CrossChainRegistry is
      * @param _keyRegistrar The key registrar for operator set curve type validation
      * @param _permissionController The permission controller for access control
      * @param _pauserRegistry The pauser registry for pause functionality
-     * @param _version The semantic version of the contract
      */
     constructor(
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
         IPermissionController _permissionController,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
+        IPauserRegistry _pauserRegistry
     )
         CrossChainRegistryStorage(_allocationManager, _keyRegistrar)
         PermissionControllerMixin(_permissionController)
         Pausable(_pauserRegistry)
-        SemVerMixin(_version)
     {
         _disableInitializers();
     }

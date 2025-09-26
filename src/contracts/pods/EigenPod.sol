@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 
-import "../mixins/SemVerMixin.sol";
-
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IPausable.sol";
@@ -24,13 +22,7 @@ import "./EigenPodStorage.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is
-    Initializable,
-    ReentrancyGuardUpgradeable,
-    EigenPodPausingConstants,
-    EigenPodStorage,
-    SemVerMixin
-{
+contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, EigenPodStorage {
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
 
@@ -105,11 +97,7 @@ contract EigenPod is
      *                               CONSTRUCTOR / INIT
      *
      */
-    constructor(
-        IETHPOSDeposit _ethPOS,
-        IEigenPodManager _eigenPodManager,
-        string memory _version
-    ) SemVerMixin(_version) {
+    constructor(IETHPOSDeposit _ethPOS, IEigenPodManager _eigenPodManager) {
         ethPOS = _ethPOS;
         eigenPodManager = _eigenPodManager;
         _disableInitializers();

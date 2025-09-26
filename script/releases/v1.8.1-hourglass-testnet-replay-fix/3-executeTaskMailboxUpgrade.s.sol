@@ -86,13 +86,6 @@ contract ExecuteTaskMailboxUpgrade is QueueTaskMailboxUpgrade {
     function _validateProxyConstructor() internal view {
         TaskMailbox taskMailbox = Env.proxy.taskMailbox();
 
-        // Validate version
-        assertEq(
-            keccak256(bytes(taskMailbox.version())),
-            keccak256(bytes(Env.deployVersion())),
-            "TaskMailbox version mismatch"
-        );
-
         // Validate certificate verifiers
         assertTrue(
             taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),

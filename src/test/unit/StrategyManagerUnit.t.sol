@@ -81,7 +81,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         public
         returns (StrategyBase)
     {
-        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "9.9.9");
+        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry);
         StrategyBase newStrategy =
             StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategyImplementation), address(admin), "")));
         newStrategy.initialize(_token);

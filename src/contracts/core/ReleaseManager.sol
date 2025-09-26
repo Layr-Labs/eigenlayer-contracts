@@ -3,10 +3,9 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
 import "./ReleaseManagerStorage.sol";
 
-contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
+contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin {
     using OperatorSetLib for OperatorSet;
 
     /**
@@ -15,9 +14,8 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
      *
      */
     constructor(
-        IPermissionController _permissionController,
-        string memory _version
-    ) PermissionControllerMixin(_permissionController) SemVerMixin(_version) {
+        IPermissionController _permissionController
+    ) PermissionControllerMixin(_permissionController) {
         _disableInitializers();
     }
 

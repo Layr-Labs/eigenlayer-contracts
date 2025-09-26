@@ -44,7 +44,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         vm.warp(1 days);
 
         // Deploy ReleaseManager
-        releaseManager = new ReleaseManager(permissionController, "1.0.0");
+        releaseManager = new ReleaseManager(permissionController);
 
         // Setup default test data
         defaultOperatorSet = OperatorSet(defaultAVS, 0);
@@ -108,7 +108,6 @@ contract ReleaseManagerUnitTests_Initialization is ReleaseManagerUnitTests {
     function test_constructor() public {
         // Test that constructor sets the correct values
         assertEq(address(releaseManager.permissionController()), address(permissionController), "permissionController not set correctly");
-        assertEq(releaseManager.version(), "1.0.0", "version not set correctly");
     }
 }
 
