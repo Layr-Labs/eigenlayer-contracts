@@ -181,12 +181,5 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
     }
 
-    function _validateVersion() internal view {
-        string memory expected = Env.deployVersion();
-
-        // assertEq(Env.impl.operatorTableUpdater().version(), expected, "operatorTableUpdater version mismatch");
-        // assertEq(Env.impl.ecdsaCertificateVerifier().version(), expected, "ecdsaCertificateVerifier version mismatch");
-        // assertEq(Env.impl.bn254CertificateVerifier().version(), expected, "bn254CertificateVerifier version mismatch");
-        // assertEq(Env.impl.taskMailbox().version(), expected, "taskMailbox version mismatch");
-    }
+    function _validateVersion() internal view {}
 }
