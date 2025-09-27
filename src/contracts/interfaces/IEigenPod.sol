@@ -74,6 +74,8 @@ interface IEigenPodErrors {
     error InvalidEIP4788Response();
     /// @dev Thrown when attempting to send an invalid amount to the beacon deposit contract.
     error MsgValueNot32ETH();
+    /// @dev Thrown when attempting to send an zero amount to the beacon deposit contract for compounding.
+    error MsgValueZero();
     /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
     error BeaconTimestampTooFarInPast();
     /// @dev Thrown when provided `beaconTimestamp` is before the last checkpoint
@@ -87,7 +89,6 @@ interface IEigenPodTypes {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
-
     }
 
     /**
@@ -140,47 +141,77 @@ interface IEigenPodEvents is IEigenPodTypes {
     /// @notice Emitted when an ETH validator stakes via this eigenPod
     event EigenPodStaked(bytes32 pubkeyHash);
 
+    /// @notice Emitted when an ETH validator compound stakes via this eigenPod
+    event EigenPodCompoundStaked(bytes32 indexed pubkeyHash, uint256 amount);
+
     /// @notice Emitted when a pod owner updates the proof submitter address
-    event ProofSubmitterUpdated(address prevProofSubmitter, address newProofSubmitter);
+    event ProofSubmitterUpdated(
+        address prevProofSubmitter,
+        address newProofSubmitter
+    );
 
     /// @notice Emitted when an ETH validator's withdrawal credentials are successfully verified to be pointed to this eigenPod
     event ValidatorRestaked(bytes32 pubkeyHash);
 
     /// @notice Emitted when an ETH validator's  balance is proven to be updated.  Here newValidatorBalanceGwei
     //  is the validator's balance that is credited on EigenLayer.
-    event ValidatorBalanceUpdated(bytes32 pubkeyHash, uint64 balanceTimestamp, uint64 newValidatorBalanceGwei);
+    event ValidatorBalanceUpdated(
+        bytes32 pubkeyHash,
+        uint64 balanceTimestamp,
+        uint64 newValidatorBalanceGwei
+    );
 
     /// @notice Emitted when restaked beacon chain ETH is withdrawn from the eigenPod.
-    event RestakedBeaconChainETHWithdrawn(address indexed recipient, uint256 amount);
+    event RestakedBeaconChainETHWithdrawn(
+        address indexed recipient,
+        uint256 amount
+    );
 
     /// @notice Emitted when ETH is received via the `receive` fallback
     event NonBeaconChainETHReceived(uint256 amountReceived);
 
     /// @notice Emitted when a checkpoint is created
     event CheckpointCreated(
-        uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount
+        uint64 indexed checkpointTimestamp,
+        bytes32 indexed beaconBlockRoot,
+        uint256 validatorCount
     );
 
     /// @notice Emitted when a checkpoint is finalized
-    event CheckpointFinalized(uint64 indexed checkpointTimestamp, int256 totalShareDeltaWei);
+    event CheckpointFinalized(
+        uint64 indexed checkpointTimestamp,
+        int256 totalShareDeltaWei
+    );
 
     /// @notice Emitted when a validator is proven for a given checkpoint
-    event ValidatorCheckpointed(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
+    event ValidatorCheckpointed(
+        uint64 indexed checkpointTimestamp,
+        bytes32 indexed pubkeyHash
+    );
 
     /// @notice Emitted when a validator is proven to have 0 balance at a given checkpoint
-    event ValidatorWithdrawn(uint64 indexed checkpointTimestamp, bytes32 indexed pubkeyHash);
+    event ValidatorWithdrawn(
+        uint64 indexed checkpointTimestamp,
+        bytes32 indexed pubkeyHash
+    );
 
     /// @notice Emitted when a consolidation request is initiated where source == target
     event SwitchToCompoundingRequested(bytes32 indexed validatorPubkeyHash);
 
     /// @notice Emitted when a standard consolidation request is initiated
-    event ConsolidationRequested(bytes32 indexed sourcePubkeyHash, bytes32 indexed targetPubkeyHash);
+    event ConsolidationRequested(
+        bytes32 indexed sourcePubkeyHash,
+        bytes32 indexed targetPubkeyHash
+    );
 
     /// @notice Emitted when a withdrawal request is initiated where request.amountGwei == 0
     event ExitRequested(bytes32 indexed validatorPubkeyHash);
 
     /// @notice Emitted when a partial withdrawal request is initiated
-    event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
+    event WithdrawalRequested(
+        bytes32 indexed validatorPubkeyHash,
+        uint64 withdrawalAmountGwei
+    );
 }
 
 /**
@@ -192,20 +223,33 @@ interface IEigenPodEvents is IEigenPodTypes {
  */
 interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(
-        address owner
-    ) external;
+    function initialize(address owner) external;
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
+
+    /// @notice Called by EigenPodManager when the owner wants the compounding validator.
+    /// @dev This function only supports staking to a 0x02 validator.
+    function stakeCompounding(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
 
     /**
      * @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
      * of the DelegationManager's withdrawal flow.
      * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
      */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amount
+    ) external;
 
     /**
      * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
@@ -219,9 +263,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
      * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
      * to prevent accidentally starting a checkpoint that will not increase their shares
      */
-    function startCheckpoint(
-        bool revertIfNoBalance
-    ) external;
+    function startCheckpoint(bool revertIfNoBalance) external;
 
     /**
      * @dev Progress the current checkpoint towards completion by submitting one or more validator
@@ -390,7 +432,11 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     ) external payable;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+    function recoverTokens(
+        IERC20[] memory tokenList,
+        uint256[] memory amountsToWithdraw,
+        address recipient
+    ) external;
 
     /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
     /// address that can call various EigenPod methods, but cannot trigger asset withdrawals
@@ -400,9 +446,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// only address that can call these methods.
     /// @param newProofSubmitter The new proof submitter address. If set to 0, only the
     /// pod owner will be able to call EigenPod methods.
-    function setProofSubmitter(
-        address newProofSubmitter
-    ) external;
+    function setProofSubmitter(address newProofSubmitter) external;
 
     /**
      *
@@ -418,7 +462,10 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
 
     /// @notice Native ETH in the pod that has been accounted for in a checkpoint (denominated in gwei).
     /// This amount is withdrawable from the pod via the DelegationManager withdrawal flow.
-    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64);
+    function withdrawableRestakedExecutionLayerGwei()
+        external
+        view
+        returns (uint64);
 
     /// @notice The single EigenPodManager for EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager);
@@ -487,9 +534,7 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     /// - The final partial withdrawal for an exited validator will be likely be included in this mapping.
     ///   i.e. if a validator was last checkpointed at 32.1 ETH before exiting, the next checkpoint will calculate their
     ///   "exited" amount to be 32.1 ETH rather than 32 ETH.
-    function checkpointBalanceExitedGwei(
-        uint64
-    ) external view returns (uint64);
+    function checkpointBalanceExitedGwei(uint64) external view returns (uint64);
 
     /// @notice Query the 4788 oracle to get the parent block root of the slot with the given `timestamp`
     /// @param timestamp of the block for which the parent block root will be returned. MUST correspond

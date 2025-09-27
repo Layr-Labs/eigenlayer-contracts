@@ -36,15 +36,16 @@ contract EigenPodManager is
     using Math for *;
     using SafeCast for *;
 
-    modifier onlyEigenPod(
-        address podOwner
-    ) {
+    modifier onlyEigenPod(address podOwner) {
         require(address(ownerToPod[podOwner]) == msg.sender, OnlyEigenPod());
         _;
     }
 
     modifier onlyDelegationManager() {
-        require(msg.sender == address(delegationManager), OnlyDelegationManager());
+        require(
+            msg.sender == address(delegationManager),
+            OnlyDelegationManager()
+        );
         _;
     }
 
@@ -67,13 +68,21 @@ contract EigenPodManager is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 _initPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 _initPausedStatus
+    ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(_initPausedStatus);
     }
 
     /// @inheritdoc IEigenPodManager
-    function createPod() external onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) nonReentrant returns (address) {
+    function createPod()
+        external
+        onlyWhenNotPaused(PAUSED_NEW_EIGENPODS)
+        nonReentrant
+        returns (address)
+    {
         require(!hasPod(msg.sender), EigenPodAlreadyExists());
         // deploy a pod if the sender doesn't have one already
         IEigenPod pod = _deployPod();
@@ -96,13 +105,34 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IEigenPodManager
+    function stakeCompounding(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable onlyWhenNotPaused(PAUSED_NEW_EIGENPODS) nonReentrant {
+        IEigenPod pod = ownerToPod[msg.sender];
+        if (address(pod) == address(0)) {
+            //deploy a pod if the sender doesn't have one already
+            pod = _deployPod();
+        }
+        pod.stakeCompounding{value: msg.value}(
+            pubkey,
+            signature,
+            depositDataRoot
+        );
+    }
+
+    /// @inheritdoc IEigenPodManager
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
         uint256 prevRestakedBalanceWei,
         int256 balanceDeltaWei
     ) external onlyEigenPod(podOwner) nonReentrant {
         require(podOwner != address(0), InputAddressZero());
-        require(balanceDeltaWei % int256(GWEI_TO_WEI) == 0, SharesNotMultipleOfGwei());
+        require(
+            balanceDeltaWei % int256(GWEI_TO_WEI) == 0,
+            SharesNotMultipleOfGwei()
+        );
         // Negative shares only exist in certain cases where, prior to the slashing release, negative balance
         // deltas were reported after a pod owner queued a withdrawal for all their shares.
         //
@@ -117,7 +147,10 @@ contract EigenPodManager is
         // a negative balance delta, the pod owner's beacon chain slashing factor is decreased, devaluing
         // their shares. If the delta is zero, then no action needs to be taken.
         if (balanceDeltaWei > 0) {
-            (uint256 prevDepositShares, uint256 addedShares) = _addShares(podOwner, uint256(balanceDeltaWei));
+            (uint256 prevDepositShares, uint256 addedShares) = _addShares(
+                podOwner,
+                uint256(balanceDeltaWei)
+            );
 
             // Update operator shares
             delegationManager.increaseDelegatedShares({
@@ -157,7 +190,8 @@ contract EigenPodManager is
         uint256 depositSharesToRemove
     ) external onlyDelegationManager nonReentrant returns (uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        int256 updatedShares = podOwnerDepositShares[staker] - depositSharesToRemove.toInt256();
+        int256 updatedShares = podOwnerDepositShares[staker] -
+            depositSharesToRemove.toInt256();
         require(updatedShares >= 0, SharesNegative());
         podOwnerDepositShares[staker] = updatedShares;
 
@@ -220,7 +254,8 @@ contract EigenPodManager is
                 sharesToWithdraw = 0;
             }
 
-            int256 updatedShares = currentDepositShares + int256(depositSharesToAdd);
+            int256 updatedShares = currentDepositShares +
+                int256(depositSharesToAdd);
             podOwnerDepositShares[staker] = updatedShares;
             emit PodSharesUpdated(staker, int256(depositSharesToAdd));
             emit NewTotalShares(staker, updatedShares);
@@ -228,7 +263,10 @@ contract EigenPodManager is
 
         // Withdraw ETH from EigenPod
         if (sharesToWithdraw > 0) {
-            ownerToPod[staker].withdrawRestakedBeaconChainETH(staker, sharesToWithdraw);
+            ownerToPod[staker].withdrawRestakedBeaconChainETH(
+                staker,
+                sharesToWithdraw
+            );
         }
     }
 
@@ -269,7 +307,10 @@ contract EigenPodManager is
                 0,
                 bytes32(uint256(uint160(msg.sender))),
                 // set the beacon address to the eigenPodBeacon and initialize it
-                abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
+                abi.encodePacked(
+                    beaconProxyBytecode,
+                    abi.encode(eigenPodBeacon, "")
+                )
             )
         );
         pod.initialize(msg.sender);
@@ -283,7 +324,10 @@ contract EigenPodManager is
     /// NOTE: if the staker ends with a non-positive balance, this returns (0, 0)
     /// @return prevDepositShares the shares the staker had before any were added
     /// @return addedShares the shares added to the staker's balance
-    function _addShares(address staker, uint256 shares) internal returns (uint256, uint256) {
+    function _addShares(
+        address staker,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
 
@@ -317,32 +361,47 @@ contract EigenPodManager is
         uint256 prevRestakedBalanceWei,
         uint256 balanceDecreasedWei
     ) internal returns (uint64) {
-        uint256 newRestakedBalanceWei = prevRestakedBalanceWei - balanceDecreasedWei;
+        uint256 newRestakedBalanceWei = prevRestakedBalanceWei -
+            balanceDecreasedWei;
         uint64 prevBeaconSlashingFactor = beaconChainSlashingFactor(podOwner);
         // newBeaconSlashingFactor is less than prevBeaconSlashingFactor because
         // newRestakedBalanceWei < prevRestakedBalanceWei
-        uint64 newBeaconSlashingFactor =
-            uint64(prevBeaconSlashingFactor.mulDiv(newRestakedBalanceWei, prevRestakedBalanceWei));
-        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor - newBeaconSlashingFactor;
-        _beaconChainSlashingFactor[podOwner] =
-            BeaconChainSlashingFactor({slashingFactor: newBeaconSlashingFactor, isSet: true});
-        emit BeaconChainSlashingFactorDecreased(podOwner, prevBeaconSlashingFactor, newBeaconSlashingFactor);
+        uint64 newBeaconSlashingFactor = uint64(
+            prevBeaconSlashingFactor.mulDiv(
+                newRestakedBalanceWei,
+                prevRestakedBalanceWei
+            )
+        );
+        uint64 beaconChainSlashingFactorDecrease = prevBeaconSlashingFactor -
+            newBeaconSlashingFactor;
+        _beaconChainSlashingFactor[podOwner] = BeaconChainSlashingFactor({
+            slashingFactor: newBeaconSlashingFactor,
+            isSet: true
+        });
+        emit BeaconChainSlashingFactorDecreased(
+            podOwner,
+            prevBeaconSlashingFactor,
+            newBeaconSlashingFactor
+        );
         return beaconChainSlashingFactorDecrease;
     }
 
     // VIEW FUNCTIONS
 
     /// @inheritdoc IEigenPodManager
-    function getPod(
-        address podOwner
-    ) public view returns (IEigenPod) {
+    function getPod(address podOwner) public view returns (IEigenPod) {
         IEigenPod pod = ownerToPod[podOwner];
         // if pod does not exist already, calculate what its address *will be* once it is deployed
         if (address(pod) == address(0)) {
             pod = IEigenPod(
                 Create2.computeAddress(
                     bytes32(uint256(uint160(podOwner))), //salt
-                    keccak256(abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))) //bytecode
+                    keccak256(
+                        abi.encodePacked(
+                            beaconProxyBytecode,
+                            abi.encode(eigenPodBeacon, "")
+                        )
+                    ) //bytecode
                 )
             );
         }
@@ -350,25 +409,31 @@ contract EigenPodManager is
     }
 
     /// @inheritdoc IEigenPodManager
-    function hasPod(
-        address podOwner
-    ) public view returns (bool) {
+    function hasPod(address podOwner) public view returns (bool) {
         return address(ownerToPod[podOwner]) != address(0);
     }
 
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETHStrategy
     /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) public view returns (uint256 depositShares) {
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) public view returns (uint256 depositShares) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
-        return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
+        return
+            podOwnerDepositShares[user] < 0
+                ? 0
+                : uint256(podOwnerDepositShares[user]);
     }
 
     /// @inheritdoc IEigenPodManager
     function beaconChainSlashingFactor(
         address podOwner
     ) public view returns (uint64) {
-        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[podOwner];
+        BeaconChainSlashingFactor memory bsf = _beaconChainSlashingFactor[
+            podOwner
+        ];
         return bsf.isSet ? bsf.slashingFactor : WAD;
     }
 }

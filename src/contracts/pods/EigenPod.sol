@@ -45,15 +45,18 @@ contract EigenPod is
 
     /// @notice The address of the EIP-4788 beacon block root oracle
     /// (See https://eips.ethereum.org/EIPS/eip-4788)
-    address internal constant BEACON_ROOTS_ADDRESS = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
+    address internal constant BEACON_ROOTS_ADDRESS =
+        0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
 
     /// @notice The address of the EIP-7002 withdrawal request predeploy
     /// (See https://eips.ethereum.org/EIPS/eip-7002)
-    address internal constant WITHDRAWAL_REQUEST_ADDRESS = 0x00000961Ef480Eb55e80D19ad83579A64c007002;
+    address internal constant WITHDRAWAL_REQUEST_ADDRESS =
+        0x00000961Ef480Eb55e80D19ad83579A64c007002;
 
     /// @notice The address of the EIP-7251 consolidation request predeploy
     /// (See https://eips.ethereum.org/EIPS/eip-7251)
-    address internal constant CONSOLIDATION_REQUEST_ADDRESS = 0x0000BBdDc7CE488642fb579F8B00f3a590007251;
+    address internal constant CONSOLIDATION_REQUEST_ADDRESS =
+        0x0000BBdDc7CE488642fb579F8B00f3a590007251;
 
     /// @notice The length of the EIP-4788 beacon block root ring buffer
     uint256 internal constant BEACON_ROOTS_HISTORY_BUFFER_LENGTH = 8191;
@@ -84,7 +87,10 @@ contract EigenPod is
 
     /// @notice Callable only by the pod's owner or proof submitter
     modifier onlyOwnerOrProofSubmitter() {
-        require(msg.sender == podOwner || msg.sender == proofSubmitter, OnlyEigenPodOwnerOrProofSubmitter());
+        require(
+            msg.sender == podOwner || msg.sender == proofSubmitter,
+            OnlyEigenPodOwnerOrProofSubmitter()
+        );
         _;
     }
 
@@ -93,10 +99,11 @@ contract EigenPod is
      * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
      * Modifier throws if the `indexed`th bit of `_paused` in the EigenPodManager is 1, i.e. if the `index`th pause switch is flipped.
      */
-    modifier onlyWhenNotPaused(
-        uint8 index
-    ) {
-        require(!IPausable(address(eigenPodManager)).paused(index), CurrentlyPaused());
+    modifier onlyWhenNotPaused(uint8 index) {
+        require(
+            !IPausable(address(eigenPodManager)).paused(index),
+            CurrentlyPaused()
+        );
         _;
     }
 
@@ -116,9 +123,7 @@ contract EigenPod is
     }
 
     /// @inheritdoc IEigenPod
-    function initialize(
-        address _podOwner
-    ) external initializer {
+    function initialize(address _podOwner) external initializer {
         require(_podOwner != address(0), InputAddressZero());
         podOwner = _podOwner;
     }
@@ -137,7 +142,11 @@ contract EigenPod is
     /// @inheritdoc IEigenPod
     function startCheckpoint(
         bool revertIfNoBalance
-    ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_START_CHECKPOINT) {
+    )
+        external
+        onlyOwnerOrProofSubmitter
+        onlyWhenNotPaused(PAUSED_START_CHECKPOINT)
+    {
         _startCheckpoint(revertIfNoBalance);
     }
 
@@ -162,7 +171,9 @@ contract EigenPod is
         uint64 exitedBalancesGwei;
         for (uint256 i = 0; i < proofs.length; i++) {
             BeaconChainProofs.BalanceProof calldata proof = proofs[i];
-            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[proof.pubkeyHash];
+            ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[
+                proof.pubkeyHash
+            ];
 
             // Validator must be in the ACTIVE state to be provable during a checkpoint.
             // Validators become ACTIVE when initially proven via verifyWithdrawalCredentials
@@ -184,12 +195,17 @@ contract EigenPod is
             // If the proof shows the validator has a balance of 0, they are marked `WITHDRAWN`.
             // The assumption is that if this is the case, any withdrawn ETH was already in
             // the pod when `startCheckpoint` was originally called.
-            (uint64 prevBalanceGwei, int64 balanceDeltaGwei, uint64 exitedBalanceGwei) = _verifyCheckpointProof({
-                validatorInfo: validatorInfo,
-                checkpointTimestamp: checkpointTimestamp,
-                balanceContainerRoot: balanceContainerProof.balanceContainerRoot,
-                proof: proof
-            });
+            (
+                uint64 prevBalanceGwei,
+                int64 balanceDeltaGwei,
+                uint64 exitedBalanceGwei
+            ) = _verifyCheckpointProof({
+                    validatorInfo: validatorInfo,
+                    checkpointTimestamp: checkpointTimestamp,
+                    balanceContainerRoot: balanceContainerProof
+                        .balanceContainerRoot,
+                    proof: proof
+                });
 
             checkpoint.proofsRemaining--;
             checkpoint.prevBeaconBalanceGwei += prevBalanceGwei;
@@ -213,21 +229,31 @@ contract EigenPod is
         uint40[] calldata validatorIndices,
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
-    ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS) {
+    )
+        external
+        onlyOwnerOrProofSubmitter
+        onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS)
+    {
         require(
-            (validatorIndices.length == validatorFieldsProofs.length)
-                && (validatorFieldsProofs.length == validatorFields.length),
+            (validatorIndices.length == validatorFieldsProofs.length) &&
+                (validatorFieldsProofs.length == validatorFields.length),
             InputArrayLengthMismatch()
         );
 
         // Calling this method using a `beaconTimestamp` <= `currentCheckpointTimestamp` would allow
         // a newly-verified validator to be submitted to `verifyCheckpointProofs`, making progress
         // on an existing checkpoint.
-        require(beaconTimestamp > currentCheckpointTimestamp, BeaconTimestampTooFarInPast());
+        require(
+            beaconTimestamp > currentCheckpointTimestamp,
+            BeaconTimestampTooFarInPast()
+        );
 
         // For sanity, we want to ensure that a newly-verified validator cannot be proven against state
         // that has already been checkpointed. This check makes the state transitions easier to reason about.
-        require(beaconTimestamp > lastCheckpointTimestamp, BeaconTimestampBeforeLatestCheckpoint());
+        require(
+            beaconTimestamp > lastCheckpointTimestamp,
+            BeaconTimestampBeforeLatestCheckpoint()
+        );
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
         // forgefmt: disable-next-item
@@ -261,9 +287,15 @@ contract EigenPod is
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
         BeaconChainProofs.ValidatorProof calldata proof
-    ) external onlyWhenNotPaused(PAUSED_START_CHECKPOINT) onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE) {
+    )
+        external
+        onlyWhenNotPaused(PAUSED_START_CHECKPOINT)
+        onlyWhenNotPaused(PAUSED_VERIFY_STALE_BALANCE)
+    {
         bytes32 validatorPubkey = proof.validatorFields.getPubkeyHash();
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[validatorPubkey];
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[
+            validatorPubkey
+        ];
 
         // Validator must be eligible for a staleness proof. Generally, this condition
         // ensures that the staleness proof is newer than the last time we got an update
@@ -282,13 +314,22 @@ contract EigenPod is
         // that have initiated exits, we know that if we're seeing a proof where the validator
         // is slashed that it MUST be newer than the `verifyWithdrawalCredentials` proof
         // (regardless of the relationship between `beaconTimestamp` and `lastCheckpointedAt`).
-        require(beaconTimestamp > validatorInfo.lastCheckpointedAt, BeaconTimestampTooFarInPast());
+        require(
+            beaconTimestamp > validatorInfo.lastCheckpointedAt,
+            BeaconTimestampTooFarInPast()
+        );
 
         // Validator must be checkpoint-able
-        require(validatorInfo.status == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+        require(
+            validatorInfo.status == VALIDATOR_STATUS.ACTIVE,
+            ValidatorNotActiveInPod()
+        );
 
         // Validator must be slashed on the beacon chain
-        require(proof.validatorFields.isValidatorSlashed(), ValidatorNotSlashedOnBeaconChain());
+        require(
+            proof.validatorFields.isValidatorSlashed(),
+            ValidatorNotSlashedOnBeaconChain()
+        );
 
         // Verify passed-in `beaconStateRoot` against the beacon block root
         // forgefmt: disable-next-item
@@ -313,7 +354,12 @@ contract EigenPod is
     /// @inheritdoc IEigenPod
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
-    ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
+    )
+        external
+        payable
+        onlyWhenNotPaused(PAUSED_CONSOLIDATIONS)
+        onlyOwnerOrProofSubmitter
+    {
         uint256 fee = getConsolidationRequestFee();
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
@@ -325,16 +371,26 @@ contract EigenPod is
             // Ensure target has verified withdrawal credentials pointed at this pod
             bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
             bytes32 targetPubkeyHash = _calcPubkeyHash(request.targetPubkey);
-            require(validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            require(
+                validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE,
+                ValidatorNotActiveInPod()
+            );
 
             // Call the predeploy
-            bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
-            (bool ok,) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(callData);
+            bytes memory callData = bytes.concat(
+                request.srcPubkey,
+                request.targetPubkey
+            );
+            (bool ok, ) = CONSOLIDATION_REQUEST_ADDRESS.call{value: fee}(
+                callData
+            );
             require(ok, PredeployFailed());
 
             // Emit event depending on whether this is a switch to 0x02, or a regular consolidation
-            if (sourcePubkeyHash == targetPubkeyHash) emit SwitchToCompoundingRequested(sourcePubkeyHash);
-            else emit ConsolidationRequested(sourcePubkeyHash, targetPubkeyHash);
+            if (sourcePubkeyHash == targetPubkeyHash)
+                emit SwitchToCompoundingRequested(sourcePubkeyHash);
+            else
+                emit ConsolidationRequested(sourcePubkeyHash, targetPubkeyHash);
         }
 
         // Refund remainder of msg.value
@@ -346,7 +402,12 @@ contract EigenPod is
     /// @inheritdoc IEigenPod
     function requestWithdrawal(
         WithdrawalRequest[] calldata requests
-    ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
+    )
+        external
+        payable
+        onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS)
+        onlyOwnerOrProofSubmitter
+    {
         uint256 fee = getWithdrawalRequestFee();
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
@@ -357,11 +418,17 @@ contract EigenPod is
             bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
 
             // Ensure validator has verified withdrawal credentials pointed at this pod
-            require(validatorStatus(pubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            require(
+                validatorStatus(pubkeyHash) == VALIDATOR_STATUS.ACTIVE,
+                ValidatorNotActiveInPod()
+            );
 
             // Call the predeploy
-            bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
-            (bool ok,) = WITHDRAWAL_REQUEST_ADDRESS.call{value: fee}(callData);
+            bytes memory callData = abi.encodePacked(
+                request.pubkey,
+                request.amountGwei
+            );
+            (bool ok, ) = WITHDRAWAL_REQUEST_ADDRESS.call{value: fee}(callData);
             require(ok, PredeployFailed());
 
             // Emit event depending on whether the request is a full exit or a partial withdrawal
@@ -380,8 +447,15 @@ contract EigenPod is
         IERC20[] memory tokenList,
         uint256[] memory amountsToWithdraw,
         address recipient
-    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
-        require(tokenList.length == amountsToWithdraw.length, InputArrayLengthMismatch());
+    )
+        external
+        onlyEigenPodOwner
+        onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
+    {
+        require(
+            tokenList.length == amountsToWithdraw.length,
+            InputArrayLengthMismatch()
+        );
         for (uint256 i = 0; i < tokenList.length; i++) {
             tokenList[i].safeTransfer(recipient, amountsToWithdraw[i]);
         }
@@ -403,15 +477,52 @@ contract EigenPod is
     ) external payable onlyEigenPodManager {
         // stake on ethpos
         require(msg.value == 32 ether, MsgValueNot32ETH());
-        ethPOS.deposit{value: 32 ether}(pubkey, _podWithdrawalCredentials(), signature, depositDataRoot);
+        ethPOS.deposit{value: 32 ether}(
+            pubkey,
+            _podWithdrawalCredentials(),
+            signature,
+            depositDataRoot
+        );
         emit EigenPodStaked(_calcPubkeyHash(pubkey));
     }
 
     /// @inheritdoc IEigenPod
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+    function stakeCompounding(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable onlyEigenPodManager {
+        bytes32 validatorPubkeyHash = _calcPubkeyHash(pubkey);
+
+        // check msg.value
+        if (validatorStatus(validatorPubkeyHash) == VALIDATOR_STATUS.INACTIVE) {
+            require(msg.value == 32 ether, MsgValueNot32ETH());
+        } else {
+            require(msg.value > 0, MsgValueZero());
+        }
+
+        // stake on ethpos
+
+        ethPOS.deposit{value: msg.value}(
+            pubkey,
+            _podCompoundingWithdrawalCredentials(),
+            signature,
+            depositDataRoot
+        );
+        emit EigenPodCompoundStaked(_calcPubkeyHash(pubkey), msg.value);
+    }
+
+    /// @inheritdoc IEigenPod
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amountWei
+    ) external onlyEigenPodManager {
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         amountWei = amountGwei * GWEI_TO_WEI;
-        require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
+        require(
+            amountGwei <= restakedExecutionLayerGwei,
+            InsufficientWithdrawableBalance()
+        );
         restakedExecutionLayerGwei -= amountGwei;
         emit RestakedBeaconChainETHWithdrawn(recipient, amountWei);
         // transfer ETH from pod to `recipient` directly
@@ -438,10 +549,15 @@ contract EigenPod is
         bytes32[] calldata validatorFields
     ) internal returns (uint256) {
         bytes32 pubkeyHash = validatorFields.getPubkeyHash();
-        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[pubkeyHash];
+        ValidatorInfo memory validatorInfo = _validatorPubkeyHashToInfo[
+            pubkeyHash
+        ];
 
         // Withdrawal credential proofs should only be processed for "INACTIVE" validators
-        require(validatorInfo.status == VALIDATOR_STATUS.INACTIVE, CredentialsAlreadyVerified());
+        require(
+            validatorInfo.status == VALIDATOR_STATUS.INACTIVE,
+            CredentialsAlreadyVerified()
+        );
 
         // Validator should be active on the beacon chain, or in the process of activating.
         // This implies the validator has reached the minimum effective balance required
@@ -457,7 +573,9 @@ contract EigenPod is
         // to temporarily decrease, then be restored later. This would effectively prevent these
         // shares from being slashable on EigenLayer for a short period of time.
         require(
-            validatorFields.getActivationEpoch() != BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorInactiveOnBeaconChain()
+            validatorFields.getActivationEpoch() !=
+                BeaconChainProofs.FAR_FUTURE_EPOCH,
+            ValidatorInactiveOnBeaconChain()
         );
 
         // Validator should not already be in the process of exiting. This is an important property
@@ -482,12 +600,18 @@ contract EigenPod is
         //   1 + MAX_SEED_LOOKAHEAD + MIN_VALIDATOR_WITHDRAWABILITY_DELAY == 261 epochs (8352 slots).
         //
         // (See https://eth2book.info/capella/part3/helper/mutators/#initiate_validator_exit)
-        require(validatorFields.getExitEpoch() == BeaconChainProofs.FAR_FUTURE_EPOCH, ValidatorIsExitingBeaconChain());
+        require(
+            validatorFields.getExitEpoch() ==
+                BeaconChainProofs.FAR_FUTURE_EPOCH,
+            ValidatorIsExitingBeaconChain()
+        );
 
         // Ensure the validator's withdrawal credentials are pointed at this pod
         require(
-            validatorFields.getWithdrawalCredentials() == bytes32(_podWithdrawalCredentials())
-                || validatorFields.getWithdrawalCredentials() == bytes32(_podCompoundingWithdrawalCredentials()),
+            validatorFields.getWithdrawalCredentials() ==
+                bytes32(_podWithdrawalCredentials()) ||
+                validatorFields.getWithdrawalCredentials() ==
+                bytes32(_podCompoundingWithdrawalCredentials()),
             WithdrawalCredentialsNotForEigenPod()
         );
 
@@ -510,8 +634,9 @@ contract EigenPod is
         // purpose of `lastCheckpointedAt` is to enforce that newly-verified validators are not
         // eligible to progress already-existing checkpoints - however in this case, no checkpoints exist.
         activeValidatorCount++;
-        uint64 lastCheckpointedAt =
-            currentCheckpointTimestamp == 0 ? lastCheckpointTimestamp : currentCheckpointTimestamp;
+        uint64 lastCheckpointedAt = currentCheckpointTimestamp == 0
+            ? lastCheckpointTimestamp
+            : currentCheckpointTimestamp;
 
         // Proofs complete - create the validator in state
         _validatorPubkeyHashToInfo[pubkeyHash] = ValidatorInfo({
@@ -527,7 +652,11 @@ contract EigenPod is
         _currentCheckpoint.prevBeaconBalanceGwei += restakedBalanceGwei;
 
         emit ValidatorRestaked(pubkeyHash);
-        emit ValidatorBalanceUpdated(pubkeyHash, lastCheckpointedAt, restakedBalanceGwei);
+        emit ValidatorBalanceUpdated(
+            pubkeyHash,
+            lastCheckpointedAt,
+            restakedBalanceGwei
+        );
         return restakedBalanceGwei * GWEI_TO_WEI;
     }
 
@@ -536,7 +665,14 @@ contract EigenPod is
         uint64 checkpointTimestamp,
         bytes32 balanceContainerRoot,
         BeaconChainProofs.BalanceProof calldata proof
-    ) internal returns (uint64 prevBalanceGwei, int64 balanceDeltaGwei, uint64 exitedBalanceGwei) {
+    )
+        internal
+        returns (
+            uint64 prevBalanceGwei,
+            int64 balanceDeltaGwei,
+            uint64 exitedBalanceGwei
+        )
+    {
         // Verify validator balance against `balanceContainerRoot`
         prevBalanceGwei = validatorInfo.restakedBalanceGwei;
         uint64 newBalanceGwei = BeaconChainProofs.verifyValidatorBalance({
@@ -548,7 +684,11 @@ contract EigenPod is
         // Calculate change in the validator's balance since the last proof
         if (newBalanceGwei != prevBalanceGwei) {
             balanceDeltaGwei = int64(newBalanceGwei) - int64(prevBalanceGwei);
-            emit ValidatorBalanceUpdated(proof.pubkeyHash, checkpointTimestamp, newBalanceGwei);
+            emit ValidatorBalanceUpdated(
+                proof.pubkeyHash,
+                checkpointTimestamp,
+                newBalanceGwei
+            );
         }
 
         validatorInfo.restakedBalanceGwei = newBalanceGwei;
@@ -581,9 +721,7 @@ contract EigenPod is
      * @param revertIfNoBalance If the available ETH balance for checkpointing is 0 and this is
      * true, this method will revert
      */
-    function _startCheckpoint(
-        bool revertIfNoBalance
-    ) internal {
+    function _startCheckpoint(bool revertIfNoBalance) internal {
         require(currentCheckpointTimestamp == 0, CheckpointAlreadyActive());
 
         // Prevent a checkpoint being completable twice in the same block. This prevents an edge case
@@ -591,7 +729,10 @@ contract EigenPod is
         //
         // This is because the validators checkpointed in the first checkpoint would have a `lastCheckpointedAt`
         // value equal to the second checkpoint, causing their proofs to get skipped in `verifyCheckpointProofs`
-        require(lastCheckpointTimestamp != uint64(block.timestamp), CannotCheckpointTwiceInSingleBlock());
+        require(
+            lastCheckpointTimestamp != uint64(block.timestamp),
+            CannotCheckpointTwiceInSingleBlock()
+        );
 
         // Snapshot pod balance at the start of the checkpoint, subtracting pod balance that has
         // previously been credited with shares. Once the checkpoint is finalized, `podBalanceGwei`
@@ -602,7 +743,8 @@ contract EigenPod is
         // `podBalanceGwei` is also converted to a gwei amount here. This means that any sub-gwei amounts
         // sent to the pod are not credited with shares and are therefore not withdrawable.
         // This can be addressed by topping up a pod's balance to a value divisible by 1 gwei.
-        uint64 podBalanceGwei = uint64(address(this).balance / GWEI_TO_WEI) - restakedExecutionLayerGwei;
+        uint64 podBalanceGwei = uint64(address(this).balance / GWEI_TO_WEI) -
+            restakedExecutionLayerGwei;
 
         // If the caller doesn't want a "0 balance" checkpoint, revert
         if (revertIfNoBalance && podBalanceGwei == 0) {
@@ -625,7 +767,11 @@ contract EigenPod is
         currentCheckpointTimestamp = uint64(block.timestamp);
         _updateCheckpoint(checkpoint);
 
-        emit CheckpointCreated(uint64(block.timestamp), checkpoint.beaconBlockRoot, checkpoint.proofsRemaining);
+        emit CheckpointCreated(
+            uint64(block.timestamp),
+            checkpoint.beaconBlockRoot,
+            checkpoint.proofsRemaining
+        );
     }
 
     /**
@@ -636,9 +782,7 @@ contract EigenPod is
      * - `lastCheckpointTimestamp` is updated
      * - `currentCheckpointTimestamp` is set to zero
      */
-    function _updateCheckpoint(
-        Checkpoint memory checkpoint
-    ) internal {
+    function _updateCheckpoint(Checkpoint memory checkpoint) internal {
         _currentCheckpoint = checkpoint;
         if (checkpoint.proofsRemaining != 0) {
             return;
@@ -647,8 +791,10 @@ contract EigenPod is
         // Calculate the previous total restaked balance and change in restaked balance
         // Note: due to how these values are calculated, a negative `balanceDeltaGwei`
         // should NEVER be greater in magnitude than `prevRestakedBalanceGwei`
-        uint64 prevRestakedBalanceGwei = restakedExecutionLayerGwei + checkpoint.prevBeaconBalanceGwei;
-        int64 balanceDeltaGwei = int64(checkpoint.podBalanceGwei) + checkpoint.balanceDeltasGwei;
+        uint64 prevRestakedBalanceGwei = restakedExecutionLayerGwei +
+            checkpoint.prevBeaconBalanceGwei;
+        int64 balanceDeltaGwei = int64(checkpoint.podBalanceGwei) +
+            checkpoint.balanceDeltasGwei;
 
         // And native ETH when the checkpoint was started is now considered restaked.
         // Add it to `restakedExecutionLayerGwei`, which allows it to be withdrawn via
@@ -676,7 +822,11 @@ contract EigenPod is
         return abi.encodePacked(bytes1(uint8(1)), bytes11(0), address(this));
     }
 
-    function _podCompoundingWithdrawalCredentials() internal view returns (bytes memory) {
+    function _podCompoundingWithdrawalCredentials()
+        internal
+        view
+        returns (bytes memory)
+    {
         return abi.encodePacked(bytes1(uint8(2)), bytes11(0), address(this));
     }
 
@@ -689,9 +839,7 @@ contract EigenPod is
     }
 
     /// @dev Returns the current fee required to query either the EIP-7002 or EIP-7251 predeploy
-    function _getFee(
-        address predeploy
-    ) internal view returns (uint256) {
+    function _getFee(address predeploy) internal view returns (uint256) {
         (bool success, bytes memory result) = predeploy.staticcall("");
         require(success && result.length == 32, FeeQueryFailed());
 
@@ -709,9 +857,10 @@ contract EigenPod is
 
         /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
         /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
-        return proofTimestamp <= forkTimestamp
-            ? BeaconChainProofs.ProofVersion.DENEB
-            : BeaconChainProofs.ProofVersion.PECTRA;
+        return
+            proofTimestamp <= forkTimestamp
+                ? BeaconChainProofs.ProofVersion.DENEB
+                : BeaconChainProofs.ProofVersion.PECTRA;
     }
 
     /**
@@ -721,7 +870,11 @@ contract EigenPod is
      */
 
     /// @inheritdoc IEigenPod
-    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {
+    function withdrawableRestakedExecutionLayerGwei()
+        external
+        view
+        returns (uint64)
+    {
         return restakedExecutionLayerGwei;
     }
 
@@ -763,9 +916,15 @@ contract EigenPod is
     function getParentBlockRoot(
         uint64 timestamp
     ) public view returns (bytes32) {
-        require(block.timestamp - timestamp < BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12, TimestampOutOfRange());
+        require(
+            block.timestamp - timestamp <
+                BEACON_ROOTS_HISTORY_BUFFER_LENGTH * 12,
+            TimestampOutOfRange()
+        );
 
-        (bool success, bytes memory result) = BEACON_ROOTS_ADDRESS.staticcall(abi.encode(timestamp));
+        (bool success, bytes memory result) = BEACON_ROOTS_ADDRESS.staticcall(
+            abi.encode(timestamp)
+        );
 
         require(success && result.length > 0, InvalidEIP4788Response());
         return abi.decode(result, (bytes32));
