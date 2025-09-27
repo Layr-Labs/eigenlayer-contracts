@@ -74,8 +74,8 @@ interface IEigenPodErrors {
     error InvalidEIP4788Response();
     /// @dev Thrown when attempting to send an invalid amount to the beacon deposit contract.
     error MsgValueNot32ETH();
-    /// @dev Thrown when attempting to send an zero amount to the beacon deposit contract for compounding.
-    error MsgValueZero();
+    /// @dev Thrown when attempting to send an amount less than one to the beacon deposit contract for compounding.
+    error MsgValueNotMoreThanOne();
     /// @dev Thrown when provided `beaconTimestamp` is too far in the past.
     error BeaconTimestampTooFarInPast();
     /// @dev Thrown when provided `beaconTimestamp` is before the last checkpoint

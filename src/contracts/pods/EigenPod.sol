@@ -498,7 +498,7 @@ contract EigenPod is
         if (validatorStatus(validatorPubkeyHash) == VALIDATOR_STATUS.INACTIVE) {
             require(msg.value == 32 ether, MsgValueNot32ETH());
         } else {
-            require(msg.value > 0, MsgValueZero());
+            require(msg.value >= 1 ether, MsgValueNotMoreThanOne());
         }
 
         // stake on ethpos
