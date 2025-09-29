@@ -25,10 +25,11 @@ abstract contract PermissionControllerMixin {
     }
 
     /**
-     * @notice Checks if the caller is allowed to call a function on behalf of an account.
-     * @param account the account to check
-     * @dev `msg.sender` is the caller to check that can call the function on behalf of `account`.
-     * @dev Returns a bool, instead of reverting
+     * @notice Checks if the caller (msg.sender) is permitted to call the current function on behalf of the given account.
+     * @param account The account on whose behalf the function is being called.
+     * @dev Reverts if the caller is not permitted to call the current function on behalf of the given account.
+     * @dev This function queries the permissionController to determine if msg.sender is authorized
+     *      to call the current function (identified by msg.sig) on behalf of `account`.
      */
     function _checkCanCall(
         address account
@@ -36,9 +37,14 @@ abstract contract PermissionControllerMixin {
         require(_canCall(account), InvalidPermissions());
     }
 
+    /**
+     * @notice Checks if the caller (msg.sender) is permitted to call the current function on behalf of the given account.
+     * @param account The account on whose behalf the function is being called.
+     * @return allowed True if the caller is permitted, false otherwise.
+     */
     function _canCall(
         address account
-    ) internal view returns (bool) {
+    ) internal view returns (bool allowed) {
         return permissionController.canCall(account, msg.sender, address(this), msg.sig);
     }
 }

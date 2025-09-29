@@ -335,10 +335,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
+            ALLOCATION_CONFIGURATION_DELAY
         );
-        permissionControllerImplementation = new PermissionController(version);
+        permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
@@ -360,18 +359,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
                 MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                version: version
+                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
             })
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
+            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser

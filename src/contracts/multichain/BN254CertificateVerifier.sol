@@ -7,7 +7,6 @@ import "../libraries/BN254.sol";
 import "../libraries/BN254SignatureVerifier.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/OperatorSetLib.sol";
-import "../mixins/SemVerMixin.sol";
 import "../mixins/LeafCalculatorMixin.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
@@ -17,12 +16,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is
-    Initializable,
-    BN254CertificateVerifierStorage,
-    SemVerMixin,
-    LeafCalculatorMixin
-{
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, LeafCalculatorMixin {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
@@ -48,12 +42,10 @@ contract BN254CertificateVerifier is
      * @notice Constructor for the certificate verifier
      * @dev Disables initializers to prevent implementation initialization
      * @param _operatorTableUpdater Address authorized to update operator tables
-     * @param _version The semantic version of the contract
      */
     constructor(
-        IOperatorTableUpdater _operatorTableUpdater,
-        string memory _version
-    ) BN254CertificateVerifierStorage(_operatorTableUpdater) SemVerMixin(_version) {
+        IOperatorTableUpdater _operatorTableUpdater
+    ) BN254CertificateVerifierStorage(_operatorTableUpdater) {
         _disableInitializers();
     }
 

@@ -48,8 +48,7 @@ contract OperatorTableUpdaterUnitTests is
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             IBN254CertificateVerifier(address(bn254CertificateVerifierMock)),
             IECDSACertificateVerifier(address(ecdsaCertificateVerifierMock)),
-            pauserRegistry,
-            "1.0.0"
+            pauserRegistry
         );
 
         eigenLayerProxyAdmin.upgradeAndCall(

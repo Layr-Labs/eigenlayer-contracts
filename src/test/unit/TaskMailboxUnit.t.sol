@@ -68,7 +68,7 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
         // Deploy TaskMailbox with proxy pattern
         proxyAdmin = new ProxyAdmin();
         TaskMailbox taskMailboxImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -176,7 +176,7 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
 
         // Deploy with proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, MAX_TASK_SLA, "1.0.0");
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, MAX_TASK_SLA);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -186,7 +186,6 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
 
         assertEq(newTaskMailbox.BN254_CERTIFICATE_VERIFIER(), bn254Verifier);
         assertEq(newTaskMailbox.ECDSA_CERTIFICATE_VERIFIER(), ecdsaVerifier);
-        assertEq(newTaskMailbox.version(), "1.0.0");
         assertEq(newTaskMailbox.owner(), owner);
         assertEq(newTaskMailbox.feeSplit(), 0);
         assertEq(newTaskMailbox.feeSplitCollector(), feeSplitCollector);
@@ -199,7 +198,7 @@ contract TaskMailboxUnitTests_Constructor is TaskMailboxUnitTests {
         uint96 customMaxTaskSLA = 14 days;
 
         // Deploy with custom MAX_TASK_SLA
-        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, customMaxTaskSLA, "1.0.0");
+        TaskMailbox taskMailboxImpl = new TaskMailbox(bn254Verifier, ecdsaVerifier, customMaxTaskSLA);
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
@@ -1251,7 +1250,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Deploy a new TaskMailbox with the failing verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         TaskMailbox taskMailboxImpl =
-            new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0");
+            new TaskMailbox(address(mockFailingVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -1302,7 +1301,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Deploy a new TaskMailbox with the failing ECDSA verifier using proxy pattern
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         TaskMailbox taskMailboxImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), MAX_TASK_SLA, "1.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifierFailure), MAX_TASK_SLA);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(taskMailboxImpl),
             address(proxyAdmin),
@@ -3005,7 +3004,6 @@ contract TaskMailboxUnitTests_ViewFunctions is TaskMailboxUnitTests {
         // Test that we can read the immutable certificate verifiers
         assertEq(taskMailbox.BN254_CERTIFICATE_VERIFIER(), address(mockBN254CertificateVerifier));
         assertEq(taskMailbox.ECDSA_CERTIFICATE_VERIFIER(), address(mockECDSACertificateVerifier));
-        assertEq(taskMailbox.version(), "1.0.0");
         assertEq(taskMailbox.owner(), owner);
 
         // Test fee split getters
@@ -3273,7 +3271,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
     function test_Implementation_CannotBeInitialized() public {
         // Deploy a new implementation
         TaskMailbox newImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.1");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
 
         // Try to initialize the implementation directly, should revert
         vm.expectRevert("Initializable: contract is already initialized");
@@ -3285,16 +3283,10 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
         // Deploy new implementation with different version
         TaskMailbox newImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
-
-        // Check version before upgrade
-        assertEq(taskMailbox.version(), "1.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
 
         // Upgrade proxy to new implementation
         proxyAdmin.upgrade(ITransparentUpgradeableProxy(address(taskMailbox)), address(newImpl));
-
-        // Check version after upgrade
-        assertEq(taskMailbox.version(), "2.0.0");
 
         // Verify state is preserved (owner should still be the same)
         assertEq(taskMailbox.owner(), owner);
@@ -3305,7 +3297,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
         // Deploy new implementation
         TaskMailbox newImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
 
         // Try to upgrade from non-owner, should revert
         vm.prank(attacker);
@@ -3340,7 +3332,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
         // Deploy new implementation
         TaskMailbox newImpl =
-            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "2.0.0");
+            new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA);
 
         // Upgrade
         vm.prank(address(this)); // proxyAdmin owner
@@ -3348,7 +3340,6 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
 
         // Verify all state is preserved after upgrade
         assertEq(taskMailbox.owner(), newOwner);
-        assertEq(taskMailbox.version(), "2.0.0");
 
         // Verify the executor operator set config is still there
         ExecutorOperatorSetTaskConfig memory configAfterUpgrade = taskMailbox.getExecutorOperatorSetTaskConfig(operatorSet);
@@ -3361,7 +3352,7 @@ contract TaskMailboxUnitTests_Upgradeable is TaskMailboxUnitTests {
     function test_InitializerModifier_PreventsReinitialization() public {
         // Deploy a new proxy without initialization data
         TransparentUpgradeableProxy uninitializedProxy = new TransparentUpgradeableProxy(
-            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA, "1.0.0")),
+            address(new TaskMailbox(address(mockBN254CertificateVerifier), address(mockECDSACertificateVerifier), MAX_TASK_SLA)),
             address(new ProxyAdmin()),
             ""
         );

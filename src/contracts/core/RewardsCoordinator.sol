@@ -10,7 +10,6 @@ import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
 import "./RewardsCoordinatorStorage.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
 
 /**
  * @title RewardsCoordinator
@@ -27,8 +26,7 @@ contract RewardsCoordinator is
     Pausable,
     ReentrancyGuardUpgradeable,
     RewardsCoordinatorStorage,
-    PermissionControllerMixin,
-    SemVerMixin
+    PermissionControllerMixin
 {
     using SafeERC20 for IERC20;
     using OperatorSetLib for OperatorSet;
@@ -59,7 +57,6 @@ contract RewardsCoordinator is
         )
         Pausable(params.pauserRegistry)
         PermissionControllerMixin(params.permissionController)
-        SemVerMixin(params.version)
     {
         _disableInitializers();
     }

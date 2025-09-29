@@ -51,8 +51,7 @@ contract DeploySourceChain is EOADeployer {
                     _allocationManager: Env.proxy.allocationManager(),
                     _keyRegistrar: Env.proxy.keyRegistrar(),
                     _permissionController: Env.proxy.permissionController(),
-                    _pauserRegistry: Env.impl.pauserRegistry(),
-                    _version: Env.deployVersion()
+                    _pauserRegistry: Env.impl.pauserRegistry()
                 })
             )
         });
@@ -80,7 +79,7 @@ contract DeploySourceChain is EOADeployer {
         deployImpl({
             name: type(ReleaseManager).name,
             deployedTo: address(
-                new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
+                new ReleaseManager({_permissionController: Env.proxy.permissionController()})
             )
         });
 
@@ -180,7 +179,6 @@ contract DeploySourceChain is EOADeployer {
                 address(crossChainRegistry.pauserRegistry()) == address(Env.impl.pauserRegistry()),
                 "ccr.pauserRegistry invalid"
             );
-            assertEq(crossChainRegistry.version(), Env.deployVersion(), "ccr.version failed");
         }
 
         {
@@ -190,7 +188,6 @@ contract DeploySourceChain is EOADeployer {
                 releaseManager.permissionController() == Env.proxy.permissionController(),
                 "rm.permissionController invalid"
             );
-            assertEq(releaseManager.version(), Env.deployVersion(), "rm.version failed");
         }
     }
 
@@ -216,7 +213,6 @@ contract DeploySourceChain is EOADeployer {
         );
 
         CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
-        assertEq(crossChainRegistry.version(), Env.deployVersion(), "crossChainRegistry version mismatch");
         assertTrue(
             crossChainRegistry.allocationManager() == Env.proxy.allocationManager(),
             "crossChainRegistry allocationManager mismatch"
@@ -234,7 +230,6 @@ contract DeploySourceChain is EOADeployer {
         );
 
         ReleaseManager releaseManager = Env.proxy.releaseManager();
-        assertEq(releaseManager.version(), Env.deployVersion(), "releaseManager version mismatch");
         assertTrue(
             releaseManager.permissionController() == Env.proxy.permissionController(),
             "releaseManager permissionController mismatch"

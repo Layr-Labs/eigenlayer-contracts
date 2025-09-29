@@ -223,13 +223,13 @@ contract DeployFromScratch is Script, Test {
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
 
-        eigenStrategy = IStrategy(new EigenStrategy(strategyManager, eigenLayerPauserReg, SEMVER));
+        eigenStrategy = IStrategy(new EigenStrategy(strategyManager, eigenLayerPauserReg));
 
         // if on mainnet, use the ETH2 deposit contract address
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
         // if not on mainnet, deploy a mock
         else ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, SEMVER);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
@@ -247,7 +247,7 @@ contract DeployFromScratch is Script, Test {
         strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
                 delegation,
@@ -259,8 +259,7 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
                 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                SEMVER
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
             )
         );
         allocationManagerImplementation = new AllocationManager(
@@ -269,10 +268,9 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
+            ALLOCATION_CONFIGURATION_DELAY
         );
-        permissionControllerImplementation = new PermissionController(SEMVER);
+        permissionControllerImplementation = new PermissionController();
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -340,7 +338,7 @@ contract DeployFromScratch is Script, Test {
         );
 
         // deploy StrategyBaseTVLLimits contract implementation
-        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg, SEMVER);
+        baseStrategyImplementation = new StrategyBaseTVLLimits(strategyManager, eigenLayerPauserReg);
         // create upgradeable proxies that each point to the implementation and initialize them
         for (uint256 i = 0; i < strategyConfigs.length; ++i) {
             if (strategyConfigs[i].tokenAddress == address(0)) {

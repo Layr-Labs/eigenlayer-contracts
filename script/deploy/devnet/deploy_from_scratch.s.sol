@@ -219,7 +219,7 @@ contract DeployFromScratch is Script, Test {
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
         // if not on mainnet, deploy a mock
         else ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, SEMVER);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
@@ -238,7 +238,7 @@ contract DeployFromScratch is Script, Test {
         strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
                 delegation,
@@ -250,8 +250,7 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
                 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                SEMVER
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
             )
         );
         allocationManagerImplementation = new AllocationManager(
@@ -260,11 +259,10 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
+            ALLOCATION_CONFIGURATION_DELAY
         );
-        permissionControllerImplementation = new PermissionController(SEMVER);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, SEMVER);
+        permissionControllerImplementation = new PermissionController();
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -326,7 +324,7 @@ contract DeployFromScratch is Script, Test {
 
         // Deploy strategyFactory & base
         // Create base strategy implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, SEMVER);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));

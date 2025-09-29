@@ -22,8 +22,7 @@ contract AllocationManagerHarness is AllocationManager {
             _pauserRegistry,
             _permissionController,
             _DEALLOCATION_DELAY,
-            _ALLOCATION_CONFIGURATION_DELAY,
-            TestConstants.TEST_VERSION
+            _ALLOCATION_CONFIGURATION_DELAY
         )
     {}
 

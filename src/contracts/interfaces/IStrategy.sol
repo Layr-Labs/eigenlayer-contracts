@@ -3,7 +3,6 @@ pragma solidity >=0.5.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../libraries/SlashingLib.sol";
-import "./ISemVerMixin.sol";
 
 interface IStrategyErrors {
     /// @dev Thrown when called by an account that is not strategy manager.
@@ -48,7 +47,7 @@ interface IStrategyEvents {
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @notice Custom `Strategy` implementations may expand extensively on this interface.
  */
-interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
+interface IStrategy is IStrategyErrors, IStrategyEvents {
     /**
      * @notice Used to deposit tokens into this Strategy
      * @param token is the ERC20 token being deposited

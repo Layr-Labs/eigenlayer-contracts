@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
-import "../mixins/SemVerMixin.sol";
 import "./StrategyFactoryStorage.sol";
 import "./StrategyBase.sol";
 import "../permissions/Pausable.sol";
@@ -15,18 +14,14 @@ import "../permissions/Pausable.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
  */
-contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable, SemVerMixin {
+contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable {
     uint8 internal constant PAUSED_NEW_STRATEGIES = 0;
 
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
-    constructor(
-        IStrategyManager _strategyManager,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
-    ) Pausable(_pauserRegistry) SemVerMixin(_version) {
+    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }

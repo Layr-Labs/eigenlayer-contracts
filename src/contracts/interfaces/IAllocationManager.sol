@@ -5,7 +5,6 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./IAVSRegistrar.sol";
-import "./ISemVerMixin.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation
@@ -223,7 +222,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 }
 
-interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEvents, ISemVerMixin {
+interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEvents {
     /**
      * @dev Initializes the initial owner and paused status.
      */

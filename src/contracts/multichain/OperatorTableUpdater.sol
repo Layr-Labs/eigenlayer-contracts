@@ -7,7 +7,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
-import "../mixins/SemVerMixin.sol";
 import "../mixins/LeafCalculatorMixin.sol";
 import "./OperatorTableUpdaterStorage.sol";
 
@@ -16,7 +15,6 @@ contract OperatorTableUpdater is
     OwnableUpgradeable,
     Pausable,
     OperatorTableUpdaterStorage,
-    SemVerMixin,
     LeafCalculatorMixin,
     ReentrancyGuardUpgradeable
 {
@@ -28,13 +26,8 @@ contract OperatorTableUpdater is
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
         IECDSACertificateVerifier _ecdsaCertificateVerifier,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
-    )
-        OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier)
-        Pausable(_pauserRegistry)
-        SemVerMixin(_version)
-    {
+        IPauserRegistry _pauserRegistry
+    ) OperatorTableUpdaterStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier) Pausable(_pauserRegistry) {
         _disableInitializers();
     }
 
