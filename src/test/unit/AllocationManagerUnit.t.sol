@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/test/harnesses/AllocationManagerHarness.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 
@@ -35,7 +36,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Mocks
     /// -----------------------------------------------------------------------
 
-    AllocationManagerHarness allocationManager;
+    IAllocationManager allocationManager;
     ERC20PresetFixedSupply tokenMock;
     StrategyBase strategyMock;
 
@@ -91,13 +92,18 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function _initializeAllocationManager(IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
         internal
-        returns (AllocationManagerHarness)
+        returns (IAllocationManager)
     {
-        return allocationManager = AllocationManagerHarness(
+        // TODO: improve
+        IAllocationManagerView allocationManagerView = new AllocationManagerView(
+            IDelegationManager(address(delegationManagerMock)), eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
+        return allocationManager = IAllocationManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(
                         new AllocationManagerHarness(
+                            allocationManagerView,
                             IDelegationManager(address(delegationManagerMock)),
                             eigenStrategy,
                             _pauserRegistry,
@@ -285,7 +291,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint32 lastEffectBlock = 0;
 
         for (uint i = 0; i < numDeallocations; ++i) {
-            bytes32 operatorSetKey = allocationManager.deallocationQueueAtIndex(operator, strategy, i);
+            bytes32 operatorSetKey = AllocationManagerHarness(address(allocationManager)).deallocationQueueAtIndex(operator, strategy, i);
             Allocation memory allocation = allocationManager.getAllocation(operator, OperatorSetLib.decode(operatorSetKey), strategy);
 
             assertTrue(lastEffectBlock <= allocation.effectBlock, "Deallocation queue is not in ascending order of effectBlocks");
@@ -553,7 +559,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
 
         // Deploy the contract with the expected initial state.
         uint initialPausedStatus = r.Uint256();
-        AllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
+        IAllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");

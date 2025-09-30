@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/Merkle.sol";
 import "../permissions/Pausable.sol";
-import "./RewardsCoordinatorStorage.sol";
+import "./storage/RewardsCoordinatorStorage.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 
