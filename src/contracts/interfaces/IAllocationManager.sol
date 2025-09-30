@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "./IDelegationManager.sol";
 import "./IPauserRegistry.sol";
+import "./IPausable.sol";
 import "./IStrategy.sol";
 import "./IAVSRegistrar.sol";
 import "./ISemVerMixin.sol";
@@ -704,4 +705,4 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
     ) external view returns (bool);
 }
 
-interface IAllocationManager is IAllocationManagerActions, IAllocationManagerView {}
+interface IAllocationManager is IAllocationManagerActions, IAllocationManagerView, IPausable {}

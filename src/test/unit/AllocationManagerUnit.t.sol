@@ -35,7 +35,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     /// Mocks
     /// -----------------------------------------------------------------------
 
-    AllocationManagerHarness allocationManager;
+    IAllocationManager allocationManager;
     ERC20PresetFixedSupply tokenMock;
     StrategyBase strategyMock;
 
@@ -91,9 +91,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     function _initializeAllocationManager(IPauserRegistry _pauserRegistry, uint _initialPausedStatus)
         internal
-        returns (AllocationManagerHarness)
+        returns (IAllocationManager)
     {
-        return allocationManager = AllocationManagerHarness(
+        return allocationManager = IAllocationManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(
@@ -285,7 +285,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint32 lastEffectBlock = 0;
 
         for (uint i = 0; i < numDeallocations; ++i) {
-            bytes32 operatorSetKey = allocationManager.deallocationQueueAtIndex(operator, strategy, i);
+            bytes32 operatorSetKey = AllocationManagerHarness(address(allocationManager)).deallocationQueueAtIndex(operator, strategy, i);
             Allocation memory allocation = allocationManager.getAllocation(operator, OperatorSetLib.decode(operatorSetKey), strategy);
 
             assertTrue(lastEffectBlock <= allocation.effectBlock, "Deallocation queue is not in ascending order of effectBlocks");
@@ -553,7 +553,7 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
 
         // Deploy the contract with the expected initial state.
         uint initialPausedStatus = r.Uint256();
-        AllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
+        IAllocationManager alm = _initializeAllocationManager(expectedPauserRegistry, initialPausedStatus);
 
         // Assert that the contract can only be initialized once.
         vm.expectRevert("Initializable: contract is already initialized");
