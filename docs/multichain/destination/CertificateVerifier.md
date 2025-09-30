@@ -30,6 +30,12 @@ Certificates can be created at any time, but must contain a `referenceTimestamp`
 
 Both the `BN254CertificateVerifier` and `ECDSACertificateVerifier` contain a `msgHash` parameter. This value is the the hash of a task that was completed by operators. **NOTE: The msgHash is NOT signed by operators as part of completion of a task**. The value signed by operators is the signable digest, which is the hash of the `msgHash` and `referenceTimestamp`. This signable digest is given by `certificateVerifier.calculateCertificateDigest`. 
 
+In addition to the table updates that occur for *all* operatorSets, the multichain protocol updates tables for single operatorSets any time the following 4 events are emitted for an operatorSet with an active generation reservation:
+ - AllocationManager: `OperatorSlashed`
+ - AllocationManager: `OperatorAddedToOperatorSet`
+ - AllocationManager: `OperatorRemovedFromOperatorSet`
+ - CrossChainRegistry: `GenerationReservationCreated`
+
 ---
 
 ## ECDSACertificateVerifier

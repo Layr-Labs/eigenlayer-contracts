@@ -86,6 +86,8 @@ interface IBN254CertificateVerifier is
     ///      - AllocationManager: `OperatorSlashed`
     ///      - AllocationManager: `OperatorAddedToOperatorSet`
     ///      - AllocationManager: `OperatorRemovedFromOperatorSet`
+    ///      - CrossChainRegistry: `GenerationReservationCreated`
+    /// @dev Operator tables are updated at a cadence of `tableUpdateCadence` seconds, which is given by `CrossChainRegistry.tableUpdateCadence`. Currently daily on testnet and weekly on mainnet
     /// @dev Certificates can be replayed across all destination chains
     /// @dev Race conditions should be handled by the AVS. The protocol makes no guarantees about how certificates should be verified (eg. preventing certificates against tables that are NOT the latest)
     ///      Some examples of race conditions include:

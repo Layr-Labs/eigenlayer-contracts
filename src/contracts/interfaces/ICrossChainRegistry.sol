@@ -238,6 +238,7 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      *      - InvalidTableUpdateCadence: The tableUpdateCadence is zero
      * @dev Emits the following events:
      *      - TableUpdateCadenceSet: When the table update cadence is successfully set
+     * @dev The table update cadence is weekly on mainnet and daily on testnet
      */
     function setTableUpdateCadence(
         uint32 tableUpdateCadence
