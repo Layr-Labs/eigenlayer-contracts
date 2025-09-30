@@ -75,7 +75,7 @@ contract CompleteWithdrawFromStrategy is Script, Test {
         DepositScalingFactor memory dsf = DepositScalingFactor(dm.depositScalingFactor(msg.sender, strategies[0]));
 
         // Get TM for Operator in strategies
-        uint64[] memory maxMagnitudes = am.getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
+        uint64[] memory maxMagnitudes = IAllocationManager(address(am)).getMaxMagnitudesAtBlock(msg.sender, strategies, startBlock);
         uint256 slashingFactor = _getSlashingFactor(em, msg.sender, strategies[0], maxMagnitudes[0]);
         uint256 sharesToWithdraw = dsf.calcWithdrawable(amount, slashingFactor);
 

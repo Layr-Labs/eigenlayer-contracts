@@ -18,7 +18,8 @@ contract AllocationManager is
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
     PermissionControllerMixin,
-    SemVerMixin
+    SemVerMixin,
+    IAllocationManagerActions
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
@@ -699,42 +700,6 @@ contract AllocationManager is
      */
 
     /// @inheritdoc IAllocationManager
-    function getOperatorSetCount(
-        address avs
-    ) external view returns (uint256) {
-        return _operatorSets[avs].length();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getAllocatedSets(
-        address operator
-    ) public view returns (OperatorSet[] memory) {
-        uint256 length = allocatedSets[operator].length();
-
-        OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        for (uint256 i = 0; i < length; i++) {
-            operatorSets[i] = OperatorSetLib.decode(allocatedSets[operator].at(i));
-        }
-
-        return operatorSets;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getAllocatedStrategies(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external view returns (IStrategy[] memory) {
-        address[] memory values = allocatedStrategies[operator][operatorSet.key()].values();
-        IStrategy[] memory strategies;
-
-        assembly {
-            strategies := values
-        }
-
-        return strategies;
-    }
-
-    /// @inheritdoc IAllocationManager
     function getAllocation(
         address operator,
         OperatorSet memory operatorSet,
@@ -743,134 +708,6 @@ contract AllocationManager is
         (, Allocation memory allocation) = _getUpdatedAllocation(operator, operatorSet.key(), strategy);
 
         return allocation;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getAllocations(
-        address[] memory operators,
-        OperatorSet memory operatorSet,
-        IStrategy strategy
-    ) external view returns (Allocation[] memory) {
-        Allocation[] memory _allocations = new Allocation[](operators.length);
-
-        for (uint256 i = 0; i < operators.length; i++) {
-            _allocations[i] = getAllocation(operators[i], operatorSet, strategy);
-        }
-
-        return _allocations;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getStrategyAllocations(
-        address operator,
-        IStrategy strategy
-    ) external view returns (OperatorSet[] memory, Allocation[] memory) {
-        uint256 length = allocatedSets[operator].length();
-
-        OperatorSet[] memory operatorSets = new OperatorSet[](length);
-        Allocation[] memory _allocations = new Allocation[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            OperatorSet memory operatorSet = OperatorSetLib.decode(allocatedSets[operator].at(i));
-
-            operatorSets[i] = operatorSet;
-            _allocations[i] = getAllocation(operator, operatorSet, strategy);
-        }
-
-        return (operatorSets, _allocations);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-        (uint64 curEncumberedMagnitude,) = _getFreeAndUsedMagnitude(operator, strategy);
-        return curEncumberedMagnitude;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
-        (, uint64 curAllocatableMagnitude) = _getFreeAndUsedMagnitude(operator, strategy);
-        return curAllocatableMagnitude;
-    }
-
-    /// @dev For an operator, returns up-to-date amounts for current encumbered and available
-    /// magnitude. Note that these two values will always add up to the operator's max magnitude
-    /// for the strategy
-    function _getFreeAndUsedMagnitude(
-        address operator,
-        IStrategy strategy
-    ) internal view returns (uint64 curEncumberedMagnitude, uint64 curAllocatableMagnitude) {
-        // This method needs to simulate clearing any pending deallocations.
-        // This roughly mimics the calculations done in `_clearDeallocationQueue` and
-        // `_getUpdatedAllocation`, while operating on a `curEncumberedMagnitude`
-        // rather than continually reading/updating state.
-        curEncumberedMagnitude = encumberedMagnitude[operator][strategy];
-
-        uint256 length = deallocationQueue[operator][strategy].length();
-        for (uint256 i = 0; i < length; ++i) {
-            bytes32 operatorSetKey = deallocationQueue[operator][strategy].at(i);
-            Allocation memory allocation = allocations[operator][operatorSetKey][strategy];
-
-            // If we've reached a pending deallocation that isn't completable yet,
-            // we can stop. Any subsequent modifications will also be uncompletable.
-            if (block.number < allocation.effectBlock) {
-                break;
-            }
-
-            // The diff is a deallocation. Add to encumbered magnitude. Note that this is a deallocation
-            // queue and allocations aren't considered because encumbered magnitude
-            // is updated as soon as the allocation is created.
-            curEncumberedMagnitude = _addInt128(curEncumberedMagnitude, allocation.pendingDiff);
-        }
-
-        // The difference between the operator's max magnitude and its encumbered magnitude
-        // is the magnitude that can be allocated.
-        curAllocatableMagnitude = _maxMagnitudeHistory[operator][strategy].latest() - curEncumberedMagnitude;
-        return (curEncumberedMagnitude, curAllocatableMagnitude);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMaxMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
-        return _maxMagnitudeHistory[operator][strategy].latest();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMaxMagnitudes(
-        address operator,
-        IStrategy[] memory strategies
-    ) external view returns (uint64[] memory) {
-        uint64[] memory maxMagnitudes = new uint64[](strategies.length);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = getMaxMagnitude(operator, strategies[i]);
-        }
-
-        return maxMagnitudes;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMaxMagnitudes(address[] memory operators, IStrategy strategy) external view returns (uint64[] memory) {
-        uint64[] memory maxMagnitudes = new uint64[](operators.length);
-
-        for (uint256 i = 0; i < operators.length; ++i) {
-            maxMagnitudes[i] = getMaxMagnitude(operators[i], strategy);
-        }
-
-        return maxMagnitudes;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMaxMagnitudesAtBlock(
-        address operator,
-        IStrategy[] memory strategies,
-        uint32 blockNumber
-    ) external view returns (uint64[] memory) {
-        uint64[] memory maxMagnitudes = new uint64[](strategies.length);
-
-        for (uint256 i = 0; i < strategies.length; ++i) {
-            maxMagnitudes[i] = _maxMagnitudeHistory[operator][strategies[i]].upperLookup({key: blockNumber});
-        }
-
-        return maxMagnitudes;
     }
 
     /// @inheritdoc IAllocationManager
@@ -892,96 +729,12 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getRegisteredSets(
-        address operator
-    ) public view returns (OperatorSet[] memory) {
-        uint256 length = registeredSets[operator].length();
-        OperatorSet[] memory operatorSets = new OperatorSet[](length);
-
-        for (uint256 i = 0; i < length; ++i) {
-            operatorSets[i] = OperatorSetLib.decode(registeredSets[operator].at(i));
-        }
-
-        return operatorSets;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        return _operatorSetMembers[operatorSet.key()].contains(operator);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function isOperatorSet(
-        OperatorSet memory operatorSet
-    ) external view returns (bool) {
-        return _operatorSets[operatorSet.avs].contains(operatorSet.id);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMembers(
-        OperatorSet memory operatorSet
-    ) external view returns (address[] memory) {
-        return _operatorSetMembers[operatorSet.key()].values();
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMemberCount(
-        OperatorSet memory operatorSet
-    ) external view returns (uint256) {
-        return _operatorSetMembers[operatorSet.key()].length();
-    }
-
-    /// @inheritdoc IAllocationManager
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
         IAVSRegistrar registrar = _avsRegistrar[avs];
 
         return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getStrategiesInOperatorSet(
-        OperatorSet memory operatorSet
-    ) external view returns (IStrategy[] memory) {
-        address[] memory values = _operatorSetStrategies[operatorSet.key()].values();
-        IStrategy[] memory strategies;
-
-        assembly {
-            strategies := values
-        }
-
-        return strategies;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getMinimumSlashableStake(
-        OperatorSet memory operatorSet,
-        address[] memory operators,
-        IStrategy[] memory strategies,
-        uint32 futureBlock
-    ) external view returns (uint256[][] memory slashableStake) {
-        slashableStake = _getMinimumAllocatedStake(operatorSet, operators, strategies, futureBlock);
-
-        for (uint256 i = 0; i < operators.length; i++) {
-            // If the operator is not slashable by the opSet, all strategies should have a slashable stake of 0
-            if (!isOperatorSlashable(operators[i], operatorSet)) {
-                for (uint256 j = 0; j < strategies.length; j++) {
-                    slashableStake[i][j] = 0;
-                }
-            }
-        }
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getAllocatedStake(
-        OperatorSet memory operatorSet,
-        address[] memory operators,
-        IStrategy[] memory strategies
-    ) external view returns (uint256[][] memory) {
-        /// This helper function returns the minimum allocated stake by taking into account deallocations at some `futureBlock`.
-        /// We use the block.number, as the `futureBlock`, meaning that no **future** deallocations are considered.
-        return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
     }
 
     /// @inheritdoc IAllocationManager
@@ -1007,28 +760,5 @@ contract AllocationManager is
         OperatorSet memory operatorSet
     ) public view returns (bool) {
         return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getSlashCount(
-        OperatorSet memory operatorSet
-    ) external view returns (uint256) {
-        return _slashIds[operatorSet.key()];
-    }
-
-    /// @inheritdoc IAllocationManager
-    function isOperatorRedistributable(
-        address operator
-    ) external view returns (bool) {
-        // Get the registered and allocated sets for the operator.
-        // We get both sets, since:
-        //    - Upon registration the operator allocation will be pending to a redistributing operator set, and as such not yet in RegisteredSets.
-        //    - Upon deregistration the operator is removed from RegisteredSets, but is still allocated.
-        OperatorSet[] memory registeredSets = getRegisteredSets(operator);
-        OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
-
-        // Check if the operator is redistributable from any of the registered or allocated sets
-        return
-            _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
 }

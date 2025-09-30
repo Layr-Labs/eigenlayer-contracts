@@ -2,6 +2,7 @@
 pragma solidity >=0.5.0;
 
 import {OperatorSet} from "../libraries/OperatorSetLib.sol";
+import "./IDelegationManager.sol";
 import "./IPauserRegistry.sol";
 import "./IStrategy.sol";
 import "./IAVSRegistrar.sol";
@@ -223,7 +224,37 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 }
 
-interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEvents, ISemVerMixin {
+interface IAllocationManagerStorage {
+    /**
+     * @notice The DelegationManager contract for EigenLayer
+     */
+    function delegation() external view returns (IDelegationManager);
+
+    /**
+     * @notice The Eigen strategy contract
+     * @dev Cannot be added to redistributing operator sets
+     */
+    function eigenStrategy() external view returns (IStrategy);
+
+    /**
+     * @notice Returns the number of blocks between an operator deallocating magnitude and the magnitude becoming
+     * unslashable and then being able to be reallocated to another operator set. Note that unlike the allocation delay
+     * which is configurable by the operator, the DEALLOCATION_DELAY is globally fixed and cannot be changed.
+     */
+    function DEALLOCATION_DELAY() external view returns (uint32 delay);
+
+    /**
+     * @notice Delay before alloaction delay modifications take effect.
+     */
+    function ALLOCATION_CONFIGURATION_DELAY() external view returns (uint32);
+}
+
+interface IAllocationManagerActions is
+    IAllocationManagerErrors,
+    IAllocationManagerEvents,
+    IAllocationManagerStorage,
+    ISemVerMixin
+{
     /**
      * @dev Initializes the initial owner and paused status.
      */
@@ -376,7 +407,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         uint32 operatorSetId,
         IStrategy[] calldata strategies
     ) external;
+}
 
+interface IAllocationManagerView is
+    IAllocationManagerErrors,
+    IAllocationManagerEvents,
+    IAllocationManagerStorage
+{
     /**
      *
      *                         VIEW FUNCTIONS
@@ -533,13 +570,6 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     ) external view returns (bool isSet, uint32 delay);
 
     /**
-     * @notice Returns the number of blocks between an operator deallocating magnitude and the magnitude becoming
-     * unslashable and then being able to be reallocated to another operator set. Note that unlike the allocation delay
-     * which is configurable by the operator, the DEALLOCATION_DELAY is globally fixed and cannot be changed.
-     */
-    function DEALLOCATION_DELAY() external view returns (uint32 delay);
-
-    /**
      * @notice Returns a list of all operator sets the operator is registered for
      * @param operator The operator address to query.
      */
@@ -677,3 +707,5 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         address operator
     ) external view returns (bool);
 }
+
+interface IAllocationManager is IAllocationManagerActions, IAllocationManagerView {}
