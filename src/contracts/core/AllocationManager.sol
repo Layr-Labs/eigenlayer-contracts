@@ -614,53 +614,6 @@ contract AllocationManager is
         }
     }
 
-    /**
-     * @dev Returns the minimum allocated stake at the future block.
-     * @param operatorSet The operator set to get the minimum allocated stake for.
-     * @param operators The operators to get the minimum allocated stake for.
-     * @param strategies The strategies to get the minimum allocated stake for.
-     * @param futureBlock The future block to get the minimum allocated stake for.
-     */
-    function _getMinimumAllocatedStake(
-        OperatorSet memory operatorSet,
-        address[] memory operators,
-        IStrategy[] memory strategies,
-        uint32 futureBlock
-    ) internal view returns (uint256[][] memory allocatedStake) {
-        allocatedStake = new uint256[][](operators.length);
-        uint256[][] memory delegatedStake = delegation.getOperatorsShares(operators, strategies);
-
-        for (uint256 i = 0; i < operators.length; i++) {
-            address operator = operators[i];
-
-            allocatedStake[i] = new uint256[](strategies.length);
-
-            for (uint256 j = 0; j < strategies.length; j++) {
-                IStrategy strategy = strategies[j];
-
-                // Fetch the max magnitude and allocation for the operator/strategy.
-                // Prevent division by 0 if needed. This mirrors the "FullySlashed" checks
-                // in the DelegationManager
-                uint64 maxMagnitude = _maxMagnitudeHistory[operator][strategy].latest();
-                if (maxMagnitude == 0) {
-                    continue;
-                }
-
-                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
-
-                // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
-                // However, ONLY include the pending change if it is a deallocation, since this method
-                // is supposed to return the minimum slashable stake between now and `futureBlock`
-                if (alloc.effectBlock <= futureBlock && alloc.pendingDiff < 0) {
-                    alloc.currentMagnitude = _addInt128(alloc.currentMagnitude, alloc.pendingDiff);
-                }
-
-                uint256 slashableProportion = uint256(alloc.currentMagnitude).divWad(maxMagnitude);
-                allocatedStake[i][j] = delegatedStake[i][j].mulWad(slashableProportion);
-            }
-        }
-    }
-
     function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
         _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
         emit MaxMagnitudeUpdated(operator, strategy, newMaxMagnitude);
@@ -676,41 +629,14 @@ contract AllocationManager is
     }
 
     /**
-     * @notice Helper function to check if an operator is redistributable from a list of operator sets
-     * @param operator The operator to check
-     * @param operatorSets The list of operator sets to check
-     * @return True if the operator is redistributable from any of the operator sets, false otherwise
-     */
-    function _isOperatorRedistributable(
-        address operator,
-        OperatorSet[] memory operatorSets
-    ) internal view returns (bool) {
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      *
      *                         VIEW FUNCTIONS
      *
      */
 
+    // TODO: If/Else instead of ternary
     // TODO: Inherit doc
     // TODO: Make commonly used getters internal methods that can be easily shared between Actions and View contracts.
-
-    function getAllocation(
-        address operator,
-        OperatorSet memory operatorSet,
-        IStrategy strategy
-    ) public view returns (Allocation memory) {
-        (, Allocation memory allocation) = _getUpdatedAllocation(operator, operatorSet.key(), strategy);
-
-        return allocation;
-    }
 
     function getAllocationDelay(
         address operator
