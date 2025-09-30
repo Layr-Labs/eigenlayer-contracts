@@ -22,7 +22,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     DelegationManager public delegationManager;
     StrategyManager public strategyManager;
     AVSDirectory public avsDirectory;
-    AllocationManager public allocationManager;
+    IAllocationManager public allocationManager;
     StrategyBase public wethStrategy;
     IERC20 public weth;
 
@@ -46,7 +46,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         delegationManager = DelegationManager(0x3391eBafDD4b2e84Eeecf1711Ff9FC06EF9Ed182);
         strategyManager = StrategyManager(0x70f8bC2Da145b434de66114ac539c9756eF64fb3);
         avsDirectory = AVSDirectory(0xCa839541648D3e23137457b1Fd4A06bccEADD33a);
-        allocationManager = AllocationManager(0xAbD5Dd30CaEF8598d4EadFE7D45Fd582EDEade15);
+        allocationManager = IAllocationManager(0xAbD5Dd30CaEF8598d4EadFE7D45Fd582EDEade15);
         wethStrategy = StrategyBase(0x4f812633943022fA97cb0881683aAf9f318D5Caa);
         weth = IERC20(0x94373a4919B3240D86eA41593D5eBa789FEF3848);
 
@@ -143,7 +143,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     function _registerOperatorToAVS() public {
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(operator, RegisterParams(avs, operatorSetId.toArrayU32(), ""));
-        assertEq(IAllocationManager(address(allocationManager)).getMembers(OperatorSet(avs, operatorSetId))[0], operator);
+        assertEq(allocationManager.getMembers(OperatorSet(avs, operatorSetId))[0], operator);
     }
 
     function _setMagnitude() public {
