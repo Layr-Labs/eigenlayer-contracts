@@ -73,10 +73,13 @@ interface IECDSACertificateVerifier is
     /// @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT when the certificate was generated off-chain
     /// @dev The `maxStalenessPeriod` configured in step 1c denotes if a certificate is too stale with respect to the `referenceTimestamp`
     /// @dev Operator tables for ALL operatorSets with an active generation reservation are updated at a set cadence. See `crossChainRegistry.tableUpdateCadence` for the frequency of table updates
-    /// @dev To ensure that tables do not become stale between table updates (i.e. a large operator has joined or been ejected), the multichain protocol updates tables for operatorSets when the following events are emitted:
+    /// @dev To ensure that operatorSets can immediately begin to verify certificates and that tables do not become stale between table updates (i.e. a large operator has joined or been ejected),
+    ///      the multichain protocol updates tables for operatorSets when the following events are emitted:
     ///      - AllocationManager: `OperatorSlashed`
     ///      - AllocationManager: `OperatorAddedToOperatorSet`
     ///      - AllocationManager: `OperatorRemovedFromOperatorSet`
+    ///      - CrossChainRegistry: `GenerationReservationCreated`
+    /// @dev Operator tables are updated at a cadence of `tableUpdateCadence` seconds, which is given by `CrossChainRegistry.tableUpdateCadence`. Currently daily on testnet and weekly (Monday) on mainnet at 14:00 UTC
     /// @dev Certificates can be replayed across all destination chains
     /// @dev Race conditions should be handled by the AVS. The protocol makes no guarantees about how certificates should be verified (eg. preventing certificates against tables that are NOT the latest)
     ///      Some examples of race conditions include:

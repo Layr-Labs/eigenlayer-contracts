@@ -180,6 +180,7 @@ interface IOperatorTableUpdater is
      *      - InvalidGlobalTableRoot: provided globalTableRoot does not match stored root for referenceTimestamp
      *      - InvalidOperatorSetProof: merkle proof verification failed
      *      - InvalidCurveType: unsupported curve type in operatorTableBytes
+     * @dev The operator table is updated at a cadence of `tableUpdateCadence` seconds, which is given by `CrossChainRegistry.tableUpdateCadence`
      */
     function updateOperatorTable(
         uint32 referenceTimestamp,
