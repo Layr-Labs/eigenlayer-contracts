@@ -104,8 +104,8 @@ contract ExistingDeploymentParser is Script, Logger {
     UpgradeableBeacon public strategyBeacon;
 
     /// @dev AllocationManager
-    AllocationManager public allocationManager;
-    AllocationManager public allocationManagerImplementation;
+    IAllocationManager public allocationManager;
+    IAllocationManager public allocationManagerImplementation;
 
     /// @dev AVSDirectory
     AVSDirectory public avsDirectory;
@@ -230,9 +230,9 @@ contract ExistingDeploymentParser is Script, Logger {
         );
 
         // AllocationManager
-        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
+        allocationManager = IAllocationManager(json.readAddress(".addresses.allocationManager"));
         allocationManagerImplementation =
-            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+            IAllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));

@@ -313,7 +313,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(allocationManager) == address(0)) {
             allocationManager =
-                AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+                IAllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
         if (address(permissionController) == address(0)) {
             permissionController =
@@ -329,31 +329,36 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenStrategy,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
+        allocationManagerImplementation = IAllocationManager(
+            address(
+                new AllocationManager(
+                    delegationManager,
+                    eigenStrategy,
+                    eigenLayerPauserReg,
+                    permissionController,
+                    DEALLOCATION_DELAY,
+                    ALLOCATION_CONFIGURATION_DELAY,
+                    version
+                )
+            )
         );
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
-            allocationManager,
+            IAllocationManager(address(allocationManager)),
             eigenLayerPauserReg,
             permissionController,
             DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS,
             version
         );
-        strategyManagerImplementation = new StrategyManager(allocationManager, delegationManager, eigenLayerPauserReg, version);
+        strategyManagerImplementation =
+            new StrategyManager(IAllocationManager(address(allocationManager)), delegationManager, eigenLayerPauserReg, version);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams({
                 delegationManager: delegationManager,
                 strategyManager: strategyManager,
-                allocationManager: allocationManager,
+                allocationManager: IAllocationManager(address(allocationManager)),
                 pauserRegistry: eigenLayerPauserReg,
                 permissionController: permissionController,
                 CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -377,7 +382,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // TODO - need to update ExistingDeploymentParser
 
         // multichain
-        keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
+        keyRegistrarImplementation = new KeyRegistrar(permissionController, IAllocationManager(address(allocationManager)), "9.9.9");
     }
 
     function _upgradeProxies() public noTracing {

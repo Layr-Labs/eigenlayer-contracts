@@ -12,10 +12,8 @@ import "../libraries/OperatorSetLib.sol";
 import "./AllocationManagerStorage.sol";
 
 /// @notice Non-state mutating view functions, (static) called by the `AllocationManager`.
-contract AllocationManagerView layout at 51 is // `AllocationManagerStorage` starts at slot 51.
-    AllocationManagerStorage,
-    IAllocationManagerView
-{
+contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 51.
+    AllocationManagerStorage, IAllocationManagerView layout at 51 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
@@ -37,9 +35,7 @@ contract AllocationManagerView layout at 51 is // `AllocationManagerStorage` sta
         IStrategy _eigenStrategy,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
-    )
-        AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
-    {
+    ) AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {
         // _disableInitializers();
     }
 

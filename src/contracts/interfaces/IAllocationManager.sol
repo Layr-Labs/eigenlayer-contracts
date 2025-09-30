@@ -409,11 +409,7 @@ interface IAllocationManagerActions is
     ) external;
 }
 
-interface IAllocationManagerView is
-    IAllocationManagerErrors,
-    IAllocationManagerEvents,
-    IAllocationManagerStorage
-{
+interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
     /**
      *
      *                         VIEW FUNCTIONS

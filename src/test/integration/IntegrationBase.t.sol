@@ -429,7 +429,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_IsRegistered(User operator, OperatorSet memory operatorSet, string memory err) internal view {
-        assertTrue(allocationManager.isMemberOfOperatorSet(address(operator), operatorSet), err);
+        assertTrue(IAllocationManager(address(allocationManager)).isMemberOfOperatorSet(address(operator), operatorSet), err);
     }
 
     function assert_IsSlashable(User operator, OperatorSet memory operatorSet, string memory err) internal view {
