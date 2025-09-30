@@ -193,7 +193,7 @@ contract User is Logger, TypeImporter {
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
-        _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
 
