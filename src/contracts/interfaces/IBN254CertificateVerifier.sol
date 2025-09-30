@@ -82,7 +82,7 @@ interface IBN254CertificateVerifier is
     /// @dev The `referenceTimestamp` is used to key into the operatorSet's stake weights. It is NOT when the certificate was generated off-chain
     /// @dev The `maxStalenessPeriod` configured in step 1c denotes if a certificate is too stale with respect to the `referenceTimestamp`
     /// @dev Operator tables for ALL operatorSets with an active generation reservation are updated at a set cadence. See `crossChainRegistry.tableUpdateCadence` for the frequency of table updates
-    /// @dev To ensure that operatorSets can immediately begin to verify certificates and that tables do not become stale between table updates (i.e. a large operator has joined or been ejected), 
+    /// @dev To ensure that operatorSets can immediately begin to verify certificates and that tables do not become stale between table updates (i.e. a large operator has joined or been ejected),
     /// the multichain protocol updates tables for operatorSets when the following events are emitted:
     ///      - AllocationManager: `OperatorSlashed`
     ///      - AllocationManager: `OperatorAddedToOperatorSet`
