@@ -6,7 +6,6 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../mixins/SplitContractMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/OperatorSetLib.sol";
@@ -19,7 +18,6 @@ contract AllocationManager is
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
     PermissionControllerMixin,
-    SemVerMixin,
     SplitContractMixin,
     IAllocationManager
 {
@@ -46,14 +44,12 @@ contract AllocationManager is
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
-        uint32 _ALLOCATION_CONFIGURATION_DELAY,
-        string memory _version
+        uint32 _ALLOCATION_CONFIGURATION_DELAY
     )
         AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
         Pausable(_pauserRegistry)
         SplitContractMixin(address(_allocationManagerView))
         PermissionControllerMixin(_permissionController)
-        SemVerMixin(_version)
     {
         _disableInitializers();
     }
@@ -86,7 +82,7 @@ contract AllocationManager is
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
         // Check that the caller is allowed to modify allocations on behalf of the operator
         // We do not use a modifier to avoid `stack too deep` errors
-        require(_checkCanCall(operator), InvalidCaller());
+        _checkCanCall(operator);
 
         // Check that the operator exists and has configured an allocation delay
         uint32 operatorAllocationDelay;
@@ -215,7 +211,7 @@ contract AllocationManager is
         DeregisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
         // Check that the caller is either authorized on behalf of the operator or AVS
-        require(_checkCanCall(params.operator) || _checkCanCall(params.avs), InvalidCaller());
+        require(_canCall(params.operator) || _canCall(params.avs), InvalidCaller());
 
         for (uint256 i = 0; i < params.operatorSetIds.length; i++) {
             // Check the operator set exists and the operator is registered to it
@@ -248,7 +244,7 @@ contract AllocationManager is
 
         // If we're not newly registered, check that the caller (not the delegationManager) is authorized to set the allocation delay for the operator
         if (!newlyRegistered) {
-            require(_checkCanCall(operator), InvalidCaller());
+            _checkCanCall(operator);
             require(delegation.isOperator(operator), InvalidOperator());
         }
 
