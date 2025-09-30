@@ -160,14 +160,14 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
      *
      */
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getOperatorSetCount(
         address avs
     ) external view returns (uint256) {
         return _operatorSets[avs].length();
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocatedSets(
         address operator
     ) public view returns (OperatorSet[] memory) {
@@ -181,7 +181,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return operatorSets;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocatedStrategies(
         address operator,
         OperatorSet memory operatorSet
@@ -196,7 +196,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return strategies;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocation(
         address operator,
         OperatorSet memory operatorSet,
@@ -207,7 +207,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return allocation;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocations(
         address[] memory operators,
         OperatorSet memory operatorSet,
@@ -222,7 +222,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return _allocations;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getStrategyAllocations(
         address operator,
         IStrategy strategy
@@ -242,13 +242,13 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return (operatorSets, _allocations);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         (uint64 curEncumberedMagnitude,) = _getFreeAndUsedMagnitude(operator, strategy);
         return curEncumberedMagnitude;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
         (, uint64 curAllocatableMagnitude) = _getFreeAndUsedMagnitude(operator, strategy);
         return curAllocatableMagnitude;
@@ -290,12 +290,12 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return (curEncumberedMagnitude, curAllocatableMagnitude);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMaxMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
         return _maxMagnitudeHistory[operator][strategy].latest();
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMaxMagnitudes(
         address operator,
         IStrategy[] memory strategies
@@ -309,7 +309,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return maxMagnitudes;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMaxMagnitudes(address[] memory operators, IStrategy strategy) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](operators.length);
 
@@ -320,7 +320,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return maxMagnitudes;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMaxMagnitudesAtBlock(
         address operator,
         IStrategy[] memory strategies,
@@ -335,7 +335,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return maxMagnitudes;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocationDelay(
         address operator
     ) public view returns (bool, uint32) {
@@ -353,7 +353,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return (isSet, delay);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getRegisteredSets(
         address operator
     ) public view returns (OperatorSet[] memory) {
@@ -367,33 +367,33 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return operatorSets;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         return _operatorSetMembers[operatorSet.key()].contains(operator);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function isOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (bool) {
         return _operatorSets[operatorSet.avs].contains(operatorSet.id);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMembers(
         OperatorSet memory operatorSet
     ) external view returns (address[] memory) {
         return _operatorSetMembers[operatorSet.key()].values();
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMemberCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _operatorSetMembers[operatorSet.key()].length();
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
@@ -402,7 +402,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getStrategiesInOperatorSet(
         OperatorSet memory operatorSet
     ) external view returns (IStrategy[] memory) {
@@ -416,7 +416,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return strategies;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getMinimumSlashableStake(
         OperatorSet memory operatorSet,
         address[] memory operators,
@@ -435,7 +435,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getAllocatedStake(
         OperatorSet memory operatorSet,
         address[] memory operators,
@@ -446,7 +446,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
@@ -455,7 +455,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return status.registered || block.number <= status.slashableUntil;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) public view returns (address) {
@@ -464,21 +464,21 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 5
         return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
         return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function getSlashCount(
         OperatorSet memory operatorSet
     ) external view returns (uint256) {
         return _slashIds[operatorSet.key()];
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerView
     function isOperatorRedistributable(
         address operator
     ) external view returns (bool) {

@@ -54,14 +54,14 @@ contract AllocationManager is
         _disableInitializers();
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function initialize(
         uint256 initialPausedStatus
     ) external initializer {
         _setPausedStatus(initialPausedStatus);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function slashOperator(
         address avs,
         SlashingParams calldata params
@@ -75,7 +75,7 @@ contract AllocationManager is
         return _slashOperator(params, operatorSet);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function modifyAllocations(
         address operator,
         AllocateParams[] memory params
@@ -167,7 +167,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function clearDeallocationQueue(
         address operator,
         IStrategy[] calldata strategies,
@@ -179,7 +179,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function registerForOperatorSets(
         address operator,
         RegisterParams calldata params
@@ -206,7 +206,7 @@ contract AllocationManager is
         getAVSRegistrar(params.avs).registerOperator(operator, params.avs, params.operatorSetIds, params.data);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function deregisterFromOperatorSets(
         DeregisterParams calldata params
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION) {
@@ -236,7 +236,7 @@ contract AllocationManager is
         getAVSRegistrar(params.avs).deregisterOperator(params.operator, params.avs, params.operatorSetIds);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function setAllocationDelay(address operator, uint32 delay) external {
         /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
@@ -251,7 +251,7 @@ contract AllocationManager is
         _setAllocationDelay(operator, delay, newlyRegistered);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
         // Check that the registrar is correctly configured to prevent an AVSRegistrar contract
         // from being used with the wrong AVS
@@ -260,13 +260,13 @@ contract AllocationManager is
         emit AVSRegistrarSet(avs, getAVSRegistrar(avs));
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
         if (!_avsRegisteredMetadata[avs]) _avsRegisteredMetadata[avs] = true;
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
@@ -274,7 +274,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
@@ -290,7 +290,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function addStrategiesToOperatorSet(
         address avs,
         uint32 operatorSetId,
@@ -306,7 +306,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function removeStrategiesFromOperatorSet(
         address avs,
         uint32 operatorSetId,
@@ -715,7 +715,9 @@ contract AllocationManager is
      *
      */
 
-    /// @inheritdoc IAllocationManager
+    // TODO: Inherit doc
+    // TODO: Make commonly used getters internal methods that can be easily shared between Actions and View contracts.
+
     function getAllocation(
         address operator,
         OperatorSet memory operatorSet,
@@ -726,7 +728,6 @@ contract AllocationManager is
         return allocation;
     }
 
-    /// @inheritdoc IAllocationManager
     function getAllocationDelay(
         address operator
     ) public view returns (bool, uint32) {
@@ -744,7 +745,6 @@ contract AllocationManager is
         return (isSet, delay);
     }
 
-    /// @inheritdoc IAllocationManager
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
@@ -753,7 +753,6 @@ contract AllocationManager is
         return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
     }
 
-    /// @inheritdoc IAllocationManager
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
@@ -762,7 +761,6 @@ contract AllocationManager is
         return status.registered || block.number <= status.slashableUntil;
     }
 
-    /// @inheritdoc IAllocationManager
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) public view returns (address) {
@@ -771,7 +769,6 @@ contract AllocationManager is
         return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
     }
 
-    /// @inheritdoc IAllocationManager
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
