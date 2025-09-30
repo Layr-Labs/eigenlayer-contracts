@@ -25,7 +25,7 @@ contract DeploySourceChain is EOADeployer {
             deployedTo: address(
                 new KeyRegistrar({
                     _permissionController: Env.proxy.permissionController(),
-                    _allocationManager: Env.proxy.allocationManager(),
+                    _allocationManager: IAllocationManager(address(Env.proxy.allocationManager())),
                     _version: Env.deployVersion()
                 })
             )
@@ -48,7 +48,7 @@ contract DeploySourceChain is EOADeployer {
             name: type(CrossChainRegistry).name,
             deployedTo: address(
                 new CrossChainRegistry({
-                    _allocationManager: Env.proxy.allocationManager(),
+                    _allocationManager: IAllocationManager(address(Env.proxy.allocationManager())),
                     _keyRegistrar: Env.proxy.keyRegistrar(),
                     _permissionController: Env.proxy.permissionController(),
                     _pauserRegistry: Env.impl.pauserRegistry(),

@@ -143,7 +143,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     function _registerOperatorToAVS() public {
         cheats.prank(operator);
         allocationManager.registerForOperatorSets(operator, RegisterParams(avs, operatorSetId.toArrayU32(), ""));
-        assertEq(allocationManager.getMembers(OperatorSet(avs, operatorSetId))[0], operator);
+        assertEq(IAllocationManager(address(allocationManager)).getMembers(OperatorSet(avs, operatorSetId))[0], operator);
     }
 
     function _setMagnitude() public {

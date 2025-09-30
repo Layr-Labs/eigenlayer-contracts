@@ -228,14 +228,14 @@ contract DeployFromScratch is Script, Test {
         delegationImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
-            allocationManager,
+            IAllocationManager(address(allocationManager)),
             eigenLayerPauserReg,
             permissionController,
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
 
-        strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(IAllocationManager(address(allocationManager)), delegation, eigenLayerPauserReg, SEMVER);
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
@@ -243,7 +243,7 @@ contract DeployFromScratch is Script, Test {
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
                 delegation,
                 strategyManager,
-                allocationManager,
+                IAllocationManager(address(allocationManager)),
                 eigenLayerPauserReg,
                 permissionController,
                 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -480,7 +480,7 @@ contract DeployFromScratch is Script, Test {
             "rewardsCoordinator: strategyManager address not set correctly"
         );
         require(
-            delegationContract.allocationManager() == allocationManager,
+            delegationContract.allocationManager() == IAllocationManager(address(allocationManager)),
             "delegationManager: allocationManager address not set correctly"
         );
         require(

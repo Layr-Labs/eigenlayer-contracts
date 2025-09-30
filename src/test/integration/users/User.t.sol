@@ -21,7 +21,7 @@ import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 
 interface IUserDeployer {
-    function allocationManager() external view returns (AllocationManager);
+    function allocationManager() external view returns (IAllocationManager);
     function delegationManager() external view returns (DelegationManager);
     function permissionController() external view returns (PermissionController);
     function strategyManager() external view returns (StrategyManager);
@@ -104,7 +104,7 @@ contract User is Logger, TypeImporter {
             )
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.modifyAllocations.selector);
         allocationManager().modifyAllocations(address(this), params.toArray());
         print.gasUsed();
     }
@@ -132,7 +132,7 @@ contract User is Logger, TypeImporter {
             string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.registerForOperatorSets.selector);
         allocationManager().registerForOperatorSets(
             address(this), RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
         );
@@ -145,7 +145,7 @@ contract User is Logger, TypeImporter {
             string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.deregisterFromOperatorSets.selector);
         allocationManager().deregisterFromOperatorSets(
             DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
         );
@@ -613,8 +613,8 @@ contract User is Logger, TypeImporter {
     /// View Methods
     /// -----------------------------------------------------------------------
 
-    function allocationManager() public view returns (AllocationManager) {
-        return AllocationManager(address(delegationManager.allocationManager()));
+    function allocationManager() public view returns (IAllocationManager) {
+        return IAllocationManager(address(delegationManager.allocationManager()));
     }
 
     function permissionController() public view returns (PermissionController) {
