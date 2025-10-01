@@ -505,6 +505,9 @@ contract AllocationManager is
         for (uint256 j = 0; j < params.strategies.length; j++) {
             _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
         }
+
+        // Update the slasher for the operator set
+        _updateSlasher(operatorSet, params.slasher, uint32(block.number));
     }
 
     /**

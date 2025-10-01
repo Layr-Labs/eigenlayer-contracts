@@ -185,10 +185,12 @@ interface IAllocationManagerTypes {
      * @notice Parameters used by an AVS to create new operator sets
      * @param operatorSetId the id of the operator set to create
      * @param strategies the strategies to add as slashable to the operator set
+     * @param slasher the address that will be the slasher for the operator set
      */
     struct CreateSetParams {
         uint32 operatorSetId;
         IStrategy[] strategies;
+        address slasher;
     }
 }
 
