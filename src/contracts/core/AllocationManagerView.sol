@@ -4,8 +4,8 @@ pragma solidity ^0.8.27;
 import "./AllocationManagerStorage.sol";
 
 /// @notice Non-state mutating view functions, (static) called by the `AllocationManager`.
-contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 51.
-    AllocationManagerStorage, IAllocationManagerView layout at 51 {
+contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 151.
+    AllocationManagerStorage, IAllocationManagerView layout at 151 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
