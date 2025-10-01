@@ -921,6 +921,37 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
             "stakerStrategyListLengthBefore - numPoppedStrategies != strategyManager.stakerStrategyListLength(staker)"
         );
     }
+
+    /**
+     * @notice testing the new empty array check in _removeStrategyFromStakerStrategyList().
+     * This test verifies that the safety check prevents potential issues when the strategy list is empty.
+     * The check ensures that the function doesn't attempt to access array elements when the list is empty.
+     */
+    function test_EmptyArrayCheckInRemoveStrategy() external {
+        address staker = address(this);
+        IStrategy strategy = dummyStrat;
+        
+        // Ensure staker has no strategies initially
+        assertEq(strategyManager.stakerStrategyListLength(staker), 0, "Staker should have no strategies initially");
+        assertFalse(_isDepositedStrategy(staker, strategy), "Strategy should not be in empty list");
+        
+        // Try to remove shares from a strategy that's not in the list
+        // This should revert with "SharesAmountTooHigh" because the staker has no shares
+        // The new empty array check in _removeStrategyFromStakerStrategyList would prevent
+        // potential underflow if the function were called with an empty list
+        cheats.expectRevert(IStrategyManagerErrors.SharesAmountTooHigh.selector);
+        delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, 1);
+        
+        // Now let's test the normal flow to ensure the new check doesn't break existing functionality
+        uint depositAmount = 1000;
+        _depositIntoStrategySuccessfully(strategy, staker, depositAmount);
+        assertTrue(_isDepositedStrategy(staker, strategy), "Strategy should be in list after deposit");
+        
+        // Remove all shares, which should trigger _removeStrategyFromStakerStrategyList
+        delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, depositAmount);
+        assertFalse(_isDepositedStrategy(staker, strategy), "Strategy should be removed from list");
+        assertEq(strategyManager.stakerStrategyListLength(staker), 0, "Strategy list should be empty");
+    }
 }
 
 contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
