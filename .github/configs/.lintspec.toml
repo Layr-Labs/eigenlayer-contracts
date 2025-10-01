@@ -1,0 +1,78 @@
+[lintspec]
+paths = ["./src/contracts/"]
+exclude = []
+inheritdoc = true
+notice_or_dev = false
+skip_version_detection = false
+
+[output]
+json = false
+compact = false
+sort = true
+
+[constructor]
+notice = "required"
+dev = "ignored"
+param = "required"
+
+[enum]
+notice = "forbidden"
+dev = "required"
+param = "ignored"
+
+[error]
+notice = "forbidden"
+dev = "required"
+param = "ignored"
+
+[event]
+notice = "required"
+dev = "ignored"
+param = "forbidden"
+
+[function.private]
+notice = "forbidden"
+dev = "required"
+param = "ignored"
+return = "ignored"
+
+[function.internal]
+notice = "forbidden"
+dev = "required"
+param = "ignored"
+return = "ignored"
+
+[function.public]
+notice = "required"
+dev = "ignored"
+param = "required"
+return = "required"
+
+[function.external]
+notice = "required"
+dev = "ignored"
+param = "required"
+return = "required"
+
+[modifier]
+notice = "forbidden"
+dev = "required"
+param = "ignored"
+
+[struct]
+notice = "required"
+dev = "ignored"
+param = "required"
+
+[variable.private]
+notice = "forbidden"
+dev = "required"
+
+[variable.internal]
+notice = "forbidden"
+dev = "required"
+
+[variable.public]
+notice = "required"
+dev = "ignored"
+return = "ignored"
