@@ -14,6 +14,7 @@ import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
+import "../../../src/contracts/core/AllocationManagerView.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
 
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
@@ -65,6 +66,8 @@ contract DeployFromScratch is Script, Test {
     StrategyBase public baseStrategyImplementation;
     AllocationManager public allocationManagerImplementation;
     AllocationManager public allocationManager;
+    AllocationManagerView public allocationManagerView;
+    AllocationManagerView public allocationManagerViewImplementation;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
 
@@ -219,6 +222,9 @@ contract DeployFromScratch is Script, Test {
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManagerView = AllocationManagerView(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -265,6 +271,7 @@ contract DeployFromScratch is Script, Test {
             )
         );
         allocationManagerImplementation = new AllocationManager(
+            allocationManagerView,
             delegation,
             eigenStrategy,
             eigenLayerPauserReg,
@@ -273,6 +280,8 @@ contract DeployFromScratch is Script, Test {
             ALLOCATION_CONFIGURATION_DELAY,
             SEMVER
         );
+        allocationManagerViewImplementation =
+            new AllocationManagerView(delegation, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController(SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "src/test/harnesses/AllocationManagerHarness.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/MockAVSRegistrar.sol";
 
@@ -93,11 +94,16 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         internal
         returns (IAllocationManager)
     {
+        // TODO: improve
+        IAllocationManagerView allocationManagerView = new AllocationManagerView(
+            IDelegationManager(address(delegationManagerMock)), eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
         return allocationManager = IAllocationManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(
                         new AllocationManagerHarness(
+                            allocationManagerView,
                             IDelegationManager(address(delegationManagerMock)),
                             eigenStrategy,
                             _pauserRegistry,

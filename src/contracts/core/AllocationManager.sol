@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../mixins/Deprecated_OwnableUpgradeable.sol";
+import "../mixins/SplitContractMixin.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
@@ -17,6 +18,7 @@ contract AllocationManager is
     Pausable,
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
+    SplitContractMixin,
     PermissionControllerMixin,
     SemVerMixin,
     IAllocationManagerActions
@@ -38,6 +40,7 @@ contract AllocationManager is
      * @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
      */
     constructor(
+        IAllocationManagerView _allocationManagerView,
         IDelegationManager _delegation,
         IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
@@ -48,6 +51,7 @@ contract AllocationManager is
     )
         AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY)
         Pausable(_pauserRegistry)
+        SplitContractMixin(address(_allocationManagerView))
         PermissionControllerMixin(_permissionController)
         SemVerMixin(_version)
     {

@@ -107,6 +107,9 @@ contract ExistingDeploymentParser is Script, Logger {
     IAllocationManager public allocationManager;
     IAllocationManager public allocationManagerImplementation;
 
+    IAllocationManagerView public allocationManagerView;
+    IAllocationManagerView public allocationManagerViewImplementation;
+
     /// @dev AVSDirectory
     AVSDirectory public avsDirectory;
     AVSDirectory public avsDirectoryImplementation;
@@ -233,6 +236,10 @@ contract ExistingDeploymentParser is Script, Logger {
         allocationManager = IAllocationManager(json.readAddress(".addresses.allocationManager"));
         allocationManagerImplementation =
             IAllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+
+        allocationManagerView = IAllocationManagerView(json.readAddress(".addresses.allocationManagerView"));
+        allocationManagerViewImplementation =
+            IAllocationManagerView(json.readAddress(".addresses.allocationManagerViewImplementation"));
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
