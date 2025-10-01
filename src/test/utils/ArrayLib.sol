@@ -110,6 +110,15 @@ library ArrayLib {
         array[0] = createSetParams;
     }
 
+    function toArray(IAllocationManagerTypes.CreateSetParamsV2 memory createSetParamsV2)
+        internal
+        pure
+        returns (IAllocationManagerTypes.CreateSetParamsV2[] memory array)
+    {
+        array = new IAllocationManagerTypes.CreateSetParamsV2[](1);
+        array[0] = createSetParamsV2;
+    }
+
     function toArray(IAllocationManagerTypes.AllocateParams memory allocateParams)
         internal
         pure

@@ -65,12 +65,15 @@ contract AllocationManager is
     function slashOperator(
         address avs,
         SlashingParams calldata params
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) checkCanCall(avs) returns (uint256, uint256[] memory) {
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING) returns (uint256, uint256[] memory) {
         // Check that the operator set exists and the operator is registered to it
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
         require(params.strategies.length == params.wadsToSlash.length, InputArrayLengthMismatch());
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         require(isOperatorSlashable(params.operator, operatorSet), OperatorNotSlashable());
+
+        // Assert that the caller is the slasher for the operator set
+        require(msg.sender == getSlasher(operatorSet), InvalidCaller());
 
         return _slashOperator(params, operatorSet);
     }
@@ -266,20 +269,36 @@ contract AllocationManager is
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
-    /// @inheritdoc IAllocationManagerActions
+    /// @inheritdoc IAllocationManager
+    /// @notice This function will be deprecated in Early Q2 2026 in favor of `createOperatorSets` which takes in `CreateSetParamsV2`
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+        createOperatorSets(avs, _convertCreateSetParams(params, avs));
+    }
+
+    /// @inheritdoc IAllocationManager
+    function createOperatorSets(address avs, CreateSetParamsV2[] memory params) public checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
         }
     }
 
-    /// @inheritdoc IAllocationManagerActions
+    /// @inheritdoc IAllocationManager
+    /// @notice This function will be deprecated in Early Q2 2026 in favor of `createRedistributingOperatorSets` which takes in `CreateSetParamsV2`
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
         address[] calldata redistributionRecipients
     ) external checkCanCall(avs) {
+        createRedistributingOperatorSets(avs, _convertCreateSetParams(params, avs), redistributionRecipients);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParamsV2[] memory params,
+        address[] calldata redistributionRecipients
+    ) public checkCanCall(avs) {
         require(params.length == redistributionRecipients.length, InputArrayLengthMismatch());
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
@@ -318,6 +337,48 @@ contract AllocationManager is
         for (uint256 i = 0; i < strategies.length; i++) {
             require(_operatorSetStrategies[operatorSetKey].remove(address(strategies[i])), StrategyNotInOperatorSet());
             emit StrategyRemovedFromOperatorSet(operatorSet, strategies[i]);
+        }
+    }
+
+    /// @inheritdoc IAllocationManager
+    function updateSlasher(OperatorSet memory operatorSet, address slasher) external checkCanCall(operatorSet.avs) {
+        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+        // Prevent updating a slasher if one is not already set
+        // A slasher is set either on operatorSet creation or, for operatorSets created prior to v1.9.0, via `migrateSlashers`
+        require(getSlasher(operatorSet) != address(0), SlasherNotSet());
+        _updateSlasher({operatorSet: operatorSet, slasher: slasher, instantEffectBlock: false});
+    }
+
+    /// @inheritdoc IAllocationManager
+    function migrateSlashers(
+        OperatorSet[] memory operatorSets
+    ) external {
+        for (uint256 i = 0; i < operatorSets.length; i++) {
+            // If the operatorSet does not exist, continue
+            if (!_operatorSets[operatorSets[i].avs].contains(operatorSets[i].id)) {
+                continue;
+            }
+
+            // If the slasher is already set, continue
+            if (getSlasher(operatorSets[i]) != address(0)) {
+                continue;
+            }
+
+            // Get the slasher from the permission controller.
+            address[] memory slashers =
+                permissionController.getAppointees(operatorSets[i].avs, address(this), this.slashOperator.selector);
+
+            address slasher;
+            // If there are no slashers or the first slasher is the 0 address, set the slasher to the AVS
+            if (slashers.length == 0 || slashers[0] == address(0)) {
+                slasher = operatorSets[i].avs;
+                // Else, set the slasher to the first slasher
+            } else {
+                slasher = slashers[0];
+            }
+
+            _updateSlasher({operatorSet: operatorSets[i], slasher: slasher, instantEffectBlock: true});
+            emit SlasherMigrated(operatorSets[i], slasher);
         }
     }
 
@@ -449,10 +510,11 @@ contract AllocationManager is
      * @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
      * and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
      * @dev Providing `BEACONCHAIN_ETH_STRAT` as a strategy will revert since it's not currently supported.
+     * @dev The address that can slash the operatorSet is the `avs` address.
      */
     function _createOperatorSet(
         address avs,
-        CreateSetParams calldata params,
+        CreateSetParamsV2 memory params,
         address redistributionRecipient
     ) internal {
         OperatorSet memory operatorSet = OperatorSet(avs, params.operatorSetId);
@@ -471,6 +533,9 @@ contract AllocationManager is
         for (uint256 j = 0; j < params.strategies.length; j++) {
             _addStrategyToOperatorSet(operatorSet, params.strategies[j], isRedistributing);
         }
+
+        // Update the slasher for the operator set
+        _updateSlasher({operatorSet: operatorSet, slasher: params.slasher, instantEffectBlock: true});
     }
 
     /**
@@ -642,6 +707,72 @@ contract AllocationManager is
     /// @dev Use safe casting when downcasting to uint64
     function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
+    }
+
+    /**
+     * @notice Helper function to check if an operator is redistributable from a list of operator sets
+     * @param operator The operator to check
+     * @param operatorSets The list of operator sets to check
+     * @return True if the operator is redistributable from any of the operator sets, false otherwise
+     */
+    function _isOperatorRedistributable(
+        address operator,
+        OperatorSet[] memory operatorSets
+    ) internal view returns (bool) {
+        for (uint256 i = 0; i < operatorSets.length; ++i) {
+            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @dev Helper function to update the slasher for an operator set
+     * @param operatorSet the operator set to update the slasher for
+     * @param slasher the new slasher
+     * @param instantEffectBlock Whether the new slasher will take effect immediately. Instant if on operatorSet creation or migration function.
+     *        The new slasher will take `ALLOCATION_CONFIGURATION_DELAY` blocks to take effect if called by the `updateSlasher` function.
+     */
+    function _updateSlasher(OperatorSet memory operatorSet, address slasher, bool instantEffectBlock) internal {
+        // Ensure that the slasher address is not the 0 address, which is used to denote if the slasher is not set
+        require(slasher != address(0), InputAddressZero());
+
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        // If there is a pending slasher that can be applied, apply it
+        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
+            params.slasher = params.pendingSlasher;
+        }
+
+        // Set the pending parameters
+        params.pendingSlasher = slasher;
+        if (instantEffectBlock) {
+            params.effectBlock = uint32(block.number);
+        } else {
+            params.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+        }
+
+        _slashers[operatorSet.key()] = params;
+        emit SlasherUpdated(operatorSet, slasher, params.effectBlock);
+    }
+
+    /**
+     * @notice Helper function to convert CreateSetParams to CreateSetParamsV2
+     * @param params The parameters to convert
+     * @param avs The AVS address that owns the operator sets, which will be the slasher
+     * @return The converted parameters, into CreateSetParamsV2 format
+     * @dev The slasher will be set to the AVS address
+     */
+    function _convertCreateSetParams(
+        CreateSetParams[] calldata params,
+        address avs
+    ) internal pure returns (CreateSetParamsV2[] memory) {
+        CreateSetParamsV2[] memory createSetParams = new CreateSetParamsV2[](params.length);
+        for (uint256 i = 0; i < params.length; i++) {
+            createSetParams[i] = CreateSetParamsV2(params[i].operatorSetId, params[i].strategies, avs);
+        }
+        return createSetParams;
     }
 
     /**
@@ -848,7 +979,41 @@ contract AllocationManager is
         return status.registered || block.number <= status.slashableUntil;
     }
 
-    /// @inheritdoc IAllocationManagerView
+    /// @inheritdoc IAllocationManager
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        address slasher = params.slasher;
+
+        // If there is a pending slasher that can be applied, apply it
+        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
+            slasher = params.pendingSlasher;
+        }
+
+        return slasher;
+    }
+
+    /// @inheritdoc IAllocationManager
+    function getPendingSlasher(
+        OperatorSet memory operatorSet
+    ) external view returns (address, uint32) {
+        // Initialize the pending slasher and effect block to the address(0) and 0 respectively
+        address pendingSlasher;
+        uint32 effectBlock;
+
+        // If there is a pending slasher, set it
+        SlasherParams memory params = _slashers[operatorSet.key()];
+        if (block.number < params.effectBlock) {
+            pendingSlasher = params.pendingSlasher;
+            effectBlock = params.effectBlock;
+        }
+
+        return (pendingSlasher, effectBlock);
+    }
+
+    /// @inheritdoc IAllocationManager
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
     ) public view returns (address) {

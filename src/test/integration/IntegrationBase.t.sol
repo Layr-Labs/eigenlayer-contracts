@@ -132,6 +132,16 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         ++numAVSs;
     }
 
+    /// @dev Creates a new AVS with the *soon to be deprecated* `createOperatorSets` method without a slasher
+    /// @dev This method is only used by the slasher migration test
+    function _newRandomAVS_v1CreateSet() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
+        string memory avsName = string.concat("avs", numAVSs.toString());
+        avs = _genRandAVS(avsName);
+        avs.updateAVSMetadataURI("https://example.com");
+        operatorSets = avs.createOperatorSets_v1(_randomStrategies());
+        ++numAVSs;
+    }
+
     function _newRandomAVS_WithBN254() internal returns (AVS avs, OperatorSet[] memory operatorSets) {
         string memory avsName = string.concat("avs", numAVSs.toString());
         avs = _genRandAVS(avsName);
@@ -2542,6 +2552,10 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             if (withdrawals[i].startBlock > latest) latest = withdrawals[i].startBlock;
         }
         cheats.roll(latest + delegationManager.minWithdrawalDelayBlocks() + 1);
+    }
+
+    function _rollForward_AllocationConfigurationDelay() internal {
+        rollForward(allocationManager.ALLOCATION_CONFIGURATION_DELAY() + 1);
     }
 
     function _rollForward_AllocationDelay(User operator) internal {
