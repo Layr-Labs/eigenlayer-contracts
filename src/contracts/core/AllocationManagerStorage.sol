@@ -113,6 +113,9 @@ abstract contract AllocationManagerStorage is IAllocationManager {
     ///      returns `DEFAULT_BURN_ADDRESS`
     mapping(bytes32 operatorSetKey => address redistributionAddr) internal _redistributionRecipients;
 
+    /// @notice Returns the address that can slash a given operator set.
+    mapping(bytes32 operatorSetKey => address slasher) internal _slashers;
+
     // Construction
 
     constructor(
@@ -132,5 +135,5 @@ abstract contract AllocationManagerStorage is IAllocationManager {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[34] private __gap;
+    uint256[33] private __gap;
 }

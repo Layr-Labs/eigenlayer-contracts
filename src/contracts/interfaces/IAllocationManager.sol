@@ -640,6 +640,13 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
 
     /**
+     * @notice Returns the address that can slash a given operator set.
+     * @param operatorSet The operator set to query.
+     * @return The address that can slash the operator set.
+     */
+    function getSlasher(OperatorSet memory operatorSet) external view returns (address);
+
+    /**
      * @notice Returns the address where slashed funds will be sent for a given operator set.
      * @param operatorSet The Operator Set to query.
      * @return For redistributing Operator Sets, returns the configured redistribution address set during Operator Set creation.
