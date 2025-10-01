@@ -11,6 +11,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
@@ -315,6 +316,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allocationManager =
                 IAllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
+        if (address(allocationManagerView) == address(0)) {
+            allocationManagerView =
+                AllocationManagerView(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
         if (address(permissionController) == address(0)) {
             permissionController =
                 PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -332,6 +337,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManagerImplementation = IAllocationManager(
             address(
                 new AllocationManager(
+                    allocationManagerView,
                     delegationManager,
                     eigenStrategy,
                     eigenLayerPauserReg,
@@ -342,6 +348,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 )
             )
         );
+        allocationManagerViewImplementation =
+            new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
