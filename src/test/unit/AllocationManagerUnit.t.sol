@@ -3388,8 +3388,12 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
         cheats.prank(address(delegationManagerMock));
         allocationManager.setAllocationDelay(operatorToSet, delay);
 
+        // Check that the effectBlock is 1 after
+        (bool isSetBefore,) = allocationManager.getAllocationDelay(operatorToSet);
+        assertFalse(isSetBefore, "isSet should be set");
+
         // Warp to effect block
-        cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
+        cheats.roll(block.number + 1);
         (bool isSet, uint32 returnedDelay) = allocationManager.getAllocationDelay(operatorToSet);
         assertTrue(isSet, "isSet should be set");
         assertEq(delay, returnedDelay, "delay not set");
