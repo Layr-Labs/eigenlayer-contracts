@@ -21,6 +21,8 @@ interface IAllocationManagerErrors {
     error InvalidStrategy();
     /// @dev Thrown when an invalid redistribution recipient is provided.
     error InvalidRedistributionRecipient();
+    /// @dev Thrown when an operatorSet is already migrated
+    error OperatorSetAlreadyMigrated();
 
     /// Caller
 
@@ -74,6 +76,20 @@ interface IAllocationManagerTypes {
         uint64 currentMagnitude;
         int128 pendingDiff;
         uint32 effectBlock;
+    }
+
+    /**
+     * @notice Parameters for addresses that can slash operatorSets
+     * @param slasher the address that can slash the operator set
+     * @param pendingSlasher the address that will become the slasher for the operator set after a delay
+     * @param effectBlock the block at which the pending slasher will take effect
+     * @param isMigrated whether the slasher of the operatorSet has been migrated from the permission controller
+     */
+    struct SlasherParams {
+        address slasher;
+        address pendingSlasher;
+        uint32 effectBlock;
+        bool isMigrated;
     }
 
     /**
@@ -179,6 +195,9 @@ interface IAllocationManagerTypes {
 interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
+
+    /// @notice Emitted when an operator set's slasher is updated.
+    event SlasherUpdated(OperatorSet operatorSet, address slasher, uint32 effectBlock);
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
@@ -376,6 +395,29 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
         uint32 operatorSetId,
         IStrategy[] calldata strategies
     ) external;
+
+    /**
+     * @notice Allows an AVS to update the slasher for an operator set
+     * @param operatorSet the operator set to update the slasher for
+     * @param slasher the new slasher
+     * @dev The new slasher will take effect in DEALLOCATION_DELAY blocks
+     * @dev Reverts for: 
+     *      - InvalidOperatorSet: The operator set does not exist
+     *      - InvalidCaller: The caller cannot update the slasher for the operator set
+     */
+    function updateSlasher(OperatorSet memory operatorSet, address slasher) external;
+
+    /**
+     * @notice Allows any address to migrate the slasher from the permission controller to the ALM
+     * @param operatorSets the list of operator sets to migrate the slasher for
+     * @dev If there is no slasher set, the AVS address will be set as the slasher
+     * @dev If there is a slasher set, the first slasher will be set as the slasher
+     * @dev This function can only be called once for a given operatorSet
+     * @dev Reverts for: 
+     *      - InvalidOperatorSet: The operator set does not exist
+     *      - OperatorSetAlreadyMigrated: The operator set has already been migrated
+     */
+    function migrateSlasher(OperatorSet[] memory operatorSets) external;
 
     /**
      *
@@ -643,8 +685,11 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @notice Returns the address that can slash a given operator set.
      * @param operatorSet The operator set to query.
      * @return The address that can slash the operator set.
+     * @dev If there is a pending slasher that can be applied after the `effectBlock`, the pending slasher will be returned.
      */
-    function getSlasher(OperatorSet memory operatorSet) external view returns (address);
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) external view returns (address);
 
     /**
      * @notice Returns the address where slashed funds will be sent for a given operator set.

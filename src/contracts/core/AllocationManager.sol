@@ -317,6 +317,44 @@ contract AllocationManager is
         }
     }
 
+    /// @inheritdoc IAllocationManager
+    function updateSlasher(OperatorSet memory operatorSet, address slasher) external checkCanCall(operatorSet.avs) {
+        require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
+        uint32 effectBlock = uint32(block.number) + DEALLOCATION_DELAY + 1;
+        _updateSlasher(operatorSet, slasher, effectBlock);
+    }
+
+    /// @inheritdoc IAllocationManager
+    function migrateSlasher(
+        OperatorSet[] memory operatorSets
+    ) external {
+        for (uint256 i = 0; i < operatorSets.length; i++) {
+            // Check that the operatorSet exists
+            require(_operatorSets[operatorSets[i].avs].contains(operatorSets[i].id), InvalidOperatorSet());
+
+            // Check that the operatorSet is not already migrated
+            require(!_slashers[operatorSets[i].key()].isMigrated, OperatorSetAlreadyMigrated());
+
+            // Get the slasher from the permission controller.
+            address[] memory slashers =
+                permissionController.getAppointees(operatorSets[i].avs, address(this), this.slashOperator.selector);
+
+            address slasher;
+            // If there are no slashers, set the slasher to the AVS
+            if (slashers.length == 0) {
+                slasher = operatorSets[i].avs;
+            } else {
+            // Else, set the slasher to the first slasher
+                slasher = slashers[0];
+            }
+
+            _updateSlasher(operatorSets[i], slasher, uint32(block.number));
+
+            // Mark the operatorSet as being migrated
+            _slashers[operatorSets[i].key()].isMigrated = true;
+        }
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -696,6 +734,22 @@ contract AllocationManager is
     }
 
     /**
+     * @dev Helper function to update the slasher for an operator set
+     * @param operatorSet the operator set to update the slasher for
+     * @param slasher the new slasher
+     * @param effectBlock the block at which the new slasher will take effect. If this is called by the migrate function, this is instant.
+     */
+    function _updateSlasher(OperatorSet memory operatorSet, address slasher, uint32 effectBlock) internal {
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        params.pendingSlasher = slasher;
+        params.effectBlock = effectBlock;
+
+        _slashers[operatorSet.key()] = params;
+        emit SlasherUpdated(operatorSet, slasher, effectBlock);
+    }
+
+    /**
      *
      *                         VIEW FUNCTIONS
      *
@@ -997,8 +1051,19 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getSlasher(OperatorSet memory operatorSet) public view returns (address) {
-        return _slashers[operatorSet.key()];
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        address slasher = params.slasher;
+
+        // If there is a pending slasher that can be applied, apply it
+        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
+            slasher = params.pendingSlasher;
+        }
+
+        return slasher;
     }
 
     /// @inheritdoc IAllocationManager
