@@ -206,14 +206,14 @@ library Env {
      */
     function allocationManager(
         DeployedProxy
-    ) internal view returns (AllocationManager) {
-        return AllocationManager(_deployedProxy(type(AllocationManager).name));
+    ) internal view returns (IAllocationManager) {
+        return IAllocationManager(_deployedProxy(type(AllocationManager).name));
     }
 
     function allocationManager(
         DeployedImpl
-    ) internal view returns (AllocationManager) {
-        return AllocationManager(_deployedImpl(type(AllocationManager).name));
+    ) internal view returns (IAllocationManager) {
+        return IAllocationManager(_deployedImpl(type(AllocationManager).name));
     }
 
     function avsDirectory(

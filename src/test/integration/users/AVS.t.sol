@@ -80,7 +80,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.method("updateAVSMetadataURI");
 
         console.log("Setting AVS metadata URI to: %s", uri);
-        _tryPrankAppointee_AllocationManager(IAllocationManager.updateAVSMetadataURI.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.updateAVSMetadataURI.selector);
         allocationManager.updateAVSMetadataURI(address(this), uri);
 
         print.gasUsed();
@@ -185,7 +185,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 )
             );
         }
-        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), params);
         print.gasUsed();
     }
@@ -222,7 +222,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             );
         }
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.slashOperator.selector);
 
         IAllocationManager_PreRedistribution(address(allocationManager)).slashOperator(address(this), slashParams);
         print.gasUsed();
@@ -261,7 +261,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
             );
         }
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.slashOperator.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.slashOperator.selector);
         (slashId, shares) = allocationManager.slashOperator(address(this), p);
         print.gasUsed();
     }
@@ -287,7 +287,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         DeregisterParams memory p = DeregisterParams({operator: address(operator), avs: address(this), operatorSetIds: operatorSetIds});
 
         print.deregisterFromOperatorSets(p);
-        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.deregisterFromOperatorSets.selector);
         allocationManager.deregisterFromOperatorSets(p);
         print.gasUsed();
     }
@@ -295,7 +295,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
     function setAVSRegistrar(IAVSRegistrar registrar) public createSnapshot {
         print.method("setAVSRegistrar");
         console.log("Setting AVS registrar to: %s", address(registrar));
-        _tryPrankAppointee_AllocationManager(IAllocationManager.setAVSRegistrar.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.setAVSRegistrar.selector);
         allocationManager.setAVSRegistrar(address(this), registrar);
         print.gasUsed();
     }
@@ -308,7 +308,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-        _tryPrankAppointee_AllocationManager(IAllocationManager.addStrategiesToOperatorSet.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.addStrategiesToOperatorSet.selector);
         allocationManager.addStrategiesToOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
@@ -321,7 +321,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         for (uint i; i < strategies.length; ++i) {
             console.log("   strategy: %s", address(strategies[i]));
         }
-        _tryPrankAppointee_AllocationManager(IAllocationManager.removeStrategiesFromOperatorSet.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.removeStrategiesFromOperatorSet.selector);
         allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
         print.gasUsed();
     }
