@@ -316,10 +316,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             allocationManager =
                 IAllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
-        if (address(allocationManagerView) == address(0)) {
-            allocationManagerView =
-                IAllocationManagerView(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
-        }
+        // allocationManagerView is deployed as a standalone implementation (not a proxy) in _deployImplementations()
         if (address(permissionController) == address(0)) {
             permissionController =
                 PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -334,7 +331,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        require(address(allocationManagerView) != address(0), "AllocationManagerView not deployed");
+        // Deploy AllocationManagerView as a standalone implementation (not a proxy)
+        allocationManagerView =
+            new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+        allocationManagerViewImplementation = allocationManagerView;
+
         allocationManagerImplementation = IAllocationManager(
             address(
                 new AllocationManager(
@@ -349,8 +350,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 )
             )
         );
-        allocationManagerViewImplementation =
-            new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
@@ -421,11 +420,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
         );
-        
-        // AllocationManagerView
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(allocationManagerView))), address(allocationManagerViewImplementation)
-        );
+
+        // AllocationManagerView is not a proxy, so no upgrade needed
 
         // PermissionController
         eigenLayerProxyAdmin.upgrade(
