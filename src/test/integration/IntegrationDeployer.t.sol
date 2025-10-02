@@ -318,7 +318,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(allocationManagerView) == address(0)) {
             allocationManagerView =
-                AllocationManagerView(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+                IAllocationManagerView(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
         if (address(permissionController) == address(0)) {
             permissionController =
@@ -334,6 +334,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
+        require(address(allocationManagerView) != address(0), "AllocationManagerView not deployed");
         allocationManagerImplementation = IAllocationManager(
             address(
                 new AllocationManager(
@@ -419,6 +420,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // AllocationManager
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
+        );
+        
+        // AllocationManagerView
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(allocationManagerView))), address(allocationManagerViewImplementation)
         );
 
         // PermissionController

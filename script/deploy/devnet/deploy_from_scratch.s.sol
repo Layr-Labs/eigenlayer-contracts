@@ -330,6 +330,11 @@ contract DeployFromScratch is Script, Test {
         );
 
         eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(allocationManagerView))),
+            address(allocationManagerViewImplementation)
+        );
+
+        eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))),
             address(permissionControllerImplementation)
         );
