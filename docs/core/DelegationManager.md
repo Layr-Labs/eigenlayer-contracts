@@ -96,7 +96,7 @@ function registerAsOperator(
 
 Registers the caller as an operator in EigenLayer. The new operator provides the following input parameters:
 * `address initDelegationApprover`: *(OPTIONAL)* if set to a non-zero address, this address must sign and approve new delegation from stakers to this operator (See [`delegateTo`](#delegateto))
-* `uint32 allocationDelay`: the delay (in blocks) before slashable stake allocations will take effect. This is passed to the `AllocationManager` (See [`AllocationManager.md#setAllocationDelay`](./AllocationManager.md#setallocationdelay))
+* `uint32 allocationDelay`: the delay (in blocks) before slashable stake allocations will take effect. This is passed to the `AllocationManager` (See [`AllocationManager.md#setAllocationDelay`](./AllocationManager.md#setallocationdelay)). Upon registration, this allocation delay is effective after one block. Further modifications directly via `AllocationManager.setAllocationDelay` take `ALLOCATION_CONFIGURATION_DELAY` blocks.
 * `string calldata metadataURI`: emits this input in the event `OperatorMetadataURIUpdated`. Does not store the value anywhere.
 
 `registerAsOperator` cements the operator's delegation approver and allocation delay in storage, and self-delegates the operator to themselves - permanently marking the caller as an operator. They cannot "deregister" as an operator - however, if they have deposited funds, they can still withdraw them (See [Delegation and Withdrawals](#delegation-and-withdrawals)).
