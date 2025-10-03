@@ -237,14 +237,14 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
-        /// If the caller is the delegationManager, the operator is newly registered
-        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
+        // Whether the operator is newly registered in the core protocol, defaults to false
         bool newlyRegistered;
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
             require(delegation.isOperator(operator), InvalidOperator());
-            newlyRegistered = false;
         } else {
+            /// If the caller is the delegationManager, the operator is newly registered
+            /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
             newlyRegistered = true;
         }
         _setAllocationDelay(operator, delay, newlyRegistered);
