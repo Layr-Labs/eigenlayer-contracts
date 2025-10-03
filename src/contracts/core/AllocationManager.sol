@@ -237,15 +237,17 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
-        /// If the caller is the delegationManager, the allocation configuration delay is 0
+        /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
-        uint32 allocationConfigurationDelay;
+        bool newlyRegistered;
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
             require(delegation.isOperator(operator), InvalidOperator());
-            allocationConfigurationDelay = ALLOCATION_CONFIGURATION_DELAY;
+            newlyRegistered = false;
+        } else {
+            newlyRegistered = true;
         }
-        _setAllocationDelay(operator, delay, allocationConfigurationDelay);
+        _setAllocationDelay(operator, delay, newlyRegistered);
     }
 
     /// @inheritdoc IAllocationManager
@@ -507,9 +509,9 @@ contract AllocationManager is
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @param operator The operator to set the delay on behalf of.
      * @param delay The allocation delay in blocks.
-     * @param allocationConfigurationDelay The delay after which the allocation delay takes effect. 0 if the operator is newly registered, otherwise ALLOCATION_CONFIGURATION_DELAY.
+     * @param newlyRegistered Whether the operator is newly registered in the core protocol.
      */
-    function _setAllocationDelay(address operator, uint32 delay, uint32 allocationConfigurationDelay) internal {
+    function _setAllocationDelay(address operator, uint32 delay, bool newlyRegistered) internal {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         // If there is a pending delay that can be applied now, set it
@@ -519,7 +521,14 @@ contract AllocationManager is
         }
 
         info.pendingDelay = delay;
-        info.effectBlock = uint32(block.number) + allocationConfigurationDelay + 1;
+
+        /// If the caller is the delegationManager, the operator is newly registered
+        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
+        if (newlyRegistered) {
+            info.effectBlock = uint32(block.number) + 1;
+        } else {
+            info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+        }
 
         _allocationDelayInfo[operator] = info;
         emit AllocationDelaySet(operator, delay, info.effectBlock);
