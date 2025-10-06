@@ -86,8 +86,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         /// Registration flow is the same pre and post redistribution upgrade
         operator.registerAsOperator();
 
-        rollForward({blocks: 1});
-
         assert_Snap_Added_OperatorShares(operator, strategies, addedShares, "_newRandomOperator: failed to award shares to operator");
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");
@@ -100,8 +98,6 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
 
         /// Registration flow is the same pre and post redistribution upgrade
         operator.registerAsOperator();
-
-        rollForward({blocks: 1});
 
         assertTrue(delegationManager.isOperator(address(operator)), "_newRandomOperator: operator should be registered");
         assertEq(delegationManager.delegatedTo(address(operator)), address(operator), "_newRandomOperator: should be self-delegated");

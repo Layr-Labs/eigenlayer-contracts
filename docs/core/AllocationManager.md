@@ -838,7 +838,8 @@ Once slashing is processed for a strategy, [slashed stake is burned or redistrib
  * @param operator The operator to set the delay on behalf of.
  * @param delay the allocation delay in blocks
  * @dev When the delay is set for a newly-registered operator (via the `DelegationManager.registerAsOperator` method),
- * the delay will take effect after 1 block. Else, the delay will take effect after `ALLOCATION_CONFIGURATION_DELAY` blocks.
+ * the delay will take effect immediately, allowing for operators to allocate slashable stake immediately. 
+ * Else, the delay will take effect after `ALLOCATION_CONFIGURATION_DELAY` blocks.
  */
 function setAllocationDelay(
     address operator,
@@ -857,7 +858,7 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 
 *Effects*:
 * Sets the operator's `pendingDelay` to the proposed `delay`, and save the `effectBlock` at which the `pendingDelay` can be activated
-    * If a newly registered operator in core, `effectBlock = uint32(block.number) + 1`
+    * If a newly registered operator in core, `effectBlock = uint32(block.number)`, allowing operators to allocate slashable stake immediately after registration
     * Else, `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
 * If the operator has a `pendingDelay`, and if the `effectBlock` has passed, sets the operator's `delay` to the `pendingDelay` value
     * This also sets the `isSet` boolean to `true` to indicate that the operator's `delay`, even if 0, was set intentionally

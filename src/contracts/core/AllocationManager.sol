@@ -525,8 +525,10 @@ contract AllocationManager is
         /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
         if (newlyRegistered) {
-            info.effectBlock = uint32(block.number) + 1;
+            // The delay takes effect immediately
+            info.effectBlock = uint32(block.number);
         } else {
+            // Wait the entire configuration delay before the delay takes effect
             info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
         }
 
