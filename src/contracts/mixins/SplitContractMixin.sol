@@ -41,12 +41,14 @@ abstract contract SplitContractMixin {
         }
     }
 
-    /**
-     * @dev Fallback function that delegates calls to the address returned by `_implementation()`. Will run if no other
-     * function in the contract matches the call data.
-     * TODO: Explore if we want to static-delegatecall to ensure no state mutations are possible.
-     */
-    fallback() external virtual {
-        _delegate(secondHalf);
+    function _delegateView(
+        address implementation
+    ) internal view virtual {
+        function(address) fn = _delegate;
+        function(address) view fnView;
+        assembly {
+            fnView := fn
+        }
+        fnView(implementation);
     }
 }
