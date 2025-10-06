@@ -238,7 +238,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
         /// If the caller is the delegationManager, the operator is newly registered
-        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
+        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
         bool newlyRegistered = (msg.sender == address(delegation));
 
         // If we're not newly registered, check that the caller (not the delegationManager) is authorized to set the allocation delay for the operator
@@ -523,7 +523,7 @@ contract AllocationManager is
         info.pendingDelay = delay;
 
         /// If the caller is the delegationManager, the operator is newly registered
-        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective after 1 block
+        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
         if (newlyRegistered) {
             // The delay takes effect immediately
             info.effectBlock = uint32(block.number);
