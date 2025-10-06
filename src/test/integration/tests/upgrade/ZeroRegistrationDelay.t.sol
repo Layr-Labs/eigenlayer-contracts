@@ -32,14 +32,14 @@ contract Integration_Upgrade_ZeroRegistrationDelay is UpgradeTest {
         operator2 = _newRandomOperator_NoAssets();
         (bool isSetOperator2,) = allocationManager.getAllocationDelay(address(operator2));
 
-        // The delay should be set since we are now with a 1 block set allocation delay
+        // The delay should be set immediately
         assertTrue(isSetOperator2, "isSet should be true");
 
         // The delay for operator1 should still not be set
         (isSetOperator1,) = allocationManager.getAllocationDelay(address(operator));
         assertFalse(isSetOperator1, "isSet should be false");
 
-        // 4. Assert that operator1 is set immediately
+        // 4. Assert that operator2 is set after the configuration delay
         rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
         (isSetOperator1,) = allocationManager.getAllocationDelay(address(operator));
         assertTrue(isSetOperator1, "isSet should be true");
