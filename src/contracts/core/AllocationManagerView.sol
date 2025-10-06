@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./AllocationManagerStorage.sol";
+import "./storage/AllocationManagerStorage.sol";
 
 /// @notice Non-state mutating view functions, (static) called by the `AllocationManager`.
 contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 151.
