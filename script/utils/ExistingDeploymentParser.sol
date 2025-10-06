@@ -314,9 +314,7 @@ contract ExistingDeploymentParser is Script, Logger {
         inActivePods = json.readAddressArray(".eigenPods.inActivePods");
         allEigenPods = json.readAddressArray(".eigenPods.allEigenPods");
         return DeployedEigenPods({
-            multiValidatorPods: multiValidatorPods,
-            singleValidatorPods: singleValidatorPods,
-            inActivePods: inActivePods
+            multiValidatorPods: multiValidatorPods, singleValidatorPods: singleValidatorPods, inActivePods: inActivePods
         });
     }
 
@@ -466,12 +464,16 @@ contract ExistingDeploymentParser is Script, Logger {
             "delegationManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(strategyManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(strategyManager)))
+            ),
             address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(eigenPodManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager)))
+            ),
             address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );

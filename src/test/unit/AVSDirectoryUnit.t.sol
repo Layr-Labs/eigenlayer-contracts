@@ -23,10 +23,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
         defaultOperatorPk = cheats.randomUint(1, MAX_PRIVATE_KEY);
         defaultOperator = cheats.addr(defaultOperatorPk);
         defaultOperatorSignature = _newOperatorRegistrationSignature({
-            operatorPk: defaultOperatorPk,
-            avs: defaultAVS,
-            salt: bytes32(cheats.randomUint()),
-            expiry: type(uint).max
+            operatorPk: defaultOperatorPk, avs: defaultAVS, salt: bytes32(cheats.randomUint()), expiry: type(uint).max
         });
 
         delegationManagerMock.setIsOperator(defaultOperator, true);

@@ -527,7 +527,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * if claimerFor[claim.earner] is address(0) then only the earner can claim, otherwise only
      * claimerFor[claim.earner] can claim the rewards.
      */
-    function processClaim(RewardsMerkleClaim calldata claim, address recipient) external;
+    function processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) external;
 
     /**
      * @notice Batch claim rewards against a given root (read from _distributionRoots[claim.rootIndex]).
@@ -542,7 +545,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * claimerFor[claim.earner] can claim the rewards.
      * @dev This function may fail to execute with a large number of claims due to gas limits. Use a smaller array of claims if necessary.
      */
-    function processClaims(RewardsMerkleClaim[] calldata claims, address recipient) external;
+    function processClaims(
+        RewardsMerkleClaim[] calldata claims,
+        address recipient
+    ) external;
 
     /**
      * @notice Creates a new distribution root. activatedAt is set to block.timestamp + activationDelay
@@ -550,7 +556,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param rewardsCalculationEndTimestamp The timestamp until which rewards have been calculated
      * @dev Only callable by the rewardsUpdater
      */
-    function submitRoot(bytes32 root, uint32 rewardsCalculationEndTimestamp) external;
+    function submitRoot(
+        bytes32 root,
+        uint32 rewardsCalculationEndTimestamp
+    ) external;
 
     /**
      * @notice allow the rewardsUpdater to disable/cancel a pending root submission in case of an error
@@ -576,7 +585,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev Only callable by operators or AVSs. We define an AVS that has created at least one
      *      operatorSet in the `AllocationManager`
      */
-    function setClaimerFor(address earner, address claimer) external;
+    function setClaimerFor(
+        address earner,
+        address claimer
+    ) external;
 
     /**
      * @notice Sets the delay in timestamp before a posted root can be claimed against
@@ -605,7 +617,11 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev Split has to be between 0 and 10000 bips (inclusive)
      * @dev The split will be activated after the activation delay
      */
-    function setOperatorAVSSplit(address operator, address avs, uint16 split) external;
+    function setOperatorAVSSplit(
+        address operator,
+        address avs,
+        uint16 split
+    ) external;
 
     /**
      * @notice Sets the split for a specific operator for Programmatic Incentives.
@@ -615,7 +631,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev Split has to be between 0 and 10000 bips (inclusive)
      * @dev The split will be activated after the activation delay
      */
-    function setOperatorPISplit(address operator, uint16 split) external;
+    function setOperatorPISplit(
+        address operator,
+        uint16 split
+    ) external;
 
     /**
      * @notice Sets the split for a specific operator for a specific operatorSet.
@@ -626,7 +645,11 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev Split has to be between 0 and 10000 bips (inclusive)
      * @dev The split will be activated after the activation delay
      */
-    function setOperatorSetSplit(address operator, OperatorSet calldata operatorSet, uint16 split) external;
+    function setOperatorSetSplit(
+        address operator,
+        OperatorSet calldata operatorSet,
+        uint16 split
+    ) external;
 
     /**
      * @notice Sets the permissioned `rewardsUpdater` address which can post new roots
@@ -643,7 +666,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @param _submitter The address of the rewardsForAllSubmitter
      * @param _newValue The new value for isRewardsForAllSubmitter
      */
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external;
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external;
 
     /**
      *
@@ -663,13 +689,19 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     ) external view returns (address);
 
     /// @notice Mapping: claimer => token => total amount claimed
-    function cumulativeClaimed(address claimer, IERC20 token) external view returns (uint256);
+    function cumulativeClaimed(
+        address claimer,
+        IERC20 token
+    ) external view returns (uint256);
 
     /// @notice the default split for all operators across all avss
     function defaultOperatorSplitBips() external view returns (uint16);
 
     /// @notice the split for a specific `operator` for a specific `avs`
-    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16);
+    function getOperatorAVSSplit(
+        address operator,
+        address avs
+    ) external view returns (uint16);
 
     /// @notice the split for a specific `operator` for Programmatic Incentives
     function getOperatorPISplit(
@@ -677,7 +709,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     ) external view returns (uint16);
 
     /// @notice Returns the split for a specific `operator` for a given `operatorSet`
-    function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16);
+    function getOperatorSetSplit(
+        address operator,
+        OperatorSet calldata operatorSet
+    ) external view returns (uint16);
 
     /// @notice return the hash of the earner's leaf
     function calculateEarnerLeafHash(

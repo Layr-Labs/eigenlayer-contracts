@@ -195,7 +195,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev Emits the following events:
      *      - OperatorSetConfigSet: When the operator set config is successfully set
      */
-    function setOperatorSetConfig(OperatorSet calldata operatorSet, OperatorSetConfig calldata config) external;
+    function setOperatorSetConfig(
+        OperatorSet calldata operatorSet,
+        OperatorSetConfig calldata config
+    ) external;
 
     /**
      * @notice Adds chainIDs to the whitelist of chainIDs that are transported to by the multichain protocol
@@ -211,7 +214,10 @@ interface ICrossChainRegistry is ICrossChainRegistryErrors, ICrossChainRegistryE
      * @dev Emits the following events:
      *      - ChainIDAddedToWhitelist: When each chainID is successfully added to the whitelist
      */
-    function addChainIDsToWhitelist(uint256[] calldata chainIDs, address[] calldata operatorTableUpdaters) external;
+    function addChainIDsToWhitelist(
+        uint256[] calldata chainIDs,
+        address[] calldata operatorTableUpdaters
+    ) external;
 
     /**
      * @notice Removes chainIDs from the whitelist of chainIDs

@@ -105,7 +105,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Emits the following events:
      *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
      */
-    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
+    function configureOperatorSet(
+        OperatorSet memory operatorSet,
+        CurveType curveType
+    ) external;
 
     /**
      * @notice Registers a cryptographic key for an operator with a specific operator set
@@ -154,7 +157,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Emits the following events:
      *      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
      */
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external;
+    function deregisterKey(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external;
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -163,7 +169,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @return True if the key is registered, false otherwise
      * @dev If the operatorSet is not configured, this function will return false
      */
-    function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
+    function isRegistered(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bool);
 
     /**
      * @notice Gets the curve type for an operator set
@@ -200,7 +209,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
      *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
-    function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
+    function getECDSAKey(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes memory);
 
     /**
      * @notice Gets the ECDSA public key for an operator with a specific operator set
@@ -212,7 +224,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
      *      recommend calling `isRegistered` first to check if the operator has a key registered
      */
-    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
+    function getECDSAAddress(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (address);
 
     /**
      * @notice Checks if a key hash is globally registered
@@ -229,7 +244,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operator Address of the operator
      * @return keyHash The key hash
      */
-    function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
+    function getKeyHash(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes32);
 
     /**
      * @notice Gets the operator from signing key

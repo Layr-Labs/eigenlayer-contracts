@@ -96,7 +96,8 @@ library BN254 {
         return G2Point([nG2x1, nG2x0], [nG2y1, nG2y0]);
     }
 
-    bytes32 internal constant powersOfTauMerkleRoot = 0x22c998e49752bbb1918ba87d6d59dd0e83620a311ba91dd4b2cc84990b31b56f;
+    bytes32 internal constant powersOfTauMerkleRoot =
+        0x22c998e49752bbb1918ba87d6d59dd0e83620a311ba91dd4b2cc84990b31b56f;
 
     /**
      * @param p Some point in G1.
@@ -116,7 +117,10 @@ library BN254 {
     /**
      * @return r the sum of two points of G1
      */
-    function plus(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
+    function plus(
+        G1Point memory p1,
+        G1Point memory p2
+    ) internal view returns (G1Point memory r) {
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -141,7 +145,10 @@ library BN254 {
      * @param s the scalar to multiply by
      * @dev this function is only safe to use if the scalar is 9 bits or less
      */
-    function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
+    function scalar_mul_tiny(
+        BN254.G1Point memory p,
+        uint16 s
+    ) internal view returns (BN254.G1Point memory) {
         require(s < 2 ** 9, ScalarTooLarge());
 
         // if s is 1 return p
@@ -183,7 +190,10 @@ library BN254 {
      *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
      *         points p.
      */
-    function scalar_mul(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
+    function scalar_mul(
+        G1Point memory p,
+        uint256 s
+    ) internal view returns (G1Point memory r) {
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;
@@ -346,7 +356,11 @@ library BN254 {
         return (beta, y);
     }
 
-    function expMod(uint256 _base, uint256 _exponent, uint256 _modulus) internal view returns (uint256 retval) {
+    function expMod(
+        uint256 _base,
+        uint256 _exponent,
+        uint256 _modulus
+    ) internal view returns (uint256 retval) {
         bool success;
         uint256[1] memory output;
         uint256[6] memory input;

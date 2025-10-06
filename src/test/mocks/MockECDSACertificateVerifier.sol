@@ -29,9 +29,15 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         uint32, /*referenceTimestamp*/
         ECDSAOperatorInfo[] calldata, /*operatorInfos*/
         OperatorSetConfig calldata /*operatorSetConfig*/
-    ) external pure {}
+    )
+        external
+        pure {}
 
-    function verifyCertificate(OperatorSet calldata, /*operatorSet*/ ECDSACertificate memory /*cert*/ )
+    function verifyCertificate(
+        OperatorSet calldata,
+        /*operatorSet*/
+        ECDSACertificate memory /*cert*/
+    )
         external
         pure
         returns (uint[] memory signedStakes, address[] memory signers)
@@ -43,7 +49,11 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         OperatorSet calldata, /*operatorSet*/
         ECDSACertificate memory, /*cert*/
         uint16[] memory /*totalStakeProportionThresholds*/
-    ) external pure returns (bool, address[] memory signers) {
+    )
+        external
+        pure
+        returns (bool, address[] memory signers)
+    {
         return (true, new address[](0));
     }
 
@@ -51,16 +61,20 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         OperatorSet calldata, /*operatorSet*/
         ECDSACertificate memory, /*cert*/
         uint[] memory /*totalStakeNominalThresholds*/
-    ) external pure returns (bool, address[] memory signers) {
+    )
+        external
+        pure
+        returns (bool, address[] memory signers)
+    {
         return (true, new address[](0));
     }
 
     // Implement IBaseCertificateVerifier required functions
-    function operatorTableUpdater(OperatorSet memory /*operatorSet*/ ) external pure returns (address) {
+    function operatorTableUpdater(OperatorSet memory /*operatorSet*/) external pure returns (address) {
         return address(0);
     }
 
-    function getLatestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
+    function getLatestReferenceTimestamp(OperatorSet memory /*operatorSet*/) external pure returns (uint32) {
         return 0;
     }
 
@@ -70,15 +84,19 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return owner != address(0) ? owner : operatorSet.avs;
     }
 
-    function latestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external view returns (uint32) {
+    function latestReferenceTimestamp(OperatorSet memory /*operatorSet*/) external view returns (uint32) {
         return _latestReferenceTimestamp;
     }
 
-    function maxOperatorTableStaleness(OperatorSet memory /*operatorSet*/ ) external view returns (uint32) {
+    function maxOperatorTableStaleness(OperatorSet memory /*operatorSet*/) external view returns (uint32) {
         return _maxOperatorTableStaleness;
     }
 
-    function getCachedSignerList(OperatorSet calldata, /*operatorSet*/ uint32 /*referenceTimestamp*/ )
+    function getCachedSignerList(
+        OperatorSet calldata,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
         external
         pure
         returns (address[] memory)
@@ -86,7 +104,11 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return new address[](0);
     }
 
-    function getOperatorInfos(OperatorSet calldata, /*operatorSet*/ uint32 /*referenceTimestamp*/ )
+    function getOperatorInfos(
+        OperatorSet calldata,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
         external
         pure
         returns (ECDSAOperatorInfo[] memory)
@@ -94,7 +116,13 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return new ECDSAOperatorInfo[](0);
     }
 
-    function getOperatorInfo(OperatorSet calldata, /*operatorSet*/ uint32, /*referenceTimestamp*/ uint /*operatorIndex*/ )
+    function getOperatorInfo(
+        OperatorSet calldata,
+        /*operatorSet*/
+        uint32,
+        /*referenceTimestamp*/
+        uint /*operatorIndex*/
+    )
         external
         pure
         returns (ECDSAOperatorInfo memory)
@@ -103,11 +131,27 @@ contract MockECDSACertificateVerifier is IECDSACertificateVerifier {
         return ECDSAOperatorInfo({pubkey: address(0), weights: weights});
     }
 
-    function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint) {
+    function getOperatorCount(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
+        external
+        pure
+        returns (uint)
+    {
         return 0;
     }
 
-    function getTotalStakes(OperatorSet calldata, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint[] memory) {
+    function getTotalStakes(
+        OperatorSet calldata,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
+        external
+        pure
+        returns (uint[] memory)
+    {
         return new uint[](0);
     }
 

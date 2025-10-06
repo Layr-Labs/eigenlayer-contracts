@@ -16,7 +16,11 @@ contract CreateGeneratorConfig is Script, Test {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    function run(string memory network, uint256 xCoord, uint256 yCoord) public {
+    function run(
+        string memory network,
+        uint256 xCoord,
+        uint256 yCoord
+    ) public {
         // Network must be preprod, testnet-sepolia, or mainnet
         require(
             _strEq(network, "preprod") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
@@ -113,7 +117,10 @@ contract CreateGeneratorConfig is Script, Test {
         vm.writeToml(finalJson, outputPath);
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 

@@ -9,7 +9,6 @@ import "./ISemVerMixin.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation
-
     /// @dev Thrown when `wadToSlash` is zero or greater than 1e18
     error InvalidWadToSlash();
     /// @dev Thrown when two array parameters have mismatching lengths.
@@ -269,7 +268,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param params array of magnitude adjustments for one or more operator sets
      * @dev Updates encumberedMagnitude for the updated strategies
      */
-    function modifyAllocations(address operator, AllocateParams[] calldata params) external;
+    function modifyAllocations(
+        address operator,
+        AllocateParams[] calldata params
+    ) external;
 
     /**
      * @notice This function takes a list of strategies and for each strategy, removes from the deallocationQueue
@@ -295,7 +297,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * registerOperator` method to complete registration. This call MUST succeed in order for
      * registration to be successful.
      */
-    function registerForOperatorSets(address operator, RegisterParams calldata params) external;
+    function registerForOperatorSets(
+        address operator,
+        RegisterParams calldata params
+    ) external;
 
     /**
      * @notice Allows an operator or AVS to deregister the operator from one or more of the AVS's operator sets.
@@ -316,7 +321,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operator The operator to set the delay on behalf of.
      * @param delay the allocation delay in blocks
      */
-    function setAllocationDelay(address operator, uint32 delay) external;
+    function setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external;
 
     /**
      * @notice Called by an AVS to configure the address that is called when an operator registers
@@ -324,7 +332,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * to the AVS's address.
      * @param registrar the new registrar address
      */
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external;
+    function setAVSRegistrar(
+        address avs,
+        IAVSRegistrar registrar
+    ) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -333,12 +344,18 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      *
      *  @dev Note that the `metadataURI` is *never stored* and is only emitted in the `AVSMetadataURIUpdated` event.
      */
-    function updateAVSMetadataURI(address avs, string calldata metadataURI) external;
+    function updateAVSMetadataURI(
+        address avs,
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
      */
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
@@ -362,7 +379,11 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operatorSetId the operator set to add strategies to
      * @param strategies the strategies to add
      */
-    function addStrategiesToOperatorSet(address avs, uint32 operatorSetId, IStrategy[] calldata strategies) external;
+    function addStrategiesToOperatorSet(
+        address avs,
+        uint32 operatorSetId,
+        IStrategy[] calldata strategies
+    ) external;
 
     /**
      * @notice Allows an AVS to remove strategies from an operator set
@@ -458,7 +479,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param strategy the strategy to get allocatable magnitude for
      * @return currently allocated magnitude
      */
-    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64);
 
     /**
      * @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
@@ -466,7 +490,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param strategy the strategy to get allocatable magnitude for
      * @return magnitude available to be allocated to an operator set
      */
-    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64);
 
     /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategy
@@ -476,7 +503,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param strategy the strategy to get the max magnitude for
      * @return the max magnitude for the strategy
      */
-    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64);
+    function getMaxMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64);
 
     /**
      * @notice Returns the maximum magnitude an operator can allocate for the given strategies
@@ -552,7 +582,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operator The operator to query
      * @param operatorSet The operator set to query
      */
-    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) external view returns (bool);
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 
     /**
      * @notice Returns whether the operator set exists
@@ -637,7 +670,10 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * @param operator the operator to check slashability for
      * @param operatorSet the operator set to check slashability for
      */
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (bool);
 
     /**
      * @notice Returns the address where slashed funds will be sent for a given operator set.

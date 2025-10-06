@@ -17,12 +17,7 @@ import "./BN254CertificateVerifierStorage.sol";
  * @dev This contract uses BN254 curves for signature verification and
  *      caches operator information for efficient verification
  */
-contract BN254CertificateVerifier is
-    Initializable,
-    BN254CertificateVerifierStorage,
-    SemVerMixin,
-    LeafCalculatorMixin
-{
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, SemVerMixin, LeafCalculatorMixin {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
@@ -179,7 +174,10 @@ contract BN254CertificateVerifier is
      * @param operatorSetKey The operator set key
      * @param referenceTimestamp The reference timestamp to validate
      */
-    function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
+    function _validateCertificateTimestamp(
+        bytes32 operatorSetKey,
+        uint32 referenceTimestamp
+    ) internal view {
         // Assert that the certificate is not stale
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
@@ -270,7 +268,10 @@ contract BN254CertificateVerifier is
      * @param ctx The verification context
      * @param cert The certificate containing the signature to verify
      */
-    function _verifySignature(VerificationContext memory ctx, BN254Certificate memory cert) internal view {
+    function _verifySignature(
+        VerificationContext memory ctx,
+        BN254Certificate memory cert
+    ) internal view {
         // Calculate signer aggregate public key by subtracting non-signers from total
         BN254.G1Point memory signerApk = ctx.operatorSetInfo.aggregatePubkey.plus(ctx.nonSignerApk.negate());
 
@@ -410,7 +411,10 @@ contract BN254CertificateVerifier is
     }
 
     /// @inheritdoc IBN254CertificateVerifier
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public pure returns (bytes32) {
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) public pure returns (bytes32) {
         return keccak256(abi.encode(BN254_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
     }
 }

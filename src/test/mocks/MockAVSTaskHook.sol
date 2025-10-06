@@ -11,26 +11,44 @@ contract MockAVSTaskHook is IAVSTaskHook {
         defaultFee = _fee;
     }
 
-    function validatePreTaskCreation(address, /*caller*/ ITaskMailboxTypes.TaskParams memory /*taskParams*/ ) external view {
-        //TODO: Implement
-    }
-
-    function handlePostTaskCreation(bytes32 /*taskHash*/ ) external {
-        //TODO: Implement
-    }
-
-    function validatePreTaskResultSubmission(address, /*caller*/ bytes32, /*taskHash*/ bytes memory, /*cert*/ bytes memory /*result*/ )
+    function validatePreTaskCreation(
+        address,
+        /*caller*/
+        ITaskMailboxTypes.TaskParams memory /*taskParams*/
+    )
         external
-        view
-    {
+        view {
         //TODO: Implement
     }
 
-    function handlePostTaskResultSubmission(address, /*caller*/ bytes32 /*taskHash*/ ) external {
+    function handlePostTaskCreation(bytes32 /*taskHash*/) external {
         //TODO: Implement
     }
 
-    function calculateTaskFee(ITaskMailboxTypes.TaskParams memory /*taskParams*/ ) external view returns (uint96) {
+    function validatePreTaskResultSubmission(
+        address,
+        /*caller*/
+        bytes32,
+        /*taskHash*/
+        bytes memory,
+        /*cert*/
+        bytes memory /*result*/
+    )
+        external
+        view {
+        //TODO: Implement
+    }
+
+    function handlePostTaskResultSubmission(
+        address,
+        /*caller*/
+        bytes32 /*taskHash*/
+    )
+        external {
+        //TODO: Implement
+    }
+
+    function calculateTaskFee(ITaskMailboxTypes.TaskParams memory /*taskParams*/) external view returns (uint96) {
         return defaultFee;
     }
 }

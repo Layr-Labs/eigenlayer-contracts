@@ -120,7 +120,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
+    function updateOperatorMetadataURI(
+        address operator,
+        string calldata metadataURI
+    ) external checkCanCall(operator) {
         require(isOperator(operator), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
@@ -136,10 +139,7 @@ contract DelegationManager is
 
         // If the operator has a `delegationApprover`, check the provided signature
         _checkApproverSignature({
-            staker: msg.sender,
-            operator: operator,
-            signature: approverSignatureAndExpiry,
-            salt: approverSalt
+            staker: msg.sender, operator: operator, signature: approverSignatureAndExpiry, salt: approverSalt
         });
 
         // Delegate msg.sender to the operator
@@ -267,16 +267,12 @@ contract DelegationManager is
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, beaconChainETHStrategy);
         DepositScalingFactor memory dsf = _depositScalingFactor[staker][beaconChainETHStrategy];
         uint256 sharesToRemove = dsf.calcWithdrawable({
-            depositShares: curDepositShares,
-            slashingFactor: maxMagnitude.mulWad(beaconChainSlashingFactorDecrease)
+            depositShares: curDepositShares, slashingFactor: maxMagnitude.mulWad(beaconChainSlashingFactorDecrease)
         });
 
         // Decrease the operator's shares
         _decreaseDelegation({
-            operator: operator,
-            staker: staker,
-            strategy: beaconChainETHStrategy,
-            sharesToDecrease: sharesToRemove
+            operator: operator, staker: staker, strategy: beaconChainETHStrategy, sharesToDecrease: sharesToRemove
         });
     }
 
@@ -296,10 +292,7 @@ contract DelegationManager is
         });
 
         uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
-            operator: operator,
-            strategy: strategy,
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
+            operator: operator, strategy: strategy, prevMaxMagnitude: prevMaxMagnitude, newMaxMagnitude: newMaxMagnitude
         });
 
         // Calculate the total deposit shares to slash (burn or redistribute) - slashed operator shares plus still-slashable
@@ -317,9 +310,8 @@ contract DelegationManager is
         // Emit event for operator shares being slashed
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToSlash);
 
-        _getShareManager(strategy).increaseBurnOrRedistributableShares(
-            operatorSet, slashId, strategy, totalDepositSharesToSlash
-        );
+        _getShareManager(strategy)
+            .increaseBurnOrRedistributableShares(operatorSet, slashId, strategy, totalDepositSharesToSlash);
 
         return totalDepositSharesToSlash;
     }
@@ -335,7 +327,10 @@ contract DelegationManager is
      * @param operator The account registered as an operator updating their operatorDetails
      * @param newDelegationApprover The new parameters for the operator
      */
-    function _setDelegationApprover(address operator, address newDelegationApprover) internal {
+    function _setDelegationApprover(
+        address operator,
+        address newDelegationApprover
+    ) internal {
         _operatorDetails[operator].delegationApprover = newDelegationApprover;
         emit DelegationApproverUpdated(operator, newDelegationApprover);
     }
@@ -351,7 +346,10 @@ contract DelegationManager is
      * Ensures that:
      *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
      */
-    function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
+    function _delegate(
+        address staker,
+        address operator
+    ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         // When a staker is not delegated to an operator, their deposit shares are equal to their
         // withdrawable shares -- except for the beaconChainETH strategy, which is handled below
         (IStrategy[] memory strategies, uint256[] memory withdrawableShares) = getDepositedShares(staker);
@@ -588,8 +586,7 @@ contract DelegationManager is
 
             // Calculate how much slashing to apply, as well as shares to withdraw
             uint256 sharesToWithdraw = SlashingLib.scaleForCompleteWithdrawal({
-                scaledShares: withdrawal.scaledShares[i],
-                slashingFactor: prevSlashingFactors[i]
+                scaledShares: withdrawal.scaledShares[i], slashingFactor: prevSlashingFactors[i]
             });
 
             //Do nothing if 0 shares to withdraw
@@ -610,9 +607,7 @@ contract DelegationManager is
             } else {
                 // Award shares back in StrategyManager/EigenPodManager.
                 (uint256 prevDepositShares, uint256 addedShares) = shareManager.addShares({
-                    staker: withdrawal.staker,
-                    strategy: withdrawal.strategies[i],
-                    shares: sharesToWithdraw
+                    staker: withdrawal.staker, strategy: withdrawal.strategies[i], shares: sharesToWithdraw
                 });
 
                 // Update the staker's deposit scaling factor and delegate shares to their operator
@@ -756,9 +751,7 @@ contract DelegationManager is
     ) internal view returns (uint256[] memory) {
         uint256[] memory slashingFactors = new uint256[](strategies.length);
         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtBlock({
-            operator: operator,
-            strategies: strategies,
-            blockNumber: blockNumber
+            operator: operator, strategies: strategies, blockNumber: blockNumber
         });
 
         for (uint256 i = 0; i < strategies.length; i++) {
@@ -785,28 +778,27 @@ contract DelegationManager is
         // To get this, we take the current shares in the withdrawal queue and subtract the number of shares
         // that were in the queue before MIN_WITHDRAWAL_DELAY_BLOCKS.
         uint256 curQueuedScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-        uint256 prevQueuedScaledShares = _cumulativeScaledSharesHistory[operator][strategy].upperLookup({
-            key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS - 1
-        });
+        uint256 prevQueuedScaledShares = _cumulativeScaledSharesHistory[operator][strategy]
+        .upperLookup({key: uint32(block.number) - MIN_WITHDRAWAL_DELAY_BLOCKS - 1});
 
         // The difference between these values is the number of scaled shares that entered the withdrawal queue
         // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
         uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
         return SlashingLib.scaleForBurning({
-            scaledShares: scaledSharesAdded,
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
+            scaledShares: scaledSharesAdded, prevMaxMagnitude: prevMaxMagnitude, newMaxMagnitude: newMaxMagnitude
         });
     }
 
     /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
-    function _addQueuedSlashableShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
+    function _addQueuedSlashableShares(
+        address operator,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) internal {
         uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
-        _cumulativeScaledSharesHistory[operator][strategy].push({
-            key: uint32(block.number),
-            value: currCumulativeScaledShares + scaledShares
-        });
+        _cumulativeScaledSharesHistory[operator][strategy]
+        .push({key: uint32(block.number), value: currCumulativeScaledShares + scaledShares});
     }
 
     /// @dev Get the shares from a queued withdrawal.
@@ -830,15 +822,12 @@ contract DelegationManager is
                 blockNumber: slashableUntil
             })
             : _getSlashingFactors({
-                staker: withdrawal.staker,
-                operator: withdrawal.delegatedTo,
-                strategies: withdrawal.strategies
+                staker: withdrawal.staker, operator: withdrawal.delegatedTo, strategies: withdrawal.strategies
             });
 
         for (uint256 j; j < withdrawal.strategies.length; ++j) {
             shares[j] = SlashingLib.scaleForCompleteWithdrawal({
-                scaledShares: withdrawal.scaledShares[j],
-                slashingFactor: slashingFactors[j]
+                scaledShares: withdrawal.scaledShares[j], slashingFactor: slashingFactors[j]
             });
         }
     }
@@ -880,7 +869,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256) {
+    function depositScalingFactor(
+        address staker,
+        IStrategy strategy
+    ) external view returns (uint256) {
         return _depositScalingFactor[staker][strategy].scalingFactor();
     }
 
@@ -909,15 +901,15 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function getSlashableSharesInQueue(address operator, IStrategy strategy) public view returns (uint256) {
+    function getSlashableSharesInQueue(
+        address operator,
+        IStrategy strategy
+    ) public view returns (uint256) {
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategy);
 
         // Return amount of slashable scaled shares remaining
         return _getSlashableSharesInQueue({
-            operator: operator,
-            strategy: strategy,
-            prevMaxMagnitude: maxMagnitude,
-            newMaxMagnitude: 0
+            operator: operator, strategy: strategy, prevMaxMagnitude: maxMagnitude, newMaxMagnitude: 0
         });
     }
 
@@ -1049,6 +1041,7 @@ contract DelegationManager is
         bytes32 approverSalt,
         uint256 expiry
     ) public view returns (bytes32) {
+
         /// forgefmt: disable-next-item
         return _calculateSignableDigest(
             keccak256(

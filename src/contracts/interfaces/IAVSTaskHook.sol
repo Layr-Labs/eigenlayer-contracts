@@ -16,7 +16,10 @@ interface IAVSTaskHook {
      * @param taskParams Task parameters
      * @dev This function should revert if the task should not be created
      */
-    function validatePreTaskCreation(address caller, ITaskMailboxTypes.TaskParams memory taskParams) external view;
+    function validatePreTaskCreation(
+        address caller,
+        ITaskMailboxTypes.TaskParams memory taskParams
+    ) external view;
 
     /**
      * @notice Handles a task after it is created
@@ -48,7 +51,10 @@ interface IAVSTaskHook {
      * @param taskHash Unique identifier of the task
      * @dev This function can be used to perform additional validation or update AVS-specific state
      */
-    function handlePostTaskResultSubmission(address caller, bytes32 taskHash) external;
+    function handlePostTaskResultSubmission(
+        address caller,
+        bytes32 taskHash
+    ) external;
 
     /**
      * @notice Calculates the fee for a task payload against a specific fee market

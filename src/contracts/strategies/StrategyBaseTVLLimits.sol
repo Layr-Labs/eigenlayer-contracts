@@ -46,7 +46,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * @dev We note that there is a potential race condition between a call to this function that lowers either or both of these limits and call(s)
      * to `deposit`, that may result in some calls to `deposit` reverting.
      */
-    function setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) external onlyUnpauser {
+    function setTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newMaxTotalDeposits
+    ) external onlyUnpauser {
         _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
     }
 
@@ -56,7 +59,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
     }
 
     /// @notice Internal setter for TVL limits
-    function _setTVLLimits(uint256 newMaxPerDeposit, uint256 newMaxTotalDeposits) internal {
+    function _setTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newMaxTotalDeposits
+    ) internal {
         emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
         emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
         require(newMaxPerDeposit <= newMaxTotalDeposits, MaxPerDepositExceedsMax());
@@ -76,7 +82,10 @@ contract StrategyBaseTVLLimits is StrategyBase {
      * c) increases in the token balance of this contract through other effects – including token rebasing – may cause similar issues to (a) and (b).
      * @param amount The amount of `token` being deposited
      */
-    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 amount
+    ) internal virtual override {
         require(amount <= maxPerDeposit, MaxPerDepositExceedsMax());
         require(_tokenBalance() <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
 

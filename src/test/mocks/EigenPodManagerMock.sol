@@ -49,7 +49,10 @@ contract EigenPodManagerMock is Test, Pausable {
         address podOwner,
         IStrategy, // strategy
         uint shares
-    ) external returns (uint) {
+    )
+        external
+        returns (uint)
+    {
         int updatedShares = podOwnerDepositShares[podOwner] - int(shares);
         podOwnerDepositShares[podOwner] = updatedShares;
         return uint(updatedShares);
@@ -70,7 +73,9 @@ contract EigenPodManagerMock is Test, Pausable {
          * token
          */
         uint shares
-    ) external {
+    )
+        external
+    {
         podOwnerSharesWithdrawn[podOwner] += shares;
     }
 

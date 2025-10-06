@@ -88,7 +88,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external checkCanCall(operator) {
+    function deregisterKey(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external checkCanCall(operator) {
         // Operators can only deregister if they are not slashable for this operator set
         require(
             !allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator)
@@ -231,7 +234,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      * @param curveType The curve type (ECDSA or BN254)
      * @return keyHash The key hash
      */
-    function _getKeyHashForKeyData(bytes memory pubkey, CurveType curveType) internal pure returns (bytes32) {
+    function _getKeyHashForKeyData(
+        bytes memory pubkey,
+        CurveType curveType
+    ) internal pure returns (bytes32) {
         if (curveType == CurveType.ECDSA) {
             return keccak256(pubkey);
         } else if (curveType == CurveType.BN254) {
@@ -249,7 +255,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /// @inheritdoc IKeyRegistrar
-    function isRegistered(OperatorSet memory operatorSet, address operator) public view returns (bool) {
+    function isRegistered(
+        OperatorSet memory operatorSet,
+        address operator
+    ) public view returns (bool) {
         return _operatorKeyInfo[operatorSet.key()][operator].isRegistered;
     }
 
@@ -284,7 +293,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getECDSAKey(OperatorSet memory operatorSet, address operator) public view returns (bytes memory) {
+    function getECDSAKey(
+        OperatorSet memory operatorSet,
+        address operator
+    ) public view returns (bytes memory) {
         // Validate operator set curve type
         CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType == CurveType.ECDSA, InvalidCurveType());
@@ -294,7 +306,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address) {
+    function getECDSAAddress(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (address) {
         return address(bytes20(getECDSAKey(operatorSet, operator)));
     }
 
@@ -306,7 +321,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32) {
+    function getKeyHash(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes32) {
         KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
         CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
 

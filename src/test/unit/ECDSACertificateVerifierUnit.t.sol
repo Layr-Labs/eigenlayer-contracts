@@ -192,9 +192,7 @@ contract ECDSACertificateVerifierUnitTests is
         }
 
         cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: messageHash,
-            sig: signatures
+            referenceTimestamp: referenceTimestamp, messageHash: messageHash, sig: signatures
         });
     }
 
@@ -425,9 +423,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         bytes memory invalidLengthSig = new bytes(64); // Should be 65 bytes for ECDSA
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            sig: invalidLengthSig
+            referenceTimestamp: referenceTimestamp, messageHash: defaultMsgHash, sig: invalidLengthSig
         });
 
         vm.expectRevert(IECDSACertificateVerifierErrors.InvalidSignatureLength.selector);
@@ -682,9 +678,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         bytes memory signature = abi.encodePacked(r, s, v);
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            sig: signature
+            referenceTimestamp: referenceTimestamp, messageHash: defaultMsgHash, sig: signature
         });
 
         // Should revert because the signer is not an operator
@@ -745,9 +739,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         bytes memory signatures = bytes.concat(abi.encodePacked(r0, s0, v0), abi.encodePacked(r1, s1, v1));
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            sig: signatures
+            referenceTimestamp: referenceTimestamp, messageHash: defaultMsgHash, sig: signatures
         });
 
         // Should revert because signatures are not ordered by address
@@ -780,9 +772,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         invalidSignature[64] = bytes1(v);
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            sig: invalidSignature
+            referenceTimestamp: referenceTimestamp, messageHash: defaultMsgHash, sig: invalidSignature
         });
 
         // Should revert because signature recovery returns an error
@@ -816,9 +806,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
         zeroRecoverySignature[64] = bytes1(v);
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: defaultMsgHash,
-            sig: zeroRecoverySignature
+            referenceTimestamp: referenceTimestamp, messageHash: defaultMsgHash, sig: zeroRecoverySignature
         });
 
         // Should revert because recovered address is zero - now throws VerificationFailed

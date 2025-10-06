@@ -50,7 +50,10 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev The pending admin must accept the role before becoming an active admin.
      * @dev Multiple admins can be set for a single account.
      */
-    function addPendingAdmin(address account, address admin) external;
+    function addPendingAdmin(
+        address account,
+        address admin
+    ) external;
 
     /**
      * @notice Removes a pending admin from an account before they have accepted the role.
@@ -58,7 +61,10 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param admin The pending admin address to remove.
      * @dev Only an existing admin of the account can remove a pending admin.
      */
-    function removePendingAdmin(address account, address admin) external;
+    function removePendingAdmin(
+        address account,
+        address admin
+    ) external;
 
     /**
      * @notice Allows a pending admin to accept their admin role for an account.
@@ -76,7 +82,10 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev Only an existing admin of the account can remove another admin.
      * @dev Will revert if removing this admin would leave the account with zero admins.
      */
-    function removeAdmin(address account, address admin) external;
+    function removeAdmin(
+        address account,
+        address admin
+    ) external;
 
     /**
      * @notice Sets an appointee who can call specific functions on behalf of an account.
@@ -86,7 +95,12 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param selector The function selector the appointee can call.
      * @dev Only an admin of the account can set appointees.
      */
-    function setAppointee(address account, address appointee, address target, bytes4 selector) external;
+    function setAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 
     /**
      * @notice Removes an appointee's permission to call a specific function.
@@ -96,7 +110,12 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param selector The function selector to remove permissions for.
      * @dev Only an admin of the account can remove appointees.
      */
-    function removeAppointee(address account, address appointee, address target, bytes4 selector) external;
+    function removeAppointee(
+        address account,
+        address appointee,
+        address target,
+        bytes4 selector
+    ) external;
 
     /**
      * @notice Checks if a given address is an admin of an account.
@@ -105,7 +124,10 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev If the account has no admins, returns true only if the caller is the account itself.
      * @return Returns true if the caller is an admin, false otherwise.
      */
-    function isAdmin(address account, address caller) external view returns (bool);
+    function isAdmin(
+        address account,
+        address caller
+    ) external view returns (bool);
 
     /**
      * @notice Checks if an address is currently a pending admin for an account.
@@ -113,7 +135,10 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @param pendingAdmin The address to check.
      * @return Returns true if the address is a pending admin, false otherwise.
      */
-    function isPendingAdmin(address account, address pendingAdmin) external view returns (bool);
+    function isPendingAdmin(
+        address account,
+        address pendingAdmin
+    ) external view returns (bool);
 
     /**
      * @notice Retrieves all active admins for an account.
@@ -145,7 +170,12 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * This is only possible if a function's selector changes (e.g. if a function's parameters are modified).
      * @return Returns true if the caller has permission, false otherwise.
      */
-    function canCall(address account, address caller, address target, bytes4 selector) external returns (bool);
+    function canCall(
+        address account,
+        address caller,
+        address target,
+        bytes4 selector
+    ) external returns (bool);
 
     /**
      * @notice Retrieves all permissions granted to an appointee for a given account.
@@ -166,5 +196,9 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev Does not include admins in the returned list, even though they have calling permission.
      * @return An array of appointee addresses.
      */
-    function getAppointees(address account, address target, bytes4 selector) external returns (address[] memory);
+    function getAppointees(
+        address account,
+        address target,
+        bytes4 selector
+    ) external returns (address[] memory);
 }

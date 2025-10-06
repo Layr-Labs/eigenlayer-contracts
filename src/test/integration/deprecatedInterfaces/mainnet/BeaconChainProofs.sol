@@ -146,10 +146,12 @@ library BeaconChainProofs_DeprecatedM1 {
      * @param proof is the data used in proving the validator's fields
      * @param validatorFields the claimed fields of the validator
      */
-    function verifyValidatorFields(uint40 validatorIndex, bytes32 beaconStateRoot, bytes calldata proof, bytes32[] calldata validatorFields)
-        internal
-        view
-    {
+    function verifyValidatorFields(
+        uint40 validatorIndex,
+        bytes32 beaconStateRoot,
+        bytes calldata proof,
+        bytes32[] calldata validatorFields
+    ) internal view {
         require(
             validatorFields.length == 2 ** VALIDATOR_FIELD_TREE_HEIGHT,
             "BeaconChainProofs.verifyValidatorFields: Validator fields has incorrect length"

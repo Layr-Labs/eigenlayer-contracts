@@ -372,7 +372,10 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /// @inheritdoc IECDSACertificateVerifier
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) public view returns (bytes32) {
         return keccak256(calculateCertificateDigestBytes(referenceTimestamp, messageHash));
     }
 }

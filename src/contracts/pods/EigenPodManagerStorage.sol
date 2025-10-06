@@ -16,7 +16,6 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
      *                            CONSTANTS / IMMUTABLES
      *
      */
-
     /// @notice The ETH2 Deposit Contract
     IETHPOSDeposit public immutable ethPOS;
 
@@ -97,7 +96,11 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice The timestamp of the Pectra proof
     uint64 public pectraForkTimestamp;
 
-    constructor(IETHPOSDeposit _ethPOS, IBeacon _eigenPodBeacon, IDelegationManager _delegationManager) {
+    constructor(
+        IETHPOSDeposit _ethPOS,
+        IBeacon _eigenPodBeacon,
+        IDelegationManager _delegationManager
+    ) {
         ethPOS = _ethPOS;
         eigenPodBeacon = _eigenPodBeacon;
         delegationManager = _delegationManager;

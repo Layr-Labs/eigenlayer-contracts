@@ -23,6 +23,7 @@ library OperatorSetLib {
     function decode(
         bytes32 _key
     ) internal pure returns (OperatorSet memory) {
+
         /// forgefmt: disable-next-item
         return OperatorSet({
             avs: address(uint160(uint256(_key) >> 96)),

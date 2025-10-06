@@ -177,11 +177,12 @@ contract DeployDestinationChainProxies is MultisigBuilder {
     }
 
     /// @dev Compute the expected proxy address for a given name and empty contract
-    function _computeExpectedProxyAddress(string memory name, address emptyContract) internal view returns (address) {
+    function _computeExpectedProxyAddress(
+        string memory name,
+        address emptyContract
+    ) internal view returns (address) {
         return CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress({
-            adminAndDeployer: Env.multichainDeployerMultisig(),
-            implementation: emptyContract,
-            name: name
+            adminAndDeployer: Env.multichainDeployerMultisig(), implementation: emptyContract, name: name
         });
     }
 

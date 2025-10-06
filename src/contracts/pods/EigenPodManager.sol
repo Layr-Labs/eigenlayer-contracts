@@ -67,7 +67,10 @@ contract EigenPodManager is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 _initPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 _initPausedStatus
+    ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(_initPausedStatus);
     }
@@ -283,7 +286,10 @@ contract EigenPodManager is
     /// NOTE: if the staker ends with a non-positive balance, this returns (0, 0)
     /// @return prevDepositShares the shares the staker had before any were added
     /// @return addedShares the shares added to the staker's balance
-    function _addShares(address staker, uint256 shares) internal returns (uint256, uint256) {
+    function _addShares(
+        address staker,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
 
@@ -359,7 +365,10 @@ contract EigenPodManager is
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETHStrategy
     /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) public view returns (uint256 depositShares) {
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) public view returns (uint256 depositShares) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
     }

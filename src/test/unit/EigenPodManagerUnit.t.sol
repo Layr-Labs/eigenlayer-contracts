@@ -49,7 +49,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
                 new TransparentUpgradeableProxy(
                     address(eigenPodManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(EigenPodManager.initialize.selector, initialOwner, 0 /*initialPausedStatus*/ )
+                    abi.encodeWithSelector(EigenPodManager.initialize.selector, initialOwner, 0 /*initialPausedStatus*/)
                 )
             )
         );
@@ -119,7 +119,7 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialize_revert_alreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        eigenPodManager.initialize(initialOwner, 0 /*initialPausedStatus*/ );
+        eigenPodManager.initialize(initialOwner, 0 /*initialPausedStatus*/);
     }
 }
 

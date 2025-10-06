@@ -171,11 +171,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
     function _slashOperator() public {
         // Get slashing params
         SlashingParams memory slashingParams = SlashingParams({
-            operator: operator,
-            operatorSetId: 1,
-            strategies: wethStrategy.toArray(),
-            wadsToSlash: 5e17.toArrayU256(),
-            description: "test"
+            operator: operator, operatorSetId: 1, strategies: wethStrategy.toArray(), wadsToSlash: 5e17.toArrayU256(), description: "test"
         });
 
         // Slash operator
@@ -193,9 +189,7 @@ contract Devnet_Lifecycle_Test is Test, IAllocationManagerTypes {
         (uint[] memory withdrawableShares,) = delegationManager.getWithdrawableShares(staker, strategies);
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queuedWithdrawals = new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queuedWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
-            strategies: strategies,
-            depositShares: withdrawableShares,
-            __deprecated_withdrawer: address(0)
+            strategies: strategies, depositShares: withdrawableShares, __deprecated_withdrawer: address(0)
         });
 
         // Generate withdrawal params

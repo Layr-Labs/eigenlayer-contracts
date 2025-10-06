@@ -33,7 +33,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
      */
 
     /// @inheritdoc IPermissionController
-    function addPendingAdmin(address account, address admin) external onlyAdmin(account) {
+    function addPendingAdmin(
+        address account,
+        address admin
+    ) external onlyAdmin(account) {
         AccountPermissions storage permissions = _permissions[account];
 
         // Revert if the admin is already set
@@ -47,7 +50,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function removePendingAdmin(address account, address admin) external onlyAdmin(account) {
+    function removePendingAdmin(
+        address account,
+        address admin
+    ) external onlyAdmin(account) {
         EnumerableSet.AddressSet storage pendingAdmins = _permissions[account].pendingAdmins;
 
         // Remove the admin from the account's pending admins
@@ -75,7 +81,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function removeAdmin(address account, address admin) external onlyAdmin(account) {
+    function removeAdmin(
+        address account,
+        address admin
+    ) external onlyAdmin(account) {
         EnumerableSet.AddressSet storage admins = _permissions[account].admins;
 
         require(admins.length() > 1, CannotHaveZeroAdmins());
@@ -133,7 +142,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
 
     /// @dev Encodes the target and selector into a single bytes32 values
     /// @dev Encoded Format: [160 bits target][32 bits selector][64 bits padding],
-    function _encodeTargetSelector(address target, bytes4 selector) internal pure returns (bytes32) {
+    function _encodeTargetSelector(
+        address target,
+        bytes4 selector
+    ) internal pure returns (bytes32) {
         // Reserve 96 bits for the target
         uint256 shiftedTarget = uint256(uint160(target)) << 96;
         // Reserve 32 bits for the selector
@@ -162,7 +174,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
      */
 
     /// @inheritdoc IPermissionController
-    function isAdmin(address account, address caller) public view returns (bool) {
+    function isAdmin(
+        address account,
+        address caller
+    ) public view returns (bool) {
         if (_permissions[account].admins.length() == 0) {
             // If the account does not have an admin, the caller must be the account
             return account == caller;
@@ -173,7 +188,10 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function isPendingAdmin(address account, address pendingAdmin) external view returns (bool) {
+    function isPendingAdmin(
+        address account,
+        address pendingAdmin
+    ) external view returns (bool) {
         return _permissions[account].pendingAdmins.contains(pendingAdmin);
     }
 
@@ -198,7 +216,12 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function canCall(address account, address caller, address target, bytes4 selector) external view returns (bool) {
+    function canCall(
+        address account,
+        address caller,
+        address target,
+        bytes4 selector
+    ) external view returns (bool) {
         return isAdmin(account, caller)
             || _permissions[account].appointeePermissions[caller].contains(_encodeTargetSelector(target, selector));
     }
@@ -223,7 +246,11 @@ contract PermissionController is Initializable, SemVerMixin, PermissionControlle
     }
 
     /// @inheritdoc IPermissionController
-    function getAppointees(address account, address target, bytes4 selector) external view returns (address[] memory) {
+    function getAppointees(
+        address account,
+        address target,
+        bytes4 selector
+    ) external view returns (address[] memory) {
         bytes32 targetSelector = _encodeTargetSelector(target, selector);
         return _permissions[account].permissionAppointees[targetSelector].values();
     }

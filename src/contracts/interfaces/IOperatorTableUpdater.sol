@@ -161,7 +161,10 @@ interface IOperatorTableUpdater is
      * @dev Emits the following events:
      *      - GeneratorUpdated: When generator is successfully updated
      */
-    function updateGenerator(OperatorSet calldata generator, BN254OperatorSetInfo calldata generatorInfo) external;
+    function updateGenerator(
+        OperatorSet calldata generator,
+        BN254OperatorSetInfo calldata generatorInfo
+    ) external;
 
     /**
      * @notice Updates an operator table

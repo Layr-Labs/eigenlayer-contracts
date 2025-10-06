@@ -19,7 +19,10 @@ contract DeployGenerator is Script, Test {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    function run(string memory network, string memory salt) public {
+    function run(
+        string memory network,
+        string memory salt
+    ) public {
         /**
          *
          *                     WALLET CREATION
@@ -58,8 +61,7 @@ contract DeployGenerator is Script, Test {
         operatorInfoLeaves[0] = keccak256(
             abi.encode(
                 IOperatorTableCalculatorTypes.BN254OperatorInfo({
-                    pubkey: operator.signingKey.publicKeyG1,
-                    weights: weights
+                    pubkey: operator.signingKey.publicKeyG1, weights: weights
                 })
             )
         );
@@ -84,7 +86,10 @@ contract DeployGenerator is Script, Test {
         _writeOperatorData(operator, network);
     }
 
-    function _writeOperatorData(Operator memory operator, string memory network) internal {
+    function _writeOperatorData(
+        Operator memory operator,
+        string memory network
+    ) internal {
         string memory operator_object = "operator";
 
         // Serialize regular wallet info
@@ -162,7 +167,10 @@ contract DeployGenerator is Script, Test {
         vm.writeToml(finalJson, outputPath);
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 

@@ -89,7 +89,14 @@ contract ERC20Mock is Context, IERC20 {
         return _allowances[owner][spender];
     }
 
-    function mint(address, /*to*/ uint amount) public virtual {
+    function mint(
+        address,
+        /*to*/
+        uint amount
+    )
+        public
+        virtual
+    {
         address owner = _msgSender();
         _mint(owner, amount);
     }
@@ -104,7 +111,16 @@ contract ERC20Mock is Context, IERC20 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address, /*spender*/ uint /*amount*/ ) public virtual override returns (bool) {
+    function approve(
+        address,
+        /*spender*/
+        uint /*amount*/
+    )
+        public
+        virtual
+        override
+        returns (bool)
+    {
         return true;
     }
 

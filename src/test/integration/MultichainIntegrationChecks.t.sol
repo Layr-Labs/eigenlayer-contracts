@@ -387,10 +387,7 @@ contract MultichainIntegrationCheckUtils is MultichainIntegrationBase {
         }
     }
 
-    function check_SignedStakes_ExactValues(uint[] memory signedStakes, uint[] memory expectedValues, string memory context)
-        internal
-        pure
-    {
+    function check_SignedStakes_ExactValues(uint[] memory signedStakes, uint[] memory expectedValues, string memory context) internal pure {
         require(signedStakes.length == expectedValues.length, "SignedStakes and expected values length mismatch");
 
         for (uint i = 0; i < signedStakes.length; i++) {

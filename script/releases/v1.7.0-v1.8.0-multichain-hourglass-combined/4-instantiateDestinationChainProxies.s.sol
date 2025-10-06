@@ -364,11 +364,17 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         // ECDSACertificateVerifier and BN254CertificateVerifier don't have initialize functions
     }
 
-    function _assertTrue(bool b, string memory err) private pure {
+    function _assertTrue(
+        bool b,
+        string memory err
+    ) private pure {
         assertTrue(b, err);
     }
 
-    function _assertFalse(bool b, string memory err) private pure {
+    function _assertFalse(
+        bool b,
+        string memory err
+    ) private pure {
         assertFalse(b, err);
     }
 

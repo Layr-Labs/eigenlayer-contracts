@@ -846,9 +846,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint expectedSlashed = prevMagnitudes[i].max == 0
                 ? 0
                 : SlashingLib.calcSlashedAmount({
-                    operatorShares: prevSlashableStake[i],
-                    prevMaxMagnitude: prevMagnitudes[i].max,
-                    newMaxMagnitude: curMagnitudes[i].max
+                    operatorShares: prevSlashableStake[i], prevMaxMagnitude: prevMagnitudes[i].max, newMaxMagnitude: curMagnitudes[i].max
                 });
 
             assertEq(curSlashableStake[i], prevSlashableStake[i] - expectedSlashed, err);
@@ -960,9 +958,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint expectedSlashed = prevMagnitudes[i].max == 0
                 ? 0
                 : SlashingLib.calcSlashedAmount({
-                    operatorShares: prevAllocatedStake[i],
-                    prevMaxMagnitude: prevMagnitudes[i].max,
-                    newMaxMagnitude: curMagnitudes[i].max
+                    operatorShares: prevAllocatedStake[i], prevMaxMagnitude: prevMagnitudes[i].max, newMaxMagnitude: curMagnitudes[i].max
                 });
 
             assertEq(curAllocatedStake[i], prevAllocatedStake[i] - expectedSlashed, err);
@@ -1416,9 +1412,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             uint expectedSlashed = prevMagnitudes[i].max == 0
                 ? 0
                 : SlashingLib.calcSlashedAmount({
-                    operatorShares: prevShares[i],
-                    prevMaxMagnitude: prevMagnitudes[i].max,
-                    newMaxMagnitude: curMagnitudes[i].max
+                    operatorShares: prevShares[i], prevMaxMagnitude: prevMagnitudes[i].max, newMaxMagnitude: curMagnitudes[i].max
                 });
 
             assertEq(curShares[i], prevShares[i] - expectedSlashed, err);
@@ -1611,9 +1605,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
             } else {
                 uint[] memory prevDepositShares = _getPrevStakerDepositShares(staker, strategies);
                 assertEq(
-                    (prevDepositShares[i] + depositSharesAdded[i]).mulWad(_getDepositScalingFactor(staker, strategies[i])).mulWad(
-                        _getSlashingFactor(staker, strategies[i])
-                    ),
+                    (prevDepositShares[i] + depositSharesAdded[i]).mulWad(_getDepositScalingFactor(staker, strategies[i]))
+                        .mulWad(_getSlashingFactor(staker, strategies[i])),
                     curShares[i],
                     err
                 );
@@ -1919,7 +1912,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prevQueuedWithdrawals + withdrawals.length, curQueuedWithdrawals, err);
     }
 
-    function assert_Snap_Added_QueuedWithdrawal(User staker, Withdrawal memory, /*withdrawal*/ string memory err) internal {
+    function assert_Snap_Added_QueuedWithdrawal(
+        User staker,
+        Withdrawal memory,
+        /*withdrawal*/
+        string memory err
+    )
+        internal
+    {
         uint curQueuedWithdrawal = _getCumulativeWithdrawals(staker);
         // Use timewarp to get previous cumulative withdrawals
         uint prevQueuedWithdrawal = _getPrevCumulativeWithdrawals(staker);
@@ -2093,9 +2093,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (AllocateParams memory params)
     {
         return _genAllocation_AllAvailable({
-            operator: operator,
-            operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            operator: operator, operatorSet: operatorSet, strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -2123,9 +2121,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (AllocateParams memory params)
     {
         return _genAllocation_HalfAvailable({
-            operator: operator,
-            operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            operator: operator, operatorSet: operatorSet, strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -2176,9 +2172,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (AllocateParams memory params)
     {
         return _genDeallocation_HalfRemaining({
-            operator: operator,
-            operatorSet: operatorSet,
-            strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
+            operator: operator, operatorSet: operatorSet, strategies: allocationManager.getStrategiesInOperatorSet(operatorSet)
         });
     }
 
@@ -2692,10 +2686,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (uint[] memory)
     {
         return allocationManager.getMinimumSlashableStake({
-            operatorSet: operatorSet,
-            operators: address(operator).toArray(),
-            strategies: strategies,
-            futureBlock: uint32(block.number)
+            operatorSet: operatorSet, operators: address(operator).toArray(), strategies: strategies, futureBlock: uint32(block.number)
         })[0];
     }
 
@@ -2705,10 +2696,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (uint[] memory)
     {
         return allocationManager.getMinimumSlashableStake({
-            operatorSet: operatorSet,
-            operators: address(operator).toArray(),
-            strategies: strategies,
-            futureBlock: uint32(block.number)
+            operatorSet: operatorSet, operators: address(operator).toArray(), strategies: strategies, futureBlock: uint32(block.number)
         })[0];
     }
 
@@ -2726,9 +2714,7 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         returns (uint[] memory)
     {
         return allocationManager.getAllocatedStake({
-            operatorSet: operatorSet,
-            operators: address(operator).toArray(),
-            strategies: strategies
+            operatorSet: operatorSet, operators: address(operator).toArray(), strategies: strategies
         })[0];
     }
 

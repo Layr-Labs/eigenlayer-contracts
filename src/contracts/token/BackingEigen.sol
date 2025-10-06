@@ -39,7 +39,10 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     }
 
     // @notice Allows the contract owner to modify an entry in the `isMinter` mapping.
-    function setIsMinter(address minterAddress, bool newStatus) external onlyOwner {
+    function setIsMinter(
+        address minterAddress,
+        bool newStatus
+    ) external onlyOwner {
         emit IsMinterModified(minterAddress, newStatus);
         isMinter[minterAddress] = newStatus;
     }
@@ -48,7 +51,10 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @notice Allows any privileged address to mint `amount` new tokens to the address `to`.
      * @dev Callable only by an address that has `isMinter` set to true.
      */
-    function mint(address to, uint256 amount) external {
+    function mint(
+        address to,
+        uint256 amount
+    ) external {
         require(isMinter[msg.sender], "BackingEigen.mint: caller is not a minter");
         _mint(to, amount);
     }
@@ -96,7 +102,10 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @param from the address whose allowedFrom status is being set
      * @param isAllowedFrom the new allowedFrom status
      */
-    function setAllowedFrom(address from, bool isAllowedFrom) external onlyOwner {
+    function setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) external onlyOwner {
         _setAllowedFrom(from, isAllowedFrom);
     }
 
@@ -105,7 +114,10 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @param to the address whose allowedTo status is being set
      * @param isAllowedTo the new allowedTo status
      */
-    function setAllowedTo(address to, bool isAllowedTo) external onlyOwner {
+    function setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) external onlyOwner {
         _setAllowedTo(to, isAllowedTo);
     }
 
@@ -142,12 +154,18 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
     /// INTERNAL FUNCTIONS
 
-    function _setAllowedFrom(address from, bool isAllowedFrom) internal {
+    function _setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) internal {
         allowedFrom[from] = isAllowedFrom;
         emit SetAllowedFrom(from, isAllowedFrom);
     }
 
-    function _setAllowedTo(address to, bool isAllowedTo) internal {
+    function _setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) internal {
         allowedTo[to] = isAllowedTo;
         emit SetAllowedTo(to, isAllowedTo);
     }
@@ -158,7 +176,11 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
      * @param to the address tokens are being transferred to
      * @param amount the amount of tokens being transferred
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         // if transfer restrictions are enabled
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted

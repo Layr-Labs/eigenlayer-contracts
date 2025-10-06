@@ -111,7 +111,11 @@ interface IEigenPodManager is
      * @param signature The validator's signature of the deposit data.
      * @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
      */
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
 
     /**
      * @notice Adds any positive share delta to the pod owner's deposit shares, and delegates them to the pod

@@ -265,7 +265,10 @@ library Merkle {
      * @dev Reverts for:
      *      - InvalidIndex: index is outside the max index for the tree.
      */
-    function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+    function getProofKeccak(
+        bytes32[] memory leaves,
+        uint256 index
+    ) internal pure returns (bytes memory proof) {
         require(leaves.length > 0, NoLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
@@ -306,7 +309,10 @@ library Merkle {
      *      - NotEnoughLeaves: leaves.length is less than 2.
      * @dev Unlike the Keccak version, this function does not allow a single-leaf proof.
      */
-    function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+    function getProofSha256(
+        bytes32[] memory leaves,
+        uint256 index
+    ) internal pure returns (bytes memory proof) {
         require(leaves.length > 1, NotEnoughLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2

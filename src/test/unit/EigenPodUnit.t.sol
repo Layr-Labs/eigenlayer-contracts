@@ -66,14 +66,12 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
         // Deploy Proxy same way as EigenPodManager does
         eigenPod = EigenPod(
-            payable(
-                Create2.deploy(
+            payable(Create2.deploy(
                     0,
                     bytes32(uint(uint160(address(this)))),
                     // set the beacon address to the eigenPodBeacon
                     abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-                )
-            )
+                ))
         );
 
         // Store the eigenPodBeacon address in the eigenPod beacon proxy
@@ -370,7 +368,6 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
      *                         stake() tests
      *
      */
-
     // Beacon chain staking constnats
     bytes public constant pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     bytes public signature;
@@ -609,7 +606,6 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
      *                         verifyWithdrawalCredentials() tests
      *
      */
-
     /// @notice revert when verify wc is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
@@ -981,7 +977,6 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
      *                         startCheckpoint() tests
      *
      */
-
     /// @notice revert when startCheckpoint is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(uint rand, address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
@@ -1091,7 +1086,6 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
      *                         verifyCheckpointProofs() tests
      *
      */
-
     /// @notice test verifyCheckpointProofs reverts when paused
     function testFuzz_revert_verifyCheckpointProofsPaused(uint rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
@@ -1392,9 +1386,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         eigenPodManagerMock.pause(2 ** PAUSED_VERIFY_STALE_BALANCE);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1409,9 +1401,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1433,9 +1423,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validator);
         cheats.expectRevert(IEigenPodErrors.BeaconTimestampTooFarInPast.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: lastCheckpointTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: lastCheckpointTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1471,9 +1459,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1493,9 +1479,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(IEigenPodErrors.ValidatorNotSlashedOnBeaconChain.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1518,9 +1502,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(IEigenPodErrors.ForkTimestampZero.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1545,9 +1527,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(BeaconChainProofs.InvalidProofLength.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: invalidStateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: invalidStateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1573,9 +1553,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(BeaconChainProofs.InvalidProof.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1600,9 +1578,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
             BeaconChainProofs.ValidatorProof({validatorFields: proofs.validatorProof.validatorFields, proof: invalidProof});
         cheats.expectRevert(BeaconChainProofs.InvalidProofLength.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: invalidValidatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: invalidValidatorProof
         });
 
         // Change the validator fields to have an invalid length
@@ -1614,9 +1590,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(BeaconChainProofs.InvalidValidatorFieldsLength.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1640,9 +1614,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
 
         cheats.expectRevert(BeaconChainProofs.InvalidProof.selector);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
     }
 
@@ -1662,9 +1634,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         cheats.expectEmit(true, true, true, true, address(staker.pod()));
         emit CheckpointCreated(uint64(block.timestamp), EIP_4788_ORACLE.timestampToBlockRoot(block.timestamp), validators.length);
         pod.verifyStaleBalance({
-            beaconTimestamp: proofs.beaconTimestamp,
-            stateRootProof: proofs.stateRootProof,
-            proof: proofs.validatorProof
+            beaconTimestamp: proofs.beaconTimestamp, stateRootProof: proofs.stateRootProof, proof: proofs.validatorProof
         });
         check_StartCheckpoint_State(staker);
     }

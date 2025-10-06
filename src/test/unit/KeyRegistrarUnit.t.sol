@@ -14,12 +14,7 @@ import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
-contract KeyRegistrarUnitTests is
-    EigenLayerMultichainUnitTestSetup,
-    IKeyRegistrarErrors,
-    IKeyRegistrarEvents,
-    ISignatureUtilsMixinErrors
-{
+contract KeyRegistrarUnitTests is EigenLayerMultichainUnitTestSetup, IKeyRegistrarErrors, IKeyRegistrarEvents, ISignatureUtilsMixinErrors {
     using BN254 for BN254.G1Point;
 
     // Test accounts

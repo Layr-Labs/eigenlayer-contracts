@@ -40,14 +40,12 @@ contract EigenPodUser is Logger, TypeImporter {
         beaconChain = deployer.beaconChain();
         eigenPodBeacon = deployer.eigenPodBeacon();
         pod = EigenPod(
-            payable(
-                Create2.deploy(
+            payable(Create2.deploy(
                     0,
                     bytes32(uint(uint160(address(this)))),
                     // set the beacon address to the eigenPodBeacon
                     abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-                )
-            )
+                ))
         );
         pod.initialize(address(this));
 

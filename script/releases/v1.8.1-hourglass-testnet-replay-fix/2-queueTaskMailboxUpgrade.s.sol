@@ -38,6 +38,7 @@ contract QueueTaskMailboxUpgrade is MultisigBuilder, DeployTaskMailboxImpl {
 
     /// @dev Get the calldata to be sent from the timelock to the executor
     function _getCalldataToExecutor() internal returns (bytes memory) {
+
         /// forgefmt: disable-next-item
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls().append({
             to: Env.proxyAdmin(),
@@ -47,12 +48,13 @@ contract QueueTaskMailboxUpgrade is MultisigBuilder, DeployTaskMailboxImpl {
             })
         });
 
-        return Encode.gnosisSafe.execTransaction({
-            from: address(Env.timelockController()),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(executorCalls)
-        });
+        return Encode.gnosisSafe
+            .execTransaction({
+                from: address(Env.timelockController()),
+                to: Env.multiSendCallOnly(),
+                op: Encode.Operation.DelegateCall,
+                data: Encode.multiSend(executorCalls)
+            });
     }
 
     function testScript() public virtual override {
@@ -66,11 +68,7 @@ contract QueueTaskMailboxUpgrade is MultisigBuilder, DeployTaskMailboxImpl {
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(),
-            value: 0,
-            data: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
+            target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0
         });
 
         // Check that the upgrade does not exist in the timelock

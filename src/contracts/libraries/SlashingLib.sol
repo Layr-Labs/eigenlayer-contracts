@@ -15,9 +15,9 @@ uint64 constant WAD = 1e18;
  * There are 2 types of shares:
  *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
- *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
+ *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens
  *              in the case of EigenPods)
- *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies
  *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
@@ -41,11 +41,17 @@ library SlashingLib {
 
     // WAD MATH
 
-    function mulWad(uint256 x, uint256 y) internal pure returns (uint256) {
+    function mulWad(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(y, WAD);
     }
 
-    function divWad(uint256 x, uint256 y) internal pure returns (uint256) {
+    function divWad(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(WAD, y);
     }
 
@@ -54,7 +60,10 @@ library SlashingLib {
      * situation where an operator is slashed several times and precision has been lost over time,
      * an incoming slashing request isn't rounded down to 0 and an operator is able to avoid slashing penalties.
      */
-    function mulWadRoundUp(uint256 x, uint256 y) internal pure returns (uint256) {
+    function mulWadRoundUp(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(y, WAD, Math.Rounding.Up);
     }
 
@@ -73,7 +82,10 @@ library SlashingLib {
         return depositSharesToWithdraw.mulWad(dsf.scalingFactor());
     }
 
-    function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
+    function scaleForCompleteWithdrawal(
+        uint256 scaledShares,
+        uint256 slashingFactor
+    ) internal pure returns (uint256) {
         return scaledShares.mulWad(slashingFactor);
     }
 
@@ -162,6 +174,7 @@ library SlashingLib {
         uint256 depositShares,
         uint256 slashingFactor
     ) internal pure returns (uint256) {
+
         /// forgefmt: disable-next-item
         return depositShares
             .mulWad(dsf.scalingFactor())
@@ -173,6 +186,7 @@ library SlashingLib {
         uint256 withdrawableShares,
         uint256 slashingFactor
     ) internal pure returns (uint256) {
+
         /// forgefmt: disable-next-item
         return withdrawableShares
             .divWad(dsf.scalingFactor())

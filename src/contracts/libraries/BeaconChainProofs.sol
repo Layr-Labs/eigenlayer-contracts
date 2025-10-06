@@ -112,7 +112,10 @@ library BeaconChainProofs {
     /// @notice Verify a merkle proof of the beacon state root against a beacon block root
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof the beacon state root and merkle proof of its inclusion under `beaconBlockRoot`
-    function verifyStateRoot(bytes32 beaconBlockRoot, StateRootProof calldata proof) internal view {
+    function verifyStateRoot(
+        bytes32 beaconBlockRoot,
+        StateRootProof calldata proof
+    ) internal view {
         require(proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT), InvalidProofLength());
 
         /// This merkle proof verifies the `beaconStateRoot` under the `beaconBlockRoot`
@@ -121,10 +124,7 @@ library BeaconChainProofs {
         /// -- beaconStateRoot
         require(
             Merkle.verifyInclusionSha256({
-                proof: proof.proof,
-                root: beaconBlockRoot,
-                leaf: proof.beaconStateRoot,
-                index: STATE_ROOT_INDEX
+                proof: proof.proof, root: beaconBlockRoot, leaf: proof.beaconStateRoot, index: STATE_ROOT_INDEX
             }),
             InvalidProof()
         );
@@ -171,10 +171,7 @@ library BeaconChainProofs {
 
         require(
             Merkle.verifyInclusionSha256({
-                proof: validatorFieldsProof,
-                root: beaconStateRoot,
-                leaf: validatorRoot,
-                index: index
+                proof: validatorFieldsProof, root: beaconStateRoot, leaf: validatorRoot, index: index
             }),
             InvalidProof()
         );
@@ -216,10 +213,7 @@ library BeaconChainProofs {
 
         require(
             Merkle.verifyInclusionSha256({
-                proof: proof.proof,
-                root: beaconBlockRoot,
-                leaf: proof.balanceContainerRoot,
-                index: index
+                proof: proof.proof, root: beaconBlockRoot, leaf: proof.balanceContainerRoot, index: index
             }),
             InvalidProof()
         );
@@ -248,10 +242,7 @@ library BeaconChainProofs {
 
         require(
             Merkle.verifyInclusionSha256({
-                proof: proof.proof,
-                root: balanceContainerRoot,
-                leaf: proof.balanceRoot,
-                index: balanceIndex
+                proof: proof.proof, root: balanceContainerRoot, leaf: proof.balanceRoot, index: balanceIndex
             }),
             InvalidProof()
         );
@@ -269,7 +260,10 @@ library BeaconChainProofs {
      * @param validatorIndex is the index of the validator being proven for
      * @return The validator's balance, in Gwei
      */
-    function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
+    function getBalanceAtIndex(
+        bytes32 balanceRoot,
+        uint40 validatorIndex
+    ) internal pure returns (uint64) {
         uint256 bitShiftAmount = (validatorIndex % 4) * 64;
         return Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
     }

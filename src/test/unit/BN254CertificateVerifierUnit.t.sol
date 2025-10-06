@@ -602,8 +602,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         // Create operators
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint nonSigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, nonSigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, nonSigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -688,8 +693,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
 contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254CertificateVerifierUnitTests {
     function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
         // Update operator table
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -704,8 +714,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -802,8 +817,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -818,8 +838,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -839,8 +864,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1); // Ensure at least one non-signer
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -861,8 +891,13 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,
+            ,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 

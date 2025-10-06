@@ -47,8 +47,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             name: type(ECDSACertificateVerifier).name,
             deployedTo: address(
                 new ECDSACertificateVerifier({
-                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(),
-                    _version: Env.deployVersion()
+                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(), _version: Env.deployVersion()
                 })
             )
         });
@@ -58,8 +57,7 @@ contract DeployDestinationChainImpls is EOADeployer, DeployDestinationChainProxi
             name: type(BN254CertificateVerifier).name,
             deployedTo: address(
                 new BN254CertificateVerifier({
-                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(),
-                    _version: Env.deployVersion()
+                    _operatorTableUpdater: Env.proxy.operatorTableUpdater(), _version: Env.deployVersion()
                 })
             )
         });

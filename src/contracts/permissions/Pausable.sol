@@ -21,7 +21,6 @@ import "../interfaces/IPausable.sol";
  */
 abstract contract Pausable is IPausable {
     /// Constants
-
     uint256 internal constant _UNPAUSE_ALL = 0;
 
     uint256 internal constant _PAUSE_ALL = type(uint256).max;

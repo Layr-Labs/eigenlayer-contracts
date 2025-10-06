@@ -243,7 +243,10 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external view returns (uint256);
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 shares);
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);

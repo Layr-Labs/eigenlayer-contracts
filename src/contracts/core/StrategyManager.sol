@@ -266,7 +266,11 @@ contract StrategyManager is
      * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
      * to the `staker`'s list of strategies, if it is not in the list already.
      */
-    function _addShares(address staker, IStrategy strategy, uint256 shares) internal returns (uint256, uint256) {
+    function _addShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
@@ -312,10 +316,7 @@ contract StrategyManager is
 
         // Increase shares delegated to operator
         delegation.increaseDelegatedShares({
-            staker: staker,
-            strategy: strategy,
-            prevDepositShares: prevDepositShares,
-            addedShares: addedShares
+            staker: staker, strategy: strategy, prevDepositShares: prevDepositShares, addedShares: addedShares
         });
 
         return shares;
@@ -362,7 +363,10 @@ contract StrategyManager is
      * @param staker The user whose array will have an entry removed
      * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
      */
-    function _removeStrategyFromStakerStrategyList(address staker, IStrategy strategy) internal {
+    function _removeStrategyFromStakerStrategyList(
+        address staker,
+        IStrategy strategy
+    ) internal {
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
@@ -401,11 +405,10 @@ contract StrategyManager is
         uint256 amountOut;
         if (sharesToRemove != 0) {
             // Withdraw the shares to the burn address.
-            amountOut = IStrategy(strategy).withdraw({
-                recipient: recipient,
-                token: IStrategy(strategy).underlyingToken(),
-                amountShares: sharesToRemove
-            });
+            amountOut = IStrategy(strategy)
+                .withdraw({
+                    recipient: recipient, token: IStrategy(strategy).underlyingToken(), amountShares: sharesToRemove
+                });
 
             // Emit an event to notify the that burnable shares have been decreased.
             emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
@@ -475,6 +478,7 @@ contract StrategyManager is
         uint256 nonce,
         uint256 expiry
     ) public view returns (bytes32) {
+
         /// forgefmt: disable-next-item
         return _calculateSignableDigest(
             keccak256(

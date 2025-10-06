@@ -224,8 +224,8 @@ contract MockERC20 {
     }
 
     function _pureChainId() private pure returns (uint chainId) {
-        function() internal view returns (uint256) fnIn = _viewChainId;
-        function() internal pure returns (uint256) pureChainId;
+        function() internal view returns (uint) fnIn = _viewChainId;
+        function() internal pure returns (uint) pureChainId;
         assembly {
             pureChainId := fnIn
         }

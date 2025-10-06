@@ -54,7 +54,6 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
      *                         WRITE FUNCTIONS
      *
      */
-
     /// @notice Publishes a new release for an operator set.
     /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
     /// @param operatorSet The operator set this release is for.
@@ -68,7 +67,10 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @notice Publishes a metadata URI for an operator set.
     /// @param operatorSet The operator set this metadata URI is for.
     /// @param metadataURI The metadata URI that was published.
-    function publishMetadataURI(OperatorSet calldata operatorSet, string calldata metadataURI) external;
+    function publishMetadataURI(
+        OperatorSet calldata operatorSet,
+        string calldata metadataURI
+    ) external;
 
     /**
      *
@@ -88,7 +90,10 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @param operatorSet The operator set to query.
     /// @param releaseId The id of the release to get.
     /// @return The release at the specified index.
-    function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory);
+    function getRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (Release memory);
 
     /// @notice Returns the latest release for an operator set.
     /// @dev If the upgradeByTime is 0, the release is meant to signal an instant upgrade.
@@ -111,7 +116,10 @@ interface IReleaseManager is IReleaseManagerErrors, IReleaseManagerEvents {
     /// @param operatorSet The operator set to query.
     /// @param releaseId The id of the release to check.
     /// @return True if the release is the latest release, false otherwise.
-    function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool);
+    function isValidRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (bool);
 
     /// @notice Returns the metadata URI for an operator set.
     /// @param operatorSet The operator set to query.

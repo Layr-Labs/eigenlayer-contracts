@@ -48,9 +48,7 @@ contract AllocateOperatorSet is Script, Test {
         // Define a single MagnitudeAllocation and wrap it in an array
         IAllocationManagerTypes.AllocateParams[] memory allocations = new IAllocationManagerTypes.AllocateParams[](1);
         allocations[0] = IAllocationManagerTypes.AllocateParams({
-            operatorSet: sets[0],
-            strategies: strategies,
-            newMagnitudes: magnitudes
+            operatorSet: sets[0], strategies: strategies, newMagnitudes: magnitudes
         });
 
         // Perform allocation

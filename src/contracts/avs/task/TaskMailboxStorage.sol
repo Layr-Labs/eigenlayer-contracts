@@ -46,7 +46,11 @@ abstract contract TaskMailboxStorage is ITaskMailbox {
      * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
      * @param _maxTaskSLA Maximum task SLA in seconds
      */
-    constructor(address _bn254CertificateVerifier, address _ecdsaCertificateVerifier, uint96 _maxTaskSLA) {
+    constructor(
+        address _bn254CertificateVerifier,
+        address _ecdsaCertificateVerifier,
+        uint96 _maxTaskSLA
+    ) {
         BN254_CERTIFICATE_VERIFIER = _bn254CertificateVerifier;
         ECDSA_CERTIFICATE_VERIFIER = _ecdsaCertificateVerifier;
         MAX_TASK_SLA = _maxTaskSLA;

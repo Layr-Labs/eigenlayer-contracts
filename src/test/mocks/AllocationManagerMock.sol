@@ -141,7 +141,11 @@ contract AllocationManagerMock is Test {
         OperatorSet memory operatorSet,
         address[] memory operators,
         IStrategy[] memory strategies /*uint32 futureBlock*/
-    ) external pure returns (uint[][] memory) {
+    )
+        external
+        pure
+        returns (uint[][] memory)
+    {
         uint[][] memory minimumSlashableStake = new uint[][](operators.length);
 
         for (uint i = 0; i < operators.length; ++i) {

@@ -84,8 +84,10 @@ interface IStrategyManager_DeprecatedM2 {
      * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
      * @param thirdPartyTransfersForbiddenValues bool values to set `thirdPartyTransfersForbidden` to for each strategy
      */
-    function addStrategiesToDepositWhitelist(IStrategy[] calldata strategiesToWhitelist, bool[] calldata thirdPartyTransfersForbiddenValues)
-        external;
+    function addStrategiesToDepositWhitelist(
+        IStrategy[] calldata strategiesToWhitelist,
+        bool[] calldata thirdPartyTransfersForbiddenValues
+    ) external;
 
     /**
      * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into

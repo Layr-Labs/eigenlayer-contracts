@@ -265,7 +265,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setClaimerFor(address earner, address claimer) external checkCanCall(earner) {
+    function setClaimerFor(
+        address earner,
+        address claimer
+    ) external checkCanCall(earner) {
         // Require that the earner is an operator or AVS
         require(
             delegationManager.isOperator(earner) || allocationManager.getOperatorSetCount(earner) > 0, InvalidEarner()
@@ -335,7 +338,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external onlyOwner {
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external onlyOwner {
         bool prevValue = isRewardsForAllSubmitter[_submitter];
         emit RewardsForAllSubmitterSet(_submitter, prevValue, _newValue);
         isRewardsForAllSubmitter[_submitter] = _newValue;
@@ -352,7 +358,10 @@ contract RewardsCoordinator is
      * @param claim The RewardsMerkleClaims to be processed.
      * @param recipient The address recipient that receives the ERC20 rewards
      */
-    function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
+    function _processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) internal {
         DistributionRoot memory root = _distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
@@ -398,7 +407,10 @@ contract RewardsCoordinator is
         rewardsUpdater = _rewardsUpdater;
     }
 
-    function _setClaimer(address earner, address claimer) internal {
+    function _setClaimer(
+        address earner,
+        address claimer
+    ) internal {
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
         emit ClaimerForSet(earner, prevClaimer, claimer);
@@ -410,7 +422,11 @@ contract RewardsCoordinator is
      * @param split The split in basis points.
      * @param activatedAt The timestamp when the split is activated.
      */
-    function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
+    function _setOperatorSplit(
+        OperatorSplit storage operatorSplit,
+        uint16 split,
+        uint32 activatedAt
+    ) internal {
         require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
 
         require(block.timestamp > operatorSplit.activatedAt, PreviousSplitPending());
@@ -504,7 +520,10 @@ contract RewardsCoordinator is
         return totalAmount;
     }
 
-    function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
+    function _checkClaim(
+        RewardsMerkleClaim calldata claim,
+        DistributionRoot memory root
+    ) internal view {
         require(!root.disabled, RootDisabled());
         require(block.timestamp >= root.activatedAt, RootNotActivated());
         require(claim.tokenIndices.length == claim.tokenTreeProofs.length, InputArrayLengthMismatch());
@@ -550,10 +569,7 @@ contract RewardsCoordinator is
         bytes32 tokenLeafHash = calculateTokenLeafHash(tokenLeaf);
         require(
             Merkle.verifyInclusionKeccak({
-                root: earnerTokenRoot,
-                index: tokenLeafIndex,
-                proof: tokenProof,
-                leaf: tokenLeafHash
+                root: earnerTokenRoot, index: tokenLeafIndex, proof: tokenProof, leaf: tokenLeafHash
             }),
             InvalidClaimProof()
         );
@@ -643,7 +659,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
+    function getOperatorAVSSplit(
+        address operator,
+        address avs
+    ) external view returns (uint16) {
         return _getOperatorSplit(_operatorAVSSplitBips[operator][avs]);
     }
 
@@ -655,7 +674,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16) {
+    function getOperatorSetSplit(
+        address operator,
+        OperatorSet calldata operatorSet
+    ) external view returns (uint16) {
         return _getOperatorSplit(_operatorSetSplitBips[operator][operatorSet.key()]);
     }
 

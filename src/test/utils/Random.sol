@@ -13,7 +13,6 @@ library Random {
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
-
     /// @dev Equivalent to: `uint256(keccak256("RANDOMNESS.SEED"))`.
     uint constant SEED = 0x93bfe7cafd9427243dc4fe8c6e706851eb6696ba8e48960dd74ecc96544938ce;
 

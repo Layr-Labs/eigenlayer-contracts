@@ -236,7 +236,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function setAllocationDelay(address operator, uint32 delay) external {
+    function setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {
         if (msg.sender != address(delegation)) {
             require(_checkCanCall(operator), InvalidCaller());
             require(delegation.isOperator(operator), InvalidOperator());
@@ -245,7 +248,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
+    function setAVSRegistrar(
+        address avs,
+        IAVSRegistrar registrar
+    ) external checkCanCall(avs) {
         // Check that the registrar is correctly configured to prevent an AVSRegistrar contract
         // from being used with the wrong AVS
         require(registrar.supportsAVS(avs), InvalidAVSRegistrar());
@@ -254,13 +260,19 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
+    function updateAVSMetadataURI(
+        address avs,
+        string calldata metadataURI
+    ) external checkCanCall(avs) {
         if (!_avsRegisteredMetadata[avs]) _avsRegisteredMetadata[avs] = true;
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManager
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
@@ -472,7 +484,11 @@ contract AllocationManager is
      * @param strategy the strategy to update
      * @param numToClear the number of pending deallocations to clear
      */
-    function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
+    function _clearDeallocationQueue(
+        address operator,
+        IStrategy strategy,
+        uint16 numToClear
+    ) internal {
         uint256 numCleared;
         uint256 length = deallocationQueue[operator][strategy].length();
 
@@ -504,7 +520,10 @@ contract AllocationManager is
      * @param operator The operator to set the delay on behalf of.
      * @param delay The allocation delay in blocks.
      */
-    function _setAllocationDelay(address operator, uint32 delay) internal {
+    function _setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) internal {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         // If there is a pending delay that can be applied now, set it
@@ -527,6 +546,7 @@ contract AllocationManager is
         Allocation memory allocation,
         bool _isOperatorSlashable
     ) internal view returns (bool) {
+
         /// forgefmt: disable-next-item
         return 
             // If the operator set does not use this strategy, any allocation from it is not slashable
@@ -660,17 +680,27 @@ contract AllocationManager is
         }
     }
 
-    function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
+    function _updateMaxMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint64 newMaxMagnitude
+    ) internal {
         _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
         emit MaxMagnitudeUpdated(operator, strategy, newMaxMagnitude);
     }
 
-    function _calcDelta(uint64 currentMagnitude, uint64 newMagnitude) internal pure returns (int128) {
+    function _calcDelta(
+        uint64 currentMagnitude,
+        uint64 newMagnitude
+    ) internal pure returns (int128) {
         return int128(uint128(newMagnitude)) - int128(uint128(currentMagnitude));
     }
 
     /// @dev Use safe casting when downcasting to uint64
-    function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
+    function _addInt128(
+        uint64 a,
+        int128 b
+    ) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
     }
 
@@ -781,13 +811,19 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
         (uint64 curEncumberedMagnitude,) = _getFreeAndUsedMagnitude(operator, strategy);
         return curEncumberedMagnitude;
     }
 
     /// @inheritdoc IAllocationManager
-    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
         (, uint64 curAllocatableMagnitude) = _getFreeAndUsedMagnitude(operator, strategy);
         return curAllocatableMagnitude;
     }
@@ -829,7 +865,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getMaxMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
+    function getMaxMagnitude(
+        address operator,
+        IStrategy strategy
+    ) public view returns (uint64) {
         return _maxMagnitudeHistory[operator][strategy].latest();
     }
 
@@ -848,7 +887,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function getMaxMagnitudes(address[] memory operators, IStrategy strategy) external view returns (uint64[] memory) {
+    function getMaxMagnitudes(
+        address[] memory operators,
+        IStrategy strategy
+    ) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](operators.length);
 
         for (uint256 i = 0; i < operators.length; ++i) {
@@ -906,7 +948,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
         return _operatorSetMembers[operatorSet.key()].contains(operator);
     }
 
@@ -985,7 +1030,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManager
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
         // slashableUntil returns the last block the operator is slashable in so we check for

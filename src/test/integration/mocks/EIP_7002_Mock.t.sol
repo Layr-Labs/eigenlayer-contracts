@@ -123,9 +123,7 @@ contract EIP_7002_Mock {
         require(excessRequests != EXCESS_INHIBITOR, "EIP_7002_Mock: excess inhibitor reached");
 
         return _fakeExponential({
-            factor: MIN_WITHDRAWAL_REQUEST_FEE,
-            numerator: excessRequests,
-            denominator: WITHDRAWAL_REQUEST_FEE_UPDATE_FRACTION
+            factor: MIN_WITHDRAWAL_REQUEST_FEE, numerator: excessRequests, denominator: WITHDRAWAL_REQUEST_FEE_UPDATE_FRACTION
         });
     }
 
