@@ -315,6 +315,9 @@ interface IAllocationManager is IAllocationManagerErrors, IAllocationManagerEven
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @param operator The operator to set the delay on behalf of.
      * @param delay the allocation delay in blocks
+     * @dev When the delay is set for a newly-registered operator (via the `DelegationManager.registerAsOperator` method),
+     * the delay will take effect immediately, allowing for operators to allocate slashable stake immediately.
+     * Else, the delay will take effect after `ALLOCATION_CONFIGURATION_DELAY` blocks.
      */
     function setAllocationDelay(address operator, uint32 delay) external;
 
