@@ -237,11 +237,17 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManager
     function setAllocationDelay(address operator, uint32 delay) external {
-        if (msg.sender != address(delegation)) {
+        /// If the caller is the delegationManager, the operator is newly registered
+        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
+        bool newlyRegistered = (msg.sender == address(delegation));
+
+        // If we're not newly registered, check that the caller (not the delegationManager) is authorized to set the allocation delay for the operator
+        if (!newlyRegistered) {
             require(_checkCanCall(operator), InvalidCaller());
             require(delegation.isOperator(operator), InvalidOperator());
         }
-        _setAllocationDelay(operator, delay);
+
+        _setAllocationDelay(operator, delay, newlyRegistered);
     }
 
     /// @inheritdoc IAllocationManager
@@ -503,8 +509,9 @@ contract AllocationManager is
      * allocating magnitude to an operator set, and the magnitude becoming slashable.
      * @param operator The operator to set the delay on behalf of.
      * @param delay The allocation delay in blocks.
+     * @param newlyRegistered Whether the operator is newly registered in the core protocol.
      */
-    function _setAllocationDelay(address operator, uint32 delay) internal {
+    function _setAllocationDelay(address operator, uint32 delay, bool newlyRegistered) internal {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         // If there is a pending delay that can be applied now, set it
@@ -514,7 +521,16 @@ contract AllocationManager is
         }
 
         info.pendingDelay = delay;
-        info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+
+        /// If the caller is the delegationManager, the operator is newly registered
+        /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
+        if (newlyRegistered) {
+            // The delay takes effect immediately
+            info.effectBlock = uint32(block.number);
+        } else {
+            // Wait the entire configuration delay before the delay takes effect
+            info.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+        }
 
         _allocationDelayInfo[operator] = info;
         emit AllocationDelaySet(operator, delay, info.effectBlock);

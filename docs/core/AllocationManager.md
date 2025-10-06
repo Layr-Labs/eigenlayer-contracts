@@ -837,6 +837,9 @@ Once slashing is processed for a strategy, [slashed stake is burned or redistrib
  * allocating magnitude to an operator set, and the magnitude becoming slashable.
  * @param operator The operator to set the delay on behalf of.
  * @param delay the allocation delay in blocks
+ * @dev When the delay is set for a newly-registered operator (via the `DelegationManager.registerAsOperator` method),
+ * the delay will take effect immediately, allowing for operators to allocate slashable stake immediately. 
+ * Else, the delay will take effect after `ALLOCATION_CONFIGURATION_DELAY` blocks.
  */
 function setAllocationDelay(
     address operator,
@@ -847,7 +850,7 @@ function setAllocationDelay(
 
 _Note: IF NOT CALLED BY THE `DelegationManager`, this method can be called directly by an operator, or by a caller authorized by the operator. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
-This function sets an operator's allocation delay, in blocks. This delay can be updated by the operator once set. Both the initial setting of this value and any further updates _take `ALLOCATION_CONFIGURATION_DELAY` blocks_ to take effect. Because having a delay is a requirement to allocating slashable stake, this effectively means that once the slashing release goes live, no one will be able to allocate slashable stake for at least `ALLOCATION_CONFIGURATION_DELAY` blocks.
+This function sets an operator's allocation delay, in blocks. This delay can be updated by the operator once set. The initial setting of this value by a newly created operator via [`DelegationManager.registerAsOperator`](./DelegationManager.md#registerasoperator) will take 1 block to take effect. The setting of this value for an operator who has already been registered in core or further updates _take `ALLOCATION_CONFIGURATION_DELAY` blocks_ to take effect. Because having a delay is a requirement to allocating slashable stake, this effectively means that once the slashing release goes live, no already-created operators will be able to allocate slashable stake for at least `ALLOCATION_CONFIGURATION_DELAY` blocks.
 
 The `DelegationManager` calls this upon operator registration for all new operators created after the slashing release. For operators that existed in the `DelegationManager` _prior_ to the slashing release, **they will need to call this method to configure an allocation delay prior to allocating slashable stake to any AVS**.
 
@@ -855,7 +858,8 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 
 *Effects*:
 * Sets the operator's `pendingDelay` to the proposed `delay`, and save the `effectBlock` at which the `pendingDelay` can be activated
-    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
+    * If a newly registered operator in core, `effectBlock = uint32(block.number)`, allowing operators to allocate slashable stake immediately after registration
+    * Else, `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
 * If the operator has a `pendingDelay`, and if the `effectBlock` has passed, sets the operator's `delay` to the `pendingDelay` value
     * This also sets the `isSet` boolean to `true` to indicate that the operator's `delay`, even if 0, was set intentionally
 * Emits an `AllocationDelaySet` event
