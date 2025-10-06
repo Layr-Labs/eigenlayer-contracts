@@ -10,7 +10,7 @@ import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/OperatorSetLib.sol";
-import "./AllocationManagerStorage.sol";
+import "./storage/AllocationManagerStorage.sol";
 
 contract AllocationManager is
     Initializable,
