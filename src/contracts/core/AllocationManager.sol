@@ -21,7 +21,7 @@ contract AllocationManager is
     SplitContractMixin,
     PermissionControllerMixin,
     SemVerMixin,
-    IAllocationManagerActions
+    IAllocationManager
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
@@ -642,50 +642,203 @@ contract AllocationManager is
     // TODO: Inherit doc
     // TODO: Make commonly used getters internal methods that can be easily shared between Actions and View contracts.
 
-    function getAllocationDelay(
-        address operator
-    ) public view returns (bool, uint32) {
-        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
+    /**
+     *
+     *                         VIEW FUNCTIONS
+     *
+     */
 
-        uint32 delay = info.delay;
-        bool isSet = info.isSet;
-
-        // If there is a pending delay that can be applied, apply it
-        if (info.effectBlock != 0 && block.number >= info.effectBlock) {
-            delay = info.pendingDelay;
-            isSet = true;
-        }
-
-        return (isSet, delay);
+    /// @inheritdoc IAllocationManagerView
+    function getOperatorSetCount(
+        address avs
+    ) external view returns (uint256) {
+        _delegateView(secondHalf);
     }
 
+    /// @inheritdoc IAllocationManagerView
+    function getAllocatedSets(
+        address operator
+    ) external view returns (OperatorSet[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocatedStrategies(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocations(
+        address[] memory operators,
+        OperatorSet memory operatorSet,
+        IStrategy strategy
+    ) external view returns (Allocation[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getStrategyAllocations(
+        address operator,
+        IStrategy strategy
+    ) external view returns (OperatorSet[] memory, Allocation[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMaxMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMaxMagnitudes(
+        address operator,
+        IStrategy[] calldata strategies
+    ) external view returns (uint64[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMaxMagnitudes(
+        address[] calldata operators,
+        IStrategy strategy
+    ) external view returns (uint64[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMaxMagnitudesAtBlock(
+        address operator,
+        IStrategy[] calldata strategies,
+        uint32 blockNumber
+    ) external view returns (uint64[] memory) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocationDelay(
+        address operator
+    ) public view returns (bool isSet, uint32 delay) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getRegisteredSets(
+        address operator
+    ) external view returns (OperatorSet[] memory operatorSets) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) external view returns (bool) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function isOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (bool) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMembers(
+        OperatorSet memory operatorSet
+    ) external view returns (address[] memory operators) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMemberCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
-        IAVSRegistrar registrar = _avsRegistrar[avs];
-
-        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
+        _delegateView(secondHalf);
     }
 
+    /// @inheritdoc IAllocationManagerView
+    function getStrategiesInOperatorSet(
+        OperatorSet memory operatorSet
+    ) external view returns (IStrategy[] memory strategies) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getMinimumSlashableStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies,
+        uint32 futureBlock
+    ) external view returns (uint256[][] memory slashableStake) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocatedStake(
+        OperatorSet memory operatorSet,
+        address[] memory operators,
+        IStrategy[] memory strategies
+    ) external view returns (uint256[][] memory slashableStake) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
-
-        // slashableUntil returns the last block the operator is slashable in so we check for
-        // less than or equal to
-        return status.registered || block.number <= status.slashableUntil;
+        _delegateView(secondHalf);
     }
 
+    /// @inheritdoc IAllocationManagerView
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
-    ) public view returns (address) {
-        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
-        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
-        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
+    ) external view returns (address) {
+        _delegateView(secondHalf);
     }
 
+    /// @inheritdoc IAllocationManagerView
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
-        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getSlashCount(
+        OperatorSet memory operatorSet
+    ) external view returns (uint256) {
+        _delegateView(secondHalf);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function isOperatorRedistributable(
+        address operator
+    ) external view returns (bool) {
+        _delegateView(secondHalf);
     }
 }
