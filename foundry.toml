@@ -55,7 +55,10 @@
     ]
     # An array of file paths from which warnings should be ignored during compilation.
     ignored_warnings_from = [
-        "src/test"
+        "src/test",
+        # We forward calldata thus function parameters are unused, but prefered.
+        # Thus we ignore warnings from `ProtocolRegistry`.
+        "src/contracts/core/ProtocolRegistry.sol" 
     ]
 
     # Test Configuration

@@ -27,9 +27,7 @@ contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 1
         IStrategy _eigenStrategy,
         uint32 _DEALLOCATION_DELAY,
         uint32 _ALLOCATION_CONFIGURATION_DELAY
-    ) AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {
-        // _disableInitializers();
-    }
+    ) AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {}
 
     /**
      *
