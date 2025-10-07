@@ -10,6 +10,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
+import "../../src/contracts/core/AllocationManagerView.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
@@ -237,9 +238,12 @@ contract ExistingDeploymentParser is Script, Logger {
         allocationManagerImplementation =
             IAllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
 
-        allocationManagerView = IAllocationManagerView(json.readAddress(".addresses.allocationManagerView"));
-        allocationManagerViewImplementation =
-            IAllocationManagerView(json.readAddress(".addresses.allocationManagerViewImplementation"));
+        // allocationManagerView = IAllocationManagerView(json.readAddress(".addresses.allocationManagerView"));
+
+        // FIXME: hotfix - remove later...
+        allocationManagerView = new AllocationManagerView(
+            delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
