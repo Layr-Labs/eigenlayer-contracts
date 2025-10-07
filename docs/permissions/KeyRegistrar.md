@@ -300,6 +300,8 @@ Deregistration takes a dependency on the `AllocationManager`. In particular, ope
 
 To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
 
+Alternatively, the `rotateKey` function performs an atomic deregister+register. Rotation is allowed even if the operator is slashable.
+
 ```mermaid
 sequenceDiagram
     participant OP as Operator
@@ -311,3 +313,34 @@ sequenceDiagram
     OP->>KR: Tx2: deregisterKey
     OP->>KR: Tx3: registerKey
 ```
+
+### `rotateKey`
+
+```solidity
+/**
+ * @notice Rotates an operator's key for a specific operator set by deregistering the current key and registering a new one in a single transaction
+ * @param operator Address of the operator whose key is being rotated
+ * @param operatorSet The operator set for which the key is being rotated
+ * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+ * @param signature Signature from the new key proving ownership over the appropriate registration message hash
+ * @dev Convenience method equivalent to calling `deregisterKey` followed by `registerKey`, but atomic
+ * @dev Keys remain in the global key registry to prevent reuse
+ * @dev Reverts for:
+ *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+ *      - OperatorStillSlashable: The operator is still slashable for the AVS
+ *      - OperatorSetNotConfigured: The operator set is not configured
+ *      - KeyNotFound: The operator does not have a registered key for this operator set
+ *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
+ *      - KeyAlreadyRegistered: New key is already globally registered
+ * @dev Emits the following events:
+ *      - KeyRotated(oldPubkey, newPubkey)
+ */
+function rotateKey(
+    address operator,
+    OperatorSet memory operatorSet,
+    bytes calldata newPubkey,
+    bytes calldata signature
+) external;
+```
+
+This function runs full validation and signature checks for the new key according to the configured curve type. The old key remains globally registered and cannot be reused elsewhere.

@@ -107,6 +107,36 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         emit KeyDeregistered(operatorSet, operator, curveType);
     }
 
+    /// @inheritdoc IKeyRegistrar
+    function rotateKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata newPubkey,
+        bytes calldata signature
+    ) external checkCanCall(operator) {
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
+        require(curveType != CurveType.NONE, OperatorSetNotConfigured());
+
+        KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
+        require(keyInfo.isRegistered, KeyNotFound(operatorSet, operator));
+
+        bytes memory oldPubkey = keyInfo.keyData;
+
+        // Deregister the old key (global registry persists)
+        delete _operatorKeyInfo[operatorSet.key()][operator];
+
+        // Register the new key based on curve type (reuses validation and global uniqueness checks)
+        if (curveType == CurveType.ECDSA) {
+            _registerECDSAKey(operatorSet, operator, newPubkey, signature);
+        } else if (curveType == CurveType.BN254) {
+            _registerBN254Key(operatorSet, operator, newPubkey, signature);
+        } else {
+            revert InvalidCurveType();
+        }
+
+        emit KeyRotated(operatorSet, operator, curveType, oldPubkey, newPubkey);
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS

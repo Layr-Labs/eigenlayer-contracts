@@ -1131,6 +1131,307 @@ contract KeyRegistrarUnitTests_GlobalKeyPersistence is KeyRegistrarUnitTests {
 }
 
 /**
+ * @title KeyRegistrarUnitTests_rotateKey
+ * @notice Unit tests for KeyRegistrar.rotateKey
+ */
+contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
+    function test_rotateKey_ECDSA_success() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Rotate to new key
+        bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
+
+        vm.prank(operator1);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRotated(operatorSet, operator1, CurveType.ECDSA, ecdsaKey1, ecdsaKey2);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
+
+        // New key should be stored
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        bytes memory stored = keyRegistrar.getECDSAKey(operatorSet, operator1);
+        assertEq(stored, ecdsaKey2);
+
+        // Both old and new keys should be globally registered (spent)
+        assertTrue(keyRegistrar.isKeyGloballyRegistered(keccak256(ecdsaKey1)));
+        assertTrue(keyRegistrar.isKeyGloballyRegistered(keccak256(ecdsaKey2)));
+    }
+
+    function test_rotateKey_BN254_success() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        // Rotate to new key
+        bytes memory sig2 = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey2);
+
+        vm.prank(operator1);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRotated(operatorSet, operator1, CurveType.BN254, bn254Key1, bn254Key2);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2);
+
+        // New key should be stored
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        (BN254.G1Point memory g1, BN254.G2Point memory g2) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(g1.X, bn254G1Key2.X);
+        assertEq(g1.Y, bn254G1Key2.Y);
+        assertEq(g2.X[0], bn254G2Key2.X[0]);
+        assertEq(g2.X[1], bn254G2Key2.X[1]);
+        assertEq(g2.Y[0], bn254G2Key2.Y[0]);
+        assertEq(g2.Y[1], bn254G2Key2.Y[1]);
+
+        // Both old and new keys should be globally registered (spent)
+        assertTrue(keyRegistrar.isKeyGloballyRegistered(BN254.hashG1Point(bn254G1Key1)));
+        assertTrue(keyRegistrar.isKeyGloballyRegistered(BN254.hashG1Point(bn254G1Key2)));
+    }
+
+    function test_rotateKey_revert_unauthorized() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key as operator1
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Unauthorized caller (operator2) attempts rotation
+        vm.prank(operator2);
+        vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
+    }
+
+    function test_rotateKey_revert_operatorSetNotConfigured() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        // No configuration
+        vm.prank(operator1);
+        vm.expectRevert(OperatorSetNotConfigured.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
+    }
+
+    function test_rotateKey_revert_keyNotFound() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // No existing key for operator1
+        vm.prank(operator1);
+        vm.expectRevert(abi.encodeWithSelector(KeyNotFound.selector, operatorSet, operator1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
+    }
+
+    function test_rotateKey_ECDSA_revert_invalidKeyFormat() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Invalid new key byte length
+        bytes memory invalidKey = hex"deadbeef";
+        vm.prank(operator1);
+        vm.expectRevert(InvalidKeyFormat.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, invalidKey, hex"");
+    }
+
+    function test_rotateKey_ECDSA_revert_zeroPubkey() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Zero address new key
+        bytes memory zeroKey = abi.encodePacked(address(0));
+        vm.prank(operator1);
+        vm.expectRevert(ZeroPubkey.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, hex"");
+    }
+
+    function test_rotateKey_ECDSA_revert_invalidSignature_and_keepsOldKey() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // New key but signature from wrong private key
+        bytes memory wrongSig = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey1);
+        vm.prank(operator1);
+        vm.expectRevert(InvalidSignature.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, wrongSig);
+
+        // Old key should still be stored (atomicity)
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        bytes memory stored = keyRegistrar.getECDSAKey(operatorSet, operator1);
+        assertEq(stored, ecdsaKey1);
+    }
+
+    function test_rotateKey_ECDSA_revert_keyAlreadyRegistered() public {
+        OperatorSet memory operatorSet1 = _createOperatorSet(avs1, 0);
+        OperatorSet memory operatorSet2 = _createOperatorSet(avs1, 1);
+
+        vm.startPrank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet1, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSet(operatorSet2, CurveType.ECDSA);
+        vm.stopPrank();
+
+        // Register ecdsaKey2 globally by another operator
+        bytes memory sig2 = _generateECDSASignature(operator2, operatorSet2, ecdsaAddress2, ecdsaPrivKey2);
+        vm.prank(operator2);
+        keyRegistrar.registerKey(operator2, operatorSet2, ecdsaKey2, sig2);
+
+        // Register initial key for operator1
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet1, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet1, ecdsaKey1, sig1);
+
+        // Attempt rotate to globally-registered key2
+        bytes memory rotateSig = _generateECDSASignature(operator1, operatorSet1, ecdsaAddress2, ecdsaPrivKey2);
+        vm.prank(operator1);
+        vm.expectRevert(KeyAlreadyRegistered.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet1, ecdsaKey2, rotateSig);
+    }
+
+    function test_rotateKey_BN254_revert_invalidKeyDataLength() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        // Invalid new key length
+        bytes memory badKey = hex"deadbeef";
+        vm.prank(operator1);
+        vm.expectRevert(InvalidKeyFormat.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, badKey, hex"");
+    }
+
+    function test_rotateKey_BN254_revert_invalidSignatureLength_and_keepsOldKey() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        // Malformed signature length for new key
+        bytes memory badSig = hex"beef";
+        vm.prank(operator1);
+        vm.expectRevert(InvalidSignature.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, badSig);
+
+        // Old key should still be stored
+        assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
+        (BN254.G1Point memory g1, BN254.G2Point memory g2) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(g1.X, bn254G1Key1.X);
+        assertEq(g1.Y, bn254G1Key1.Y);
+        assertEq(g2.X[0], bn254G2Key1.X[0]);
+        assertEq(g2.X[1], bn254G2Key1.X[1]);
+        assertEq(g2.Y[0], bn254G2Key1.Y[0]);
+        assertEq(g2.Y[1], bn254G2Key1.Y[1]);
+    }
+
+    function test_rotateKey_BN254_revert_zeroG1() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        // New key with zero G1
+        bytes memory zeroKey = abi.encode(uint(0), uint(0), bn254G2Key2.X, bn254G2Key2.Y);
+        bytes memory sigZero = _generateBN254Signature(operator1, operatorSet, zeroKey, bn254PrivKey2);
+        vm.prank(operator1);
+        vm.expectRevert(ZeroPubkey.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, sigZero);
+    }
+
+    function test_rotateKey_BN254_revert_invalidSignature() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        // New key but wrong private key for signature
+        bytes memory wrongSig = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey1);
+        vm.prank(operator1);
+        vm.expectRevert(InvalidSignature.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, wrongSig);
+    }
+
+    function test_rotateKey_BN254_revert_keyAlreadyRegistered() public {
+        OperatorSet memory operatorSet1 = _createOperatorSet(avs1, 0);
+        OperatorSet memory operatorSet2 = _createOperatorSet(avs1, 1);
+
+        vm.startPrank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet1, CurveType.BN254);
+        keyRegistrar.configureOperatorSet(operatorSet2, CurveType.BN254);
+        vm.stopPrank();
+
+        // Register bn254Key2 globally by another operator
+        bytes memory sig2 = _generateBN254Signature(operator2, operatorSet2, bn254Key2, bn254PrivKey2);
+        vm.prank(operator2);
+        keyRegistrar.registerKey(operator2, operatorSet2, bn254Key2, sig2);
+
+        // Register initial key for operator1
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet1, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet1, bn254Key1, sig1);
+
+        // Attempt rotate to globally-registered key2
+        bytes memory rotateSig = _generateBN254Signature(operator1, operatorSet1, bn254Key2, bn254PrivKey2);
+        vm.prank(operator1);
+        vm.expectRevert(KeyAlreadyRegistered.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet1, bn254Key2, rotateSig);
+    }
+}
+
+/**
  * @title KeyRegistrarUnitTests_CrossCurveInteraction
  * @notice Unit tests for cross-curve type interactions in KeyRegistrar
  */

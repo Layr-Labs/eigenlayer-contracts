@@ -79,6 +79,14 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event KeyRegistered(OperatorSet operatorSet, address indexed operator, CurveType curveType, bytes pubkey);
     /// @notice Emitted when a key is deregistered
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, CurveType curveType);
+    /// @notice Emitted when a key is rotated atomically from oldPubkey to newPubkey
+    event KeyRotated(
+        OperatorSet operatorSet,
+        address indexed operator,
+        CurveType curveType,
+        bytes oldPubkey,
+        bytes newPubkey
+    );
     /// @notice Emitted when the aggregate BN254 key is updated
     event AggregateBN254KeyUpdated(OperatorSet operatorSet, BN254.G1Point newAggregateKey);
     /// @notice Emitted when an operator set is configured
@@ -155,6 +163,30 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
      */
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
+
+    /**
+     * @notice Rotates an operator's key for an operator set, replacing the current key with a new key
+     * @param operator Address of the operator whose key is being rotated
+     * @param operatorSet The operator set for which the key is being rotated
+     * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+     * @param signature Signature from the new key proving ownership over the appropriate registration message hash
+     * @dev Keys remain in the global key registry to prevent reuse
+     * @dev There is no slashability restriction for rotation; operators may rotate while slashable
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+     *      - OperatorSetNotConfigured: The operator set is not configured
+     *      - KeyNotFound: The operator does not have a registered key for this operator set
+     *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
+     *      - KeyAlreadyRegistered: New key is already globally registered
+     * @dev Emits the following event:
+     *      - KeyRotated(oldPubkey, newPubkey)
+     */
+    function rotateKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata newPubkey,
+        bytes calldata signature
+    ) external;
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
