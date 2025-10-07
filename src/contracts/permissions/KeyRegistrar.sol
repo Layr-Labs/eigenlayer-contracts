@@ -125,7 +125,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Deregister the old key (global registry persists)
         delete _operatorKeyInfo[operatorSet.key()][operator];
 
-        // Register the new key based on curve type (reuses validation and global uniqueness checks)
+        // Register the new key based on curve type
         if (curveType == CurveType.ECDSA) {
             _registerECDSAKey(operatorSet, operator, newPubkey, signature);
         } else if (curveType == CurveType.BN254) {
