@@ -739,8 +739,19 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManagerView
     function getAllocationDelay(
         address operator
-    ) public view returns (bool isSet, uint32 delay) {
-        _delegateView(secondHalf);
+    ) public view returns (bool, uint32) {
+        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
+
+        uint32 delay = info.delay;
+        bool isSet = info.isSet;
+
+        // If there is a pending delay that can be applied, apply it
+        if (info.effectBlock != 0 && block.number >= info.effectBlock) {
+            delay = info.pendingDelay;
+            isSet = true;
+        }
+
+        return (isSet, delay);
     }
 
     /// @inheritdoc IAllocationManagerView
@@ -780,7 +791,9 @@ contract AllocationManager is
     function getAVSRegistrar(
         address avs
     ) public view returns (IAVSRegistrar) {
-        _delegateView(secondHalf);
+        IAVSRegistrar registrar = _avsRegistrar[avs];
+
+        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
     }
 
     /// @inheritdoc IAllocationManagerView
@@ -811,21 +824,27 @@ contract AllocationManager is
 
     /// @inheritdoc IAllocationManagerView
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        _delegateView(secondHalf);
+        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
+
+        // slashableUntil returns the last block the operator is slashable in so we check for
+        // less than or equal to
+        return status.registered || block.number <= status.slashableUntil;
     }
 
     /// @inheritdoc IAllocationManagerView
     function getRedistributionRecipient(
         OperatorSet memory operatorSet
-    ) external view returns (address) {
-        _delegateView(secondHalf);
+    ) public view returns (address) {
+        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
+        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
+        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
     }
 
     /// @inheritdoc IAllocationManagerView
     function isRedistributingOperatorSet(
         OperatorSet memory operatorSet
     ) public view returns (bool) {
-        _delegateView(secondHalf);
+        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
     }
 
     /// @inheritdoc IAllocationManagerView
