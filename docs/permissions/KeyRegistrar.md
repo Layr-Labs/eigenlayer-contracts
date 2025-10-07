@@ -294,40 +294,31 @@ sequenceDiagram
 ```
 
 
-### Deregistration/Key Rotation
+### Key Rotation
 
-Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their key from an operatorSet if they are not slashable by said operatorSet. 
-
-To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
-
-Alternatively, the `rotateKey` function performs an atomic deregister+register. Rotation is allowed even if the operator is slashable.
+Key rotation is supported natively via `rotateKey`, which atomically replaces the current key with a new key for the same `operatorSet`. Rotation is allowed even if the operator is slashable.
 
 ```mermaid
 sequenceDiagram
     participant OP as Operator
-    participant AM as AllocationManager
     participant KR as KeyRegistrar
 
-    OP->>AM: Tx1: deregisterFromOperatorSets
-    Note over OP: Wait 14 days<br>(if previously allocated)
-    OP->>KR: Tx2: deregisterKey
-    OP->>KR: Tx3: registerKey
+    OP->>KR: Tx1: rotateKey
 ```
+
 
 ### `rotateKey`
 
 ```solidity
 /**
- * @notice Rotates an operator's key for a specific operator set by deregistering the current key and registering a new one in a single transaction
+ * @notice Rotates an operator's key for a specific operator set by atomically replacing the current key with a new one
  * @param operator Address of the operator whose key is being rotated
  * @param operatorSet The operator set for which the key is being rotated
  * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
  * @param signature Signature from the new key proving ownership over the appropriate registration message hash
- * @dev Convenience method equivalent to calling `deregisterKey` followed by `registerKey`, but atomic
  * @dev Keys remain in the global key registry to prevent reuse
  * @dev Reverts for:
  *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
- *      - OperatorStillSlashable: The operator is still slashable for the AVS
  *      - OperatorSetNotConfigured: The operator set is not configured
  *      - KeyNotFound: The operator does not have a registered key for this operator set
  *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
