@@ -9,7 +9,7 @@
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "lib/zeus-templates"]
 	path = lib/zeus-templates
-	url = https://github.com/Layr-labs/zeus-templates
+	url = https://github.com/Layr-Labs/zeus-templates
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
