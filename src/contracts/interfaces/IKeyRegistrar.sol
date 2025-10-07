@@ -81,11 +81,7 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, CurveType curveType);
     /// @notice Emitted when a key is rotated atomically from oldPubkey to newPubkey
     event KeyRotated(
-        OperatorSet operatorSet,
-        address indexed operator,
-        CurveType curveType,
-        bytes oldPubkey,
-        bytes newPubkey
+        OperatorSet operatorSet, address indexed operator, CurveType curveType, bytes oldPubkey, bytes newPubkey
     );
     /// @notice Emitted when the aggregate BN254 key is updated
     event AggregateBN254KeyUpdated(OperatorSet operatorSet, BN254.G1Point newAggregateKey);
