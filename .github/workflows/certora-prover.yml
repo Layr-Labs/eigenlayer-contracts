@@ -53,7 +53,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@50d5a8956f2e319df19e6b57539d7e2acb9f8c1e
         with:
-          version: stable
+          version: v1.4.0
 
       # Install dependencies using Forge
       - name: Install forge dependencies
@@ -113,7 +113,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@50d5a8956f2e319df19e6b57539d7e2acb9f8c1e
         with:
-          version: stable
+          version: v1.4.0
 
       # Install dependencies using Forge
       - name: Install forge dependencies

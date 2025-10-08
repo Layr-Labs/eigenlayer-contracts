@@ -28,7 +28,7 @@
 #       - name: Install Foundry
 #         uses: foundry-rs/foundry-toolchain@v1
 #         with:
-#           version: stable
+#           version: v1.4.0
     
 #       - name: Install forge dependencies
 #         run: forge install
