@@ -41,7 +41,11 @@ library Snapshots {
     /**
      * @dev Pushes a (`key`, `value`) pair into a DefaultWadHistory so that it is stored as the snapshot.
      */
-    function push(DefaultWadHistory storage self, uint32 key, uint64 value) internal {
+    function push(
+        DefaultWadHistory storage self,
+        uint32 key,
+        uint64 value
+    ) internal {
         _insert(self._snapshots, key, value);
     }
 
@@ -49,7 +53,11 @@ library Snapshots {
      * @dev Pushes a (`key`, `value`) pair into a DefaultZeroHistory so that it is stored as the snapshot.
      * `value` is cast to uint224. Responsibility for the safety of this operation falls outside of this library.
      */
-    function push(DefaultZeroHistory storage self, uint32 key, uint256 value) internal {
+    function push(
+        DefaultZeroHistory storage self,
+        uint32 key,
+        uint256 value
+    ) internal {
         _insert(self._snapshots, key, uint224(value));
     }
 
@@ -57,7 +65,10 @@ library Snapshots {
      * @dev Return default value of WAD if there are no snapshots for DefaultWadHistory.
      * This is used for looking up maxMagnitudes in the AllocationManager.
      */
-    function upperLookup(DefaultWadHistory storage self, uint32 key) internal view returns (uint64) {
+    function upperLookup(
+        DefaultWadHistory storage self,
+        uint32 key
+    ) internal view returns (uint64) {
         return uint64(_upperLookup(self._snapshots, key, WAD));
     }
 
@@ -65,7 +76,10 @@ library Snapshots {
      * @dev Return default value of 0 if there are no snapshots for DefaultZeroHistory.
      * This is used for looking up cumulative scaled shares in the DelegationManager.
      */
-    function upperLookup(DefaultZeroHistory storage self, uint32 key) internal view returns (uint256) {
+    function upperLookup(
+        DefaultZeroHistory storage self,
+        uint32 key
+    ) internal view returns (uint256) {
         return _upperLookup(self._snapshots, key, 0);
     }
 
@@ -109,7 +123,11 @@ library Snapshots {
      * @dev Pushes a (`key`, `value`) pair into an ordered list of snapshots, either by inserting a new snapshot,
      * or by updating the last one.
      */
-    function _insert(Snapshot[] storage self, uint32 key, uint224 value) private {
+    function _insert(
+        Snapshot[] storage self,
+        uint32 key,
+        uint224 value
+    ) private {
         uint256 pos = self.length;
 
         if (pos > 0) {
@@ -144,7 +162,10 @@ library Snapshots {
     /**
      * @dev Returns the value in the most recent snapshot, or `defaultValue` if there are no snapshots.
      */
-    function _latest(Snapshot[] storage snapshots, uint224 defaultValue) private view returns (uint224) {
+    function _latest(
+        Snapshot[] storage snapshots,
+        uint224 defaultValue
+    ) private view returns (uint224) {
         uint256 pos = snapshots.length;
         return pos == 0 ? defaultValue : _unsafeAccess(snapshots, pos - 1)._value;
     }
@@ -175,7 +196,10 @@ library Snapshots {
     /**
      * @dev Access an element of the array without performing bounds check. The position is assumed to be within bounds.
      */
-    function _unsafeAccess(Snapshot[] storage self, uint256 pos) private pure returns (Snapshot storage result) {
+    function _unsafeAccess(
+        Snapshot[] storage self,
+        uint256 pos
+    ) private pure returns (Snapshot storage result) {
         assembly {
             mstore(0, self.slot)
             result.slot := add(keccak256(0, 0x20), pos)

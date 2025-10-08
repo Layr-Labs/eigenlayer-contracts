@@ -95,7 +95,6 @@ interface IBN254CertificateVerifier is
     ///      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
     ///         wants to only confirm tasks against the *latest* certificate
     ///      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-
     /**
      * @notice updates the operatorSet with the operator table (i.e. stake weights) and its configuration
      * @param operatorSet the operatorSet to update the operator table for

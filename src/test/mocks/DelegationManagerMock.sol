@@ -37,9 +37,7 @@ contract DelegationManagerMock is Test {
         uint64 newMaxMagnitude
     ) external returns (uint totalDepositSharesToBurn) {
         uint amountSlashed = SlashingLib.calcSlashedAmount({
-            operatorShares: operatorShares[operator][strategy],
-            prevMaxMagnitude: prevMaxMagnitude,
-            newMaxMagnitude: newMaxMagnitude
+            operatorShares: operatorShares[operator][strategy], prevMaxMagnitude: prevMaxMagnitude, newMaxMagnitude: newMaxMagnitude
         });
 
         operatorShares[operator][strategy] -= amountSlashed;
@@ -63,7 +61,9 @@ contract DelegationManagerMock is Test {
         address operator,
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory, /*approverSignatureAndExpiry*/
         bytes32 /*approverSalt*/
-    ) external {
+    )
+        external
+    {
         delegatedTo[msg.sender] = operator;
     }
 
@@ -85,9 +85,7 @@ contract DelegationManagerMock is Test {
 
     function operatorDetails(address operator) external pure returns (IDelegationManagerTypes.OperatorDetails memory) {
         IDelegationManagerTypes.OperatorDetails memory returnValue = IDelegationManagerTypes.OperatorDetails({
-            __deprecated_earningsReceiver: operator,
-            delegationApprover: operator,
-            __deprecated_stakerOptOutWindowBlocks: 0
+            __deprecated_earningsReceiver: operator, delegationApprover: operator, __deprecated_stakerOptOutWindowBlocks: 0
         });
         return returnValue;
     }

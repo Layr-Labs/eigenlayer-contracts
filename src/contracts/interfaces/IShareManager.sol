@@ -26,17 +26,29 @@ interface IShareManager {
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @return existingDepositShares the shares the staker had before any were added
     /// @return addedShares the new shares added to the staker's balance
-    function addShares(address staker, IStrategy strategy, uint256 shares) external returns (uint256, uint256);
+    function addShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) external returns (uint256, uint256);
 
     /// @notice Used by the DelegationManager to convert deposit shares to tokens and send them to a staker
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev token is not validated when talking to the EigenPodManager
-    function withdrawSharesAsTokens(address staker, IStrategy strategy, IERC20 token, uint256 shares) external;
+    function withdrawSharesAsTokens(
+        address staker,
+        IStrategy strategy,
+        IERC20 token,
+        uint256 shares
+    ) external;
 
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETH when talking to the EigenPodManager
     /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 depositShares);
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 depositShares);
 
     /**
      * @notice Increase the amount of burnable/redistributable shares for a given Strategy. This is called by the DelegationManager

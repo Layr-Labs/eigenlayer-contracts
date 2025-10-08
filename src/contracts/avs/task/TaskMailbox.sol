@@ -10,10 +10,12 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IAVSTaskHook} from "../../interfaces/IAVSTaskHook.sol";
 import {
-    IBN254CertificateVerifier, IBN254CertificateVerifierTypes
+    IBN254CertificateVerifier,
+    IBN254CertificateVerifierTypes
 } from "../../interfaces/IBN254CertificateVerifier.sol";
 import {
-    IECDSACertificateVerifier, IECDSACertificateVerifierTypes
+    IECDSACertificateVerifier,
+    IECDSACertificateVerifierTypes
 } from "../../interfaces/IECDSACertificateVerifier.sol";
 import {IBaseCertificateVerifier} from "../../interfaces/IBaseCertificateVerifier.sol";
 import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
@@ -27,13 +29,7 @@ import {TaskMailboxStorage} from "./TaskMailboxStorage.sol";
  * @author Layr Labs, Inc.
  * @notice Contract for managing the lifecycle of tasks that are executed by operator sets of task-based AVSs.
  */
-contract TaskMailbox is
-    Initializable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    TaskMailboxStorage,
-    SemVerMixin
-{
+contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, TaskMailboxStorage, SemVerMixin {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -59,7 +55,11 @@ contract TaskMailbox is
      * @param _feeSplit The initial fee split in basis points
      * @param _feeSplitCollector The initial fee split collector address
      */
-    function initialize(address _owner, uint16 _feeSplit, address _feeSplitCollector) external initializer {
+    function initialize(
+        address _owner,
+        uint16 _feeSplit,
+        address _feeSplitCollector
+    ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
         _transferOwnership(_owner);
@@ -99,7 +99,10 @@ contract TaskMailbox is
     }
 
     /// @inheritdoc ITaskMailbox
-    function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external {
+    function registerExecutorOperatorSet(
+        OperatorSet memory operatorSet,
+        bool isRegistered
+    ) external {
         ExecutorOperatorSetTaskConfig memory taskConfig = _executorOperatorSetTaskConfigs[operatorSet.key()];
 
         // Validate that task config has been set before registration can be toggled.
@@ -190,16 +193,19 @@ contract TaskMailbox is
     }
 
     /// @inheritdoc ITaskMailbox
-    function submitResult(bytes32 taskHash, bytes memory executorCert, bytes memory result) external nonReentrant {
+    function submitResult(
+        bytes32 taskHash,
+        bytes memory executorCert,
+        bytes memory result
+    ) external nonReentrant {
         Task storage task = _tasks[taskHash];
         TaskStatus status = _getTaskStatus(task);
         require(status == TaskStatus.CREATED, InvalidTaskStatus(TaskStatus.CREATED, status));
         require(block.timestamp > task.creationTime, TimestampAtCreation());
 
         // Pre-task result submission checks: AVS can validate the caller, task result, params and certificate.
-        task.executorOperatorSetTaskConfig.taskHook.validatePreTaskResultSubmission(
-            msg.sender, taskHash, executorCert, result
-        );
+        task.executorOperatorSetTaskConfig.taskHook
+            .validatePreTaskResultSubmission(msg.sender, taskHash, executorCert, result);
 
         // Verify certificate based on consensus configuration
         OperatorSet memory executorOperatorSet = OperatorSet(task.avs, task.executorOperatorSetId);
@@ -229,9 +235,8 @@ contract TaskMailbox is
             // Transfer remaining fee to AVS fee collector
             uint96 avsAmount = task.avsFee - feeSplitAmount;
             if (avsAmount > 0) {
-                task.executorOperatorSetTaskConfig.feeToken.safeTransfer(
-                    task.executorOperatorSetTaskConfig.feeCollector, avsAmount
-                );
+                task.executorOperatorSetTaskConfig.feeToken
+                    .safeTransfer(task.executorOperatorSetTaskConfig.feeCollector, avsAmount);
             }
         }
 
@@ -329,7 +334,10 @@ contract TaskMailbox is
      * @param operatorSet The operator set to register
      * @param isRegistered Whether the operator set is registered
      */
-    function _registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) internal {
+    function _registerExecutorOperatorSet(
+        OperatorSet memory operatorSet,
+        bool isRegistered
+    ) internal {
         isExecutorOperatorSetRegistered[operatorSet.key()] = isRegistered;
         emit ExecutorOperatorSetRegistered(msg.sender, operatorSet.avs, operatorSet.id, isRegistered);
     }
@@ -495,9 +503,8 @@ contract TaskMailbox is
                 // Validate the certificate
                 _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, messageHash);
 
-                isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
-                    executorOperatorSet, bn254Cert, totalStakeProportionThresholds
-                );
+                isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER)
+                    .verifyCertificateProportion(executorOperatorSet, bn254Cert, totalStakeProportionThresholds);
             } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
                 // ECDSA Certificate verification
                 IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCert =
@@ -506,9 +513,8 @@ contract TaskMailbox is
                 // Validate the certificate
                 _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, messageHash);
 
-                (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificateProportion(
-                    executorOperatorSet, ecdsaCert, totalStakeProportionThresholds
-                );
+                (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
+                    .verifyCertificateProportion(executorOperatorSet, ecdsaCert, totalStakeProportionThresholds);
             } else {
                 revert InvalidCurveType();
             }
@@ -588,7 +594,10 @@ contract TaskMailbox is
     }
 
     /// @inheritdoc ITaskMailbox
-    function getMessageHash(bytes32 taskHash, bytes memory result) public pure returns (bytes32) {
+    function getMessageHash(
+        bytes32 taskHash,
+        bytes memory result
+    ) public pure returns (bytes32) {
         return keccak256(abi.encode(taskHash, result));
     }
 }

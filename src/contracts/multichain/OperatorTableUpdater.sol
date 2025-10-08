@@ -138,11 +138,8 @@ contract OperatorTableUpdater is
 
         // Silently return if the `referenceTimestamp` has already been updated for the `operatorSet`
         // We do this to avoid race conditions with the offchain transport of the operator table
-        if (
-            IBaseCertificateVerifier(getCertificateVerifier(curveType)).isReferenceTimestampSet(
-                operatorSet, referenceTimestamp
-            )
-        ) {
+        if (IBaseCertificateVerifier(getCertificateVerifier(curveType))
+                .isReferenceTimestampSet(operatorSet, referenceTimestamp)) {
             return;
         }
 
@@ -341,10 +338,7 @@ contract OperatorTableUpdater is
         // Verify inclusion of the operatorSet and operatorSetLeaf in the merkle tree
         require(
             Merkle.verifyInclusionKeccak({
-                proof: proof,
-                root: globalTableRoot,
-                leaf: operatorSetLeafHash,
-                index: operatorSetIndex
+                proof: proof, root: globalTableRoot, leaf: operatorSetLeafHash, index: operatorSetIndex
             }),
             InvalidOperatorSetProof()
         );
@@ -374,7 +368,10 @@ contract OperatorTableUpdater is
      * @dev The `_latestReferenceTimestamp` is not updated since this root is ONLY used for the `Generator`
      * @dev The `_referenceBlockNumber` and `_referenceTimestamps` mappings are not updated since they are only used for introspection for official operatorSets
      */
-    function _updateGenerator(OperatorSet calldata generator, BN254OperatorSetInfo calldata generatorInfo) internal {
+    function _updateGenerator(
+        OperatorSet calldata generator,
+        BN254OperatorSetInfo calldata generatorInfo
+    ) internal {
         // Set the generator
         _generator = generator;
 
@@ -410,8 +407,9 @@ contract OperatorTableUpdater is
             bytes memory operatorTableInfo
         )
     {
-        (operatorSet, curveType, operatorSetInfo, operatorTableInfo) =
-            abi.decode(operatorTable, (OperatorSet, CurveType, OperatorSetConfig, bytes));
+        (operatorSet, curveType, operatorSetInfo, operatorTableInfo) = abi.decode(
+            operatorTable, (OperatorSet, CurveType, OperatorSetConfig, bytes)
+        );
     }
 
     /**

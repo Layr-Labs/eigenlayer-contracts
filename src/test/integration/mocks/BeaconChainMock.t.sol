@@ -59,7 +59,6 @@ contract BeaconChainMock is Logger {
         Minor, // `MINOR_SLASH_AMOUNT_GWEI`
         Half, // Half of the validator's balance
         Full // The validator's entire balance
-
     }
 
     // Rewards given to each validator during epoch processing
@@ -784,8 +783,7 @@ contract BeaconChainMock is Logger {
         StateProofs storage p = proofs[timestamp];
 
         CheckpointProofs memory checkpointProofs = CheckpointProofs({
-            balanceContainerProof: p.balanceContainerProof,
-            balanceProofs: new BeaconChainProofs.BalanceProof[](_validators.length)
+            balanceContainerProof: p.balanceContainerProof, balanceProofs: new BeaconChainProofs.BalanceProof[](_validators.length)
         });
 
         // Get proofs for each validator
@@ -795,9 +793,7 @@ contract BeaconChainMock is Logger {
             BalanceRootProof memory proof = p.balanceRootProofs[balanceRootIndex];
 
             checkpointProofs.balanceProofs[i] = BeaconChainProofs.BalanceProof({
-                pubkeyHash: validators[validatorIndex].pubkeyHash,
-                balanceRoot: proof.balanceRoot,
-                proof: proof.proof
+                pubkeyHash: validators[validatorIndex].pubkeyHash, balanceRoot: proof.balanceRoot, proof: proof.proof
             });
         }
 
@@ -816,7 +812,9 @@ contract BeaconChainMock is Logger {
         return StaleBalanceProofs({
             beaconTimestamp: curTimestamp,
             stateRootProof: p.stateRootProof,
-            validatorProof: BeaconChainProofs.ValidatorProof({validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof})
+            validatorProof: BeaconChainProofs.ValidatorProof({
+                validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof
+            })
         });
     }
 

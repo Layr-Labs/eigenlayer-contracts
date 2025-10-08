@@ -7,7 +7,6 @@ import "./IStrategy.sol";
 
 interface IAVSDirectoryErrors {
     /// Operator Status
-
     /// @dev Thrown when an operator does not exist in the DelegationManager
     error OperatorNotRegisteredToEigenLayer();
     /// @dev Thrown when an operator is already registered to an AVS.
@@ -24,7 +23,6 @@ interface IAVSDirectoryTypes {
     enum OperatorAVSRegistrationStatus {
         UNREGISTERED, // Operator not registered to AVS
         REGISTERED // Operator registered to AVS
-
     }
 
     /**
@@ -59,11 +57,13 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *                         EXTERNAL FUNCTIONS
      *
      */
-
     /**
      * @dev Initializes the addresses of the initial owner and paused status.
      */
-    function initialize(address initialOwner, uint256 initialPausedStatus) external;
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus
+    ) external;
 
     /**
      *  @notice Called by an AVS to emit an `AVSMetadataURIUpdated` event indicating the information has updated.
@@ -119,7 +119,10 @@ interface IAVSDirectory is IAVSDirectoryEvents, IAVSDirectoryErrors, ISignatureU
      *                         VIEW FUNCTIONS
      *
      */
-    function operatorSaltIsSpent(address operator, bytes32 salt) external view returns (bool);
+    function operatorSaltIsSpent(
+        address operator,
+        bytes32 salt
+    ) external view returns (bool);
 
     /**
      *  @notice Calculates the digest hash to be signed by an operator to register with an AVS.

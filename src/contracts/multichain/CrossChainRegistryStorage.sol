@@ -66,7 +66,10 @@ abstract contract CrossChainRegistryStorage is ICrossChainRegistry {
 
     // Construction
 
-    constructor(IAllocationManager _allocationManager, IKeyRegistrar _keyRegistrar) {
+    constructor(
+        IAllocationManager _allocationManager,
+        IKeyRegistrar _keyRegistrar
+    ) {
         allocationManager = _allocationManager;
         keyRegistrar = _keyRegistrar;
     }

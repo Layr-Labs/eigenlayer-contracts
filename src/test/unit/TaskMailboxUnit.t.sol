@@ -84,9 +84,7 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
 
     function _createValidTaskParams() internal view returns (TaskParams memory) {
         return TaskParams({
-            refundCollector: refundCollector,
-            executorOperatorSet: OperatorSet(avs, executorOperatorSetId),
-            payload: bytes("test payload")
+            refundCollector: refundCollector, executorOperatorSet: OperatorSet(avs, executorOperatorSetId), payload: bytes("test payload")
         });
     }
 
@@ -317,7 +315,9 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
             feeToken: IERC20(fuzzFeeToken),
             curveType: IKeyRegistrarTypes.CurveType.BN254,
             feeCollector: fuzzFeeCollector,
-            consensus: Consensus({consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD, value: abi.encode(fuzzStakeProportionThreshold)}),
+            consensus: Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD, value: abi.encode(fuzzStakeProportionThreshold)
+            }),
             taskMetadata: fuzzTaskMetadata
         });
 
@@ -456,10 +456,11 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
     function test_ConsensusZeroThreshold() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(0)) // Zero threshold is valid
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(0)) // Zero threshold is valid
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -473,10 +474,11 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
     function test_ConsensusMaxThreshold() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(10_000)) // Maximum 100%
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(10_000)) // Maximum 100%
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -508,10 +510,11 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
     function test_Revert_ConsensusTypeNone_InvalidWithNonEmptyValue() public {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.NONE,
-            value: abi.encode(uint16(5000)) // Non-empty value for NONE type
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.NONE,
+                value: abi.encode(uint16(5000)) // Non-empty value for NONE type
+            });
 
         // Should revert with non-empty value for ConsensusType.NONE
         vm.prank(avs);
@@ -666,9 +669,7 @@ contract TaskMailboxUnitTests_createTask is TaskMailboxUnitTests {
         mockTaskHook.setDefaultFee(fuzzAvsFee);
 
         TaskParams memory taskParams = TaskParams({
-            refundCollector: fuzzRefundCollector,
-            executorOperatorSet: OperatorSet(avs, executorOperatorSetId),
-            payload: fuzzPayload
+            refundCollector: fuzzRefundCollector, executorOperatorSet: OperatorSet(avs, executorOperatorSetId), payload: fuzzPayload
         });
 
         // First task will have count 0
@@ -1494,10 +1495,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Setup executor operator set with zero stake threshold
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(0)) // Zero threshold
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(0)) // Zero threshold
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -1531,10 +1533,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Setup executor operator set with max stake threshold
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(10_000)) // 100% threshold
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(10_000)) // 100% threshold
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -1753,10 +1756,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         // Setup executor operator set with zero stake threshold
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(0)) // Zero threshold
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(0)) // Zero threshold
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -1794,10 +1798,11 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         OperatorSet memory operatorSet = OperatorSet(avs, executorOperatorSetId);
         ExecutorOperatorSetTaskConfig memory config = _createValidExecutorOperatorSetTaskConfig();
         config.curveType = IKeyRegistrarTypes.CurveType.ECDSA;
-        config.consensus = Consensus({
-            consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
-            value: abi.encode(uint16(0)) // Zero threshold
-        });
+        config.consensus =
+            Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(uint16(0)) // Zero threshold
+            });
 
         vm.prank(avs);
         taskMailbox.setExecutorOperatorSetTaskConfig(operatorSet, config);
@@ -2676,9 +2681,7 @@ contract TaskMailboxUnitTests_submitResult is TaskMailboxUnitTests {
         bytes memory result = bytes("test result");
 
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash),
-            messageHash: keccak256("wrong result"),
-            sig: bytes("signature")
+            referenceTimestamp: _getTaskReferenceTimestamp(newTaskHash), messageHash: keccak256("wrong result"), sig: bytes("signature")
         });
 
         vm.prank(aggregator);

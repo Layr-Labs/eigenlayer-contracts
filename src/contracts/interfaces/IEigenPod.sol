@@ -87,7 +87,6 @@ interface IEigenPodTypes {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
-
     }
 
     /**
@@ -198,14 +197,21 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
 
     /**
      * @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
      * of the DelegationManager's withdrawal flow.
      * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
      */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amount
+    ) external;
 
     /**
      * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
@@ -390,7 +396,11 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     ) external payable;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+    function recoverTokens(
+        IERC20[] memory tokenList,
+        uint256[] memory amountsToWithdraw,
+        address recipient
+    ) external;
 
     /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
     /// address that can call various EigenPod methods, but cannot trigger asset withdrawals

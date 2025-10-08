@@ -32,7 +32,13 @@ abstract contract SignatureUtilsMixin is ISignatureUtilsMixin, SemVerMixin {
     /// EXTERNAL FUNCTIONS ///
 
     /// @inheritdoc ISignatureUtilsMixin
-    function domainSeparator() public view virtual returns (bytes32) {
+    function domainSeparator()
+        public
+        view
+        virtual
+        returns (bytes32)
+    {
+
         // forgefmt: disable-next-item
         return 
             keccak256(

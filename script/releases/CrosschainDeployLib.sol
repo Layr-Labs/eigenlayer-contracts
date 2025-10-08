@@ -8,7 +8,10 @@ import "src/test/mocks/EmptyContract.sol";
 ICreateX constant createx = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
 
 interface ICreateX {
-    function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address newContract);
+    function deployCreate2(
+        bytes32 salt,
+        bytes memory initCode
+    ) external payable returns (address newContract);
     function computeCreate2Address(
         bytes32 salt,
         bytes32 initCodeHash
@@ -44,7 +47,7 @@ library CrosschainDeployLib {
      * ```solidity
      * bytes11 salt = bytes11(uint88(0xffffffffffffffffffffff));
      * address emptyContract = type(EmptyContract).creationCode.deployCrosschain(deployer);
-     * address proxy = emptyContract.deployCrosschainProxy(deployer, salt); 
+     * address proxy = emptyContract.deployCrosschainProxy(deployer, salt);
      * ITransparentUpgradeableProxy(address(proxy)).upgradeTo(address(implementation));
      * ITransparentUpgradeableProxy(address(proxy)).changeAdmin(address(admin));
      * ```
@@ -67,7 +70,11 @@ library CrosschainDeployLib {
      * type(EmptyContract).creationCode.deployCrosschain(deployer, EMPTY_CONTRACT_SALT)
      * ```
      */
-    function _deployCrosschain(address deployer, bytes memory initCode, string memory name) private returns (address) {
+    function _deployCrosschain(
+        address deployer,
+        bytes memory initCode,
+        string memory name
+    ) private returns (address) {
         return createx.deployCreate2(computeProtectedSalt(deployer, name), initCode);
     }
 
@@ -81,7 +88,10 @@ library CrosschainDeployLib {
      * @dev The salt is structured as: Deployer EOA (20 bytes) | Cross-chain flag (1 byte) | Entropy (11 bytes)
      * @dev Example: 0xbebebebebebebebebebebebebebebebebebebebe|ff|1212121212121212121212
      */
-    function computeProtectedSalt(address deployer, string memory name) internal pure returns (bytes32) {
+    function computeProtectedSalt(
+        address deployer,
+        string memory name
+    ) internal pure returns (bytes32) {
         return bytes32(
             bytes.concat(
                 bytes20(deployer),

@@ -22,7 +22,6 @@ contract AVSDirectory is
      *                         INITIALIZING FUNCTIONS
      *
      */
-
     /**
      * @dev Initializes the immutable addresses of the strategy manager, delegationManager,
      * and eigenpodManager contracts
@@ -36,7 +35,10 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
@@ -89,10 +91,7 @@ contract AVSDirectory is
         _checkIsValidSignatureNow({
             signer: operator,
             signableDigest: calculateOperatorAVSRegistrationDigestHash({
-                operator: operator,
-                avs: msg.sender,
-                salt: operatorSignature.salt,
-                expiry: operatorSignature.expiry
+                operator: operator, avs: msg.sender, salt: operatorSignature.salt, expiry: operatorSignature.expiry
             }),
             signature: operatorSignature.signature,
             expiry: operatorSignature.expiry

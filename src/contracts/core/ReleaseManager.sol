@@ -69,7 +69,10 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory) {
+    function getRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (Release memory) {
         return _operatorSetReleases[operatorSet.key()][releaseId];
     }
 
@@ -96,7 +99,10 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
+    function isValidRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (bool) {
         uint256 totalReleases = getTotalReleases(operatorSet);
         require(totalReleases > 0, NoReleases());
         return releaseId == totalReleases - 1;

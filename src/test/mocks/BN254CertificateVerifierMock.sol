@@ -16,7 +16,8 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
 
     mapping(bytes32 certificateHash => bool isValid) internal _isValidCertificate;
 
-    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => BN254OperatorSetInfo operatorSetInfo)) internal _operatorSetInfos;
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => BN254OperatorSetInfo operatorSetInfo)) internal
+        _operatorSetInfos;
     mapping(bytes32 operatorSetKey => address owner) internal _operatorSetOwners;
     mapping(bytes32 operatorSetKey => uint32 maxStalenessPeriod) internal _maxStalenessPeriods;
     mapping(bytes32 operatorSetKey => uint32 latestReferenceTimestamp) internal _latestReferenceTimestamp;

@@ -85,7 +85,6 @@ interface IOperatorTableCalculator {
     /// @dev To distribute stake-weighted tasks to operators, the AVS should read this contract (via RPC) at the `referenceTimestamp`
     ///      for which the operator table was updated on the destination chains
     /// @dev The operatorTableCalculator is configured by the AVS in the core `CrossChainRegistry` contract
-
     /**
      * @notice Calculates the operator table, in bytes, for a given operatorSet
      * @param operatorSet the operatorSet to calculate the operator table for

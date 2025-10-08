@@ -92,7 +92,9 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        strategyFactory.initialize({_initialOwner: initialOwner, _initialPausedStatus: initialPausedStatus, _strategyBeacon: strategyBeacon});
+        strategyFactory.initialize({
+            _initialOwner: initialOwner, _initialPausedStatus: initialPausedStatus, _strategyBeacon: strategyBeacon
+        });
     }
 
     function test_deployNewStrategy() public {
