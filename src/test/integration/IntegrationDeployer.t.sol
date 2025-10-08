@@ -330,12 +330,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
         allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenStrategy,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY
+            delegationManager, eigenStrategy, eigenLayerPauserReg, permissionController, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
         );
         permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(
@@ -363,8 +358,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             })
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
-        eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
+        eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Beacon implementations
