@@ -14,7 +14,12 @@ import "forge-std/Test.sol";
 contract WithdrawFromStrategy is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address strategy, address token, uint256 amount) public {
+    function run(
+        string memory configFile,
+        address strategy,
+        address token,
+        uint256 amount
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
@@ -47,9 +52,7 @@ contract WithdrawFromStrategy is Script, Test {
         IDelegationManagerTypes.QueuedWithdrawalParams[] memory queueWithdrawals =
             new IDelegationManagerTypes.QueuedWithdrawalParams[](1);
         queueWithdrawals[0] = IDelegationManagerTypes.QueuedWithdrawalParams({
-            strategies: strategies,
-            depositShares: shares,
-            __deprecated_withdrawer: address(0)
+            strategies: strategies, depositShares: shares, __deprecated_withdrawer: address(0)
         });
 
         // Withdrawal roots will be returned when we queue

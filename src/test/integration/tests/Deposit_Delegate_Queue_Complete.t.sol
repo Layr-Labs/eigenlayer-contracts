@@ -10,7 +10,6 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
      *                             FULL WITHDRAWALS
      *
      */
-
     // TODO: fix test
     /// Generates a random staker and operator. The staker:
     /// 1. deposits all assets into strategies

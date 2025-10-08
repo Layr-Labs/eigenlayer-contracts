@@ -72,7 +72,6 @@ interface ITaskMailboxTypes {
         CREATED, // 1 - Task has been created
         VERIFIED, // 2 - Task has been verified
         EXPIRED // 3 - Task has expired
-
     }
 
     /**
@@ -284,14 +283,17 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      *                         EXTERNAL FUNCTIONS
      *
      */
-
     /**
      * @notice Initializes the TaskMailbox
      * @param owner The owner of the contract
      * @param feeSplit The initial fee split in basis points
      * @param feeSplitCollector The initial fee split collector address
      */
-    function initialize(address owner, uint16 feeSplit, address feeSplitCollector) external;
+    function initialize(
+        address owner,
+        uint16 feeSplit,
+        address feeSplitCollector
+    ) external;
 
     /**
      * @notice Sets the task configuration for an executor operator set
@@ -310,7 +312,10 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @param isRegistered Whether the operator set is going to be (de)registered
      * @dev This function can be called to toggle the registration once the task config has been set.
      */
-    function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external;
+    function registerExecutorOperatorSet(
+        OperatorSet memory operatorSet,
+        bool isRegistered
+    ) external;
 
     /**
      * @notice Creates a new task
@@ -329,7 +334,11 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @param executorCert Certificate proving the validity of the result
      * @param result Task execution result data
      */
-    function submitResult(bytes32 taskHash, bytes memory executorCert, bytes memory result) external;
+    function submitResult(
+        bytes32 taskHash,
+        bytes memory executorCert,
+        bytes memory result
+    ) external;
 
     /**
      * @notice Refunds the fee for an expired task
@@ -433,7 +442,10 @@ interface ITaskMailbox is ITaskMailboxErrors, ITaskMailboxEvents {
      * @param result Task execution result data
      * @return The message hash for the task that needs to be signed by operators
      */
-    function getMessageHash(bytes32 taskHash, bytes memory result) external pure returns (bytes32);
+    function getMessageHash(
+        bytes32 taskHash,
+        bytes memory result
+    ) external pure returns (bytes32);
 
     /**
      * @notice Gets the current fee split percentage

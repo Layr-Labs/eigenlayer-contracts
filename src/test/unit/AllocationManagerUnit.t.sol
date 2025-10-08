@@ -311,10 +311,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint futureBlock
     ) internal view {
         uint[][] memory slashableStake = allocationManager.getMinimumSlashableStake({
-            operatorSet: operatorSet,
-            operators: operator.toArray(),
-            strategies: strategies,
-            futureBlock: uint32(futureBlock)
+            operatorSet: operatorSet, operators: operator.toArray(), strategies: strategies, futureBlock: uint32(futureBlock)
         });
 
         for (uint i = 0; i < strategies.length; i++) {
@@ -465,10 +462,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     /// @dev Create allocate params for random magnitudes to the same default strategy across multiple operator sets
     /// NOTE: this variant allocates ALL magnitude (1 WAD)
-    function _randAllocateParams_SingleMockStrategy_AllocAll(OperatorSet[] memory operatorSets)
-        internal
-        returns (AllocateParams[] memory)
-    {
+    function _randAllocateParams_SingleMockStrategy_AllocAll(OperatorSet[] memory operatorSets) internal returns (AllocateParams[] memory) {
         // Give each set a minimum of 1 magnitude
         uint64[] memory magnitudes = new uint64[](operatorSets.length);
         uint64 usedMagnitude;
@@ -543,7 +537,6 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
     /// -----------------------------------------------------------------------
     /// initialize()
     /// -----------------------------------------------------------------------
-
     /// @dev Asserts the following:
     /// 1. The fn can only be called once, during deployment.
     /// 2. The fn initializes the contract state correctly (owner, pauserRegistry, and initialPausedStatus).
@@ -833,9 +826,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: expectedCurrentMag, pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: expectedEncumberedMag,
-                max: expectedMaxMag,
-                allocatable: expectedMaxMag - expectedEncumberedMag
+                encumbered: expectedEncumberedMag, max: expectedMaxMag, allocatable: expectedMaxMag - expectedEncumberedMag
             })
         });
 
@@ -1083,10 +1074,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         // Check slashable amount after final slash
         _checkSlashableStake({
-            operatorSet: defaultOperatorSet,
-            operator: defaultOperator,
-            strategies: defaultStrategies,
-            expectedSlashableStake: 0
+            operatorSet: defaultOperatorSet, operator: defaultOperator, strategies: defaultStrategies, expectedSlashableStake: 0
         });
     }
 
@@ -1126,7 +1114,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
 
         uint magnitudeAllocated = allocateParams[0].newMagnitudes[0];
         uint magnitudeDeallocated = magnitudeAllocated - deallocateParams[0].newMagnitudes[0];
-        uint magnitudeSlashed = (magnitudeAllocated * slashingParams.wadsToSlash[0] / WAD)
+        uint magnitudeSlashed =
+            (magnitudeAllocated * slashingParams.wadsToSlash[0] / WAD)
             + _calculateSlippage(uint64(magnitudeAllocated), slashingParams.wadsToSlash[0]);
         uint expectedCurrentMagnitude = magnitudeAllocated - magnitudeSlashed;
         int128 expectedPendingDiff =
@@ -1167,9 +1156,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: allocateParams[0].operatorSet,
             strategy: allocateParams[0].strategies[0],
             expectedAllocation: Allocation({
-                currentMagnitude: uint64(expectedCurrentMagnitude),
-                pendingDiff: expectedPendingDiff,
-                effectBlock: deallocationEffectBlock
+                currentMagnitude: uint64(expectedCurrentMagnitude), pendingDiff: expectedPendingDiff, effectBlock: deallocationEffectBlock
             }),
             expectedMagnitudes: Magnitudes({encumbered: expectedCurrentMagnitude, max: uint64(WAD - magnitudeSlashed), allocatable: 0})
         });
@@ -1359,9 +1346,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: magnitudeAfterSlash, pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: expectedEncumberedMagnitude,
-                max: maxMagnitudeAfterSlash,
-                allocatable: allocatableMagnitudeAfterSlash
+                encumbered: expectedEncumberedMagnitude, max: maxMagnitudeAfterSlash, allocatable: allocatableMagnitudeAfterSlash
             })
         });
     }
@@ -1424,9 +1409,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: expectedCurrentMag, pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: expectedEncumberedMag,
-                max: expectedMaxMag,
-                allocatable: expectedMaxMag - expectedEncumberedMag
+                encumbered: expectedEncumberedMag, max: expectedMaxMag, allocatable: expectedMaxMag - expectedEncumberedMag
             })
         });
 
@@ -1437,9 +1420,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: magnitudeToAllocate, pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: expectedEncumberedMag,
-                max: expectedMaxMag,
-                allocatable: expectedMaxMag - expectedEncumberedMag
+                encumbered: expectedEncumberedMag, max: expectedMaxMag, allocatable: expectedMaxMag - expectedEncumberedMag
             })
         });
 
@@ -1624,9 +1605,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             strategy: strategy,
             expectedAllocation: Allocation({currentMagnitude: expectedCurrentMag, pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: expectedEncumberedMag,
-                max: expectedMaxMag,
-                allocatable: expectedMaxMag - expectedEncumberedMag
+                encumbered: expectedEncumberedMag, max: expectedMaxMag, allocatable: expectedMaxMag - expectedEncumberedMag
             })
         });
 
@@ -1643,9 +1622,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
             operatorSet: operatorSet,
             strategy: strategy,
             expectedAllocation: Allocation({
-                currentMagnitude: expectedCurrentMag,
-                pendingDiff: pendingDiff,
-                effectBlock: _defaultAllocEffectBlock()
+                currentMagnitude: expectedCurrentMag, pendingDiff: pendingDiff, effectBlock: _defaultAllocEffectBlock()
             }),
             expectedMagnitudes: Magnitudes({encumbered: expectedMaxMag, max: expectedMaxMag, allocatable: 0})
         });
@@ -1828,10 +1805,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
     function test_revert_invalidOperatorSet() public {
         AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: OperatorSet(random().Address(), 0),
-            strategies: defaultStrategies,
-            newMagnitudes: uint64(0.5 ether).toArrayU64()
-        }).toArray();
+                operatorSet: OperatorSet(random().Address(), 0),
+                strategies: defaultStrategies,
+                newMagnitudes: uint64(0.5 ether).toArrayU64()
+            }).toArray();
 
         cheats.expectRevert(InvalidOperatorSet.selector);
         cheats.prank(defaultOperator);
@@ -2213,7 +2190,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
-            expectedAllocation: Allocation({currentMagnitude: half, pendingDiff: int64(1), effectBlock: uint32(block.number + secondDelay)}),
+            expectedAllocation: Allocation({
+                currentMagnitude: half, pendingDiff: int64(1), effectBlock: uint32(block.number + secondDelay)
+            }),
             expectedMagnitudes: Magnitudes({encumbered: half + 1, max: WAD, allocatable: WAD - (half + 1)})
         });
     }
@@ -2338,14 +2317,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                 operatorSet: operatorSets[i],
                 strategy: strategyMock,
                 expectedAllocation: Allocation({
-                    currentMagnitude: 0,
-                    pendingDiff: int128(uint128(allocateParams[i].newMagnitudes[0])),
-                    effectBlock: effectBlock
+                    currentMagnitude: 0, pendingDiff: int128(uint128(allocateParams[i].newMagnitudes[0])), effectBlock: effectBlock
                 }),
                 expectedMagnitudes: Magnitudes({
-                    encumbered: _encumberedMagnitudes[strategyMock],
-                    max: WAD,
-                    allocatable: WAD - _encumberedMagnitudes[strategyMock]
+                    encumbered: _encumberedMagnitudes[strategyMock], max: WAD, allocatable: WAD - _encumberedMagnitudes[strategyMock]
                 })
             });
 
@@ -2364,9 +2339,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                 strategy: strategyMock,
                 expectedAllocation: Allocation({currentMagnitude: allocateParams[i].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
                 expectedMagnitudes: Magnitudes({
-                    encumbered: _encumberedMagnitudes[strategyMock],
-                    max: WAD,
-                    allocatable: WAD - _encumberedMagnitudes[strategyMock]
+                    encumbered: _encumberedMagnitudes[strategyMock], max: WAD, allocatable: WAD - _encumberedMagnitudes[strategyMock]
                 })
             });
         }
@@ -2429,9 +2402,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             expectedAllocation: Allocation({
-                currentMagnitude: firstAlloc,
-                pendingDiff: int64(secondAlloc - firstAlloc),
-                effectBlock: _defaultAllocEffectBlock()
+                currentMagnitude: firstAlloc, pendingDiff: int64(secondAlloc - firstAlloc), effectBlock: _defaultAllocEffectBlock()
             }),
             expectedMagnitudes: Magnitudes({encumbered: secondAlloc, max: WAD, allocatable: WAD - secondAlloc})
         });
@@ -2526,9 +2497,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             expectedAllocation: Allocation({
-                currentMagnitude: firstMod,
-                pendingDiff: -int128(uint128(firstMod - secondMod)),
-                effectBlock: effectBlock
+                currentMagnitude: firstMod, pendingDiff: -int128(uint128(firstMod - secondMod)), effectBlock: effectBlock
             }),
             expectedMagnitudes: Magnitudes({encumbered: firstMod, max: WAD, allocatable: WAD - firstMod})
         });
@@ -2627,14 +2596,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
             expectedAllocation: Allocation({
-                currentMagnitude: allocateParams[0].newMagnitudes[0],
-                pendingDiff: expectedDiff,
-                effectBlock: deallocEffectBlock
+                currentMagnitude: allocateParams[0].newMagnitudes[0], pendingDiff: expectedDiff, effectBlock: deallocEffectBlock
             }),
             expectedMagnitudes: Magnitudes({
-                encumbered: allocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - allocateParams[0].newMagnitudes[0]
+                encumbered: allocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - allocateParams[0].newMagnitudes[0]
             })
         });
 
@@ -2648,9 +2613,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: deallocateParams[0].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: deallocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - deallocateParams[0].newMagnitudes[0]
+                encumbered: deallocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - deallocateParams[0].newMagnitudes[0]
             })
         });
     }
@@ -2721,9 +2684,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operatorSet: operatorSetB,
             strategy: strategyMock,
             expectedAllocation: Allocation({
-                currentMagnitude: 0,
-                pendingDiff: int128(uint128(firstMod)),
-                effectBlock: _defaultAllocEffectBlock()
+                currentMagnitude: 0, pendingDiff: int128(uint128(firstMod)), effectBlock: _defaultAllocEffectBlock()
             }),
             expectedMagnitudes: Magnitudes({encumbered: firstMod, max: WAD, allocatable: WAD - firstMod})
         });
@@ -2827,7 +2788,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operator: defaultOperator,
             operatorSet: finalOpSet,
             strategy: strategyMock,
-            expectedAllocation: Allocation({currentMagnitude: 0, pendingDiff: int128(uint128(WAD)), effectBlock: _defaultAllocEffectBlock()}),
+            expectedAllocation: Allocation({
+                currentMagnitude: 0, pendingDiff: int128(uint128(WAD)), effectBlock: _defaultAllocEffectBlock()
+            }),
             expectedMagnitudes: Magnitudes({encumbered: WAD, max: WAD, allocatable: 0})
         });
     }
@@ -2928,9 +2891,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                         effectBlock: _defaultAllocEffectBlock()
                     }),
                     expectedMagnitudes: Magnitudes({
-                        encumbered: allocateParams[i].newMagnitudes[j],
-                        max: WAD,
-                        allocatable: WAD - allocateParams[i].newMagnitudes[j]
+                        encumbered: allocateParams[i].newMagnitudes[j], max: WAD, allocatable: WAD - allocateParams[i].newMagnitudes[j]
                     })
                 });
             }
@@ -2948,9 +2909,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                     strategy: allocateParams[i].strategies[j],
                     expectedAllocation: Allocation({currentMagnitude: allocateParams[i].newMagnitudes[j], pendingDiff: 0, effectBlock: 0}),
                     expectedMagnitudes: Magnitudes({
-                        encumbered: allocateParams[i].newMagnitudes[j],
-                        max: WAD,
-                        allocatable: WAD - allocateParams[i].newMagnitudes[j]
+                        encumbered: allocateParams[i].newMagnitudes[j], max: WAD, allocatable: WAD - allocateParams[i].newMagnitudes[j]
                     })
                 });
             }
@@ -2986,9 +2945,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                         effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
                     }),
                     expectedMagnitudes: Magnitudes({
-                        encumbered: allocateParams[i].newMagnitudes[j],
-                        max: WAD,
-                        allocatable: WAD - allocateParams[i].newMagnitudes[j]
+                        encumbered: allocateParams[i].newMagnitudes[j], max: WAD, allocatable: WAD - allocateParams[i].newMagnitudes[j]
                     })
                 });
             }
@@ -3002,11 +2959,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                     operator: defaultOperator,
                     operatorSet: deallocateParams[i].operatorSet,
                     strategy: allocateParams[i].strategies[j],
-                    expectedAllocation: Allocation({currentMagnitude: deallocateParams[i].newMagnitudes[j], pendingDiff: 0, effectBlock: 0}),
+                    expectedAllocation: Allocation({
+                        currentMagnitude: deallocateParams[i].newMagnitudes[j], pendingDiff: 0, effectBlock: 0
+                    }),
                     expectedMagnitudes: Magnitudes({
-                        encumbered: deallocateParams[i].newMagnitudes[j],
-                        max: WAD,
-                        allocatable: WAD - deallocateParams[i].newMagnitudes[j]
+                        encumbered: deallocateParams[i].newMagnitudes[j], max: WAD, allocatable: WAD - deallocateParams[i].newMagnitudes[j]
                     })
                 });
             }
@@ -3068,9 +3025,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: allocateParams[0].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: allocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - allocateParams[0].newMagnitudes[0]
+                encumbered: allocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - allocateParams[0].newMagnitudes[0]
             })
         });
     }
@@ -3119,9 +3074,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
                 effectBlock: uint32(block.number + DEALLOCATION_DELAY + 1)
             }),
             expectedMagnitudes: Magnitudes({
-                encumbered: allocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - allocateParams[0].newMagnitudes[0]
+                encumbered: allocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - allocateParams[0].newMagnitudes[0]
             })
         });
 
@@ -3130,9 +3083,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
 
         // Clear queue
         _checkClearDeallocationQueueEvents({
-            operator: defaultOperator,
-            strategy: strategyMock,
-            encumberedMagnitude: deallocateParams[0].newMagnitudes[0]
+            operator: defaultOperator, strategy: strategyMock, encumberedMagnitude: deallocateParams[0].newMagnitudes[0]
         });
         allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, _maxNumToClear());
 
@@ -3143,9 +3094,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
             strategy: strategyMock,
             expectedAllocation: Allocation({currentMagnitude: deallocateParams[0].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: deallocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - deallocateParams[0].newMagnitudes[0]
+                encumbered: deallocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - deallocateParams[0].newMagnitudes[0]
             })
         });
     }
@@ -3263,7 +3212,6 @@ contract AllocationManagerUnitTests_SetAllocationDelay is AllocationManagerUnitT
     /// -----------------------------------------------------------------------
     /// setAllocationDelay() + getAllocationDelay()
     /// -----------------------------------------------------------------------
-
     address operatorToSet = address(0x1);
 
     function setUp() public override {
@@ -3984,9 +3932,7 @@ contract AllocationManagerUnitTests_getStrategyAllocations is AllocationManagerU
             strategy: createSetParams[0].strategies[0],
             expectedAllocation: Allocation({currentMagnitude: allocateParams[0].newMagnitudes[0], pendingDiff: 0, effectBlock: 0}),
             expectedMagnitudes: Magnitudes({
-                encumbered: allocateParams[0].newMagnitudes[0],
-                max: WAD,
-                allocatable: WAD - allocateParams[0].newMagnitudes[0]
+                encumbered: allocateParams[0].newMagnitudes[0], max: WAD, allocatable: WAD - allocateParams[0].newMagnitudes[0]
             })
         });
     }

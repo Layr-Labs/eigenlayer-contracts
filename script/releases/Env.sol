@@ -373,7 +373,10 @@ library Env {
     }
 
     // Returns the proxy instance at index `i`
-    function strategyBaseTVLLimits(DeployedInstance, uint256 i) internal view returns (StrategyBaseTVLLimits) {
+    function strategyBaseTVLLimits(
+        DeployedInstance,
+        uint256 i
+    ) internal view returns (StrategyBaseTVLLimits) {
         return StrategyBaseTVLLimits(_deployedInstance(type(StrategyBaseTVLLimits).name, i));
     }
 
@@ -494,7 +497,10 @@ library Env {
     /**
      * Helpers
      */
-    function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
+    function _deployedInstance(
+        string memory name,
+        uint256 idx
+    ) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }
 
@@ -585,7 +591,10 @@ library Env {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

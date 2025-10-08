@@ -84,8 +84,10 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
             "certificateVerifier.operatorSetOwner invalid"
         );
         // Get the operatorSetInfo
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = certificateVerifier
-            .getOperatorSetInfo(generatorParams.generator, operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP());
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo =
+            certificateVerifier.getOperatorSetInfo(
+                generatorParams.generator, operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP()
+            );
         assertEq(
             operatorSetInfo.numOperators,
             generatorParams.generatorInfo.numOperators,

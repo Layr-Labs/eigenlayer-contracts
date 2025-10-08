@@ -94,7 +94,10 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /**
      * @param _delegation The delegation contract of EigenLayer.
      */
-    constructor(IAllocationManager _allocationManager, IDelegationManager _delegation) {
+    constructor(
+        IAllocationManager _allocationManager,
+        IDelegationManager _delegation
+    ) {
         allocationManager = _allocationManager;
         delegation = _delegation;
     }

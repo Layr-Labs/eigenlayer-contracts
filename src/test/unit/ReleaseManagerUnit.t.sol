@@ -73,8 +73,7 @@ contract ReleaseManagerUnitTests is EigenLayerUnitTestSetup, IReleaseManagerErro
         Artifact[] memory artifacts = new Artifact[](numArtifacts);
         for (uint i = 0; i < numArtifacts; i++) {
             artifacts[i] = Artifact({
-                digest: keccak256(abi.encodePacked("artifact", i)),
-                registry: string(abi.encodePacked("https://example.com/artifact", i))
+                digest: keccak256(abi.encodePacked("artifact", i)), registry: string(abi.encodePacked("https://example.com/artifact", i))
             });
         }
         return _createRelease(artifacts, upgradeByTime);

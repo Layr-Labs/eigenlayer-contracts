@@ -35,10 +35,7 @@ contract OperatorTableUpdaterUnitTests is
 
         // Setup a mock Bn254OperatorSetInfo for the initial table update on initialization
         initialOperatorSetInfo = BN254OperatorSetInfo({
-            operatorInfoTreeRoot: bytes32(0),
-            numOperators: 1,
-            aggregatePubkey: BN254.G1Point({X: 1, Y: 2}),
-            totalWeights: new uint[](1)
+            operatorInfoTreeRoot: bytes32(0), numOperators: 1, aggregatePubkey: BN254.G1Point({X: 1, Y: 2}), totalWeights: new uint[](1)
         });
 
         operatorTableUpdater =

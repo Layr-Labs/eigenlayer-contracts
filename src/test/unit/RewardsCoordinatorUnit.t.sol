@@ -489,10 +489,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Testing that the split has been initialized for the first time.
-    function testFuzz_setOperatorAVSSplitFirstTime(address operator, address avs, uint16 split)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
+    function testFuzz_setOperatorAVSSplitFirstTime(address operator, address avs, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -1533,9 +1530,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
      * - rewards submission hash being set in storage
      * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions)
-        public
-    {
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions) public {
         numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1762,9 +1757,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
      * - rewards submission hash being set in storage
      * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
      */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions)
-        public
-    {
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions) public {
         numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
@@ -2054,10 +2047,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     }
 
     // Revert when duplicate operators
-    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -2933,10 +2923,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     }
 
     // Revert when duplicate operators
-    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
 
         operatorSet = OperatorSet(avs, 1);
@@ -4188,9 +4175,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         // Set cumulativeClaimed to be max uint256, should revert when attempting to claim
-        stdstore.target(address(rewardsCoordinator)).sig("cumulativeClaimed(address,address)").with_key(claim.earnerLeaf.earner).with_key(
-            address(claim.tokenLeaves[0].token)
-        ).checked_write(type(uint).max);
+        stdstore.target(address(rewardsCoordinator)).sig("cumulativeClaimed(address,address)").with_key(claim.earnerLeaf.earner)
+            .with_key(address(claim.tokenLeaves[0].token)).checked_write(type(uint).max);
         cheats.startPrank(claimer);
         cheats.expectRevert(EarningsNotGreaterThanClaimed.selector);
         rewardsCoordinator.processClaim(claim, claimer);

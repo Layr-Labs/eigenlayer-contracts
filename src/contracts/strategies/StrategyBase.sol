@@ -213,7 +213,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
      * @param token The ERC20 being transferred
      * @param amountToSend The amount of `token` to transfer
      */
-    function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual {
+    function _afterWithdrawal(
+        address recipient,
+        IERC20 token,
+        uint256 amountToSend
+    ) internal virtual {
         token.safeTransfer(recipient, amountToSend);
     }
 
@@ -287,7 +291,10 @@ contract StrategyBase is Initializable, Pausable, IStrategy, SemVerMixin {
 
     /// @notice Internal function used to emit the exchange rate of the strategy in wad (18 decimals)
     /// @dev Tokens that do not have 18 decimals must have offchain services scale the exchange rate down to proper magnitude
-    function _emitExchangeRate(uint256 virtualTokenBalance, uint256 virtualTotalShares) internal {
+    function _emitExchangeRate(
+        uint256 virtualTokenBalance,
+        uint256 virtualTotalShares
+    ) internal {
         // Emit asset over shares ratio.
         emit ExchangeRateEmitted((1e18 * virtualTokenBalance) / virtualTotalShares);
     }

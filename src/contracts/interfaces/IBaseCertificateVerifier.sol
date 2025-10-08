@@ -79,7 +79,6 @@ interface IBaseCertificateVerifier is
     ///      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
     ///         wants to only confirm tasks against the *latest* certificate
     ///      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-
     /**
      * @notice The address of the owner of the operatorSet
      * @param operatorSet The operatorSet to get the owner of

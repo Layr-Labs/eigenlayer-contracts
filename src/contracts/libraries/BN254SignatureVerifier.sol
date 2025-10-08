@@ -64,19 +64,19 @@ library BN254SignatureVerifier {
         BN254.G1Point memory signature
     ) internal pure returns (uint256 gamma) {
         gamma = uint256(
-            keccak256(
-                abi.encodePacked(
-                    msgHash,
-                    pubkeyG1.X,
-                    pubkeyG1.Y,
-                    pubkeyG2.X[0],
-                    pubkeyG2.X[1],
-                    pubkeyG2.Y[0],
-                    pubkeyG2.Y[1],
-                    signature.X,
-                    signature.Y
+                keccak256(
+                    abi.encodePacked(
+                        msgHash,
+                        pubkeyG1.X,
+                        pubkeyG1.Y,
+                        pubkeyG2.X[0],
+                        pubkeyG2.X[1],
+                        pubkeyG2.Y[0],
+                        pubkeyG2.Y[1],
+                        signature.X,
+                        signature.Y
+                    )
                 )
-            )
-        ) % BN254.FR_MODULUS;
+            ) % BN254.FR_MODULUS;
     }
 }

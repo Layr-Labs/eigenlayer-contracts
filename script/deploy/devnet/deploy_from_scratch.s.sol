@@ -507,15 +507,15 @@ contract DeployFromScratch is Script, Test {
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
-            ) == address(rewardsCoordinatorImplementation),
+                    ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+                ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
         );
 
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(allocationManager)))
-            ) == address(allocationManagerImplementation),
+                    ITransparentUpgradeableProxy(payable(address(allocationManager)))
+                ) == address(allocationManagerImplementation),
             "allocationManager: implementation set incorrectly"
         );
 

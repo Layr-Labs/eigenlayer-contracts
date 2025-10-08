@@ -685,9 +685,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check invariants for registerForOperatorSets given a set of strategies
     /// for which NO allocation exists (currentMag/pendingDiff are 0)
     /// @param unallocated For the given operatorSet, a list of strategies for which NO allocation exists
-    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated)
-        internal
-    {
+    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated) internal {
         check_Base_Registration_State(operator, operatorSet);
 
         /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
@@ -1060,9 +1058,12 @@ contract IntegrationCheckUtils is IntegrationBase {
      *                             ALM - SLASHING
      *
      */
-    function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
-        internal
-    {
+    function check_Base_Slashing_State(
+        User operator,
+        AllocateParams memory allocateParams,
+        SlashingParams memory slashParams,
+        uint slashId
+    ) internal {
         OperatorSet memory operatorSet = allocateParams.operatorSet;
 
         check_MaxMag_Invariants(operator);

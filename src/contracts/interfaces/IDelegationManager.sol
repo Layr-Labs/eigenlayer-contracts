@@ -218,7 +218,10 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      *
      * @dev The caller must have previously registered as an operator in EigenLayer.
      */
-    function modifyOperatorDetails(address operator, address newDelegationApprover) external;
+    function modifyOperatorDetails(
+        address operator,
+        address newDelegationApprover
+    ) external;
 
     /**
      * @notice Called by an operator to emit an `OperatorMetadataURIUpdated` event indicating the information has updated.
@@ -226,7 +229,10 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @param metadataURI The URI for metadata associated with an operator
      * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
      */
-    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external;
+    function updateOperatorMetadataURI(
+        address operator,
+        string calldata metadataURI
+    ) external;
 
     /**
      * @notice Caller delegates their stake to an operator.
@@ -396,7 +402,10 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @dev Salts are used in the `delegateTo` function. Note that this function only processes the delegationApprover's
      * signature + the provided salt if the operator being delegated to has specified a nonzero address as their `delegationApprover`.
      */
-    function delegationApproverSaltIsSpent(address _delegationApprover, bytes32 salt) external view returns (bool);
+    function delegationApproverSaltIsSpent(
+        address _delegationApprover,
+        bytes32 salt
+    ) external view returns (bool);
 
     /// @notice Mapping: staker => cumulative number of queued withdrawals they have ever initiated.
     /// @dev This only increments (doesn't decrement), and is used to help ensure that otherwise identical withdrawals have unique hashes.
@@ -453,7 +462,10 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
      * @param strategy the strategy to get shares for
      * @return the amount of shares that are slashable in the withdrawal queue for an operator and a strategy
      */
-    function getSlashableSharesInQueue(address operator, IStrategy strategy) external view returns (uint256);
+    function getSlashableSharesInQueue(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint256);
 
     /**
      * @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the
@@ -477,7 +489,10 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
     /**
      * @notice Returns the scaling factor applied to a staker's deposits for a given strategy
      */
-    function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256);
+    function depositScalingFactor(
+        address staker,
+        IStrategy strategy
+    ) external view returns (uint256);
 
     /**
      * @notice Returns the Withdrawal associated with a `withdrawalRoot`.

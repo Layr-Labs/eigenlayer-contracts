@@ -96,7 +96,8 @@ abstract contract AllocationManagerStorage is IAllocationManager {
 
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
     /// These must be completed in order to free up magnitude for future allocation
-    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal
+        deallocationQueue;
 
     /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
     /// @notice bool is not used and is always true if the avs has registered metadata

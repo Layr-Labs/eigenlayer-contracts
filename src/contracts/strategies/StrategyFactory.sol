@@ -119,7 +119,10 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemoveFromWhitelist);
     }
 
-    function _setStrategyForToken(IERC20 token, IStrategy strategy) internal {
+    function _setStrategyForToken(
+        IERC20 token,
+        IStrategy strategy
+    ) internal {
         deployedStrategies[token] = strategy;
         emit StrategySetForToken(token, strategy);
     }

@@ -20,7 +20,6 @@ interface IEigenPod_DeprecatedM2 {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
-
     }
 
     struct ValidatorInfo {
@@ -264,7 +263,6 @@ interface IEigenPod_DeprecatedM1 {
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         OVERCOMMITTED, // proven to be overcommitted to EigenLayer
         WITHDRAWN // withdrawn from the Beacon Chain
-
     }
 
     // this struct keeps track of PartialWithdrawalClaims

@@ -441,9 +441,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         delegationManager.initialize({initialPausedStatus: 0});
 
         strategyManager.initialize({
-            initialOwner: executorMultisig,
-            initialStrategyWhitelister: address(strategyFactory),
-            initialPausedStatus: 0
+            initialOwner: executorMultisig, initialStrategyWhitelister: address(strategyFactory), initialPausedStatus: 0
         });
 
         eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});

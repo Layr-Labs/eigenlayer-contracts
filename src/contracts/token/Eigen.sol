@@ -40,7 +40,10 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
     event TokenUnwrapped(address indexed account, uint256 amount);
 
-    constructor(IERC20 _bEIGEN, string memory _version) SemVerMixin(_version) {
+    constructor(
+        IERC20 _bEIGEN,
+        string memory _version
+    ) SemVerMixin(_version) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
     }
@@ -87,7 +90,10 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
      * @param from the address whose allowedFrom status is being set
      * @param isAllowedFrom the new allowedFrom status
      */
-    function setAllowedFrom(address from, bool isAllowedFrom) external onlyOwner {
+    function setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) external onlyOwner {
         allowedFrom[from] = isAllowedFrom;
         emit SetAllowedFrom(from, isAllowedFrom);
     }
@@ -97,7 +103,10 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
      * @param to the address whose allowedTo status is being set
      * @param isAllowedTo the new allowedTo status
      */
-    function setAllowedTo(address to, bool isAllowedTo) external onlyOwner {
+    function setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) external onlyOwner {
         allowedTo[to] = isAllowedTo;
         emit SetAllowedTo(to, isAllowedTo);
     }
@@ -151,7 +160,10 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     /**
      * @notice Allows the sender to transfer tokens to multiple addresses in a single transaction
      */
-    function multisend(address[] calldata receivers, uint256[] calldata amounts) public {
+    function multisend(
+        address[] calldata receivers,
+        uint256[] calldata amounts
+    ) public {
         require(receivers.length == amounts.length, "Eigen.multisend: receivers and amounts must be the same length");
         for (uint256 i = 0; i < receivers.length; i++) {
             _transfer(msg.sender, receivers[i], amounts[i]);
@@ -164,7 +176,11 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
      * @param to the address tokens are being transferred to
      * @param amount the amount of tokens being transferred
      */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         // if transfer restrictions are enabled
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted

@@ -147,16 +147,12 @@ library LibProofGen {
         bytes32 balanceContainerRoot = trees.balancesTree.build({leaves: balanceLeaves, height: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1});
 
         // Build merkle tree for BeaconState
-        bytes32 beaconStateRoot = trees.stateTree.build({
-            leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            height: config().BEACON_STATE_TREE_HEIGHT
-        });
+        bytes32 beaconStateRoot = trees.stateTree
+            .build({leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot), height: config().BEACON_STATE_TREE_HEIGHT});
 
         // Build merkle tree for BeaconBlock
-        beaconBlockRoot = trees.blockTree.build({
-            leaves: _getBeaconBlockLeaves(beaconStateRoot),
-            height: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT
-        });
+        beaconBlockRoot = trees.blockTree
+            .build({leaves: _getBeaconBlockLeaves(beaconStateRoot), height: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT});
 
         // Pre-generate proofs for EigenPod methods
         p.genStateRootProof(beaconStateRoot);

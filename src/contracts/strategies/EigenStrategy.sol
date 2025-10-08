@@ -42,7 +42,10 @@ contract EigenStrategy is StrategyBase {
         string memory _version
     ) StrategyBase(_strategyManager, _pauserRegistry, _version) {}
 
-    function initialize(IEigen _EIGEN, IERC20 _bEIGEN) public virtual initializer {
+    function initialize(
+        IEigen _EIGEN,
+        IERC20 _bEIGEN
+    ) public virtual initializer {
         EIGEN = _EIGEN;
         _initializeStrategyBase(_bEIGEN);
     }
@@ -55,7 +58,10 @@ contract EigenStrategy is StrategyBase {
      * @param token token to be deposited, can be either EIGEN or bEIGEN. If EIGEN, then is unwrapped into bEIGEN
      * @param amount deposit amount
      */
-    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 amount
+    ) internal virtual override {
         require(token == underlyingToken || token == EIGEN, OnlyUnderlyingToken());
 
         if (token == EIGEN) {
@@ -88,7 +94,11 @@ contract EigenStrategy is StrategyBase {
      * @param token token to be withdrawn, can be either EIGEN or bEIGEN. If EIGEN, then bEIGEN is wrapped into EIGEN
      * @param amountToSend amount of tokens to transfer
      */
-    function _afterWithdrawal(address recipient, IERC20 token, uint256 amountToSend) internal virtual override {
+    function _afterWithdrawal(
+        address recipient,
+        IERC20 token,
+        uint256 amountToSend
+    ) internal virtual override {
         if (token == EIGEN) {
             // wrap bEIGEN into EIGEN assuming a 1-1 wrapping amount
             // the strategy will then hold `amountToSend` of EIGEN

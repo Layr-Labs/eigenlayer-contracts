@@ -150,13 +150,10 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         uint[] memory totalWeights = new uint[](1);
         totalWeights[0] = operatorWeights[0];
 
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory initialOperatorSetInfo = IOperatorTableCalculatorTypes
-            .BN254OperatorSetInfo({
-            operatorInfoTreeRoot: operatorInfoTreeRoot,
-            numOperators: 1,
-            aggregatePubkey: aggregatePubkey,
-            totalWeights: totalWeights
-        });
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory initialOperatorSetInfo =
+            IOperatorTableCalculatorTypes.BN254OperatorSetInfo({
+                operatorInfoTreeRoot: operatorInfoTreeRoot, numOperators: 1, aggregatePubkey: aggregatePubkey, totalWeights: totalWeights
+            });
 
         ICrossChainRegistryTypes.OperatorSetConfig memory initialOperatorSetConfig =
             ICrossChainRegistryTypes.OperatorSetConfig({owner: address(0xDEADBEEF), maxStalenessPeriod: 0});
@@ -244,8 +241,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Configure the operator set for BN254 curve type (only once)
         try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254) {
-            // Configuration successful
-        } catch {
+        // Configuration successful
+        }
+            catch {
             // Already configured, which is fine
         }
 
@@ -288,8 +286,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Configure the operator set for ECDSA curve type (only once)
         try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA) {
-            // Configuration successful
-        } catch {
+        // Configuration successful
+        }
+            catch {
             // Already configured, which is fine
         }
 
@@ -506,9 +505,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         }
 
         cert = IECDSACertificateVerifierTypes.ECDSACertificate({
-            referenceTimestamp: referenceTimestamp,
-            messageHash: messageHash,
-            sig: signatures
+            referenceTimestamp: referenceTimestamp, messageHash: messageHash, sig: signatures
         });
     }
 

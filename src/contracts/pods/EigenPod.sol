@@ -24,13 +24,7 @@ import "./EigenPodStorage.sol";
  * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
  *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
  */
-contract EigenPod is
-    Initializable,
-    ReentrancyGuardUpgradeable,
-    EigenPodPausingConstants,
-    EigenPodStorage,
-    SemVerMixin
-{
+contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, EigenPodStorage, SemVerMixin {
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
 
@@ -238,6 +232,7 @@ contract EigenPod is
 
         uint256 totalAmountToBeRestakedWei;
         for (uint256 i = 0; i < validatorIndices.length; i++) {
+
             // forgefmt: disable-next-item
             totalAmountToBeRestakedWei += _verifyWithdrawalCredentials(
                 beaconTimestamp,
@@ -408,7 +403,10 @@ contract EigenPod is
     }
 
     /// @inheritdoc IEigenPod
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amountWei
+    ) external onlyEigenPodManager {
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         amountWei = amountGwei * GWEI_TO_WEI;
         require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
@@ -666,9 +664,7 @@ contract EigenPod is
         // Update pod owner's shares
         emit CheckpointFinalized(lastCheckpointTimestamp, balanceDeltaWei);
         eigenPodManager.recordBeaconChainETHBalanceUpdate({
-            podOwner: podOwner,
-            prevRestakedBalanceWei: prevRestakedBalanceWei,
-            balanceDeltaWei: balanceDeltaWei
+            podOwner: podOwner, prevRestakedBalanceWei: prevRestakedBalanceWei, balanceDeltaWei: balanceDeltaWei
         });
     }
 
@@ -709,9 +705,10 @@ contract EigenPod is
 
         /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
         /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
-        return proofTimestamp <= forkTimestamp
-            ? BeaconChainProofs.ProofVersion.DENEB
-            : BeaconChainProofs.ProofVersion.PECTRA;
+        return
+            proofTimestamp <= forkTimestamp
+                ? BeaconChainProofs.ProofVersion.DENEB
+                : BeaconChainProofs.ProofVersion.PECTRA;
     }
 
     /**

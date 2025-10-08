@@ -24,7 +24,11 @@ interface IAVSRegistrar {
      * @param avs the AVS the operator is deregistering from. This should be the same as IAVSRegistrar.avs()
      * @param operatorSetIds the list of operator set ids being deregistered from
      */
-    function deregisterOperator(address operator, address avs, uint32[] calldata operatorSetIds) external;
+    function deregisterOperator(
+        address operator,
+        address avs,
+        uint32[] calldata operatorSetIds
+    ) external;
 
     /**
      * @notice Returns true if the AVS is supported by the registrar

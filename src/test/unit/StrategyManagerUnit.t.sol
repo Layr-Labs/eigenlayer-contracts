@@ -50,7 +50,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
                 new TransparentUpgradeableProxy(
                     address(strategyManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyManager.initialize.selector, initialOwner, initialOwner, 0 /*initialPausedStatus*/ )
+                    abi.encodeWithSelector(StrategyManager.initialize.selector, initialOwner, initialOwner, 0 /*initialPausedStatus*/)
                 )
             )
         );

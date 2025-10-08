@@ -57,7 +57,10 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
      * `depositIntoStrategy` function, and individual share balances are recorded in the strategyManager as well.
      * @return newShares is the number of new shares issued at the current exchange ratio.
      */
-    function deposit(IERC20 token, uint256 amount) external returns (uint256);
+    function deposit(
+        IERC20 token,
+        uint256 amount
+    ) external returns (uint256);
 
     /**
      * @notice Used to withdraw tokens from this Strategy, to the `recipient`'s address
@@ -68,7 +71,11 @@ interface IStrategy is IStrategyErrors, IStrategyEvents, ISemVerMixin {
      * other functions, and individual share balances are recorded in the strategyManager as well.
      * @return amountOut is the amount of tokens being transferred out.
      */
-    function withdraw(address recipient, IERC20 token, uint256 amountShares) external returns (uint256);
+    function withdraw(
+        address recipient,
+        IERC20 token,
+        uint256 amountShares
+    ) external returns (uint256);
 
     /**
      * @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
