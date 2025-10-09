@@ -7,7 +7,6 @@ import "./IPauserRegistry.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
 import "./IAVSRegistrar.sol";
-import "./ISemVerMixin.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation
@@ -253,8 +252,7 @@ interface IAllocationManagerStorage {
 interface IAllocationManagerActions is
     IAllocationManagerErrors,
     IAllocationManagerEvents,
-    IAllocationManagerStorage,
-    ISemVerMixin
+    IAllocationManagerStorage
 {
     /**
      * @dev Initializes the initial owner and paused status.

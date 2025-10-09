@@ -44,8 +44,7 @@ contract CrossChainRegistryUnitTests is
             IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrar)),
             IPermissionController(address(permissionController)),
-            pauserRegistry,
-            "1.0.0"
+            pauserRegistry
         );
 
         // Deploy CrossChainRegistry proxy
@@ -147,8 +146,7 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
             IAllocationManager(address(allocationManagerMock)),
             IKeyRegistrar(address(keyRegistrar)),
             IPermissionController(address(permissionController)),
-            pauserRegistry,
-            "1.0.0"
+            pauserRegistry
         );
 
         address newOwner = cheats.randomAddress();
