@@ -233,9 +233,8 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
@@ -424,9 +423,8 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
     /**
@@ -545,9 +543,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
