@@ -249,11 +249,7 @@ interface IAllocationManagerStorage {
     function ALLOCATION_CONFIGURATION_DELAY() external view returns (uint32);
 }
 
-interface IAllocationManagerActions is
-    IAllocationManagerErrors,
-    IAllocationManagerEvents,
-    IAllocationManagerStorage
-{
+interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
     /**
      * @dev Initializes the initial owner and paused status.
      */
