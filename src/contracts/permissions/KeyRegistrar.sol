@@ -128,13 +128,13 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(info.isRegistered, KeyNotFound(operatorSet, operator));
 
         // Enforce minimum delay configured by AVS and ensure activation is in the future
-		{
-			uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-			uint64 minActivateAt = uint64(block.timestamp) + minDelay;
-			if (activateAt <= uint64(block.timestamp) || activateAt < minActivateAt) {
-				revert ActivationTooSoon(minActivateAt);
-			}
-		}
+        {
+            uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
+            if (activateAt <= uint64(block.timestamp) || activateAt < minActivateAt) {
+                revert ActivationTooSoon(minActivateAt);
+            }
+        }
 
         // Ensure no pending rotation exists
         require(info.pendingActivateAt == 0, PendingRotationExists());
@@ -162,15 +162,18 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @notice Optionally finalize a scheduled rotation if its activation time has passed
-    function finalizeScheduledRotation(address operator, OperatorSet memory operatorSet) external checkCanCall(operator) {
+    function finalizeScheduledRotation(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external checkCanCall(operator) {
         _finalizeRotationIfActive(operatorSet, operator);
     }
 
     /// @notice Sets the minimum rotation delay for an operator set
-    function setMinKeyRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds)
-        external
-        checkCanCall(operatorSet.avs)
-    {
+    function setMinKeyRotationDelay(
+        OperatorSet memory operatorSet,
+        uint32 minDelaySeconds
+    ) external checkCanCall(operatorSet.avs) {
         _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
         emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
     }
@@ -239,12 +242,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes32 keyHash
     ) internal {
         // Store key data
-        _operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({
-            isRegistered: true,
-            currentKey: pubkey,
-            pendingKey: bytes("")
-            , pendingActivateAt: 0
-        });
+        _operatorKeyInfo[operatorSet.key()][operator] =
+            KeyInfo({isRegistered: true, currentKey: pubkey, pendingKey: bytes(""), pendingActivateAt: 0});
 
         // Mark the key hash as spent
         _globalKeyRegistry[keyHash] = true;
@@ -254,10 +253,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
-    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator)
-        internal
-        returns (bytes memory)
-    {
+    function _finalizeRotationIfActive(
+        OperatorSet memory operatorSet,
+        address operator
+    ) internal returns (bytes memory) {
         KeyInfo storage keyInfoStorage = _operatorKeyInfo[operatorSet.key()][operator];
         if (!keyInfoStorage.isRegistered) return bytes("");
         if (keyInfoStorage.pendingActivateAt != 0 && block.timestamp >= keyInfoStorage.pendingActivateAt) {
@@ -441,11 +440,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return (operator, isRegistered(operatorSet, operator));
     }
 
-    function _getActiveKey(KeyInfo memory keyInfo)
-        internal
-        view
-        returns (bytes memory)
-    {
+    function _getActiveKey(
+        KeyInfo memory keyInfo
+    ) internal view returns (bytes memory) {
         if (keyInfo.pendingActivateAt == 0) return keyInfo.currentKey;
         return block.timestamp < keyInfo.pendingActivateAt ? keyInfo.currentKey : keyInfo.pendingKey;
     }

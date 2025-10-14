@@ -131,7 +131,11 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Emits the following events:
      *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
      */
-    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType, uint32 minDelaySeconds) external;
+    function configureOperatorSet(
+        OperatorSet memory operatorSet,
+        CurveType curveType,
+        uint32 minDelaySeconds
+    ) external;
 
     /**
      * @notice Configures an operator set with curve type and minimum rotation delay
@@ -139,7 +143,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param curveType Type of curve (ECDSA, BN254)
      * @param minDelaySeconds Minimum rotation delay in seconds
      */
-    
 
     /**
      * @notice Registers a cryptographic key for an operator with a specific operator set
