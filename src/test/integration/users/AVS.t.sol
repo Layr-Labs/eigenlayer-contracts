@@ -160,7 +160,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function configureOperatorSet(OperatorSet memory operatorSet, IKeyRegistrarTypes.CurveType curveType) public createSnapshot {
         print.method("configureOperatorSet");
-        keyRegistrar.configureOperatorSet(operatorSet, curveType);
+        keyRegistrar.configureOperatorSet(operatorSet, curveType, 0);
         print.gasUsed();
     }
 
