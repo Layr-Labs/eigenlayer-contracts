@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-interface IProtocolRegistryErrors {
-    /// @notice Thrown when two array parameters have mismatching lengths.
-    error InputArrayLengthMismatch();
-    /// @notice Thrown when an index is out of bounds.
-    error OutOfBounds();
-}
+interface IProtocolRegistryErrors {}
 
 interface IProtocolRegistryTypes {
     /**
