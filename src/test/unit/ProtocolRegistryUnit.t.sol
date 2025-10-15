@@ -30,7 +30,7 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         registry = ProtocolRegistry(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new ProtocolRegistry(IProxyAdmin(proxyAdmin))),
+                    address(new ProtocolRegistry()),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(ProtocolRegistry.initialize.selector, defaultOwner, pauserMultisig)
                 )
@@ -50,7 +50,6 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         assertEq(protocolRegistry.getRoleMemberCount(protocolRegistry.PAUSER_ROLE()), 1);
         assertEq(protocolRegistry.getRoleMember(protocolRegistry.DEFAULT_ADMIN_ROLE(), 0), defaultOwner);
         assertEq(protocolRegistry.getRoleMember(protocolRegistry.PAUSER_ROLE(), 0), pauserMultisig);
-        assertEq(address(protocolRegistry.PROXY_ADMIN()), address(proxyAdminMock));
         cheats.expectRevert("Initializable: contract is already initialized");
         protocolRegistry.initialize(defaultOwner, pauserMultisig);
     }

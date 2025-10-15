@@ -15,9 +15,7 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
      *                         INITIALIZING FUNCTIONS
      *
      */
-    constructor(
-        IProxyAdmin proxyAdmin
-    ) ProtocolRegistryStorage(proxyAdmin) {
+    constructor() ProtocolRegistryStorage() {
         _disableInitializers();
     }
 

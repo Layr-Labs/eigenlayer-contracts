@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./IProxyAdmin.sol";
-
 interface IProtocolRegistryErrors {
     /// @notice Thrown when two array parameters have mismatching lengths.
     error InputArrayLengthMismatch();
@@ -139,10 +137,4 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
      * @return The pauser role for the protocol.
      */
     function PAUSER_ROLE() external view returns (bytes32);
-
-    /**
-     * @notice Returns the proxy admin for the protocol.
-     * @return The proxy admin for the protocol.
-     */
-    function PROXY_ADMIN() external view returns (IProxyAdmin);
 }

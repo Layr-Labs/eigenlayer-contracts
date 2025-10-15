@@ -17,15 +17,6 @@ abstract contract ProtocolRegistryStorage is IProtocolRegistry {
 
     /**
      *
-     *                         IMMUTABLE STATE
-     *
-     */
-
-    /// @inheritdoc IProtocolRegistry
-    IProxyAdmin public immutable PROXY_ADMIN;
-
-    /**
-     *
      *                          MUTABLE STATE
      *
      */
@@ -38,17 +29,6 @@ abstract contract ProtocolRegistryStorage is IProtocolRegistry {
 
     /// @notice Maps deployment addresses to their configurations.
     mapping(address => DeploymentConfig) internal _deploymentConfigs;
-
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
-    constructor(
-        IProxyAdmin proxyAdmin
-    ) {
-        PROXY_ADMIN = proxyAdmin;
-    }
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
