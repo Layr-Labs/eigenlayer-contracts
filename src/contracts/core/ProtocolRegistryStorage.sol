@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/utils/ShortStringsUpgradeable.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "../../interfaces/IProtocolRegistry.sol";
+import "../interfaces/IProtocolRegistry.sol";
 
 abstract contract ProtocolRegistryStorage is IProtocolRegistry {
     /**
