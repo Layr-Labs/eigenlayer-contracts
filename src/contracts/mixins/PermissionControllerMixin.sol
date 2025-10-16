@@ -32,7 +32,7 @@ abstract contract PermissionControllerMixin {
      */
     function _checkCanCall(
         address account
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         return permissionController.canCall(account, msg.sender, address(this), msg.sig);
     }
 }
