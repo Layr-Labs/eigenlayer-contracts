@@ -4,8 +4,19 @@ pragma solidity ^0.8.27;
 import "./storage/AllocationManagerStorage.sol";
 
 /// @notice Non-state mutating view functions, (static) called by the `AllocationManager`.
-contract AllocationManagerView is // `AllocationManagerStorage` starts at slot 151.
-    AllocationManagerStorage, IAllocationManagerView layout at 151 {
+/// @dev The `layout at 151` directive specifies that `AllocationManagerStorage` should be placed
+///      starting at storage slot 151. This slot number is calculated based on the storage layout
+///      of the main `AllocationManager` contract, which inherits from multiple contracts in this order:
+///
+///      1. Initializable
+///      2. Deprecated_OwnableUpgradeable
+///      3. Pausable
+///      4. AllocationManagerStorage
+///
+///      Since `AllocationManagerView` only needs access to the storage variables from
+///      `AllocationManagerStorage` (without the other mixins), it uses `layout at 151` to
+///      align its storage layout with the main `AllocationManager` contract.
+contract AllocationManagerView is IAllocationManagerView, AllocationManagerStorage layout at 151 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
