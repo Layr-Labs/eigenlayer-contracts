@@ -141,7 +141,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Configures an operator set with curve type and minimum rotation delay
      * @param operatorSet The operator set to configure
      * @param curveType Type of curve (ECDSA, BN254)
-     * @param minDelaySeconds Minimum rotation delay in seconds
+     * @param minDelaySeconds Number of seconds required between key rotations
      */
 
     /**
@@ -225,6 +225,14 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Only callable by the AVS or its authorized caller via the PermissionController
      */
     function setMinKeyRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) external;
+
+    /**
+     * @notice Finalizes a scheduled rotation if activation time has passed, compacting storage
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @return success True if a pending rotation was finalized
+     */
+    function finalizeScheduledRotation(address operator, OperatorSet memory operatorSet) external returns (bool success);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set

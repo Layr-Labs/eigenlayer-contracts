@@ -4,7 +4,7 @@
 | -------- | -------- | -------- |
 | [`KeyRegistrar.sol`](../../src/contracts/permissions/KeyRegistrar.sol) | Singleton | Transparent proxy |
 
-The `KeyRegistrar` manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets.
+The `KeyRegistrar` manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets. It also supports scheduled key rotation with an AVS-configurable minimum activation delay.
 
 Key features:
 * **Per-OperatorSet Configuration**: Each operator set must be configured with a specific curve type before keys can be registered
@@ -26,26 +26,29 @@ An AVS must configure the operator set with a specific curve type.
 
 ```solidity
 /**
- * @notice Configures an operator set with curve type
+ * @notice Configures an operator set with curve type and minimum rotation delay
  * @param operatorSet The operator set to configure
  * @param curveType Type of curve (ECDSA, BN254)
+ * @param minDelaySeconds Minimum scheduled rotation delay in seconds
  * @dev Only authorized callers for the AVS can configure operator sets
  * @dev Reverts for:
  *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
  *      - InvalidCurveType: The curve type is not ECDSA or BN254
  *      - ConfigurationAlreadySet: The operator set is already configured
  * @dev Emits the following events:
- *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+ *      - OperatorSetConfigured
+ *      - MinKeyRotationDelaySet
  */
-function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
+function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType, uint32 minDelaySeconds) external;
 ```
 
-Configures an operator set to use a specific cryptographic curve type. This must be called before any keys can be registered for the operator set. 
+Configures an operator set to use a specific cryptographic curve type and sets the minimum allowed delay for scheduled rotations. This must be called before any keys can be registered for the operator set. 
 *Note: Registering for an operatorSet in the core protocol does not require a key to be registered. However, the AVS may have logic that gates registration based on a key being registered in the `KeyRegistrar`.*
 
 *Effects*:
 * Sets the curve type for the specified operator set
-* Emits an `OperatorSetConfigured` event
+* Sets the minimum scheduled rotation delay for the operator set
+* Emits `OperatorSetConfigured` and `MinKeyRotationDelaySet`
 
 *Requirements*:
 * Caller MUST be authorized for the AVS (via the `PermissionController`)
@@ -294,9 +297,9 @@ sequenceDiagram
 ```
 
 
-### Key Rotation
+### Key Rotation (Scheduled)
 
-Key rotation is supported natively via `rotateKey`, which atomically replaces the current key with a new key for the same `operatorSet`. Rotation is allowed even if the operator is slashable.
+Key rotation is scheduled: an operator proposes a new key and an activation timestamp that must be at least the AVS-configured minimum delay in the future. Until activation, getters return the current key. After activation, getters return the new key. Rotation is allowed even if the operator is slashable.
 
 ```mermaid
 sequenceDiagram
@@ -311,27 +314,62 @@ sequenceDiagram
 
 ```solidity
 /**
- * @notice Rotates an operator's key for a specific operator set by atomically replacing the current key with a new one
+ * @notice Schedules a key rotation; the new key becomes active at `activateAt`
  * @param operator Address of the operator whose key is being rotated
  * @param operatorSet The operator set for which the key is being rotated
  * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
  * @param signature Signature from the new key proving ownership over the appropriate registration message hash
- * @dev Keys remain in the global key registry to prevent reuse
+ * @param activateAt timestamp at or after which the new key becomes active; must be at least the AVS-configured minimum delay in the future
+ * @dev New key is reserved globally at scheduling time to prevent reuse
  * @dev Reverts for:
  *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
  *      - OperatorSetNotConfigured: The operator set is not configured
  *      - KeyNotFound: The operator does not have a registered key for this operator set
+ *      - PendingRotationExists: A prior rotation is already scheduled and not yet activated
+ *      - ActivationTooSoon: `activateAt` <= current time or < (current time + minDelaySeconds)
  *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
- *      - KeyAlreadyRegistered: New key is already globally registered
- * @dev Emits the following events:
- *      - KeyRotated(oldPubkey, newPubkey)
+ *      - KeyAlreadyRegistered: New key is already registered globally by hash
+ * @dev Emits:
+ *      - KeyRotationScheduled(operatorSet, operator, curveType, oldPubkey, newPubkey, activateAt)
  */
 function rotateKey(
     address operator,
     OperatorSet memory operatorSet,
     bytes calldata newPubkey,
-    bytes calldata signature
+    bytes calldata signature,
+    uint64 activateAt
 ) external;
 ```
 
-This function runs full validation and signature checks for the new key according to the configured curve type. The old key remains globally registered and cannot be reused elsewhere.
+This function runs full validation and signature checks for the new key according to the configured curve type. The old key remains globally registered and cannot be reused elsewhere. The new key is globally reserved upon scheduling and becomes the active key after `activateAt`.
+
+Requirements
+- Caller is the `operator` or authorized via the `PermissionController`
+- `operatorSet` configured with a curve type
+- `operator` has a registered key for `operatorSet`
+- No pending rotation exists
+- `activateAt` > now and `activateAt` >= now + `minDelaySeconds`
+- New key format and signature are valid for the configured curve
+- New key hash is not already globally registered
+
+Effects
+- Records `pendingKey` and `pendingActivateAt` for the operator in the `operatorSet`
+- Reserves the new key in the global registry immediately
+- Emits `KeyRotationScheduled`
+
+Notes
+- Before `activateAt`, getters (`getECDSAKey`, `getBN254Key`, `getKeyHash`) return values for the current key
+- After `activateAt`, getters resolve to the new key. `finalizeScheduledRotation` can be called (by anyone) to compact storage; it returns `true` if a rotation was finalized
+
+#### `finalizeScheduledRotation`
+
+```solidity
+/**
+ * @notice Finalizes a scheduled rotation if its activation time has passed, compacting storage
+ * @param operator Address of the operator
+ * @param operatorSet The operator set
+ */
+function finalizeScheduledRotation(address operator, OperatorSet memory operatorSet) external;
+```
+
+This optional helper collapses pending rotation data after activation; getters already return the correct active key based on time.

@@ -59,10 +59,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
 
         _operatorSetCurveTypes[operatorSet.key()] = curveType;
-        _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
-
         emit OperatorSetConfigured(operatorSet, curveType);
-        emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
+        _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -127,17 +125,18 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         KeyInfo storage info = _operatorKeyInfo[operatorSet.key()][operator];
         require(info.isRegistered, KeyNotFound(operatorSet, operator));
 
-        // Enforce minimum delay configured by AVS and ensure activation is in the future
-        {
-            uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
-            if (activateAt <= uint64(block.timestamp) || activateAt < minActivateAt) {
-                revert ActivationTooSoon(minActivateAt);
-            }
-        }
-
-        // Ensure no pending rotation exists
+		// Ensure no pending rotation exists
         require(info.pendingActivateAt == 0, PendingRotationExists());
+
+        // Enforce minimum delay configured by AVS and ensure activation is in the future
+		{
+			uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+			uint64 minActivateAt = uint64(block.timestamp) + minDelay;
+			require(
+				activateAt > uint64(block.timestamp) && activateAt >= minActivateAt,
+				ActivationTooSoon(minActivateAt)
+			);
+		}
 
         // Validate new key and reserve it globally
         bytes32 newKeyHash;
@@ -165,8 +164,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     function finalizeScheduledRotation(
         address operator,
         OperatorSet memory operatorSet
-    ) external checkCanCall(operator) {
-        _finalizeRotationIfActive(operatorSet, operator);
+    ) external returns (bool success) {
+        return _finalizeRotationIfActive(operatorSet, operator);
     }
 
     /// @notice Sets the minimum rotation delay for an operator set
@@ -174,6 +173,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         OperatorSet memory operatorSet,
         uint32 minDelaySeconds
     ) external checkCanCall(operatorSet.avs) {
+        _setMinRotationDelay(operatorSet, minDelaySeconds);
+    }
+
+    function _setMinRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) internal {
         _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
         emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
     }
@@ -253,19 +256,19 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
-    function _finalizeRotationIfActive(
-        OperatorSet memory operatorSet,
-        address operator
-    ) internal returns (bytes memory) {
+    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator)
+        internal
+        returns (bool)
+    {
         KeyInfo storage keyInfoStorage = _operatorKeyInfo[operatorSet.key()][operator];
-        if (!keyInfoStorage.isRegistered) return bytes("");
+        if (!keyInfoStorage.isRegistered) return false;
         if (keyInfoStorage.pendingActivateAt != 0 && block.timestamp >= keyInfoStorage.pendingActivateAt) {
             keyInfoStorage.currentKey = keyInfoStorage.pendingKey;
             keyInfoStorage.pendingKey = bytes("");
             keyInfoStorage.pendingActivateAt = 0;
-            return keyInfoStorage.currentKey;
+            return true;
         }
-        return keyInfoStorage.currentKey;
+        return false;
     }
 
     /// @notice Validate an ECDSA key + signature without mutating state; returns the key hash
@@ -317,8 +320,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         return _getKeyHashForKeyData(keyData, CurveType.BN254);
     }
-
-    // Removed legacy decoder; KeyInfo now has explicit fields
 
     /**
      * @notice Internal helper to get key hash for pubkey data using consistent hashing
