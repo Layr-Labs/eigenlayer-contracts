@@ -49,7 +49,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     /// @inheritdoc IKeyRegistrar
     function configureOperatorSet(
         OperatorSet memory operatorSet,
-        CurveType curveType
+        CurveType curveType,
+        uint32 minDelaySeconds
     ) external checkCanCall(operatorSet.avs) {
         require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
 
@@ -58,8 +59,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
 
         _operatorSetCurveTypes[operatorSet.key()] = curveType;
-
         emit OperatorSetConfigured(operatorSet, curveType);
+        _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -107,6 +108,81 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         emit KeyDeregistered(operatorSet, operator, curveType);
     }
 
+    /// @inheritdoc IKeyRegistrar
+    function rotateKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata newPubkey,
+        bytes calldata signature,
+        uint64 activateAt
+    ) external checkCanCall(operator) {
+        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
+        require(curveType != CurveType.NONE, OperatorSetNotConfigured());
+
+        // Finalize any past-due scheduled rotation so we can schedule a new one
+        _finalizeRotationIfActive(operatorSet, operator);
+
+        KeyInfo storage info = _operatorKeyInfo[operatorSet.key()][operator];
+        require(info.isRegistered, KeyNotFound(operatorSet, operator));
+
+        // Ensure no pending rotation exists
+        require(info.pendingActivateAt == 0, PendingRotationExists());
+
+        // Enforce minimum delay configured by AVS and ensure activation is in the future
+        {
+            uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
+            require(
+                activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
+            );
+        }
+
+        // Validate new key and reserve it globally
+        bytes32 newKeyHash;
+        if (curveType == CurveType.ECDSA) {
+            newKeyHash = _validateECDSAKey(operatorSet, operator, newPubkey, signature);
+        } else if (curveType == CurveType.BN254) {
+            newKeyHash = _validateBN254Key(operatorSet, operator, newPubkey, signature);
+        } else {
+            revert InvalidCurveType();
+        }
+
+        // Reserve the new key globally to prevent reuse
+        require(!_globalKeyRegistry[newKeyHash], KeyAlreadyRegistered());
+        _globalKeyRegistry[newKeyHash] = true;
+        _keyHashToOperator[newKeyHash] = operator;
+
+        // Store scheduled rotation in-place
+        info.pendingKey = newPubkey;
+        info.pendingActivateAt = activateAt;
+
+        emit KeyRotationScheduled(operatorSet, operator, curveType, info.currentKey, newPubkey, activateAt);
+    }
+
+    /// @inheritdoc IKeyRegistrar
+    function finalizeScheduledRotation(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external returns (bool success) {
+        return _finalizeRotationIfActive(operatorSet, operator);
+    }
+
+    /// @inheritdoc IKeyRegistrar
+    function setMinKeyRotationDelay(
+        OperatorSet memory operatorSet,
+        uint32 minDelaySeconds
+    ) external checkCanCall(operatorSet.avs) {
+        _setMinRotationDelay(operatorSet, minDelaySeconds);
+    }
+
+    /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
+    /// @param operatorSet The operator set being configured
+    /// @param minDelaySeconds The minimum rotation delay in seconds
+    function _setMinRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) internal {
+        _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
+        emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
+    }
+
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -127,25 +203,11 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes calldata keyData,
         bytes calldata signature
     ) internal {
-        // Validate ECDSA address format
-        require(keyData.length == 20, InvalidKeyFormat());
+        // Validate and compute key hash (shared with rotation)
+        bytes32 keyHash = _validateECDSAKey(operatorSet, operator, keyData, signature);
 
-        // Decode address from bytes
-        address keyAddress = address(bytes20(keyData));
-        require(keyAddress != address(0), ZeroPubkey());
-
-        // Calculate key hash using the address
-        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.ECDSA);
-
-        // Check global uniqueness
+        // Enforce global uniqueness then store
         require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
-
-        // Get the signable digest for the ECDSA key registration message
-        bytes32 signableDigest = getECDSAKeyRegistrationMessageHash(operator, operatorSet, keyAddress);
-
-        _checkIsValidSignatureNow(keyAddress, signableDigest, signature, type(uint256).max);
-
-        // Store key data
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
@@ -163,42 +225,11 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes calldata keyData,
         bytes calldata signature
     ) internal {
-        require(keyData.length == 192, InvalidKeyFormat());
-        require(signature.length == 64, InvalidSignature());
+        // Validate and compute key hash (shared with rotation)
+        bytes32 keyHash = _validateBN254Key(operatorSet, operator, keyData, signature);
 
-        BN254.G1Point memory g1Point;
-        BN254.G2Point memory g2Point;
-
-        {
-            // Decode BN254 G1 and G2 points from the keyData bytes
-            (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) =
-                abi.decode(keyData, (uint256, uint256, uint256[2], uint256[2]));
-
-            // Validate G1 point
-            g1Point = BN254.G1Point(g1X, g1Y);
-            require(!(g1X == 0 && g1Y == 0), ZeroPubkey());
-
-            // Construct BN254 G2 point from coordinates
-            g2Point = BN254.G2Point(g2X, g2Y);
-        }
-
-        // Create EIP-712 compliant message hash
-        bytes32 signableDigest = getBN254KeyRegistrationMessageHash(operator, operatorSet, keyData);
-
-        // Decode signature from bytes to G1 point
-        (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
-        BN254.G1Point memory signaturePoint = BN254.G1Point(sigX, sigY);
-
-        // Verify signature
-        (, bool pairingSuccessful) =
-            BN254SignatureVerifier.verifySignature(signableDigest, signaturePoint, g1Point, g2Point, false, 0);
-        require(pairingSuccessful, InvalidSignature());
-
-        // Calculate key hash and check global uniqueness
-        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
+        // Enforce global uniqueness then store
         require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
-
-        // Store key data
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
@@ -216,13 +247,77 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         bytes32 keyHash
     ) internal {
         // Store key data
-        _operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({isRegistered: true, keyData: pubkey});
+        _operatorKeyInfo[operatorSet.key()][operator] =
+            KeyInfo({isRegistered: true, currentKey: pubkey, pendingKey: bytes(""), pendingActivateAt: 0});
 
         // Mark the key hash as spent
         _globalKeyRegistry[keyHash] = true;
 
         // Store the operator for the key hash
         _keyHashToOperator[keyHash] = operator;
+    }
+
+    /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
+    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator) internal returns (bool) {
+        KeyInfo storage keyInfoStorage = _operatorKeyInfo[operatorSet.key()][operator];
+        if (!keyInfoStorage.isRegistered) return false;
+        if (keyInfoStorage.pendingActivateAt != 0 && block.timestamp >= keyInfoStorage.pendingActivateAt) {
+            keyInfoStorage.currentKey = keyInfoStorage.pendingKey;
+            keyInfoStorage.pendingKey = bytes("");
+            keyInfoStorage.pendingActivateAt = 0;
+            return true;
+        }
+        return false;
+    }
+
+    /// @notice Validate an ECDSA key + signature without mutating state; returns the key hash
+    function _validateECDSAKey(
+        OperatorSet memory operatorSet,
+        address operator,
+        bytes calldata keyData,
+        bytes calldata signature
+    ) internal view returns (bytes32) {
+        require(keyData.length == 20, InvalidKeyFormat());
+        address keyAddress = address(bytes20(keyData));
+        require(keyAddress != address(0), ZeroPubkey());
+
+        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.ECDSA);
+
+        bytes32 signableDigest = getECDSAKeyRegistrationMessageHash(operator, operatorSet, keyAddress);
+        _checkIsValidSignatureNow(keyAddress, signableDigest, signature, type(uint256).max);
+
+        return keyHash;
+    }
+
+    /// @notice Validate a BN254 key + signature without mutating state; returns the key hash
+    function _validateBN254Key(
+        OperatorSet memory operatorSet,
+        address operator,
+        bytes calldata keyData,
+        bytes calldata signature
+    ) internal view returns (bytes32) {
+        require(keyData.length == 192, InvalidKeyFormat());
+        require(signature.length == 64, InvalidSignature());
+
+        bytes32 signableDigest = getBN254KeyRegistrationMessageHash(operator, operatorSet, keyData);
+
+        bool pairingSuccessful;
+        {
+            (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) =
+                abi.decode(keyData, (uint256, uint256, uint256[2], uint256[2]));
+            require(!(g1X == 0 && g1Y == 0), ZeroPubkey());
+
+            (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
+            BN254.G1Point memory signaturePoint = BN254.G1Point(sigX, sigY);
+            BN254.G1Point memory g1Point = BN254.G1Point(g1X, g1Y);
+            BN254.G2Point memory g2Point = BN254.G2Point(g2X, g2Y);
+
+            (, pairingSuccessful) =
+                BN254SignatureVerifier.verifySignature(signableDigest, signaturePoint, g1Point, g2Point, false, 0);
+        }
+        require(pairingSuccessful, InvalidSignature());
+
+        return _getKeyHashForKeyData(keyData, CurveType.BN254);
     }
 
     /**
@@ -277,8 +372,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             return (BN254.G1Point(0, 0), BN254.G2Point(zeroArray, zeroArray));
         }
 
+        bytes memory active = _getActiveKey(keyInfo);
         (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) =
-            abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
+            abi.decode(active, (uint256, uint256, uint256[2], uint256[2]));
 
         return (BN254.G1Point(g1X, g1Y), BN254.G2Point(g2X, g2Y));
     }
@@ -290,7 +386,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(curveType == CurveType.ECDSA, InvalidCurveType());
 
         KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
-        return keyInfo.keyData; // Returns the 20-byte address as bytes
+        if (!keyInfo.isRegistered) return bytes("");
+        bytes memory active = _getActiveKey(keyInfo);
+        // Note: this is a view; we don't mutate storage here. Use finalizeScheduledRotation or rotateKey to collapse.
+        return active; // 20-byte address as bytes
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -314,7 +413,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             return bytes32(0);
         }
 
-        return _getKeyHashForKeyData(keyInfo.keyData, curveType);
+        bytes memory active = _getActiveKey(keyInfo);
+        return _getKeyHashForKeyData(active, curveType);
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -338,6 +438,19 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         address operator = _keyHashToOperator[keyHash];
         return (operator, isRegistered(operatorSet, operator));
+    }
+
+    function _getActiveKey(
+        KeyInfo memory keyInfo
+    ) internal view returns (bytes memory) {
+        if (keyInfo.pendingActivateAt == 0) {
+            return keyInfo.currentKey;
+        }
+        if (block.timestamp < keyInfo.pendingActivateAt) {
+            return keyInfo.currentKey;
+        } else {
+            return keyInfo.pendingKey;
+        }
     }
 
     /// @inheritdoc IKeyRegistrar

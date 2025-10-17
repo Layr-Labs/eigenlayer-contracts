@@ -28,7 +28,7 @@ contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUti
         OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
 
         // Configure operator set for BN254 curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254, 0);
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
@@ -190,7 +190,7 @@ contract Integration_Multichain_Full_Flow_ECDSA is MultichainIntegrationCheckUti
         OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 2});
 
         // Configure operator set for ECDSA curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA, 0);
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
