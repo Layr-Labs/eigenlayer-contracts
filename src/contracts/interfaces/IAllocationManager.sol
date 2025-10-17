@@ -225,7 +225,7 @@ interface IAllocationManagerEvents is IAllocationManagerTypes {
     event StrategyRemovedFromOperatorSet(OperatorSet operatorSet, IStrategy strategy);
 }
 
-interface IAllocationManagerStorage {
+interface IAllocationManagerStorage is IAllocationManagerEvents {
     /**
      * @notice The DelegationManager contract for EigenLayer
      */
