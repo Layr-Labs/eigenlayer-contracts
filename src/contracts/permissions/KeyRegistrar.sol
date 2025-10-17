@@ -159,7 +159,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         emit KeyRotationScheduled(operatorSet, operator, curveType, info.currentKey, newPubkey, activateAt);
     }
 
-    /// @notice Optionally finalize a scheduled rotation if its activation time has passed
+    /// @inheritdoc IKeyRegistrar
     function finalizeScheduledRotation(
         address operator,
         OperatorSet memory operatorSet
@@ -167,7 +167,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return _finalizeRotationIfActive(operatorSet, operator);
     }
 
-    /// @notice Sets the minimum rotation delay for an operator set
+    /// @inheritdoc IKeyRegistrar
     function setMinKeyRotationDelay(
         OperatorSet memory operatorSet,
         uint32 minDelaySeconds
@@ -175,6 +175,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
 
+    /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
+    /// @param operatorSet The operator set being configured
+    /// @param minDelaySeconds The minimum rotation delay in seconds
     function _setMinRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) internal {
         _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
         emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
