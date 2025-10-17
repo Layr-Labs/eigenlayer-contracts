@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../mixins/SignatureUtilsMixin.sol";
 import "../permissions/Pausable.sol";
-import "./AVSDirectoryStorage.sol";
+import "./storage/AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
     Initializable,

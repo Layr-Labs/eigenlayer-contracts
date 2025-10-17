@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../mixins/PermissionControllerMixin.sol";
 import "../mixins/SemVerMixin.sol";
-import "./ReleaseManagerStorage.sol";
+import "./storage/ReleaseManagerStorage.sol";
 
 contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
     using OperatorSetLib for OperatorSet;

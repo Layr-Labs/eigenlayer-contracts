@@ -18,7 +18,7 @@ contract PermissionControllerUnitTests is EigenLayerUnitTestSetup, IPermissionCo
     address target1;
     address target2;
     bytes4 selector1 = IDelegationManager.updateOperatorMetadataURI.selector;
-    bytes4 selector2 = IAllocationManager.modifyAllocations.selector;
+    bytes4 selector2 = IAllocationManagerActions.modifyAllocations.selector;
 
     function setUp() public virtual override {
         // Setup - already deploys permissionController

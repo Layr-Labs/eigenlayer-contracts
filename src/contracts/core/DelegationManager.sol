@@ -10,7 +10,7 @@ import "../mixins/Deprecated_OwnableUpgradeable.sol";
 import "../permissions/Pausable.sol";
 import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
-import "./DelegationManagerStorage.sol";
+import "./storage/DelegationManagerStorage.sol";
 
 /**
  * @title DelegationManager
