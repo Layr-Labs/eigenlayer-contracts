@@ -443,8 +443,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     function _getActiveKey(
         KeyInfo memory keyInfo
     ) internal view returns (bytes memory) {
-        if (keyInfo.pendingActivateAt == 0) return keyInfo.currentKey;
-        return block.timestamp < keyInfo.pendingActivateAt ? keyInfo.currentKey : keyInfo.pendingKey;
+        if (keyInfo.pendingActivateAt == 0) {
+            return keyInfo.currentKey;
+        }
+        if (block.timestamp < keyInfo.pendingActivateAt) {
+            return keyInfo.currentKey;
+        } else {
+            return keyInfo.pendingKey;
+        }
     }
 
     /// @inheritdoc IKeyRegistrar
