@@ -125,18 +125,17 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         KeyInfo storage info = _operatorKeyInfo[operatorSet.key()][operator];
         require(info.isRegistered, KeyNotFound(operatorSet, operator));
 
-		// Ensure no pending rotation exists
+        // Ensure no pending rotation exists
         require(info.pendingActivateAt == 0, PendingRotationExists());
 
         // Enforce minimum delay configured by AVS and ensure activation is in the future
-		{
-			uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-			uint64 minActivateAt = uint64(block.timestamp) + minDelay;
-			require(
-				activateAt > uint64(block.timestamp) && activateAt >= minActivateAt,
-				ActivationTooSoon(minActivateAt)
-			);
-		}
+        {
+            uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
+            require(
+                activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
+            );
+        }
 
         // Validate new key and reserve it globally
         bytes32 newKeyHash;
@@ -256,10 +255,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
-    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator)
-        internal
-        returns (bool)
-    {
+    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator) internal returns (bool) {
         KeyInfo storage keyInfoStorage = _operatorKeyInfo[operatorSet.key()][operator];
         if (!keyInfoStorage.isRegistered) return false;
         if (keyInfoStorage.pendingActivateAt != 0 && block.timestamp >= keyInfoStorage.pendingActivateAt) {

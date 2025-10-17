@@ -232,7 +232,10 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set
      * @return success True if a pending rotation was finalized
      */
-    function finalizeScheduledRotation(address operator, OperatorSet memory operatorSet) external returns (bool success);
+    function finalizeScheduledRotation(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external returns (bool success);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
