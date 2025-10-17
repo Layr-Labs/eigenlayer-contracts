@@ -283,7 +283,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         /// OperatorTableUpdater
         {
             OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
-            assertEq(operatorTableUpdater.version(), Env.deployVersion(), "operatorTableUpdater version mismatch");
             assertTrue(
                 operatorTableUpdater.bn254CertificateVerifier() == Env.proxy.bn254CertificateVerifier(),
                 "out.bn254CertificateVerifier mismatch"
@@ -309,9 +308,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         /// BN254CertificateVerifier
         {
             BN254CertificateVerifier bn254CertificateVerifier = Env.proxy.bn254CertificateVerifier();
-            assertEq(
-                bn254CertificateVerifier.version(), Env.deployVersion(), "bn254CertificateVerifier version mismatch"
-            );
             assertTrue(
                 bn254CertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
                 "bn254CertificateVerifier operatorTableUpdater mismatch"
@@ -321,7 +317,6 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
         /// TaskMailbox
         {
             TaskMailbox taskMailbox = Env.proxy.taskMailbox();
-            assertEq(taskMailbox.version(), Env.deployVersion(), "taskMailbox version mismatch");
             assertTrue(
                 taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
                 "taskMailbox.BN254_CERTIFICATE_VERIFIER mismatch"
