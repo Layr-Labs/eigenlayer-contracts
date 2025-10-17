@@ -1564,6 +1564,94 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         assertEq(resolved, operator1);
         assertTrue(isReg);
     }
+
+    function test_rotateKey_ECDSA_nonZeroDelay_boundary_and_finalize_return() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        // Configure with non-zero delay
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA, 7);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Schedule exactly at min boundary
+        uint64 minActivateAt = uint64(block.timestamp + 7);
+        bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
+        vm.prank(operator1);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, minActivateAt);
+
+        // Before activation
+        assertEq(keyRegistrar.getECDSAKey(operatorSet, operator1), ecdsaKey1);
+
+        // At boundary
+        vm.warp(minActivateAt);
+        assertEq(keyRegistrar.getECDSAKey(operatorSet, operator1), ecdsaKey2);
+
+        // Finalize should return true once
+        bool ok = keyRegistrar.finalizeScheduledRotation(operator1, operatorSet);
+        assertTrue(ok);
+        // And false if called again
+        ok = keyRegistrar.finalizeScheduledRotation(operator1, operatorSet);
+        assertFalse(ok);
+    }
+
+    function test_setMinKeyRotationDelay_affectsScheduling() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        // Configure with zero delay
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA, 0);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Increase delay
+        vm.prank(avs1);
+        keyRegistrar.setMinKeyRotationDelay(operatorSet, 20);
+
+        // Attempt with too-soon activation
+        bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
+        uint64 badAt = uint64(block.timestamp + 10);
+        uint64 minAt = uint64(block.timestamp + 20);
+        vm.prank(operator1);
+        vm.expectRevert(abi.encodeWithSelector(ActivationTooSoon.selector, minAt));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, badAt);
+
+        // Now schedule respecting the new delay
+        vm.prank(operator1);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, minAt);
+    }
+
+    function test_rotateKey_BN254_nonZeroDelay_boundary() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254, 3);
+
+        // Register initial key
+        bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
+
+        uint64 minAt = uint64(block.timestamp + 3);
+        bytes memory sig2 = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey2);
+        vm.prank(operator1);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2, minAt);
+
+        // Before activation
+        (BN254.G1Point memory g1Before,) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(g1Before.X, bn254G1Key1.X);
+
+        // At boundary
+        vm.warp(minAt);
+        (BN254.G1Point memory g1After,) = keyRegistrar.getBN254Key(operatorSet, operator1);
+        assertEq(g1After.X, bn254G1Key2.X);
+    }
 }
 
 /**
