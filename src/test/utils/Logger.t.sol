@@ -52,25 +52,25 @@ abstract contract Logger is Test {
     bytes32 constant LOG_STATE_SLOT = bytes32(0);
 
     modifier noTracing() {
-        uint traceCounter = _getTraceCounter();
-        if (traceCounter == 0) cheats.pauseTracing();
+        // uint traceCounter = _getTraceCounter();
+        // if (traceCounter == 0) cheats.pauseTracing();
 
-        traceCounter++;
-        _setTraceCounter(traceCounter);
+        // traceCounter++;
+        // _setTraceCounter(traceCounter);
 
         _;
 
-        traceCounter = _getTraceCounter();
-        traceCounter--;
-        _setTraceCounter(traceCounter);
+        // traceCounter = _getTraceCounter();
+        // traceCounter--;
+        // _setTraceCounter(traceCounter);
 
-        if (traceCounter == 0) cheats.resumeTracing();
+        // if (traceCounter == 0) cheats.resumeTracing();
     }
 
     modifier noLogging() {
-        logging = false;
+        // logging = false;
         _;
-        logging = true;
+        // logging = true;
     }
 
     /// -----------------------------------------------------------------------
