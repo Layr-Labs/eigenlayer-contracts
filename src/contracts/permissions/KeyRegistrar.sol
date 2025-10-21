@@ -93,9 +93,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(!_operatorKeyInfo[operatorSet.key()][operator].isRegistered, OperatorAlreadyRegistered());
 
         // Validate and reserve the key globally, then store
-        bytes32 keyHash = _validateKey(operatorSet, operator, keyData, signature, curveType);
-        _reserveKeyHash(keyHash, operator);
-        _storeKeyData(operatorSet, operator, keyData);
+        _validateAndReserveKey(operatorSet, operator, keyData, signature, curveType);
+        _operatorKeyInfo[operatorSet.key()][operator] =
+            KeyInfo({isRegistered: true, currentKey: keyData, pendingKey: bytes(""), pendingActivateAt: 0});
 
         emit KeyRegistered(operatorSet, operator, curveType, keyData);
     }
@@ -152,8 +152,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         }
 
         // Validate new key and reserve it globally
-        bytes32 newKeyHash = _validateKey(operatorSet, operator, newPubkey, signature, curveType);
-        _reserveKeyHash(newKeyHash, operator);
+        _validateAndReserveKey(operatorSet, operator, newPubkey, signature, curveType);
 
         // Store scheduled rotation in-place
         info.pendingKey = newPubkey;
@@ -185,62 +184,38 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /**
-     * @notice Persist the operator's active key for an operator set.
-     * @dev Does not update the global key registry. Callers MUST have already
-     *      reserved the corresponding key hash via `_reserveKeyHash` to enforce
-     *      global uniqueness across AVSs and operator sets before storing.
-     *      Initializes with no pending rotation.
-     * @param operatorSet The operator set being updated
-     * @param operator The operator whose key is being stored
-     * @param pubkey Raw key bytes (20 bytes for ECDSA address or 192 bytes for BN254)
-     */
-    function _storeKeyData(OperatorSet memory operatorSet, address operator, bytes memory pubkey) internal {
-        _operatorKeyInfo[operatorSet.key()][operator] =
-            KeyInfo({isRegistered: true, currentKey: pubkey, pendingKey: bytes(""), pendingActivateAt: 0});
-    }
-
-    /**
-     * @notice Validate a key and signature for a given curve and return its canonical key hash.
-     * @dev View-only. For ECDSA, enforces 20-byte address format and verifies an EIP-712
-     *      signature from the key address. For BN254, enforces the 192-byte encoding and
-     *      verifies a pairing-based signature over the EIP-712 digest.
+     * @notice Validate a key + signature and atomically reserve the canonical key hash.
+     * @dev For ECDSA, enforces 20-byte address format and verifies an EIP-712 signature
+     *      from the key address. For BN254, enforces the 192-byte encoding and verifies a
+     *      pairing-based signature over the EIP-712 digest. Then enforces global uniqueness
+     *      by marking the key hash as used and mapping it to the operator.
      * @param operatorSet Operator set context bound into the signed message
      * @param operator Operator address bound into the signed message
      * @param keyData Raw key bytes (20 bytes for ECDSA or 192 bytes for BN254)
      * @param signature Signature proving control of the key
      * @param curveType The curve to use for validation
-     * @return keyHash Canonical hash used for global uniqueness tracking
+     * @return keyHash Canonical key hash that is now reserved globally
      */
-    function _validateKey(
+    function _validateAndReserveKey(
         OperatorSet memory operatorSet,
         address operator,
         bytes calldata keyData,
         bytes calldata signature,
         CurveType curveType
-    ) internal view returns (bytes32) {
+    ) internal returns (bytes32) {
+        bytes32 keyHash;
         if (curveType == CurveType.ECDSA) {
-            return _validateECDSAKey(operatorSet, operator, keyData, signature);
+            keyHash = _validateECDSAKey(operatorSet, operator, keyData, signature);
         } else if (curveType == CurveType.BN254) {
-            return _validateBN254Key(operatorSet, operator, keyData, signature);
+            keyHash = _validateBN254Key(operatorSet, operator, keyData, signature);
+        } else {
+            revert InvalidCurveType();
         }
-        revert InvalidCurveType();
-    }
 
-    /**
-     * @notice Reserve a key hash globally and map it to its operator.
-     * @dev Reverts if the key hash has already been used anywhere, enforcing
-     *      global uniqueness across all AVSs and operator sets. This should be
-     *      called exactly once prior to storing the key to prevent reuse in
-     *      concurrent flows.
-     * @param keyHash Canonical key hash returned from `_validateKey`
-     * @param operator The operator that owns the key
-     */
-    function _reserveKeyHash(bytes32 keyHash, address operator) internal {
         require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
         _globalKeyRegistry[keyHash] = true;
-
-        // Store the operator for the key hash
         _keyHashToOperator[keyHash] = operator;
+        return keyHash;
     }
 
     /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
@@ -256,7 +231,17 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return false;
     }
 
-    /// @notice Validate an ECDSA key + signature without mutating state; returns the key hash
+    /**
+     * @notice Validate an ECDSA key and signature and return its key hash.
+     * @dev Ensures `keyData` is a 20-byte non-zero address, derives the EIP-712
+     *      digest with `operatorSet` and `operator`, and verifies the signature
+     *      from the key address. View-only; does not mutate state.
+     * @param operatorSet Operator set context bound into the signed message
+     * @param operator Operator address bound into the signed message
+     * @param keyData Raw ECDSA key bytes (20-byte address encoded as bytes)
+     * @param signature Signature produced by the key address over the EIP-712 digest
+     * @return keyHash Key hash for global uniqueness tracking
+     */
     function _validateECDSAKey(
         OperatorSet memory operatorSet,
         address operator,
@@ -275,7 +260,18 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return keyHash;
     }
 
-    /// @notice Validate a BN254 key + signature without mutating state; returns the key hash
+    /**
+     * @notice Validate a BN254 key and signature and return its key hash.
+     * @dev Ensures `keyData` encodes (g1X,g1Y,g2X[2],g2Y[2]) totaling 192 bytes and
+     *      `signature` is 64 bytes encoding a G1 point, checks non-zero G1, computes
+     *      the EIP-712 digest with `operatorSet` and `operator`, and verifies the
+     *      pairing. View-only; does not mutate state.
+     * @param operatorSet Operator set context bound into the signed message
+     * @param operator Operator address bound into the signed message
+     * @param keyData Raw BN254 key bytes (G1 and G2 components)
+     * @param signature BN254 signature over the EIP-712 digest (G1 point: (sigX, sigY))
+     * @return keyHash Key hash for global uniqueness tracking
+     */
     function _validateBN254Key(
         OperatorSet memory operatorSet,
         address operator,
@@ -307,7 +303,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /**
-     * @notice Internal helper to get key hash for pubkey data using consistent hashing
+     * @notice Gets the key hash for pubkey data using consistent hashing
      * @param pubkey The public key data
      * @param curveType The curve type (ECDSA or BN254)
      * @return keyHash The key hash
