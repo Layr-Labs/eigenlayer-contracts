@@ -92,14 +92,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Check if the operator is already registered to the operatorSet
         require(!_operatorKeyInfo[operatorSet.key()][operator].isRegistered, OperatorAlreadyRegistered());
 
-        // Register key based on curve type - both now require signature verification
-        if (curveType == CurveType.ECDSA) {
-            _registerECDSAKey(operatorSet, operator, keyData, signature);
-        } else if (curveType == CurveType.BN254) {
-            _registerBN254Key(operatorSet, operator, keyData, signature);
-        } else {
-            revert InvalidCurveType();
-        }
+        // Validate and reserve the key globally, then store
+        bytes32 keyHash = _validateKey(operatorSet, operator, keyData, signature, curveType);
+        _reserveKeyHash(keyHash, operator);
+        _storeKeyData(operatorSet, operator, keyData);
 
         emit KeyRegistered(operatorSet, operator, curveType, keyData);
     }
@@ -149,27 +145,15 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
             // If minDelay is max, rotation is disabled for this operator set
             require(minDelay != type(uint64).max, RotationDisabled());
-            uint256 nowTs = block.timestamp;
-            // Compute minActivateAt in 256-bit space and clamp to uint64::max to avoid overflow
-            uint256 minActivateAt256 = nowTs + uint256(minDelay);
-            uint64 minActivateAt = minActivateAt256 > type(uint64).max ? type(uint64).max : uint64(minActivateAt256);
-            require(uint256(activateAt) > nowTs && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt));
+            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
+            require(
+                activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
+            );
         }
 
         // Validate new key and reserve it globally
-        bytes32 newKeyHash;
-        if (curveType == CurveType.ECDSA) {
-            newKeyHash = _validateECDSAKey(operatorSet, operator, newPubkey, signature);
-        } else if (curveType == CurveType.BN254) {
-            newKeyHash = _validateBN254Key(operatorSet, operator, newPubkey, signature);
-        } else {
-            revert InvalidCurveType();
-        }
-
-        // Reserve the new key globally to prevent reuse
-        require(!_globalKeyRegistry[newKeyHash], KeyAlreadyRegistered());
-        _globalKeyRegistry[newKeyHash] = true;
-        _keyHashToOperator[newKeyHash] = operator;
+        bytes32 newKeyHash = _validateKey(operatorSet, operator, newPubkey, signature, curveType);
+        _reserveKeyHash(newKeyHash, operator);
 
         // Store scheduled rotation in-place
         info.pendingKey = newPubkey;
@@ -201,67 +185,35 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /**
-     * @notice Validates and registers an ECDSA address with EIP-712 signature verification
-     * @param operatorSet The operator set to register the key for
-     * @param operator Address of the operator
-     * @param keyData The ECDSA address encoded as bytes (20 bytes)
-     * @param signature EIP-712 signature over the registration message
-     * @dev Validates address format, verifies signature ownership, and ensures global uniqueness
-     */
-    function _registerECDSAKey(
-        OperatorSet memory operatorSet,
-        address operator,
-        bytes calldata keyData,
-        bytes calldata signature
-    ) internal {
-        // Validate and compute key hash (shared with rotation)
-        bytes32 keyHash = _validateECDSAKey(operatorSet, operator, keyData, signature);
-
-        // Enforce global uniqueness then store
-        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
-        _storeKeyData(operatorSet, operator, keyData, keyHash);
-    }
-
-    /**
-     * @notice Validates and registers a BN254 public key with proper signature verification
-     * @param operatorSet The operator set to register the key for
-     * @param operator Address of the operator
-     * @param keyData The BN254 public key bytes (G1 and G2 components)
-     * @param signature Signature proving key ownership
-     * @dev Validates keypair, verifies signature using hash-to-G1, and ensures global uniqueness
-     */
-    function _registerBN254Key(
-        OperatorSet memory operatorSet,
-        address operator,
-        bytes calldata keyData,
-        bytes calldata signature
-    ) internal {
-        // Validate and compute key hash (shared with rotation)
-        bytes32 keyHash = _validateBN254Key(operatorSet, operator, keyData, signature);
-
-        // Enforce global uniqueness then store
-        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
-        _storeKeyData(operatorSet, operator, keyData, keyHash);
-    }
-
-    /**
      * @notice Internal helper to store key data and update global registry
      * @param operatorSet The operator set
      * @param operator The operator address
      * @param pubkey The public key data
-     * @param keyHash The key hash
      */
-    function _storeKeyData(
-        OperatorSet memory operatorSet,
-        address operator,
-        bytes memory pubkey,
-        bytes32 keyHash
-    ) internal {
-        // Store key data
+    function _storeKeyData(OperatorSet memory operatorSet, address operator, bytes memory pubkey) internal {
         _operatorKeyInfo[operatorSet.key()][operator] =
             KeyInfo({isRegistered: true, currentKey: pubkey, pendingKey: bytes(""), pendingActivateAt: 0});
+    }
 
-        // Mark the key hash as spent
+    /// @notice Validate a key for a given curve type and return its hash
+    function _validateKey(
+        OperatorSet memory operatorSet,
+        address operator,
+        bytes calldata keyData,
+        bytes calldata signature,
+        CurveType curveType
+    ) internal view returns (bytes32) {
+        if (curveType == CurveType.ECDSA) {
+            return _validateECDSAKey(operatorSet, operator, keyData, signature);
+        } else if (curveType == CurveType.BN254) {
+            return _validateBN254Key(operatorSet, operator, keyData, signature);
+        }
+        revert InvalidCurveType();
+    }
+
+    /// @notice Reserve a key hash globally and map it to its operator
+    function _reserveKeyHash(bytes32 keyHash, address operator) internal {
+        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
         _globalKeyRegistry[keyHash] = true;
 
         // Store the operator for the key hash
