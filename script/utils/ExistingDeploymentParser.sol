@@ -107,9 +107,7 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev AllocationManager
     IAllocationManager public allocationManager;
     IAllocationManager public allocationManagerImplementation;
-
     IAllocationManagerView public allocationManagerView;
-    IAllocationManagerView public allocationManagerViewImplementation;
 
     /// @dev AVSDirectory
     AVSDirectory public avsDirectory;

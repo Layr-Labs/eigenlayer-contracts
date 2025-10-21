@@ -334,7 +334,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy AllocationManagerView as a standalone implementation (not a proxy)
         allocationManagerView =
             new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
-        allocationManagerViewImplementation = allocationManagerView;
 
         allocationManagerImplementation = IAllocationManager(
             address(

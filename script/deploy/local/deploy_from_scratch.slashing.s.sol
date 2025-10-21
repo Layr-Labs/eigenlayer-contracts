@@ -67,7 +67,6 @@ contract DeployFromScratch is Script, Test {
     AllocationManager public allocationManagerImplementation;
     AllocationManager public allocationManager;
     AllocationManagerView public allocationManagerView;
-    AllocationManagerView public allocationManagerViewImplementation;
     PermissionController public permissionControllerImplementation;
     PermissionController public permissionController;
 
@@ -280,8 +279,6 @@ contract DeployFromScratch is Script, Test {
             ALLOCATION_CONFIGURATION_DELAY,
             SEMVER
         );
-        allocationManagerViewImplementation =
-            new AllocationManagerView(delegation, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
         permissionControllerImplementation = new PermissionController(SEMVER);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
@@ -342,11 +339,6 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector, executorMultisig, ALLOCATION_MANAGER_INIT_PAUSED_STATUS
             )
-        );
-
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(allocationManagerView))),
-            address(allocationManagerViewImplementation)
         );
 
         eigenLayerProxyAdmin.upgrade(
