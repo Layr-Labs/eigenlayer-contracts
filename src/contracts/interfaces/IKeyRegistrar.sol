@@ -229,6 +229,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
 
     /**
      * @notice Finalizes a scheduled rotation if activation time has passed, compacting storage
+     * @notice This is optional, getters already return the correct active key based on time
      * @param operator The operator address
      * @param operatorSet The operator set
      * @return success True if a pending rotation was finalized
