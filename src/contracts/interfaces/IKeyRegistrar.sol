@@ -131,10 +131,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @dev Emits the following events:
      *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
      */
-    function configureOperatorSet(
-        OperatorSet memory operatorSet,
-        CurveType curveType
-    ) external;
+    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
 
     /**
      * @notice Configures an operator set with curve type and minimum rotation delay
