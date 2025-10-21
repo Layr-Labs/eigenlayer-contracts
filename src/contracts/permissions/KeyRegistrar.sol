@@ -191,14 +191,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
 
-    /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
-    /// @param operatorSet The operator set being configured
-    /// @param minDelaySeconds The minimum rotation delay in seconds
-    function _setMinRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) internal {
-        _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
-        emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
-    }
-
     /**
      *
      *                         INTERNAL FUNCTIONS
@@ -351,6 +343,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         }
 
         revert InvalidCurveType();
+    }
+
+    /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
+    /// @param operatorSet The operator set being configured
+    /// @param minDelaySeconds The minimum rotation delay in seconds
+    function _setMinRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) internal {
+        _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
+        emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
     }
 
     /**
