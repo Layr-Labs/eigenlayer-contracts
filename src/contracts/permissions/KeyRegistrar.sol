@@ -147,10 +147,13 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Enforce minimum delay configured by AVS and ensure activation is in the future
         {
             uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
-            require(
-                activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
-            );
+            // If minDelay is max, rotation is disabled for this operator set
+            require(minDelay != type(uint64).max, RotationDisabled());
+            uint256 nowTs = block.timestamp;
+            // Compute minActivateAt in 256-bit space and clamp to uint64::max to avoid overflow
+            uint256 minActivateAt256 = nowTs + uint256(minDelay);
+            uint64 minActivateAt = minActivateAt256 > type(uint64).max ? type(uint64).max : uint64(minActivateAt256);
+            require(uint256(activateAt) > nowTs && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt));
         }
 
         // Validate new key and reserve it globally

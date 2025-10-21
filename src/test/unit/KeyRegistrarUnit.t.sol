@@ -1139,7 +1139,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1174,7 +1174,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -1248,7 +1248,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1266,7 +1266,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1284,7 +1284,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1308,7 +1308,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet2 = _createOperatorSet(avs1, 1);
 
         vm.startPrank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet1, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet1, CurveType.ECDSA, 0);
         keyRegistrar.configureOperatorSet(operatorSet2, CurveType.ECDSA);
         vm.stopPrank();
 
@@ -1333,7 +1333,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -1351,7 +1351,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -1379,7 +1379,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -1398,7 +1398,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
@@ -1417,8 +1417,8 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet2 = _createOperatorSet(avs1, 1);
 
         vm.startPrank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet1, CurveType.BN254);
-        keyRegistrar.configureOperatorSet(operatorSet2, CurveType.BN254);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet1, CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet2, CurveType.BN254, 0);
         vm.stopPrank();
 
         // Register bn254Key2 globally by another operator
@@ -1444,6 +1444,23 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
  * @notice Additional unit tests covering scheduled rotation features
  */
 contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
+    function test_rotateKey_revert_rotationDisabled_byDefault() public {
+        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
+
+        vm.prank(avs1);
+        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+
+        // Register initial key
+        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
+        vm.prank(operator1);
+        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
+
+        // Rotation should be disabled by default (minDelay == max)
+        vm.prank(operator1);
+        vm.expectRevert(RotationDisabled.selector);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"", uint64(block.timestamp + 1));
+    }
+
     function test_configureOperatorSet_setsMinDelayAndEmits() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
@@ -1481,7 +1498,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1512,7 +1529,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1546,7 +1563,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
@@ -1603,7 +1620,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
 
         // Configure with zero delay
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSet(operatorSet, CurveType.ECDSA);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);

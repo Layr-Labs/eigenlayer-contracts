@@ -62,6 +62,10 @@ interface IKeyRegistrarErrors {
     /// @dev Error code: 0x7a6a3c5b
     error PendingRotationExists();
 
+    /// @notice Error thrown when key rotation is disabled for an operator set
+    /// @dev This occurs when the operator set's minimum rotation delay is set to the maximum value
+    error RotationDisabled();
+
     /// @notice Error thrown when the requested activation time is too soon
     /// @dev Error code: 0x3a6efb8f
     /// @param minActivateAt The earliest allowed activation timestamp
