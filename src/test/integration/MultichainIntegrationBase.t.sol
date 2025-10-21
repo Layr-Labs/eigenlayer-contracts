@@ -243,7 +243,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: BN254_OPERATOR_SET_ID});
 
         // Configure the operator set for BN254 curve type (only once)
-        try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254, 0) {
+        try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254) {
             // Configuration successful
         } catch {
             // Already configured, which is fine
@@ -287,7 +287,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: ECDSA_OPERATOR_SET_ID});
 
         // Configure the operator set for ECDSA curve type (only once)
-        try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA, 0) {
+        try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA) {
             // Configuration successful
         } catch {
             // Already configured, which is fine

@@ -108,7 +108,7 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
 
     /// @notice Emitted when the minimum key rotation delay is set for an operator set
-    event MinKeyRotationDelaySet(OperatorSet operatorSet, uint32 minDelay);
+    event MinKeyRotationDelaySet(OperatorSet operatorSet, uint64 minDelay);
 }
 
 /// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
@@ -133,8 +133,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      */
     function configureOperatorSet(
         OperatorSet memory operatorSet,
-        CurveType curveType,
-        uint32 minDelaySeconds
+        CurveType curveType
     ) external;
 
     /**
@@ -143,6 +142,11 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param curveType Type of curve (ECDSA, BN254)
      * @param minDelaySeconds Number of seconds required between key rotations
      */
+    function configureOperatorSetWithMinDelay(
+        OperatorSet memory operatorSet,
+        CurveType curveType,
+        uint64 minDelaySeconds
+    ) external;
 
     /**
      * @notice Registers a cryptographic key for an operator with a specific operator set
@@ -224,7 +228,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param minDelaySeconds The minimum rotation delay in seconds
      * @dev Only callable by the AVS or its authorized caller via the PermissionController
      */
-    function setMinKeyRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) external;
+    function setMinKeyRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) external;
 
     /**
      * @notice Finalizes a scheduled rotation if activation time has passed, compacting storage

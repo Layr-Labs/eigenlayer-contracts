@@ -85,7 +85,7 @@ contract CrossChainRegistryUnitTests is
         allocationManagerMock.setIsOperatorSet(defaultOperatorSet, true);
 
         // Set the key type for the operator set in KeyRegistrar
-        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSet(defaultOperatorSet, CurveType.BN254);
 
         // Whitelist chain IDs
         crossChainRegistry.addChainIDsToWhitelist(defaultChainIDs, defaultOperatorTableUpdaters);
@@ -684,7 +684,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
             // Set the key type for the operator set in KeyRegistrar
-            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
 
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
@@ -895,7 +895,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
             operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
-            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
             crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
         }
 
@@ -921,7 +921,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
             operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
-            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
             crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
         }
 
@@ -965,7 +965,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
             operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
-            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
             crossChainRegistry.createGenerationReservation(operatorSets[i], defaultCalculator, defaultConfig);
         }
 
@@ -1005,7 +1005,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is Cros
             OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
-            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
 
@@ -1035,7 +1035,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is Cros
             OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
-            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254, 0);
+            keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
             crossChainRegistry.createGenerationReservation(operatorSet, defaultCalculator, defaultConfig);
         }
 

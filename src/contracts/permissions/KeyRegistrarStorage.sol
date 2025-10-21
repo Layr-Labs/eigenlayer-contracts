@@ -25,7 +25,7 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
     mapping(bytes32 keyHash => address operator) internal _keyHashToOperator;
 
     /// @dev Minimum rotation delay per operator set (in seconds)
-    mapping(bytes32 operatorSetKey => uint32 minDelay) internal _minRotationDelayByOperatorSet;
+    mapping(bytes32 operatorSetKey => uint64 minDelay) internal _minRotationDelayByOperatorSet;
 
     // Construction
 

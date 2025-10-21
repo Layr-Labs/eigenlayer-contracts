@@ -49,8 +49,24 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     /// @inheritdoc IKeyRegistrar
     function configureOperatorSet(
         OperatorSet memory operatorSet,
+        CurveType curveType
+    ) external checkCanCall(operatorSet.avs) {
+        require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
+
+        // Prevent overwriting existing configurations
+        CurveType _curveType = _operatorSetCurveTypes[operatorSet.key()];
+        require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
+
+        _operatorSetCurveTypes[operatorSet.key()] = curveType;
+        emit OperatorSetConfigured(operatorSet, curveType);
+        _setMinRotationDelay(operatorSet, type(uint64).max);
+    }
+
+    /// @inheritdoc IKeyRegistrar
+    function configureOperatorSetWithMinDelay(
+        OperatorSet memory operatorSet,
         CurveType curveType,
-        uint32 minDelaySeconds
+        uint64 minDelaySeconds
     ) external checkCanCall(operatorSet.avs) {
         require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
 
@@ -130,7 +146,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         // Enforce minimum delay configured by AVS and ensure activation is in the future
         {
-            uint32 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+            uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
             uint64 minActivateAt = uint64(block.timestamp) + minDelay;
             require(
                 activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
@@ -170,7 +186,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     /// @inheritdoc IKeyRegistrar
     function setMinKeyRotationDelay(
         OperatorSet memory operatorSet,
-        uint32 minDelaySeconds
+        uint64 minDelaySeconds
     ) external checkCanCall(operatorSet.avs) {
         _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
@@ -178,7 +194,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
     /// @param operatorSet The operator set being configured
     /// @param minDelaySeconds The minimum rotation delay in seconds
-    function _setMinRotationDelay(OperatorSet memory operatorSet, uint32 minDelaySeconds) internal {
+    function _setMinRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) internal {
         _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
         emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
     }
@@ -443,14 +459,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     function _getActiveKey(
         KeyInfo memory keyInfo
     ) internal view returns (bytes memory) {
-        if (keyInfo.pendingActivateAt == 0) {
+        if (keyInfo.pendingActivateAt == 0 || block.timestamp < keyInfo.pendingActivateAt) {
             return keyInfo.currentKey;
         }
-        if (block.timestamp < keyInfo.pendingActivateAt) {
-            return keyInfo.currentKey;
-        } else {
-            return keyInfo.pendingKey;
-        }
+        return keyInfo.pendingKey;
     }
 
     /// @inheritdoc IKeyRegistrar

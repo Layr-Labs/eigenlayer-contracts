@@ -46,7 +46,7 @@ contract Integration_Multichain_Generation_Reservation_Removal is MultichainInte
         OperatorSet memory operatorSet = OperatorSet({avs: address(this), id: 1});
 
         // Configure operator set for BN254 curve (randomly choose BN254 for this test)
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
 
         // Setup AVS and chains
         _setupAVSAndChains();

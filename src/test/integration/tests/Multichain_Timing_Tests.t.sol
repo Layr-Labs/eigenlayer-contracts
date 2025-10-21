@@ -150,7 +150,7 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         super.setUp();
 
         // Configure operator set for BN254 curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
@@ -354,7 +354,7 @@ contract Integration_Multichain_Timing_Tests_BN254 is Integration_Multichain_Tim
         super.setUp();
 
         // Configure operator set for BN254 curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254);
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
@@ -475,7 +475,7 @@ contract Integration_Multichain_Timing_Tests_ECDSA is Integration_Multichain_Tim
         super.setUp();
 
         // Configure operator set for ECDSA curve
-        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA, 0);
+        keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA);
         _setupAVSAndChains();
 
         // Register operator keys and generate operator table
