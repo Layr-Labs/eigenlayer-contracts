@@ -185,17 +185,32 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
      */
 
     /**
-     * @notice Internal helper to store key data and update global registry
-     * @param operatorSet The operator set
-     * @param operator The operator address
-     * @param pubkey The public key data
+     * @notice Persist the operator's active key for an operator set.
+     * @dev Does not update the global key registry. Callers MUST have already
+     *      reserved the corresponding key hash via `_reserveKeyHash` to enforce
+     *      global uniqueness across AVSs and operator sets before storing.
+     *      Initializes with no pending rotation.
+     * @param operatorSet The operator set being updated
+     * @param operator The operator whose key is being stored
+     * @param pubkey Raw key bytes (20 bytes for ECDSA address or 192 bytes for BN254)
      */
     function _storeKeyData(OperatorSet memory operatorSet, address operator, bytes memory pubkey) internal {
         _operatorKeyInfo[operatorSet.key()][operator] =
             KeyInfo({isRegistered: true, currentKey: pubkey, pendingKey: bytes(""), pendingActivateAt: 0});
     }
 
-    /// @notice Validate a key for a given curve type and return its hash
+    /**
+     * @notice Validate a key and signature for a given curve and return its canonical key hash.
+     * @dev View-only. For ECDSA, enforces 20-byte address format and verifies an EIP-712
+     *      signature from the key address. For BN254, enforces the 192-byte encoding and
+     *      verifies a pairing-based signature over the EIP-712 digest.
+     * @param operatorSet Operator set context bound into the signed message
+     * @param operator Operator address bound into the signed message
+     * @param keyData Raw key bytes (20 bytes for ECDSA or 192 bytes for BN254)
+     * @param signature Signature proving control of the key
+     * @param curveType The curve to use for validation
+     * @return keyHash Canonical hash used for global uniqueness tracking
+     */
     function _validateKey(
         OperatorSet memory operatorSet,
         address operator,
@@ -211,7 +226,15 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         revert InvalidCurveType();
     }
 
-    /// @notice Reserve a key hash globally and map it to its operator
+    /**
+     * @notice Reserve a key hash globally and map it to its operator.
+     * @dev Reverts if the key hash has already been used anywhere, enforcing
+     *      global uniqueness across all AVSs and operator sets. This should be
+     *      called exactly once prior to storing the key to prevent reuse in
+     *      concurrent flows.
+     * @param keyHash Canonical key hash returned from `_validateKey`
+     * @param operator The operator that owns the key
+     */
     function _reserveKeyHash(bytes32 keyHash, address operator) internal {
         require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
         _globalKeyRegistry[keyHash] = true;
