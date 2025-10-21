@@ -219,7 +219,9 @@ contract RewardsCoordinator is
             isOperatorSetRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
             submissionNonce[operatorSet.avs] = nonce + 1;
 
-            emit OperatorSetRewardsSubmissionCreated(msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission);
+            emit OperatorSetRewardsSubmissionCreated(
+                msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission
+            );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
