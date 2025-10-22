@@ -68,12 +68,12 @@ The `AllocationManager` uses a **split contract pattern** implemented via the `S
 - No breaking changes to the ABI or function signatures
 
 **Implementation Details:**
-- View functions in the main contract use `_delegateView(viewImplementation)` to delegate calls
-- The `viewImplementation` address is set during construction and stored as an immutable variable
-- The `_delegateView()` function uses assembly to safely cast the non-view `_delegate()` function to a view context
-- Storage layout alignment ensures both contracts access the same state variables correctly
+- View functions in the main contract use `_delegateView(viewImplementation)` to delegate calls.
+- The `viewImplementation` address is set during construction and stored as an immutable variable.
+- The `_delegateView()` function conveniently indicates which calls are intended to be delegated as view functions, but it does not enforce this at the EVM level; rather, it signals intended usage and expected behavior to the user or integrator. 
+- Both contracts are aligned in storage layout, so all state variables are accessible as intended.
 
-This pattern is particularly valuable for complex contracts that need extensive view functionality while maintaining the ability to perform state mutations, ensuring both functionality and deployability on the EVM.
+This pattern is especially useful for complex contracts that require a comprehensive set of view functions while maintaining the ability to perform state mutations. It helps keep contracts deployable within EVM bytecode limits, while making clear which functions are for data retrieval.
 
 ## Parameterization
 
