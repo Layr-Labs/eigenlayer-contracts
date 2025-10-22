@@ -94,7 +94,6 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         internal
         returns (IAllocationManager)
     {
-        // TODO: improve
         IAllocationManagerView allocationManagerView = new AllocationManagerView(
             IDelegationManager(address(delegationManagerMock)), eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
         );
