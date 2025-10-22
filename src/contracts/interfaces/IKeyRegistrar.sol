@@ -66,11 +66,6 @@ interface IKeyRegistrarErrors {
     /// @dev Error code: 0x2052ff0e
     /// @dev This occurs when the operator set's minimum rotation delay is set to the maximum value
     error RotationDisabled();
-
-    /// @notice Error thrown when the requested activation time is too soon
-    /// @dev Error code: 0x3a6efb8f
-    /// @param minActivateAt The earliest allowed activation timestamp
-    error ActivationTooSoon(uint64 minActivateAt);
 }
 
 interface IKeyRegistrarTypes {
@@ -217,7 +212,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set for which the key is being rotated
      * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
      * @param signature Signature from the new key proving ownership over the appropriate registration message hash
-     * @param activateAt The timestamp when the new key becomes active. Must be greater than block.timestamp and at least minDelay seconds in the future
+     * @dev The new key will activate at block.timestamp + the minimum rotation delay configured for the operator set
      * @dev Keys remain in the global key registry to prevent reuse
      * @dev There is no slashability restriction for rotation; operators may rotate while slashable
      * @dev Reverts for:
@@ -226,7 +221,6 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - KeyNotFound: The operator does not have a registered key for this operator set
      *      - PendingRotationExists: A rotation is already scheduled and has not yet activated
      *      - RotationDisabled: Key rotation is disabled for this operator set (minDelay set to type(uint64).max)
-     *      - ActivationTooSoon: The requested activation time is before block.timestamp or before the minimum activation time
      *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
      *      - KeyAlreadyRegistered: New key is already globally registered
      * @dev Emits the following event:
@@ -236,8 +230,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
         address operator,
         OperatorSet memory operatorSet,
         bytes calldata newPubkey,
-        bytes calldata signature,
-        uint64 activateAt
+        bytes calldata signature
     ) external;
 
     /**

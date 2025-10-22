@@ -1139,21 +1139,21 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 10);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
 
-        // Rotate to new key
+        // Rotate to new key - activateAt will be block.timestamp + 10 (minDelay)
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
 
         uint64 activateAt = uint64(block.timestamp + 10);
         vm.prank(operator1);
         vm.expectEmit(true, true, true, true);
         emit KeyRotationScheduled(operatorSet, operator1, CurveType.ECDSA, ecdsaKey1, ecdsaKey2, activateAt);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, activateAt);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
 
         // Before activation, active key should still be the old one
         assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
@@ -1174,21 +1174,21 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 0);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.BN254, 5);
 
         // Register initial key
         bytes memory sig1 = _generateBN254Signature(operator1, operatorSet, bn254Key1, bn254PrivKey1);
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, bn254Key1, sig1);
 
-        // Rotate to new key
+        // Rotate to new key - activateAt will be block.timestamp + 5 (minDelay)
         bytes memory sig2 = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey2);
 
         uint64 activateAt = uint64(block.timestamp + 5);
         vm.prank(operator1);
         vm.expectEmit(true, true, true, true);
         emit KeyRotationScheduled(operatorSet, operator1, CurveType.BN254, bn254Key1, bn254Key2, activateAt);
-        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2, activateAt);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2);
 
         // Before activation
         (BN254.G1Point memory g1Before, BN254.G2Point memory g2Before) = keyRegistrar.getBN254Key(operatorSet, operator1);
@@ -1220,7 +1220,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         // Unauthorized caller (operator2) attempts rotation
         vm.prank(operator2);
         vm.expectRevert(PermissionControllerMixin.InvalidPermissions.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
     }
 
     function test_rotateKey_revert_operatorSetNotConfigured() public {
@@ -1229,7 +1229,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         // No configuration
         vm.prank(operator1);
         vm.expectRevert(OperatorSetNotConfigured.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
     }
 
     function test_rotateKey_revert_keyNotFound() public {
@@ -1241,7 +1241,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         // No existing key for operator1
         vm.prank(operator1);
         vm.expectRevert(abi.encodeWithSelector(KeyNotFound.selector, operatorSet, operator1));
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"");
     }
 
     function test_rotateKey_ECDSA_revert_invalidKeyFormat() public {
@@ -1259,7 +1259,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory invalidKey = hex"deadbeef";
         vm.prank(operator1);
         vm.expectRevert(InvalidKeyFormat.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, invalidKey, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, invalidKey, hex"");
     }
 
     function test_rotateKey_ECDSA_revert_zeroPubkey() public {
@@ -1277,7 +1277,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory zeroKey = abi.encodePacked(address(0));
         vm.prank(operator1);
         vm.expectRevert(ZeroPubkey.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, hex"");
     }
 
     function test_rotateKey_ECDSA_revert_invalidSignature_and_keepsOldKey() public {
@@ -1295,7 +1295,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory wrongSig = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey1);
         vm.prank(operator1);
         vm.expectRevert(InvalidSignature.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, wrongSig, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, wrongSig);
 
         // Old key should still be stored (atomicity)
         assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
@@ -1326,7 +1326,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory rotateSig = _generateECDSASignature(operator1, operatorSet1, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
         vm.expectRevert(KeyAlreadyRegistered.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet1, ecdsaKey2, rotateSig, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet1, ecdsaKey2, rotateSig);
     }
 
     function test_rotateKey_BN254_revert_invalidKeyDataLength() public {
@@ -1344,7 +1344,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory badKey = hex"deadbeef";
         vm.prank(operator1);
         vm.expectRevert(InvalidKeyFormat.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, badKey, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, badKey, hex"");
     }
 
     function test_rotateKey_BN254_revert_invalidSignatureLength_and_keepsOldKey() public {
@@ -1362,7 +1362,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory badSig = hex"beef";
         vm.prank(operator1);
         vm.expectRevert(InvalidSignature.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, badSig, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, badSig);
 
         // Old key should still be stored
         assertTrue(keyRegistrar.isRegistered(operatorSet, operator1));
@@ -1391,7 +1391,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory sigZero = _generateBN254Signature(operator1, operatorSet, zeroKey, bn254PrivKey2);
         vm.prank(operator1);
         vm.expectRevert(ZeroPubkey.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, sigZero, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, zeroKey, sigZero);
     }
 
     function test_rotateKey_BN254_revert_invalidSignature() public {
@@ -1409,7 +1409,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory wrongSig = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey1);
         vm.prank(operator1);
         vm.expectRevert(InvalidSignature.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, wrongSig, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, wrongSig);
     }
 
     function test_rotateKey_BN254_revert_keyAlreadyRegistered() public {
@@ -1435,7 +1435,7 @@ contract KeyRegistrarUnitTests_rotateKey is KeyRegistrarUnitTests {
         bytes memory rotateSig = _generateBN254Signature(operator1, operatorSet1, bn254Key2, bn254PrivKey2);
         vm.prank(operator1);
         vm.expectRevert(KeyAlreadyRegistered.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet1, bn254Key2, rotateSig, uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet1, bn254Key2, rotateSig);
     }
 }
 
@@ -1456,9 +1456,10 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
 
         // Rotation should be disabled by default (minDelay == max)
+        bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
         vm.expectRevert(RotationDisabled.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, hex"", uint64(block.timestamp + 1));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
     }
 
     function test_configureOperatorSet_setsMinDelayAndEmits() public {
@@ -1472,44 +1473,22 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 42);
     }
 
-    function test_rotateKey_revert_activationTooSoon_enforcesMinDelay() public {
-        OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
-
-        // Configure with a non-zero min delay
-        vm.prank(avs1);
-        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 10);
-
-        // Register initial key
-        bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
-        vm.prank(operator1);
-        keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
-
-        // Try scheduling with activation earlier than min delay
-        uint64 minActivateAt = uint64(block.timestamp + 10);
-        uint64 badActivateAt = minActivateAt - 5;
-
-        bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
-        vm.prank(operator1);
-        vm.expectRevert(abi.encodeWithSelector(ActivationTooSoon.selector, minActivateAt));
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, badActivateAt);
-    }
-
     function test_rotateKey_pendingPreventsSecondSchedule_untilActivated() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
 
         vm.prank(avs1);
-        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 0);
+        keyRegistrar.configureOperatorSetWithMinDelay(operatorSet, CurveType.ECDSA, 100);
 
         // Register initial key
         bytes memory sig1 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress1, ecdsaPrivKey1);
         vm.prank(operator1);
         keyRegistrar.registerKey(operator1, operatorSet, ecdsaKey1, sig1);
 
-        // First schedule
-        uint64 t1 = uint64(block.timestamp + 100);
+        // First schedule - will activate at block.timestamp + 100
+        uint64 activateAt = uint64(block.timestamp + 100);
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, t1);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
 
         // Second schedule should fail while pending
         address ecdsaAddress3 = vm.addr(0xABCDEF);
@@ -1517,12 +1496,12 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         bytes memory sig3 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress3, 0xABCDEF);
         vm.prank(operator1);
         vm.expectRevert(PendingRotationExists.selector);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3, uint64(block.timestamp + 200));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3);
 
         // After activation time, scheduling should be allowed
-        vm.warp(t1 + 1);
+        vm.warp(activateAt + 1);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3, uint64(block.timestamp + 50));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3);
     }
 
     function test_finalizeScheduledRotation_compacts_and_allowsNext() public {
@@ -1540,7 +1519,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         uint64 t1 = uint64(block.timestamp + 5);
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, t1);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
 
         // Advance past activation and finalize
         vm.warp(t1 + 1);
@@ -1556,7 +1535,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         bytes memory ecdsaKey3 = abi.encodePacked(ecdsaAddress3);
         bytes memory sig3 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress3, 0x123456);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3, uint64(block.timestamp + 10));
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey3, sig3);
     }
 
     function test_getOperatorFromSigningKey_returnsOperatorForPendingKey_preActivation() public {
@@ -1574,7 +1553,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         uint64 t1 = uint64(block.timestamp + 100);
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, t1);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
 
         // getOperatorFromSigningKey should resolve the pending key to the same operator (globally reserved)
         (address resolved, bool isReg) = keyRegistrar.getOperatorFromSigningKey(operatorSet, ecdsaKey2);
@@ -1598,7 +1577,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         uint64 minActivateAt = uint64(block.timestamp + 7);
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, minActivateAt);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
 
         // Before activation
         assertEq(keyRegistrar.getECDSAKey(operatorSet, operator1), ecdsaKey1);
@@ -1631,17 +1610,19 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         vm.prank(avs1);
         keyRegistrar.setMinKeyRotationDelay(operatorSet, 20);
 
-        // Attempt with too-soon activation
+        // Schedule rotation - it will automatically use minDelay of 20 seconds
         bytes memory sig2 = _generateECDSASignature(operator1, operatorSet, ecdsaAddress2, ecdsaPrivKey2);
-        uint64 badAt = uint64(block.timestamp + 10);
-        uint64 minAt = uint64(block.timestamp + 20);
-        vm.prank(operator1);
-        vm.expectRevert(abi.encodeWithSelector(ActivationTooSoon.selector, minAt));
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, badAt);
+        uint64 expectedActivateAt = uint64(block.timestamp + 20);
 
-        // Now schedule respecting the new delay
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2, minAt);
+        vm.expectEmit(true, true, true, true);
+        emit KeyRotationScheduled(operatorSet, operator1, CurveType.ECDSA, ecdsaKey1, ecdsaKey2, expectedActivateAt);
+        keyRegistrar.rotateKey(operator1, operatorSet, ecdsaKey2, sig2);
+
+        // Verify it activates at the correct time
+        vm.warp(expectedActivateAt);
+        bytes memory activeKey = keyRegistrar.getECDSAKey(operatorSet, operator1);
+        assertEq(activeKey, ecdsaKey2);
     }
 
     function test_rotateKey_BN254_nonZeroDelay_boundary() public {
@@ -1658,7 +1639,7 @@ contract KeyRegistrarUnitTests_RotationScheduling is KeyRegistrarUnitTests {
         uint64 minAt = uint64(block.timestamp + 3);
         bytes memory sig2 = _generateBN254Signature(operator1, operatorSet, bn254Key2, bn254PrivKey2);
         vm.prank(operator1);
-        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2, minAt);
+        keyRegistrar.rotateKey(operator1, operatorSet, bn254Key2, sig2);
 
         // Before activation
         (BN254.G1Point memory g1Before,) = keyRegistrar.getBN254Key(operatorSet, operator1);

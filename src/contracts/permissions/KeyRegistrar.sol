@@ -125,8 +125,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         address operator,
         OperatorSet memory operatorSet,
         bytes calldata newPubkey,
-        bytes calldata signature,
-        uint64 activateAt
+        bytes calldata signature
     ) external checkCanCall(operator) {
         CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType != CurveType.NONE, OperatorSetNotConfigured());
@@ -140,16 +139,11 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Ensure no pending rotation exists
         require(info.pendingActivateAt == 0, PendingRotationExists());
 
-        // Enforce minimum delay configured by AVS and ensure activation is in the future
-        {
-            uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-            // If minDelay is max, rotation is disabled for this operator set
-            require(minDelay != type(uint64).max, RotationDisabled());
-            uint64 minActivateAt = uint64(block.timestamp) + minDelay;
-            require(
-                activateAt > uint64(block.timestamp) && activateAt >= minActivateAt, ActivationTooSoon(minActivateAt)
-            );
-        }
+        // Calculate activation time based on AVS-configured minimum delay
+        uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
+        // If minDelay is max, rotation is disabled for this operator set
+        require(minDelay != type(uint64).max, RotationDisabled());
+        uint64 activateAt = uint64(block.timestamp) + minDelay;
 
         // Validate new key and reserve it globally
         _validateAndReserveKey(operatorSet, operator, newPubkey, signature, curveType);
