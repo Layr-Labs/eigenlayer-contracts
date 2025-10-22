@@ -38,7 +38,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 22_514_370; // Post Pectra Compatibility Upgrade
+    uint mainnetForkBlock = 23_634_615; // Post Pectra Compatibility Upgrade
 
     string version = "9.9.9";
 
