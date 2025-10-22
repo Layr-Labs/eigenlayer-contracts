@@ -18,9 +18,9 @@ contract AllocationManager is
     Pausable,
     AllocationManagerStorage,
     ReentrancyGuardUpgradeable,
-    SplitContractMixin,
     PermissionControllerMixin,
     SemVerMixin,
+    SplitContractMixin,
     IAllocationManager
 {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
