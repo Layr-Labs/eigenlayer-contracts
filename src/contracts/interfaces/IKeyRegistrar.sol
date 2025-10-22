@@ -63,6 +63,7 @@ interface IKeyRegistrarErrors {
     error PendingRotationExists();
 
     /// @notice Error thrown when key rotation is disabled for an operator set
+    /// @dev Error code: 0x2052ff0e
     /// @dev This occurs when the operator set's minimum rotation delay is set to the maximum value
     error RotationDisabled();
 
@@ -141,7 +142,15 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @notice Configures an operator set with curve type and minimum rotation delay
      * @param operatorSet The operator set to configure
      * @param curveType Type of curve (ECDSA, BN254)
-     * @param minDelaySeconds Number of seconds required between key rotations
+     * @param minDelaySeconds Minimum delay in seconds before a rotation can activate. Set to type(uint64).max to disable rotation
+     * @dev Only authorized callers for the AVS can configure operator sets
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
+     *      - InvalidCurveType: The curve type is not ECDSA or BN254
+     *      - ConfigurationAlreadySet: The operator set is already configured
+     * @dev Emits the following events:
+     *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+     *      - MinKeyRotationDelaySet: When the minimum rotation delay is set
      */
     function configureOperatorSetWithMinDelay(
         OperatorSet memory operatorSet,
@@ -164,7 +173,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - OperatorSetNotConfigured: The operator set is not configured
      *      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
      *      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
-     *      - ZeroAddress: For ECDSA: The key is the zero address
+     *      - ZeroPubkey: For ECDSA: The key is the zero address
      *      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
      *      - InvalidSignature: For ECDSA: The signature is not valid
      *      - InvalidKeyFormat: For BN254: The key data is not exactly 192 bytes
@@ -210,10 +219,13 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
      *      - OperatorSetNotConfigured: The operator set is not configured
      *      - KeyNotFound: The operator does not have a registered key for this operator set
+     *      - PendingRotationExists: A rotation is already scheduled and has not yet activated
+     *      - RotationDisabled: Key rotation is disabled for this operator set (minDelay set to type(uint64).max)
+     *      - ActivationTooSoon: The requested activation time is before block.timestamp or before the minimum activation time
      *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
      *      - KeyAlreadyRegistered: New key is already globally registered
      * @dev Emits the following event:
-     *      - KeyRotated(oldPubkey, newPubkey)
+     *      - KeyRotationScheduled: When the rotation is successfully scheduled
      */
     function rotateKey(
         address operator,
@@ -335,7 +347,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (address, bool);
 
     /**
-     * @notice Returns the message hash for ECDSA key registration, which must be signed by the operator when registering an ECDSA key
+     * @notice Returns the message hash for ECDSA key registration, which must be signed by the key when registering an ECDSA key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyAddress The address of the key
@@ -348,7 +360,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (bytes32);
 
     /**
-     * @notice Returns the message hash for BN254 key registration, which must be signed by the operator when registering a BN254 key
+     * @notice Returns the message hash for BN254 key registration, which must be signed by the key when registering a BN254 key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyData The BN254 key data

@@ -430,6 +430,13 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return (operator, isRegistered(operatorSet, operator));
     }
 
+    /**
+     * @notice Returns the active key based on current timestamp
+     * @dev Returns `currentKey` if no rotation is scheduled or if the pending rotation
+     *      has not yet activated. Returns `pendingKey` if the activation time has passed.
+     * @param keyInfo The key information to check
+     * @return The active key bytes
+     */
     function _getActiveKey(
         KeyInfo memory keyInfo
     ) internal view returns (bytes memory) {
