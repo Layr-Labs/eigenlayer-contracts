@@ -1,42 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "src/test/integration/IntegrationChecks.t.sol";
+import "src/test/integration/UpgradeTest.t.sol";
 import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 
-/**
- * @title AllocationManagerUpgrade
- * @notice Upgrade test for AllocationManager that verifies storage state consistency across upgrades
- * @dev Tests that storage variables (not immutable variables) maintain their state after upgrade.
- *      This is particularly important when the upgrade introduces a new proxy layout, as it ensures
- *      that all storage variables are properly preserved and accessible after the upgrade.
- *
- *      The test covers:
- *      - Immutable variables (delegation, eigenStrategy, delays) for reference
- *      - Storage mappings and state variables that should persist
- *      - Complex data structures like OperatorSets, Allocations, and arrays
- *      - All public getter functions that expose storage state
- *
- *      Note: This test focuses on storage state capture and verification.
- *      For full upgrade testing, the UpgradeTest infrastructure needs to be working.
- */
-contract Integration_Upgrade_AllocationManager is IntegrationCheckUtils {
+contract Integration_Upgrade_AllocationManager is UpgradeTest {
     using ArrayLib for *;
     using StdStyle for *;
-
-    // Test data
-    address testOperator = address(0x1234567890123456789012345678901234567890);
-    address testAVS = address(0x9876543210987654321098765432109876543210);
-    IStrategy testStrategy = IStrategy(address(0x1111111111111111111111111111111111111111));
-    uint32 testOperatorSetId = 1;
-
     // Storage state snapshots
+
     struct AllocationManagerState {
-        // Immutable variables (for reference)
-        IDelegationManager delegation;
-        IStrategy eigenStrategy;
-        uint32 deallocationDelay;
-        uint32 allocationConfigDelay;
         // Storage variables that should persist across upgrades
         bool avsRegisteredMetadata;
         uint slashCount;
@@ -62,131 +35,105 @@ contract Integration_Upgrade_AllocationManager is IntegrationCheckUtils {
         Allocation[] strategyAllocations;
     }
 
-    function test_AllocationManagerStorageStateCapture() public {
-        console.log("Testing AllocationManager storage state capture...".green());
+    User staker;
+    User operator;
+    AllocateParams allocateParams;
 
-        // Test that we can capture basic storage state
-        console.log("Capturing basic storage state...".green());
-        AllocationManagerState memory state = _captureBasicAllocationManagerState();
+    AVS avs;
+    IStrategy[] strategies;
+    uint[] initTokenBalances;
+    uint[] initDepositShares;
+    OperatorSet operatorSet;
 
-        // Verify we can read the immutable variables
-        assertTrue(address(state.delegation) != address(0), "DelegationManager should be set");
-        // Note: eigenStrategy might be zero address on some networks/block numbers
-        console.log("EigenStrategy address:", address(state.eigenStrategy));
-        assertTrue(state.deallocationDelay > 0, "DEALLOCATION_DELAY should be set");
-        assertTrue(state.allocationConfigDelay > 0, "ALLOCATION_CONFIGURATION_DELAY should be set");
+    /// Shared setup:
+    ///
+    /// 1. Generate staker with assets, operator, and AVS
+    /// 2. Staker deposits assets and delegates to operator
+    /// 3. AVS creates an operator set containing the strategies held by the staker
+    /// 4. Operator registers for the operator set
+    /// 5. Operator allocates to the operator set
+    /// 6. Roll blocks to complete allocation
+    function _init() internal override {
+        // 1. Create entities
+        (staker, strategies, initTokenBalances) = _newRandomStaker();
+        operator = _newRandomOperator_NoAssets();
+        (avs,) = _newRandomAVS();
 
-        console.log("DelegationManager:", address(state.delegation));
-        console.log("EigenStrategy:", address(state.eigenStrategy));
-        console.log("DEALLOCATION_DELAY:", state.deallocationDelay);
-        console.log("ALLOCATION_CONFIGURATION_DELAY:", state.allocationConfigDelay);
+        operator.setAllocationDelay(ALLOCATION_CONFIGURATION_DELAY);
+        rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
 
-        console.log("AllocationManager storage state capture test passed!".green().bold());
+        // 2. Staker deposits into EigenLayer
+        staker.depositIntoEigenlayer(strategies, initTokenBalances);
+        initDepositShares = _calculateExpectedShares(strategies, initTokenBalances);
+        check_Deposit_State(staker, strategies, initDepositShares);
+
+        // 3. Staker delegates to operator
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, initDepositShares);
+
+        // 4. AVS creates an operator set containing the strategies held by the staker
+        operatorSet = avs.createOperatorSet(strategies);
+
+        // 5. Operator registers for the operator set
+        operator.registerForOperatorSet(operatorSet);
+        check_Registration_State_NoAllocation(operator, operatorSet, allStrats);
+
+        // 6. Operator allocates to the operator set
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
+
+        // 7. Roll blocks to complete allocation
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
     }
 
-    // Note: Full upgrade testing requires the UpgradeTest infrastructure to be working
-    // This test focuses on storage state capture and verification
-
-    // Removed _setupTestData() to avoid arithmetic errors in setup
-    // The simplified test focuses on basic storage state verification
-
-    function _captureBasicAllocationManagerState() internal view returns (AllocationManagerState memory state) {
-        // Only capture basic immutable variables and simple storage state
-        // Avoid complex queries that might cause arithmetic errors
-
-        // Capture immutable variables (for reference)
-        state.delegation = allocationManager.delegation();
-        state.eigenStrategy = allocationManager.eigenStrategy();
-        state.deallocationDelay = allocationManager.DEALLOCATION_DELAY();
-        state.allocationConfigDelay = allocationManager.ALLOCATION_CONFIGURATION_DELAY();
-
-        // Initialize other fields to default values to avoid complex queries
-        state.isOperatorSet = false;
-        state.operatorSetCount = 0;
-        state.isMemberOfOperatorSet = false;
-        state.memberCount = 0;
-        state.strategiesInOperatorSet = new IStrategy[](0);
-        state.isOperatorSlashable = false;
-        state.isOperatorRedistributable = false;
-        state.encumberedMagnitude = 0;
-        state.allocatableMagnitude = 0;
-        state.maxMagnitude = 0;
-        state.allocationDelayIsSet = false;
-        state.allocationDelay = 0;
-        state.allocatedSets = new OperatorSet[](0);
-        state.registeredSets = new OperatorSet[](0);
-        state.allocatedStrategies = new IStrategy[](0);
-        state.allocation = Allocation(0, 0, 0);
-        state.strategyAllocationsOperatorSets = new OperatorSet[](0);
-        state.strategyAllocations = new Allocation[](0);
-        state.redistributionRecipient = address(0);
-        state.isRedistributingOperatorSet = false;
-        state.slashCount = 0;
+    function testFuzz_query_upgrade_compare(uint24 r) public rand(r) {
+        AllocationManagerState memory preUpgrade = _captureAllocationManagerState();
+        _upgradeEigenLayerContracts();
+        AllocationManagerState memory postUpgrade = _captureAllocationManagerState();
+        _verifyStorageStateConsistency(preUpgrade, postUpgrade);
     }
 
     function _captureAllocationManagerState() internal view returns (AllocationManagerState memory state) {
-        // Capture immutable variables (for reference)
-        state.delegation = allocationManager.delegation();
-        state.eigenStrategy = allocationManager.eigenStrategy();
-        state.deallocationDelay = allocationManager.DEALLOCATION_DELAY();
-        state.allocationConfigDelay = allocationManager.ALLOCATION_CONFIGURATION_DELAY();
-
         // Capture storage variables that should persist across upgrades
-        state.isOperatorSet = allocationManager.isOperatorSet(OperatorSet(testAVS, testOperatorSetId));
-        state.operatorSetCount = allocationManager.getOperatorSetCount(testAVS);
-        state.isMemberOfOperatorSet = allocationManager.isMemberOfOperatorSet(testOperator, OperatorSet(testAVS, testOperatorSetId));
-        state.memberCount = allocationManager.getMemberCount(OperatorSet(testAVS, testOperatorSetId));
-        state.strategiesInOperatorSet = allocationManager.getStrategiesInOperatorSet(OperatorSet(testAVS, testOperatorSetId));
-        state.isOperatorSlashable = allocationManager.isOperatorSlashable(testOperator, OperatorSet(testAVS, testOperatorSetId));
-        state.isOperatorRedistributable = allocationManager.isOperatorRedistributable(testOperator);
-        // Only query strategy-related data if we have a valid strategy
-        if (address(testStrategy) != address(0)) {
-            state.encumberedMagnitude = allocationManager.getEncumberedMagnitude(testOperator, testStrategy);
-            state.allocatableMagnitude = allocationManager.getAllocatableMagnitude(testOperator, testStrategy);
-            state.maxMagnitude = allocationManager.getMaxMagnitude(testOperator, testStrategy);
+        state.isOperatorSet = allocationManager.isOperatorSet(operatorSet);
+        state.operatorSetCount = allocationManager.getOperatorSetCount(address(avs));
+        state.isMemberOfOperatorSet = allocationManager.isMemberOfOperatorSet(address(operator), operatorSet);
+        state.memberCount = allocationManager.getMemberCount(operatorSet);
+        state.strategiesInOperatorSet = allocationManager.getStrategiesInOperatorSet(operatorSet);
+        state.isOperatorSlashable = allocationManager.isOperatorSlashable(address(operator), operatorSet);
+        state.isOperatorRedistributable = allocationManager.isOperatorRedistributable(address(operator));
+
+        // Only query strategy-related data if we have at least one strategy
+        if (strategies.length > 0 && address(strategies[0]) != address(0)) {
+            state.encumberedMagnitude = allocationManager.getEncumberedMagnitude(address(operator), strategies[0]);
+            state.allocatableMagnitude = allocationManager.getAllocatableMagnitude(address(operator), strategies[0]);
+            state.maxMagnitude = allocationManager.getMaxMagnitude(address(operator), strategies[0]);
         } else {
             state.encumberedMagnitude = 0;
             state.allocatableMagnitude = 0;
             state.maxMagnitude = 0;
         }
-        (state.allocationDelayIsSet, state.allocationDelay) = allocationManager.getAllocationDelay(testOperator);
-        state.allocatedSets = allocationManager.getAllocatedSets(testOperator);
-        state.registeredSets = allocationManager.getRegisteredSets(testOperator);
-        state.allocatedStrategies = allocationManager.getAllocatedStrategies(testOperator, OperatorSet(testAVS, testOperatorSetId));
-        // Only query allocation data if we have a valid strategy
-        if (address(testStrategy) != address(0)) {
-            state.allocation = allocationManager.getAllocation(testOperator, OperatorSet(testAVS, testOperatorSetId), testStrategy);
+        (state.allocationDelayIsSet, state.allocationDelay) = allocationManager.getAllocationDelay(address(operator));
+        state.allocatedSets = allocationManager.getAllocatedSets(address(operator));
+        state.registeredSets = allocationManager.getRegisteredSets(address(operator));
+        state.allocatedStrategies = allocationManager.getAllocatedStrategies(address(operator), operatorSet);
+        // Only query allocation data if we have at least one strategy
+        if (strategies.length > 0 && address(strategies[0]) != address(0)) {
+            state.allocation = allocationManager.getAllocation(address(operator), operatorSet, strategies[0]);
             (state.strategyAllocationsOperatorSets, state.strategyAllocations) =
-                allocationManager.getStrategyAllocations(testOperator, testStrategy);
+                allocationManager.getStrategyAllocations(address(operator), strategies[0]);
         } else {
             state.allocation = Allocation(0, 0, 0);
             state.strategyAllocationsOperatorSets = new OperatorSet[](0);
             state.strategyAllocations = new Allocation[](0);
         }
-        state.redistributionRecipient = allocationManager.getRedistributionRecipient(OperatorSet(testAVS, testOperatorSetId));
-        state.isRedistributingOperatorSet = allocationManager.isRedistributingOperatorSet(OperatorSet(testAVS, testOperatorSetId));
-        state.slashCount = allocationManager.getSlashCount(OperatorSet(testAVS, testOperatorSetId));
-    }
-
-    function _verifyBasicStorageStateConsistency(AllocationManagerState memory preUpgrade, AllocationManagerState memory postUpgrade)
-        internal
-    {
-        // Verify immutable variables (should be identical)
-        assertEq(address(preUpgrade.delegation), address(postUpgrade.delegation), "DelegationManager should be the same");
-        assertEq(address(preUpgrade.eigenStrategy), address(postUpgrade.eigenStrategy), "EigenStrategy should be the same");
-        assertEq(preUpgrade.deallocationDelay, postUpgrade.deallocationDelay, "DEALLOCATION_DELAY should be the same");
-        assertEq(preUpgrade.allocationConfigDelay, postUpgrade.allocationConfigDelay, "ALLOCATION_CONFIGURATION_DELAY should be the same");
-
-        console.log("Basic storage state consistency checks passed!".green());
+        state.redistributionRecipient = allocationManager.getRedistributionRecipient(operatorSet);
+        state.isRedistributingOperatorSet = allocationManager.isRedistributingOperatorSet(operatorSet);
+        state.slashCount = allocationManager.getSlashCount(operatorSet);
     }
 
     function _verifyStorageStateConsistency(AllocationManagerState memory preUpgrade, AllocationManagerState memory postUpgrade) internal {
-        // Verify immutable variables (should be identical)
-        assertEq(address(preUpgrade.delegation), address(postUpgrade.delegation), "DelegationManager should be the same");
-        assertEq(address(preUpgrade.eigenStrategy), address(postUpgrade.eigenStrategy), "EigenStrategy should be the same");
-        assertEq(preUpgrade.deallocationDelay, postUpgrade.deallocationDelay, "DEALLOCATION_DELAY should be the same");
-        assertEq(preUpgrade.allocationConfigDelay, postUpgrade.allocationConfigDelay, "ALLOCATION_CONFIGURATION_DELAY should be the same");
-
         // Verify storage variables that should persist across upgrades
         assertEq(preUpgrade.isOperatorSet, postUpgrade.isOperatorSet, "isOperatorSet should be the same");
         assertEq(preUpgrade.operatorSetCount, postUpgrade.operatorSetCount, "operatorSetCount should be the same");
