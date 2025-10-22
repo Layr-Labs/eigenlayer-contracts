@@ -217,6 +217,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set for which the key is being rotated
      * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
      * @param signature Signature from the new key proving ownership over the appropriate registration message hash
+     * @param activateAt The timestamp when the new key becomes active. Must be greater than block.timestamp and at least minDelay seconds in the future
      * @dev Keys remain in the global key registry to prevent reuse
      * @dev There is no slashability restriction for rotation; operators may rotate while slashable
      * @dev Reverts for:
