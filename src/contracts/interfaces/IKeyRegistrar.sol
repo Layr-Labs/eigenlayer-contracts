@@ -129,12 +129,16 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to configure
      * @param curveType Type of curve (ECDSA, BN254)
      * @dev Only authorized callers for the AVS can configure operator sets
+     * @dev This function sets the minimum rotation delay to type(uint64).max, effectively disabling key rotation.
+     *      If key rotation is desired, use `configureOperatorSetWithMinDelay` instead.
+     * @dev Consider using `configureOperatorSetWithMinDelay` for new integrations to enable key rotation flexibility.
      * @dev Reverts for:
      *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
      *      - InvalidCurveType: The curve type is not ECDSA or BN254
      *      - ConfigurationAlreadySet: The operator set is already configured
      * @dev Emits the following events:
      *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+     *      - MinKeyRotationDelaySet: With delay set to type(uint64).max (rotation disabled)
      */
     function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
 
