@@ -40,6 +40,13 @@ The `AllocationManager's` responsibilities are broken down into the following co
 
 The `AllocationManager` uses a **split contract pattern** implemented via the `SplitContractMixin` to address EVM contract size limitations while maintaining full backwards compatibility.
 
+```mermaid
+graph TD
+Alice --> |call| Proxy["AllocationManager Proxy"]
+Proxy -->|delegatecall| Logic["AllocationManager Logic"]
+Logic -->|_delegateView| View["AllocationManager View"]
+```
+
 ### Split Contract Pattern
 
 **Main Contract (`AllocationManager`):**
