@@ -57,7 +57,7 @@ contract Integration_Upgrade_AllocationManager is UpgradeTest {
         // 1. Create entities
         (staker, strategies, initTokenBalances) = _newRandomStaker();
         operator = _newRandomOperator_NoAssets();
-        (avs,) = _newRandomAVS();
+        (avs,) = _newRandomAVS_v1CreateSet();
 
         operator.setAllocationDelay(ALLOCATION_CONFIGURATION_DELAY);
         rollForward({blocks: ALLOCATION_CONFIGURATION_DELAY + 1});
@@ -72,7 +72,7 @@ contract Integration_Upgrade_AllocationManager is UpgradeTest {
         check_Delegation_State(staker, operator, strategies, initDepositShares);
 
         // 4. AVS creates an operator set containing the strategies held by the staker
-        operatorSet = avs.createOperatorSet(strategies);
+        operatorSet = avs.createOperatorSet_v1(strategies);
 
         // 5. Operator registers for the operator set
         operator.registerForOperatorSet(operatorSet);
