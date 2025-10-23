@@ -4265,7 +4265,7 @@ contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests,
         cheats.prank(defaultAVS);
 
         // Zero out the slasher address
-        allocationManager.setSlasherToZero(defaultOperatorSet);
+        AllocationManagerHarness(address(allocationManager)).setSlasherToZero(defaultOperatorSet);
 
         cheats.prank(defaultAVS);
         cheats.expectRevert(SlasherNotSet.selector);
@@ -4407,7 +4407,7 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
 
         // Manually set the slasher of the defaultAVS to be address(0)
         // Given that the slasher is already set to the defaultAVS, we need to manually update so that the `migrateSlashers` function will not noop
-        allocationManager.setSlasherToZero(defaultOperatorSet);
+        AllocationManagerHarness(address(allocationManager)).setSlasherToZero(defaultOperatorSet);
     }
 
     function test_noop_invalidOperatorSet() public {
@@ -4555,7 +4555,7 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
 
         // Set slashers to zero address on all previously create opSets so we can migrate them
         for (uint i = 0; i < numOpSets; ++i) {
-            allocationManager.setSlasherToZero(operatorSets[i]);
+            AllocationManagerHarness(address(allocationManager)).setSlasherToZero(operatorSets[i]);
         }
 
         // Expect event emits

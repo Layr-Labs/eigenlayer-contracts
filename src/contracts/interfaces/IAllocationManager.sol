@@ -493,9 +493,7 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
         uint32 operatorSetId,
         IStrategy[] calldata strategies
     ) external;
-}
 
-interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
     /**
      * @notice Allows an AVS to update the slasher for an operator set
      * @param operatorSet the operator set to update the slasher for
@@ -527,7 +525,9 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
     function migrateSlashers(
         OperatorSet[] memory operatorSets
     ) external;
+}
 
+interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
     /**
      *
      *                         VIEW FUNCTIONS

@@ -269,13 +269,13 @@ contract AllocationManager is
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     /// @notice This function will be deprecated in Early Q2 2026 in favor of `createOperatorSets` which takes in `CreateSetParamsV2`
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
         createOperatorSets(avs, _convertCreateSetParams(params, avs));
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function createOperatorSets(address avs, CreateSetParamsV2[] memory params) public checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
@@ -283,7 +283,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     /// @notice This function will be deprecated in Early Q2 2026 in favor of `createRedistributingOperatorSets` which takes in `CreateSetParamsV2`
     function createRedistributingOperatorSets(
         address avs,
@@ -293,7 +293,7 @@ contract AllocationManager is
         createRedistributingOperatorSets(avs, _convertCreateSetParams(params, avs), redistributionRecipients);
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParamsV2[] memory params,
@@ -340,7 +340,7 @@ contract AllocationManager is
         }
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function updateSlasher(OperatorSet memory operatorSet, address slasher) external checkCanCall(operatorSet.avs) {
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         // Prevent updating a slasher if one is not already set
@@ -349,7 +349,7 @@ contract AllocationManager is
         _updateSlasher({operatorSet: operatorSet, slasher: slasher, instantEffectBlock: false});
     }
 
-    /// @inheritdoc IAllocationManager
+    /// @inheritdoc IAllocationManagerActions
     function migrateSlashers(
         OperatorSet[] memory operatorSets
     ) external {
@@ -710,24 +710,6 @@ contract AllocationManager is
     }
 
     /**
-     * @notice Helper function to check if an operator is redistributable from a list of operator sets
-     * @param operator The operator to check
-     * @param operatorSets The list of operator sets to check
-     * @return True if the operator is redistributable from any of the operator sets, false otherwise
-     */
-    function _isOperatorRedistributable(
-        address operator,
-        OperatorSet[] memory operatorSets
-    ) internal view returns (bool) {
-        for (uint256 i = 0; i < operatorSets.length; ++i) {
-            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * @dev Helper function to update the slasher for an operator set
      * @param operatorSet the operator set to update the slasher for
      * @param slasher the new slasher
@@ -780,6 +762,80 @@ contract AllocationManager is
      *                         VIEW FUNCTIONS
      *
      */
+
+    /// Public View Functions
+
+    /// @inheritdoc IAllocationManagerView
+    function getAVSRegistrar(
+        address avs
+    ) public view returns (IAVSRegistrar) {
+        IAVSRegistrar registrar = _avsRegistrar[avs];
+
+        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function isRedistributingOperatorSet(
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
+        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getAllocationDelay(
+        address operator
+    ) public view returns (bool, uint32) {
+        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
+
+        uint32 delay = info.delay;
+        bool isSet = info.isSet;
+
+        // If there is a pending delay that can be applied, apply it
+        if (info.effectBlock != 0 && block.number >= info.effectBlock) {
+            delay = info.pendingDelay;
+            isSet = true;
+        }
+
+        return (isSet, delay);
+    }
+
+
+    /// @inheritdoc IAllocationManagerView
+    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
+
+        // slashableUntil returns the last block the operator is slashable in so we check for
+        // less than or equal to
+        return status.registered || block.number <= status.slashableUntil;
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getRedistributionRecipient(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
+        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
+        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        address slasher = params.slasher;
+
+        // If there is a pending slasher that can be applied, apply it
+        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
+            slasher = params.pendingSlasher;
+        }
+
+        return slasher;
+    }
+
+    /// External View Functions
+    /// These functions are delegated to the view implementation
 
     /// @inheritdoc IAllocationManagerView
     function getOperatorSetCount(
@@ -877,24 +933,6 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getAllocationDelay(
-        address operator
-    ) public view returns (bool, uint32) {
-        AllocationDelayInfo memory info = _allocationDelayInfo[operator];
-
-        uint32 delay = info.delay;
-        bool isSet = info.isSet;
-
-        // If there is a pending delay that can be applied, apply it
-        if (info.effectBlock != 0 && block.number >= info.effectBlock) {
-            delay = info.pendingDelay;
-            isSet = true;
-        }
-
-        return (isSet, delay);
-    }
-
-    /// @inheritdoc IAllocationManagerView
     function getRegisteredSets(
         address
     ) external view returns (OperatorSet[] memory operatorSets) {
@@ -933,15 +971,6 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getAVSRegistrar(
-        address avs
-    ) public view returns (IAVSRegistrar) {
-        IAVSRegistrar registrar = _avsRegistrar[avs];
-
-        return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
-    }
-
-    /// @inheritdoc IAllocationManagerView
     function getStrategiesInOperatorSet(
         OperatorSet memory
     ) external view returns (IStrategy[] memory strategies) {
@@ -971,62 +1000,12 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
-        RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
-
-        // slashableUntil returns the last block the operator is slashable in so we check for
-        // less than or equal to
-        return status.registered || block.number <= status.slashableUntil;
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getSlasher(
-        OperatorSet memory operatorSet
-    ) public view returns (address) {
-        SlasherParams memory params = _slashers[operatorSet.key()];
-
-        address slasher = params.slasher;
-
-        // If there is a pending slasher that can be applied, apply it
-        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
-            slasher = params.pendingSlasher;
-        }
-
-        return slasher;
-    }
-
-    /// @inheritdoc IAllocationManager
     function getPendingSlasher(
-        OperatorSet memory operatorSet
-    ) external view returns (address, uint32) {
-        // Initialize the pending slasher and effect block to the address(0) and 0 respectively
-        address pendingSlasher;
-        uint32 effectBlock;
-
-        // If there is a pending slasher, set it
-        SlasherParams memory params = _slashers[operatorSet.key()];
-        if (block.number < params.effectBlock) {
-            pendingSlasher = params.pendingSlasher;
-            effectBlock = params.effectBlock;
-        }
-
-        return (pendingSlasher, effectBlock);
-    }
-
-    /// @inheritdoc IAllocationManager
-    function getRedistributionRecipient(
-        OperatorSet memory operatorSet
-    ) public view returns (address) {
-        // Load the redistribution recipient and return it if set, otherwise return the default burn address.
-        address redistributionRecipient = _redistributionRecipients[operatorSet.key()];
-        return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
-    }
-
-    /// @inheritdoc IAllocationManagerView
-    function isRedistributingOperatorSet(
-        OperatorSet memory operatorSet
-    ) public view returns (bool) {
-        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
+        OperatorSet memory
+    ) external view returns (address pendingSlasher, uint32 effectBlock) {
+        _delegateView(viewImplementation);
+        pendingSlasher;
+        effectBlock;
     }
 
     /// @inheritdoc IAllocationManagerView
