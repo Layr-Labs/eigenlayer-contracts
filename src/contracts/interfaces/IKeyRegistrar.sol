@@ -57,6 +57,15 @@ interface IKeyRegistrarErrors {
     /// @dev Error code: 0x10702879
     /// @dev We prevent key deregistration while operators are slashable to avoid race conditions and ensure operators cannot escape slashing by deregistering keys
     error OperatorStillSlashable(OperatorSet operatorSet, address operator);
+
+    /// @notice Error thrown when a pending rotation already exists
+    /// @dev Error code: 0x7a6a3c5b
+    error PendingRotationExists();
+
+    /// @notice Error thrown when key rotation is disabled for an operator set
+    /// @dev Error code: 0x2052ff0e
+    /// @dev This occurs when the operator set's minimum rotation delay is set to the maximum value
+    error RotationDisabled();
 }
 
 interface IKeyRegistrarTypes {
@@ -70,7 +79,12 @@ interface IKeyRegistrarTypes {
     /// @dev Structure to store key information
     struct KeyInfo {
         bool isRegistered;
-        bytes keyData; // Flexible storage for different curve types
+        /// @dev The currently active key bytes (20 for ECDSA, 192 for BN254)
+        bytes currentKey;
+        /// @dev The pending key bytes (same format as currentKey). Empty when no rotation scheduled
+        bytes pendingKey;
+        /// @dev Activation timestamp for pendingKey. Zero when no rotation scheduled
+        uint64 pendingActivateAt;
     }
 }
 
@@ -79,10 +93,22 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event KeyRegistered(OperatorSet operatorSet, address indexed operator, CurveType curveType, bytes pubkey);
     /// @notice Emitted when a key is deregistered
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, CurveType curveType);
+    /// @notice Emitted when a key rotation is scheduled
+    event KeyRotationScheduled(
+        OperatorSet operatorSet,
+        address indexed operator,
+        CurveType curveType,
+        bytes oldPubkey,
+        bytes newPubkey,
+        uint64 activateAt
+    );
     /// @notice Emitted when the aggregate BN254 key is updated
     event AggregateBN254KeyUpdated(OperatorSet operatorSet, BN254.G1Point newAggregateKey);
     /// @notice Emitted when an operator set is configured
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
+
+    /// @notice Emitted when the minimum key rotation delay is set for an operator set
+    event MinKeyRotationDelaySet(OperatorSet operatorSet, uint64 minDelay);
 }
 
 /// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets
@@ -98,14 +124,38 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      * @param operatorSet The operator set to configure
      * @param curveType Type of curve (ECDSA, BN254)
      * @dev Only authorized callers for the AVS can configure operator sets
+     * @dev This function sets the minimum rotation delay to type(uint64).max, effectively disabling key rotation.
+     *      If key rotation is desired, use `configureOperatorSetWithMinDelay` instead.
+     * @dev Consider using `configureOperatorSetWithMinDelay` for new integrations to enable key rotation flexibility.
      * @dev Reverts for:
      *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
      *      - InvalidCurveType: The curve type is not ECDSA or BN254
      *      - ConfigurationAlreadySet: The operator set is already configured
      * @dev Emits the following events:
      *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+     *      - MinKeyRotationDelaySet: With delay set to type(uint64).max (rotation disabled)
      */
     function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
+
+    /**
+     * @notice Configures an operator set with curve type and minimum rotation delay
+     * @param operatorSet The operator set to configure
+     * @param curveType Type of curve (ECDSA, BN254)
+     * @param minDelaySeconds Minimum delay in seconds before a rotation can activate. Set to type(uint64).max to disable rotation
+     * @dev Only authorized callers for the AVS can configure operator sets
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
+     *      - InvalidCurveType: The curve type is not ECDSA or BN254
+     *      - ConfigurationAlreadySet: The operator set is already configured
+     * @dev Emits the following events:
+     *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+     *      - MinKeyRotationDelaySet: When the minimum rotation delay is set
+     */
+    function configureOperatorSetWithMinDelay(
+        OperatorSet memory operatorSet,
+        CurveType curveType,
+        uint64 minDelaySeconds
+    ) external;
 
     /**
      * @notice Registers a cryptographic key for an operator with a specific operator set
@@ -122,7 +172,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - OperatorSetNotConfigured: The operator set is not configured
      *      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
      *      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
-     *      - ZeroAddress: For ECDSA: The key is the zero address
+     *      - ZeroPubkey: For ECDSA: The key is the zero address
      *      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
      *      - InvalidSignature: For ECDSA: The signature is not valid
      *      - InvalidKeyFormat: For BN254: The key data is not exactly 192 bytes
@@ -155,6 +205,53 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
      *      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
      */
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
+
+    /**
+     * @notice Rotates an operator's key for an operator set, replacing the current key with a new key
+     * @param operator Address of the operator whose key is being rotated
+     * @param operatorSet The operator set for which the key is being rotated
+     * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+     * @param signature Signature from the new key proving ownership over the appropriate registration message hash
+     * @dev The new key will activate at block.timestamp + the minimum rotation delay configured for the operator set
+     * @dev Keys remain in the global key registry to prevent reuse
+     * @dev There is no slashability restriction for rotation; operators may rotate while slashable
+     * @dev Reverts for:
+     *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+     *      - OperatorSetNotConfigured: The operator set is not configured
+     *      - KeyNotFound: The operator does not have a registered key for this operator set
+     *      - PendingRotationExists: A rotation is already scheduled and has not yet activated
+     *      - RotationDisabled: Key rotation is disabled for this operator set (minDelay set to type(uint64).max)
+     *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
+     *      - KeyAlreadyRegistered: New key is already globally registered
+     * @dev Emits the following event:
+     *      - KeyRotationScheduled: When the rotation is successfully scheduled
+     */
+    function rotateKey(
+        address operator,
+        OperatorSet memory operatorSet,
+        bytes calldata newPubkey,
+        bytes calldata signature
+    ) external;
+
+    /**
+     * @notice Sets the minimum allowed rotation delay for an operator set
+     * @param operatorSet The operator set to configure
+     * @param minDelaySeconds The minimum rotation delay in seconds
+     * @dev Only callable by the AVS or its authorized caller via the PermissionController
+     */
+    function setMinKeyRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) external;
+
+    /**
+     * @notice Finalizes a scheduled rotation if activation time has passed, compacting storage
+     * @notice This is optional, getters already return the correct active key based on time
+     * @param operator The operator address
+     * @param operatorSet The operator set
+     * @return success True if a pending rotation was finalized
+     */
+    function finalizeScheduledRotation(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external returns (bool success);
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -248,7 +345,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (address, bool);
 
     /**
-     * @notice Returns the message hash for ECDSA key registration, which must be signed by the operator when registering an ECDSA key
+     * @notice Returns the message hash for ECDSA key registration, which must be signed by the key when registering an ECDSA key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyAddress The address of the key
@@ -261,7 +358,7 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents, ISemVerMixi
     ) external view returns (bytes32);
 
     /**
-     * @notice Returns the message hash for BN254 key registration, which must be signed by the operator when registering a BN254 key
+     * @notice Returns the message hash for BN254 key registration, which must be signed by the key when registering a BN254 key
      * @param operator The operator address
      * @param operatorSet The operator set
      * @param keyData The BN254 key data
