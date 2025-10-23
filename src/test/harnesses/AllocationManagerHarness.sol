@@ -9,6 +9,7 @@ contract AllocationManagerHarness is AllocationManager {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
 
     constructor(
+        IAllocationManagerView _allocationManagerView,
         IDelegationManager _delegation,
         IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
@@ -17,6 +18,7 @@ contract AllocationManagerHarness is AllocationManager {
         uint32 _ALLOCATION_CONFIGURATION_DELAY
     )
         AllocationManager(
+            _allocationManagerView,
             _delegation,
             _eigenStrategy,
             _pauserRegistry,
