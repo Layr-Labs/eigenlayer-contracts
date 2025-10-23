@@ -49,7 +49,7 @@ type OperatorSet struct {
 
 // IKeyRegistrarMetaData contains all meta data concerning the IKeyRegistrar contract.
 var IKeyRegistrarMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"configureOperatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterKey\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"encodeBN254KeyData\",\"inputs\":[{\"name\":\"g1Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"g2Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"getBN254Key\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"g1Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"g2Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getBN254KeyRegistrationMessageHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAAddress\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAKey\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAKeyRegistrationMessageHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeyHash\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorFromSigningKey\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetCurveType\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isKeyGloballyRegistered\",\"inputs\":[{\"name\":\"keyHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRegistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerKey\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"AggregateBN254KeyUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"newAggregateKey\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"KeyDeregistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"KeyRegistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetConfigured\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ConfigurationAlreadySet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyFormat\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeypair\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyNotFound\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OperatorAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorSetNotConfigured\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorStillSlashable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroPubkey\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"configureOperatorSet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"configureOperatorSetWithMinDelay\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"curveType\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"},{\"name\":\"minDelaySeconds\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deregisterKey\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"encodeBN254KeyData\",\"inputs\":[{\"name\":\"g1Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"g2Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"finalizeScheduledRotation\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"success\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getBN254Key\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"g1Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]},{\"name\":\"g2Point\",\"type\":\"tuple\",\"internalType\":\"structBN254.G2Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"},{\"name\":\"Y\",\"type\":\"uint256[2]\",\"internalType\":\"uint256[2]\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getBN254KeyRegistrationMessageHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAAddress\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAKey\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getECDSAKeyRegistrationMessageHash\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getKeyHash\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorFromSigningKey\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"keyData\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getOperatorSetCurveType\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isKeyGloballyRegistered\",\"inputs\":[{\"name\":\"keyHash\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isRegistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registerKey\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"rotateKey\",\"inputs\":[{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"newPubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"signature\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setMinKeyRotationDelay\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"minDelaySeconds\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"AggregateBN254KeyUpdated\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"newAggregateKey\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structBN254.G1Point\",\"components\":[{\"name\":\"X\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"Y\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"KeyDeregistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"KeyRegistered\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"KeyRotationScheduled\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"},{\"name\":\"oldPubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"newPubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"activateAt\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MinKeyRotationDelaySet\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"minDelay\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OperatorSetConfigured\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"indexed\":false,\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"curveType\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"enumIKeyRegistrarTypes.CurveType\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"ConfigurationAlreadySet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidCurveType\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeyFormat\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidKeypair\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"KeyNotFound\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OperatorAlreadyRegistered\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorSetNotConfigured\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorStillSlashable\",\"inputs\":[{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operator\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"PendingRotationExists\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"RotationDisabled\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroPubkey\",\"inputs\":[]}]",
 }
 
 // IKeyRegistrarABI is the input ABI used to generate the binding from.
@@ -606,6 +606,27 @@ func (_IKeyRegistrar *IKeyRegistrarTransactorSession) ConfigureOperatorSet(opera
 	return _IKeyRegistrar.Contract.ConfigureOperatorSet(&_IKeyRegistrar.TransactOpts, operatorSet, curveType)
 }
 
+// ConfigureOperatorSetWithMinDelay is a paid mutator transaction binding the contract method 0xa2d701f6.
+//
+// Solidity: function configureOperatorSetWithMinDelay((address,uint32) operatorSet, uint8 curveType, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactor) ConfigureOperatorSetWithMinDelay(opts *bind.TransactOpts, operatorSet OperatorSet, curveType uint8, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.contract.Transact(opts, "configureOperatorSetWithMinDelay", operatorSet, curveType, minDelaySeconds)
+}
+
+// ConfigureOperatorSetWithMinDelay is a paid mutator transaction binding the contract method 0xa2d701f6.
+//
+// Solidity: function configureOperatorSetWithMinDelay((address,uint32) operatorSet, uint8 curveType, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarSession) ConfigureOperatorSetWithMinDelay(operatorSet OperatorSet, curveType uint8, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.ConfigureOperatorSetWithMinDelay(&_IKeyRegistrar.TransactOpts, operatorSet, curveType, minDelaySeconds)
+}
+
+// ConfigureOperatorSetWithMinDelay is a paid mutator transaction binding the contract method 0xa2d701f6.
+//
+// Solidity: function configureOperatorSetWithMinDelay((address,uint32) operatorSet, uint8 curveType, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactorSession) ConfigureOperatorSetWithMinDelay(operatorSet OperatorSet, curveType uint8, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.ConfigureOperatorSetWithMinDelay(&_IKeyRegistrar.TransactOpts, operatorSet, curveType, minDelaySeconds)
+}
+
 // DeregisterKey is a paid mutator transaction binding the contract method 0x87ab86f4.
 //
 // Solidity: function deregisterKey(address operator, (address,uint32) operatorSet) returns()
@@ -627,6 +648,27 @@ func (_IKeyRegistrar *IKeyRegistrarTransactorSession) DeregisterKey(operator com
 	return _IKeyRegistrar.Contract.DeregisterKey(&_IKeyRegistrar.TransactOpts, operator, operatorSet)
 }
 
+// FinalizeScheduledRotation is a paid mutator transaction binding the contract method 0x0934d597.
+//
+// Solidity: function finalizeScheduledRotation(address operator, (address,uint32) operatorSet) returns(bool success)
+func (_IKeyRegistrar *IKeyRegistrarTransactor) FinalizeScheduledRotation(opts *bind.TransactOpts, operator common.Address, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IKeyRegistrar.contract.Transact(opts, "finalizeScheduledRotation", operator, operatorSet)
+}
+
+// FinalizeScheduledRotation is a paid mutator transaction binding the contract method 0x0934d597.
+//
+// Solidity: function finalizeScheduledRotation(address operator, (address,uint32) operatorSet) returns(bool success)
+func (_IKeyRegistrar *IKeyRegistrarSession) FinalizeScheduledRotation(operator common.Address, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.FinalizeScheduledRotation(&_IKeyRegistrar.TransactOpts, operator, operatorSet)
+}
+
+// FinalizeScheduledRotation is a paid mutator transaction binding the contract method 0x0934d597.
+//
+// Solidity: function finalizeScheduledRotation(address operator, (address,uint32) operatorSet) returns(bool success)
+func (_IKeyRegistrar *IKeyRegistrarTransactorSession) FinalizeScheduledRotation(operator common.Address, operatorSet OperatorSet) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.FinalizeScheduledRotation(&_IKeyRegistrar.TransactOpts, operator, operatorSet)
+}
+
 // RegisterKey is a paid mutator transaction binding the contract method 0xd40cda16.
 //
 // Solidity: function registerKey(address operator, (address,uint32) operatorSet, bytes pubkey, bytes signature) returns()
@@ -646,6 +688,48 @@ func (_IKeyRegistrar *IKeyRegistrarSession) RegisterKey(operator common.Address,
 // Solidity: function registerKey(address operator, (address,uint32) operatorSet, bytes pubkey, bytes signature) returns()
 func (_IKeyRegistrar *IKeyRegistrarTransactorSession) RegisterKey(operator common.Address, operatorSet OperatorSet, pubkey []byte, signature []byte) (*types.Transaction, error) {
 	return _IKeyRegistrar.Contract.RegisterKey(&_IKeyRegistrar.TransactOpts, operator, operatorSet, pubkey, signature)
+}
+
+// RotateKey is a paid mutator transaction binding the contract method 0x81b2796c.
+//
+// Solidity: function rotateKey(address operator, (address,uint32) operatorSet, bytes newPubkey, bytes signature) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactor) RotateKey(opts *bind.TransactOpts, operator common.Address, operatorSet OperatorSet, newPubkey []byte, signature []byte) (*types.Transaction, error) {
+	return _IKeyRegistrar.contract.Transact(opts, "rotateKey", operator, operatorSet, newPubkey, signature)
+}
+
+// RotateKey is a paid mutator transaction binding the contract method 0x81b2796c.
+//
+// Solidity: function rotateKey(address operator, (address,uint32) operatorSet, bytes newPubkey, bytes signature) returns()
+func (_IKeyRegistrar *IKeyRegistrarSession) RotateKey(operator common.Address, operatorSet OperatorSet, newPubkey []byte, signature []byte) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.RotateKey(&_IKeyRegistrar.TransactOpts, operator, operatorSet, newPubkey, signature)
+}
+
+// RotateKey is a paid mutator transaction binding the contract method 0x81b2796c.
+//
+// Solidity: function rotateKey(address operator, (address,uint32) operatorSet, bytes newPubkey, bytes signature) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactorSession) RotateKey(operator common.Address, operatorSet OperatorSet, newPubkey []byte, signature []byte) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.RotateKey(&_IKeyRegistrar.TransactOpts, operator, operatorSet, newPubkey, signature)
+}
+
+// SetMinKeyRotationDelay is a paid mutator transaction binding the contract method 0x11030402.
+//
+// Solidity: function setMinKeyRotationDelay((address,uint32) operatorSet, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactor) SetMinKeyRotationDelay(opts *bind.TransactOpts, operatorSet OperatorSet, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.contract.Transact(opts, "setMinKeyRotationDelay", operatorSet, minDelaySeconds)
+}
+
+// SetMinKeyRotationDelay is a paid mutator transaction binding the contract method 0x11030402.
+//
+// Solidity: function setMinKeyRotationDelay((address,uint32) operatorSet, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarSession) SetMinKeyRotationDelay(operatorSet OperatorSet, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.SetMinKeyRotationDelay(&_IKeyRegistrar.TransactOpts, operatorSet, minDelaySeconds)
+}
+
+// SetMinKeyRotationDelay is a paid mutator transaction binding the contract method 0x11030402.
+//
+// Solidity: function setMinKeyRotationDelay((address,uint32) operatorSet, uint64 minDelaySeconds) returns()
+func (_IKeyRegistrar *IKeyRegistrarTransactorSession) SetMinKeyRotationDelay(operatorSet OperatorSet, minDelaySeconds uint64) (*types.Transaction, error) {
+	return _IKeyRegistrar.Contract.SetMinKeyRotationDelay(&_IKeyRegistrar.TransactOpts, operatorSet, minDelaySeconds)
 }
 
 // IKeyRegistrarAggregateBN254KeyUpdatedIterator is returned from FilterAggregateBN254KeyUpdated and is used to iterate over the raw logs and unpacked data for AggregateBN254KeyUpdated events raised by the IKeyRegistrar contract.
@@ -1070,6 +1154,290 @@ func (_IKeyRegistrar *IKeyRegistrarFilterer) WatchKeyRegistered(opts *bind.Watch
 func (_IKeyRegistrar *IKeyRegistrarFilterer) ParseKeyRegistered(log types.Log) (*IKeyRegistrarKeyRegistered, error) {
 	event := new(IKeyRegistrarKeyRegistered)
 	if err := _IKeyRegistrar.contract.UnpackLog(event, "KeyRegistered", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IKeyRegistrarKeyRotationScheduledIterator is returned from FilterKeyRotationScheduled and is used to iterate over the raw logs and unpacked data for KeyRotationScheduled events raised by the IKeyRegistrar contract.
+type IKeyRegistrarKeyRotationScheduledIterator struct {
+	Event *IKeyRegistrarKeyRotationScheduled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IKeyRegistrarKeyRotationScheduledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IKeyRegistrarKeyRotationScheduled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IKeyRegistrarKeyRotationScheduled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IKeyRegistrarKeyRotationScheduledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IKeyRegistrarKeyRotationScheduledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IKeyRegistrarKeyRotationScheduled represents a KeyRotationScheduled event raised by the IKeyRegistrar contract.
+type IKeyRegistrarKeyRotationScheduled struct {
+	OperatorSet OperatorSet
+	Operator    common.Address
+	CurveType   uint8
+	OldPubkey   []byte
+	NewPubkey   []byte
+	ActivateAt  uint64
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterKeyRotationScheduled is a free log retrieval operation binding the contract event 0x600c8ea5356df2fad359d32cf64544f00ad31ccf4133a70b4da8630b1e3658d1.
+//
+// Solidity: event KeyRotationScheduled((address,uint32) operatorSet, address indexed operator, uint8 curveType, bytes oldPubkey, bytes newPubkey, uint64 activateAt)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) FilterKeyRotationScheduled(opts *bind.FilterOpts, operator []common.Address) (*IKeyRegistrarKeyRotationScheduledIterator, error) {
+
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _IKeyRegistrar.contract.FilterLogs(opts, "KeyRotationScheduled", operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &IKeyRegistrarKeyRotationScheduledIterator{contract: _IKeyRegistrar.contract, event: "KeyRotationScheduled", logs: logs, sub: sub}, nil
+}
+
+// WatchKeyRotationScheduled is a free log subscription operation binding the contract event 0x600c8ea5356df2fad359d32cf64544f00ad31ccf4133a70b4da8630b1e3658d1.
+//
+// Solidity: event KeyRotationScheduled((address,uint32) operatorSet, address indexed operator, uint8 curveType, bytes oldPubkey, bytes newPubkey, uint64 activateAt)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) WatchKeyRotationScheduled(opts *bind.WatchOpts, sink chan<- *IKeyRegistrarKeyRotationScheduled, operator []common.Address) (event.Subscription, error) {
+
+	var operatorRule []interface{}
+	for _, operatorItem := range operator {
+		operatorRule = append(operatorRule, operatorItem)
+	}
+
+	logs, sub, err := _IKeyRegistrar.contract.WatchLogs(opts, "KeyRotationScheduled", operatorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IKeyRegistrarKeyRotationScheduled)
+				if err := _IKeyRegistrar.contract.UnpackLog(event, "KeyRotationScheduled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseKeyRotationScheduled is a log parse operation binding the contract event 0x600c8ea5356df2fad359d32cf64544f00ad31ccf4133a70b4da8630b1e3658d1.
+//
+// Solidity: event KeyRotationScheduled((address,uint32) operatorSet, address indexed operator, uint8 curveType, bytes oldPubkey, bytes newPubkey, uint64 activateAt)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) ParseKeyRotationScheduled(log types.Log) (*IKeyRegistrarKeyRotationScheduled, error) {
+	event := new(IKeyRegistrarKeyRotationScheduled)
+	if err := _IKeyRegistrar.contract.UnpackLog(event, "KeyRotationScheduled", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IKeyRegistrarMinKeyRotationDelaySetIterator is returned from FilterMinKeyRotationDelaySet and is used to iterate over the raw logs and unpacked data for MinKeyRotationDelaySet events raised by the IKeyRegistrar contract.
+type IKeyRegistrarMinKeyRotationDelaySetIterator struct {
+	Event *IKeyRegistrarMinKeyRotationDelaySet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IKeyRegistrarMinKeyRotationDelaySetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IKeyRegistrarMinKeyRotationDelaySet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IKeyRegistrarMinKeyRotationDelaySet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IKeyRegistrarMinKeyRotationDelaySetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IKeyRegistrarMinKeyRotationDelaySetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IKeyRegistrarMinKeyRotationDelaySet represents a MinKeyRotationDelaySet event raised by the IKeyRegistrar contract.
+type IKeyRegistrarMinKeyRotationDelaySet struct {
+	OperatorSet OperatorSet
+	MinDelay    uint64
+	Raw         types.Log // Blockchain specific contextual infos
+}
+
+// FilterMinKeyRotationDelaySet is a free log retrieval operation binding the contract event 0x22b2b63b5820f9d933565468845820b939bf5ad654ea6ab5bdd3728f19e4580f.
+//
+// Solidity: event MinKeyRotationDelaySet((address,uint32) operatorSet, uint64 minDelay)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) FilterMinKeyRotationDelaySet(opts *bind.FilterOpts) (*IKeyRegistrarMinKeyRotationDelaySetIterator, error) {
+
+	logs, sub, err := _IKeyRegistrar.contract.FilterLogs(opts, "MinKeyRotationDelaySet")
+	if err != nil {
+		return nil, err
+	}
+	return &IKeyRegistrarMinKeyRotationDelaySetIterator{contract: _IKeyRegistrar.contract, event: "MinKeyRotationDelaySet", logs: logs, sub: sub}, nil
+}
+
+// WatchMinKeyRotationDelaySet is a free log subscription operation binding the contract event 0x22b2b63b5820f9d933565468845820b939bf5ad654ea6ab5bdd3728f19e4580f.
+//
+// Solidity: event MinKeyRotationDelaySet((address,uint32) operatorSet, uint64 minDelay)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) WatchMinKeyRotationDelaySet(opts *bind.WatchOpts, sink chan<- *IKeyRegistrarMinKeyRotationDelaySet) (event.Subscription, error) {
+
+	logs, sub, err := _IKeyRegistrar.contract.WatchLogs(opts, "MinKeyRotationDelaySet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IKeyRegistrarMinKeyRotationDelaySet)
+				if err := _IKeyRegistrar.contract.UnpackLog(event, "MinKeyRotationDelaySet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseMinKeyRotationDelaySet is a log parse operation binding the contract event 0x22b2b63b5820f9d933565468845820b939bf5ad654ea6ab5bdd3728f19e4580f.
+//
+// Solidity: event MinKeyRotationDelaySet((address,uint32) operatorSet, uint64 minDelay)
+func (_IKeyRegistrar *IKeyRegistrarFilterer) ParseMinKeyRotationDelaySet(log types.Log) (*IKeyRegistrarMinKeyRotationDelaySet, error) {
+	event := new(IKeyRegistrarMinKeyRotationDelaySet)
+	if err := _IKeyRegistrar.contract.UnpackLog(event, "MinKeyRotationDelaySet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

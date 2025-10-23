@@ -408,7 +408,7 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
      * @dev Upon creation, the address that can slash the operatorSet is the `avs` address. If you would like to use a different address,
      *      use the `createOperatorSets` method which takes in `CreateSetParamsV2` instead.
      * @dev THIS FUNCTION WILL BE DEPRECATED IN EARLY Q2 2026 IN FAVOR OF `createOperatorSets`, WHICH TAKES IN `CreateSetParamsV2`
-     * @dev Reverts for: 
+     * @dev Reverts for:
      *      - NonexistentAVSMetadata: The AVS metadata is not registered
      *      - InvalidOperatorSet: The operatorSet already exists
      *      - InputAddressZero: The slasher is the zero address
@@ -417,7 +417,7 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
 
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
-     * @dev Reverts for: 
+     * @dev Reverts for:
      *      - NonexistentAVSMetadata: The AVS metadata is not registered
      *      - InvalidOperatorSet: The operatorSet already exists
      *      - InputAddressZero: The slasher is the zero address

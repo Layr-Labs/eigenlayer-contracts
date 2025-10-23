@@ -799,7 +799,6 @@ contract AllocationManager is
         return (isSet, delay);
     }
 
-
     /// @inheritdoc IAllocationManagerView
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
