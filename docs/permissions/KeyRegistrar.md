@@ -4,7 +4,7 @@
 | -------- | -------- | -------- |
 | [`KeyRegistrar.sol`](../../src/contracts/permissions/KeyRegistrar.sol) | Singleton | Transparent proxy |
 
-The `KeyRegistrar` manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets.
+The `KeyRegistrar` manages cryptographic keys for operators across different operator sets. It supports both ECDSA and BN254 key types and ensures global uniqueness of keys across all operator sets. It also supports scheduled key rotation with an AVS-configurable minimum activation delay.
 
 Key features:
 * **Per-OperatorSet Configuration**: Each operator set must be configured with a specific curve type before keys can be registered
@@ -30,22 +30,64 @@ An AVS must configure the operator set with a specific curve type.
  * @param operatorSet The operator set to configure
  * @param curveType Type of curve (ECDSA, BN254)
  * @dev Only authorized callers for the AVS can configure operator sets
+ * @dev This function sets the minimum rotation delay to type(uint64).max, effectively disabling key rotation.
+ *      If key rotation is desired, use `configureOperatorSetWithMinDelay` instead.
+ * @dev Consider using `configureOperatorSetWithMinDelay` for new integrations to enable key rotation flexibility.
  * @dev Reverts for:
  *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
  *      - InvalidCurveType: The curve type is not ECDSA or BN254
  *      - ConfigurationAlreadySet: The operator set is already configured
  * @dev Emits the following events:
  *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+ *      - MinKeyRotationDelaySet: With delay set to type(uint64).max (rotation disabled)
  */
 function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
 ```
 
-Configures an operator set to use a specific cryptographic curve type. This must be called before any keys can be registered for the operator set. 
+Configures an operator set to use a specific cryptographic curve type. This must be called before any keys can be registered for the operator set. **Note: This function disables key rotation by setting `minDelay` to `type(uint64).max`. For operator sets that need key rotation, use `configureOperatorSetWithMinDelay` instead.**
+
 *Note: Registering for an operatorSet in the core protocol does not require a key to be registered. However, the AVS may have logic that gates registration based on a key being registered in the `KeyRegistrar`.*
 
 *Effects*:
 * Sets the curve type for the specified operator set
-* Emits an `OperatorSetConfigured` event
+* Sets the minimum rotation delay to `type(uint64).max` (disables rotation)
+* Emits `OperatorSetConfigured` and `MinKeyRotationDelaySet`
+
+*Requirements*:
+* Caller MUST be authorized for the AVS (via the `PermissionController`)
+* The operator set MUST NOT already be configured
+* The curve type MUST be either ECDSA or BN254
+
+### `configureOperatorSetWithMinDelay`
+
+```solidity
+/**
+ * @notice Configures an operator set with curve type and minimum rotation delay
+ * @param operatorSet The operator set to configure
+ * @param curveType Type of curve (ECDSA, BN254)
+ * @param minDelaySeconds Minimum delay in seconds before a rotation can activate. Set to type(uint64).max to disable rotation
+ * @dev Only authorized callers for the AVS can configure operator sets
+ * @dev Reverts for:
+ *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
+ *      - InvalidCurveType: The curve type is not ECDSA or BN254
+ *      - ConfigurationAlreadySet: The operator set is already configured
+ * @dev Emits the following events:
+ *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+ *      - MinKeyRotationDelaySet: When the minimum rotation delay is set
+ */
+function configureOperatorSetWithMinDelay(
+    OperatorSet memory operatorSet,
+    CurveType curveType,
+    uint64 minDelaySeconds
+) external;
+```
+
+Configures an operator set to use a specific cryptographic curve type and sets the minimum allowed delay for scheduled rotations. This is the recommended configuration method as it provides flexibility for key rotation.
+
+*Effects*:
+* Sets the curve type for the specified operator set
+* Sets the minimum rotation delay to the specified value
+* Emits `OperatorSetConfigured` and `MinKeyRotationDelaySet`
 
 *Requirements*:
 * Caller MUST be authorized for the AVS (via the `PermissionController`)
@@ -294,20 +336,81 @@ sequenceDiagram
 ```
 
 
-### Deregistration/Key Rotation
+### Key Rotation (Scheduled)
 
-Deregistration takes a dependency on the `AllocationManager`. In particular, operators are only allowed to deregister their key from an operatorSet if they are not slashable by said operatorSet. 
-
-To rotate a key, an operator must deregister from the operatorSet, wait until it is not slashable, deregister its key, and then register a new key. If the operator was not slashable, it can rotate its key without a delay. 
+Key rotation is scheduled: an operator proposes a new key which will automatically activate at `block.timestamp + minDelay` where `minDelay` is configured by the AVS. Until activation, getters return the current key. After activation, getters return the new key. Rotation is allowed even if the operator is slashable.
 
 ```mermaid
 sequenceDiagram
     participant OP as Operator
-    participant AM as AllocationManager
     participant KR as KeyRegistrar
 
-    OP->>AM: Tx1: deregisterFromOperatorSets
-    Note over OP: Wait 14 days<br>(if previously allocated)
-    OP->>KR: Tx2: deregisterKey
-    OP->>KR: Tx3: registerKey
+    OP->>KR: Tx1: rotateKey
 ```
+
+
+### `rotateKey`
+
+```solidity
+/**
+ * @notice Rotates an operator's key for an operator set, replacing the current key with a new key
+ * @param operator Address of the operator whose key is being rotated
+ * @param operatorSet The operator set for which the key is being rotated
+ * @param newPubkey New public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+ * @param signature Signature from the new key proving ownership over the appropriate registration message hash
+ * @dev The new key will activate at block.timestamp + the minimum rotation delay configured for the operator set
+ * @dev Keys remain in the global key registry to prevent reuse
+ * @dev There is no slashability restriction for rotation; operators may rotate while slashable
+ * @dev Reverts for:
+ *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+ *      - OperatorSetNotConfigured: The operator set is not configured
+ *      - KeyNotFound: The operator does not have a registered key for this operator set
+ *      - PendingRotationExists: A rotation is already scheduled and has not yet activated
+ *      - RotationDisabled: Key rotation is disabled for this operator set (minDelay set to type(uint64).max)
+ *      - InvalidKeyFormat / ZeroPubkey / InvalidSignature: New key data/signature invalid per curve type
+ *      - KeyAlreadyRegistered: New key is already globally registered
+ * @dev Emits the following event:
+ *      - KeyRotationScheduled: When the rotation is successfully scheduled
+ */
+function rotateKey(
+    address operator,
+    OperatorSet memory operatorSet,
+    bytes calldata newPubkey,
+    bytes calldata signature
+) external;
+```
+
+This function runs full validation and signature checks for the new key according to the configured curve type. The old key remains globally registered and cannot be reused elsewhere. The new key is globally reserved upon scheduling and becomes active at `block.timestamp + minDelay` where `minDelay` is the AVS-configured minimum rotation delay for the operator set.
+
+Requirements
+- Caller is the `operator` or authorized via the `PermissionController`
+- `operatorSet` configured with a curve type
+- `operator` has a registered key for `operatorSet`
+- No pending rotation exists
+- Key rotation must be enabled for the operator set (`minDelay` is not `type(uint64).max`)
+- New key format and signature are valid for the configured curve
+- New key hash is not already globally registered
+
+Effects
+- Calculates `activateAt` as `block.timestamp + minDelay`
+- Records `pendingKey` and `pendingActivateAt` for the operator in the `operatorSet`
+- Reserves the new key in the global registry immediately
+- Emits `KeyRotationScheduled` with the calculated activation time
+
+Notes
+- Before `activateAt`, getters (`getECDSAKey`, `getBN254Key`, `getKeyHash`) return values for the current key
+- After `activateAt`, getters resolve to the new key. `finalizeScheduledRotation` can be called (by anyone) to compact storage; it returns `true` if a rotation was finalized
+- The AVS controls the rotation timing policy entirely through the `minDelay` configuration
+
+#### `finalizeScheduledRotation`
+
+```solidity
+/**
+ * @notice Finalizes a scheduled rotation if its activation time has passed, compacting storage
+ * @param operator Address of the operator
+ * @param operatorSet The operator set
+ */
+function finalizeScheduledRotation(address operator, OperatorSet memory operatorSet) external;
+```
+
+This optional helper collapses pending rotation data after activation; getters already return the correct active key based on time.
