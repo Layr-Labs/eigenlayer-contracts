@@ -73,6 +73,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
     /// forge-config: default.fuzz.runs = 3
     /// forge-config: forktest.fuzz.runs = 3
     function test_Multi(uint24 _r) public rand(_r) {
+        cheats.pauseGasMetering();
         // Do 20 iterations
         for (uint i = 1; i <= NUM_ITERATIONS; i++) {
             console.log("%s: %d", "iter".green().italic(), i - 1);
@@ -87,6 +88,7 @@ contract Integration_ALM_Multi is IntegrationCheckUtils {
             // Ensure all pending actions are completed for the next iteration
             _rollForward_DeallocationDelay();
         }
+        cheats.resumeGasMetering();
     }
 
     /// @dev NONE operators can:
