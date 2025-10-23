@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "../interfaces/IRewardsCoordinator.sol";
+import "../../interfaces/IRewardsCoordinator.sol";
 
 /**
  * @title Storage variables for the `RewardsCoordinator` contract.

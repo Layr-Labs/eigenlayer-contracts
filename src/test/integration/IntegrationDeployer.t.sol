@@ -11,6 +11,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
@@ -37,7 +38,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 22_514_370; // Post Pectra Compatibility Upgrade
+    uint mainnetForkBlock = 23_634_615; // Post Pectra Compatibility Upgrade
 
     string version = "9.9.9";
 
@@ -307,8 +308,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(allocationManager) == address(0)) {
             allocationManager =
-                AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+                IAllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
+        // allocationManagerView is deployed as a standalone implementation (not a proxy) in _deployImplementations()
         if (address(permissionController) == address(0)) {
             permissionController =
                 PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -323,14 +325,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenStrategy,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
+        // Deploy AllocationManagerView as a standalone implementation (not a proxy)
+        allocationManagerView =
+            new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+
+        allocationManagerImplementation = IAllocationManager(
+            address(
+                new AllocationManager(
+                    allocationManagerView,
+                    delegationManager,
+                    eigenStrategy,
+                    eigenLayerPauserReg,
+                    permissionController,
+                    DEALLOCATION_DELAY,
+                    ALLOCATION_CONFIGURATION_DELAY,
+                    version
+                )
+            )
         );
         permissionControllerImplementation = new PermissionController(version);
         delegationManagerImplementation = new DelegationManager(
@@ -402,6 +413,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
         );
+
+        // AllocationManagerView is not a proxy, so no upgrade needed
 
         // PermissionController
         eigenLayerProxyAdmin.upgrade(

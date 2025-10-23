@@ -10,6 +10,7 @@ Libraries and Mixins:
 
 | File | Notes |
 | -------- | -------- |
+| [`SplitContractMixin.sol`](../../src/contracts/mixins/SplitContractMixin.sol) | contract splitting for codesize optimization |
 | [`PermissionControllerMixin.sol`](../../src/contracts/mixins/PermissionControllerMixin.sol) | account delegation |
 | [`Deprecated_OwnableUpgradeable`](../../src/contracts/mixins/Deprecated_OwnableUpgradeable.sol) | deprecated ownable logic |
 | [`Pausable.sol`](../../src/contracts/permissions/Pausable.sol) | |
@@ -29,10 +30,57 @@ The `AllocationManager` manages AVS metadata registration, registration and dere
 
 The `AllocationManager's` responsibilities are broken down into the following concepts:
 
+* [Contract Architecture](#contract-architecture)
 * [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
 * [Allocations and Slashing](#allocations-and-slashing)
 * [Config](#config)
+
+## Contract Architecture
+
+The `AllocationManager` uses a **split contract pattern** implemented via the `SplitContractMixin` to address EVM contract size limitations while maintaining full backwards compatibility.
+
+```mermaid
+graph TD
+Alice --> |call| Proxy["AllocationManager Proxy"]
+Proxy -->|delegatecall| Logic["AllocationManager Logic"]
+Logic -->|_delegateView| View["AllocationManager View"]
+```
+
+### Split Contract Pattern
+
+**Main Contract (`AllocationManager`):**
+- Contains all state-mutating functions (actions)
+- Inherits from `SplitContractMixin` which provides delegation capabilities
+- Delegates all view function calls to the separate view contract
+- Maintains the same external interface as a monolithic contract
+
+**View Contract (`AllocationManagerView`):**
+- Contains all read-only view functions
+- Shares the same storage layout as the main contract using `layout at 151` directive
+- Implements the same `IAllocationManagerView` interface
+
+### Rationale
+
+**Codesize Optimization:**
+- The EVM has a contract size limit of 24KB (24,576 bytes) for deployed contracts
+- Complex contracts like `AllocationManager` with extensive functionality can exceed this limit
+- By splitting view functions into a separate contract, the main contract stays under the size limit
+- This allows for more comprehensive functionality without compromising deployability
+
+**Backwards Compatibility:**
+- The external interface remains identical to a monolithic contract
+- All existing integrations continue to work without modification
+- View functions are transparently delegated using `_delegateView()`
+- No breaking changes to the ABI or function signatures
+
+**Implementation Details:**
+- View functions in the main contract use `_delegateView(viewImplementation)` to delegate calls.
+- The `viewImplementation` address is set during construction and stored as an immutable variable.
+- The `_delegateView()` function conveniently indicates which calls are intended to be delegated as view functions, but it does not enforce this at the EVM level; rather, it signals intended usage and expected behavior to the user or integrator. 
+- Both contracts are aligned in storage layout, so all state variables are accessible as intended.
+
+This pattern is especially useful for complex contracts that require a comprehensive set of view functions while maintaining the ability to perform state mutations. It helps keep contracts deployable within EVM bytecode limits, while making clear which functions are for data retrieval.
 
 ## Parameterization
 
