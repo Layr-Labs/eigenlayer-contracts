@@ -10,6 +10,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
+import "../../src/contracts/core/AllocationManagerView.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
@@ -104,8 +105,9 @@ contract ExistingDeploymentParser is Script, Logger {
     UpgradeableBeacon public strategyBeacon;
 
     /// @dev AllocationManager
-    AllocationManager public allocationManager;
-    AllocationManager public allocationManagerImplementation;
+    IAllocationManager public allocationManager;
+    IAllocationManager public allocationManagerImplementation;
+    IAllocationManagerView public allocationManagerView;
 
     /// @dev AVSDirectory
     AVSDirectory public avsDirectory;
@@ -230,9 +232,16 @@ contract ExistingDeploymentParser is Script, Logger {
         );
 
         // AllocationManager
-        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
+        allocationManager = IAllocationManager(json.readAddress(".addresses.allocationManager"));
         allocationManagerImplementation =
-            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+            IAllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+
+        // allocationManagerView = IAllocationManagerView(json.readAddress(".addresses.allocationManagerView"));
+
+        // FIXME: hotfix - remove later...
+        allocationManagerView = new AllocationManagerView(
+            delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
