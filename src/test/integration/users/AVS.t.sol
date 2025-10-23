@@ -367,7 +367,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         console.log("Updating slasher for operator set: %d to %s", operatorSetId, address(slasher));
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.updateSlasher.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.updateSlasher.selector);
         allocationManager.updateSlasher(OperatorSet(address(this), operatorSetId), slasher);
         print.gasUsed();
     }
