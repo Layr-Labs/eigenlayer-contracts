@@ -60,8 +60,7 @@ contract BN254CertificateVerifierUnitTests is
         defaultOperatorSetConfig = OperatorSetConfig({owner: operatorSetOwner, maxStalenessPeriod: defaultMaxStaleness});
 
         // Deploy Contracts
-        bn254CertificateVerifierImplementation =
-            new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdaterMock)), "1.0.0");
+        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdaterMock)));
         verifier = BN254CertificateVerifier(
             address(new TransparentUpgradeableProxy(address(bn254CertificateVerifierImplementation), address(eigenLayerProxyAdmin), ""))
         );
