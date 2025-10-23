@@ -24,6 +24,9 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
     /// @dev Mapping from (keyHash) to the operator
     mapping(bytes32 keyHash => address operator) internal _keyHashToOperator;
 
+    /// @dev Minimum rotation delay per operator set (in seconds)
+    mapping(bytes32 operatorSetKey => uint64 minDelay) internal _minRotationDelayByOperatorSet;
+
     // Construction
 
     constructor(
@@ -37,5 +40,5 @@ abstract contract KeyRegistrarStorage is IKeyRegistrar {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
