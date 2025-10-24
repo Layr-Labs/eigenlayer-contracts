@@ -268,8 +268,7 @@ contract DeployFromScratch is Script, Test {
             DEALLOCATION_DELAY,
             ALLOCATION_CONFIGURATION_DELAY
         );
-        allocationManagerViewImplementation =
-            new AllocationManagerView(delegation, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+
         permissionControllerImplementation = new PermissionController();
         strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
@@ -324,11 +323,6 @@ contract DeployFromScratch is Script, Test {
             abi.encodeWithSelector(
                 AllocationManager.initialize.selector, executorMultisig, ALLOCATION_MANAGER_INIT_PAUSED_STATUS
             )
-        );
-
-        eigenLayerProxyAdmin.upgrade(
-            ITransparentUpgradeableProxy(payable(address(allocationManagerView))),
-            address(allocationManagerViewImplementation)
         );
 
         eigenLayerProxyAdmin.upgrade(
