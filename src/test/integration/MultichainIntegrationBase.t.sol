@@ -77,7 +77,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Deploy CrossChainRegistry with required dependencies
         crossChainRegistryImplementation =
-            new CrossChainRegistry(allocationManager, keyRegistrar, permissionController, eigenLayerPauserReg, "1.0.0");
+            new CrossChainRegistry(allocationManager, keyRegistrar, permissionController, eigenLayerPauserReg);
 
         crossChainRegistry = CrossChainRegistry(
             address(new TransparentUpgradeableProxy(address(crossChainRegistryImplementation), address(eigenLayerProxyAdmin), ""))
@@ -96,7 +96,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
             OperatorTableUpdater(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
 
         // Deploy BN254CertificateVerifier
-        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdater)), "1.0.0");
+        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdater)));
 
         bn254CertificateVerifier = BN254CertificateVerifier(
             address(new TransparentUpgradeableProxy(address(bn254CertificateVerifierImplementation), address(eigenLayerProxyAdmin), ""))
@@ -113,8 +113,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         OperatorTableUpdater newOperatorTableUpdaterImplementation = new OperatorTableUpdater(
             IBN254CertificateVerifier(address(bn254CertificateVerifier)),
             IECDSACertificateVerifier(address(ecdsaCertificateVerifier)),
-            eigenLayerPauserReg,
-            "1.0.0"
+            eigenLayerPauserReg
         );
 
         // Upgrade the proxy to use the new implementation with correct addresses

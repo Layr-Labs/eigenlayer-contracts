@@ -36,7 +36,7 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
-            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
+            new EigenPodManagerWrapper(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
         address targetAddr = address(eigenPodManagerImplementation);
         cheats.etch(targetAddr, address(eigenPodManagerWrapper).code);
 

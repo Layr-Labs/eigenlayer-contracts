@@ -8,7 +8,6 @@ import "./IEigenPod.sol";
 import "./IShareManager.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
-import "./ISemVerMixin.sol";
 
 interface IEigenPodManagerErrors {
     /// @dev Thrown when caller is not a EigenPod.
@@ -94,8 +93,7 @@ interface IEigenPodManager is
     IEigenPodManagerEvents,
     IEigenPodManagerTypes,
     IShareManager,
-    IPausable,
-    ISemVerMixin
+    IPausable
 {
     /**
      * @notice Creates an EigenPod for the sender.
