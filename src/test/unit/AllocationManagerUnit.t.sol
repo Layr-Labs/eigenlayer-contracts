@@ -4421,7 +4421,8 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
         assertEq(reads.length, 3, "should have 3 reads");
     }
 
-    function test_noop_slasherAlreadySet() public {
+    /// @dev This test is ignored by coverage due to an extra vm.access call
+    function test_noCoverage_noop_slasherAlreadySet() public {
         // Register the operatorSet
         OperatorSet memory operatorSet = OperatorSet(defaultAVS, 1);
         CreateSetParams[] memory createSetParams = new CreateSetParams[](1);
@@ -4511,7 +4512,8 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
         _assertNothingPending(defaultOperatorSet);
     }
 
-    function test_cannotMigrateMultipleTimes() public {
+    /// @dev This test is ignored by coverage due to an extra vm.access call
+    function test_noCoverage_cannotMigrateMultipleTimes() public {
         // Migrate the slasher
         allocationManager.migrateSlashers(defaultOperatorSet.toArray());
         assertEq(allocationManager.getSlasher(defaultOperatorSet), defaultAVS, "slasher should be the defaultAVS");
