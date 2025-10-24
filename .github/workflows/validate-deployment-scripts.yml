@@ -31,7 +31,7 @@ jobs:
           submodules: recursive
 
       - name: Install Zeus
-        run: npm install -g @layr-labs/zeus
+        run: npm install -g @layr-labs/zeus --ignore-scripts
       
         # Restore Forge cache
       - name: Cache Forge Build

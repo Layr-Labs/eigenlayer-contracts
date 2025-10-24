@@ -13,8 +13,8 @@ contract Integration_Upgrade_ZeroRegistrationDelay is UpgradeTest {
 
     function _init() internal override {
         (, strategies,) = _newRandomStaker();
-        (avs,) = _newRandomAVS();
-        operatorSet = avs.createOperatorSet(strategies);
+        (avs,) = _newRandomAVS_v1CreateSet();
+        operatorSet = avs.createOperatorSet_v1(strategies);
     }
 
     function testFuzz_register_upgrade_registerNew(uint24 r) public rand(r) {

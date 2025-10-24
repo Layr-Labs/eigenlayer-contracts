@@ -193,7 +193,7 @@ jobs:
           FOUNDRY_PROFILE=coverage \
           FOUNDRY_CACHE=true \
           FOUNDRY_CACHE_PATH=cache \
-          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
+          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)  --no-match-test test_noCoverage
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
