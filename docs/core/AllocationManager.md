@@ -495,7 +495,7 @@ function deregisterOperator(address operator, uint32[] calldata operatorSetIds) 
 
 [Operator set registration](#operator-sets) is one step of preparing to participate in an AVS. When an operator successfully registers for an operator set, it is because the AVS in question is ready to assign them tasks. However, it follows that _before assigning tasks_ to an operator, an AVS will expect operators to allocate slashable stake to the operator set such that the AVS has some economic security.
 
-For this reason, it is expected that many AVSs will require operators to **allocate slashable stake BEFORE registering for an operator set**. This is due to [`registerForOperatorSets`](#registerforoperatorsets) serving in part as an AVS's "consent mechanism," as calling `IAVSRegsitrar.registerOperator` allows the AVS to query the amount of slashable stake the operator can provide when assigned tasks.
+For this reason, it is expected that many AVSs will require operators to **allocate slashable stake BEFORE registering for an operator set**. This is due to [`registerForOperatorSets`](#registerforoperatorsets) serving in part as an AVS's "consent mechanism," as calling `IAVSRegistrar.registerOperator` allows the AVS to query the amount of slashable stake the operator can provide when assigned tasks.
 
 It is only once an operator is both _registered for an operator set_ and _has an active allocation to that operator set_ that the associated AVS can slash actual stake from an operator.
 
