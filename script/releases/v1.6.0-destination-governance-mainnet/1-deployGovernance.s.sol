@@ -37,7 +37,7 @@ contract DeployGovernance is EOADeployer {
             return;
         }
 
-        require(Env._strEq(Env.version(), Env.deployVersion()), "must deploy to the same version as the env");
+        require(Env._strEq(Env.envVersion(), Env.deployVersion()), "must deploy to the same version as the env");
 
         runAsEOA();
 
