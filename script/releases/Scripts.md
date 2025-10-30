@@ -2,7 +2,7 @@
 
 This document describes the various release scripts available in the `script/releases/` directory.
 
-## Multichain Deployer Scripts
+## Multichain Multisig Deployer Scripts
 
 ### 1. multichain-deployer-mainnet
 Deploys a multichain deployer multisig to mainnet environments (e.g., Base, Ethereum Mainnet). 
@@ -14,16 +14,16 @@ Deploys a multichain deployer multisig to testnet and preprod environments.
 - Configured as a 1/n multisig
 - Has 0xDA as the signer
 
-## Destination Chain Deployment Scripts
+## Destination Chain Initialization Scripts
 
 ### 3. v1.6.0-destination-genesis-mainnet
-Deploys foundational contracts to a chain (useful for destination chains):
+Deploys foundational contracts for a destination chain
 - Proxy Admin
 - Ops Multisig
 - Pauser Multisig
 
 ### 4. v1.6.0-destination-governance-mainnet
-Deploys governance infrastructure to a chain (useful for destination chains):
+Deploys governance infrastructure for a destination chain
 - Timelock Controller (with 1 day delay)
 - Protocol Council Multisig
 - Community Multisig
