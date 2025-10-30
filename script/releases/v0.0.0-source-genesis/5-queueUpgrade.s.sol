@@ -63,7 +63,10 @@ contract Queue is MultisigBuilder, DeployCore {
                 (
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.strategyManager()))),
                     address(Env.impl.strategyManager()),
-                    abi.encodeCall(StrategyManager.initialize, (address(Env.executorMultisig()), address(Env.proxy.strategyFactory()), 0))
+                    abi.encodeCall(
+                        StrategyManager.initialize,
+                        (address(Env.executorMultisig()), address(Env.proxy.strategyFactory()), 0)
+                    )
                 )
             )
         }).append({
@@ -83,7 +86,16 @@ contract Queue is MultisigBuilder, DeployCore {
                 (
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.rewardsCoordinator()))),
                     address(Env.impl.rewardsCoordinator()),
-                    abi.encodeCall(RewardsCoordinator.initialize, (address(Env.opsMultisig()), Env.REWARDS_PAUSE_STATUS(), Env.REWARDS_UPDATER(), Env.ACTIVATION_DELAY(), Env.DEFAULT_SPLIT_BIPS()))
+                    abi.encodeCall(
+                        RewardsCoordinator.initialize,
+                        (
+                            address(Env.opsMultisig()),
+                            Env.REWARDS_PAUSE_STATUS(),
+                            Env.REWARDS_UPDATER(),
+                            Env.ACTIVATION_DELAY(),
+                            Env.DEFAULT_SPLIT_BIPS()
+                        )
+                    )
                 )
             )
         }).append({
@@ -141,7 +153,9 @@ contract Queue is MultisigBuilder, DeployCore {
                 (
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.crossChainRegistry()))),
                     address(Env.impl.crossChainRegistry()),
-                    abi.encodeCall(CrossChainRegistry.initialize, (address(Env.opsMultisig()), Env.TABLE_UPDATE_CADENCE(), 0))
+                    abi.encodeCall(
+                        CrossChainRegistry.initialize, (address(Env.opsMultisig()), Env.TABLE_UPDATE_CADENCE(), 0)
+                    )
                 )
             )
         }).append({
@@ -151,12 +165,14 @@ contract Queue is MultisigBuilder, DeployCore {
                 (
                     ITransparentUpgradeableProxy(payable(address(Env.proxy.eigenStrategy()))),
                     address(Env.impl.eigenStrategy()),
-                    abi.encodeCall(EigenStrategy.initialize, (IEigen(address(Env.proxy.eigen())), IERC20(address(Env.proxy.beigen()))))
+                    abi.encodeCall(
+                        EigenStrategy.initialize, (IEigen(address(Env.proxy.eigen())), IERC20(address(Env.proxy.beigen())))
+                    )
                 )
             )
         });
 
-        // Add a call to set the proof timestamp setter timestamp to the operations multisig. This value will be set in step 10 of the upgrade. 
+        // Add a call to set the proof timestamp setter timestamp to the operations multisig. This value will be set in step 10 of the upgrade.
         executorCalls.append({
             to: address(Env.proxy.eigenPodManager()),
             data: abi.encodeCall(EigenPodManager.setProofTimestampSetter, (address(Env.opsMultisig())))

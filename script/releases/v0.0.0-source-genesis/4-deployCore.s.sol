@@ -37,7 +37,7 @@ contract DeployCore is DeployToken {
 
     function _runAsEOA() internal virtual override {
         vm.startBroadcast();
-        
+
         // 0. Deploy the empty contract
         emptyContract = new EmptyContract();
 
@@ -49,7 +49,7 @@ contract DeployCore is DeployToken {
         deployBlankProxy({name: type(AllocationManager).name});
 
         deployBlankProxy({name: type(RewardsCoordinator).name});
-        
+
         deployBlankProxy({name: type(AVSDirectory).name});
 
         deployBlankProxy({name: type(EigenPodManager).name});
@@ -69,12 +69,13 @@ contract DeployCore is DeployToken {
         // 2. Deploy the beacons and their associated implementations
         deployImpl({
             name: type(EigenPod).name,
-            deployedTo: address(
-                new EigenPod(Env.ethPOS(), Env.proxy.eigenPodManager(), Env.deployVersion())
-            )
+            deployedTo: address(new EigenPod(Env.ethPOS(), Env.proxy.eigenPodManager(), Env.deployVersion()))
         });
 
-        deployBeacon({name: type(EigenPod).name, deployedTo: address(new UpgradeableBeacon(address(Env.impl.eigenPod())))});
+        deployBeacon({
+            name: type(EigenPod).name,
+            deployedTo: address(new UpgradeableBeacon(address(Env.impl.eigenPod())))
+        });
 
         deployImpl({
             name: type(StrategyBase).name,
@@ -111,7 +112,12 @@ contract DeployCore is DeployToken {
         deployImpl({
             name: type(StrategyManager).name,
             deployedTo: address(
-                new StrategyManager(Env.proxy.allocationManager(), Env.proxy.delegationManager(), Env.impl.pauserRegistry(), Env.deployVersion())
+                new StrategyManager(
+                    Env.proxy.allocationManager(),
+                    Env.proxy.delegationManager(),
+                    Env.impl.pauserRegistry(),
+                    Env.deployVersion()
+                )
             )
         });
 
@@ -196,12 +202,22 @@ contract DeployCore is DeployToken {
 
         deployImpl({
             name: type(KeyRegistrar).name,
-            deployedTo: address(new KeyRegistrar(Env.proxy.permissionController(), Env.proxy.allocationManager(), Env.deployVersion()))
+            deployedTo: address(
+                new KeyRegistrar(Env.proxy.permissionController(), Env.proxy.allocationManager(), Env.deployVersion())
+            )
         });
 
         deployImpl({
             name: type(CrossChainRegistry).name,
-            deployedTo: address(new CrossChainRegistry(Env.proxy.allocationManager(), Env.proxy.keyRegistrar(), Env.proxy.permissionController(), Env.impl.pauserRegistry(), Env.deployVersion()))
+            deployedTo: address(
+                new CrossChainRegistry(
+                    Env.proxy.allocationManager(),
+                    Env.proxy.keyRegistrar(),
+                    Env.proxy.permissionController(),
+                    Env.impl.pauserRegistry(),
+                    Env.deployVersion()
+                )
+            )
         });
 
         deployImpl({
@@ -241,7 +257,9 @@ contract DeployCore is DeployToken {
             Env._getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
         );
 
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.strategyManager())) == pa, "strategyManager proxyAdmin incorrect");
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.strategyManager())) == pa, "strategyManager proxyAdmin incorrect"
+        );
 
         assertTrue(
             Env._getProxyAdmin(address(Env.proxy.allocationManager())) == pa, "allocationManager proxyAdmin incorrect"
@@ -256,21 +274,30 @@ contract DeployCore is DeployToken {
         assertTrue(Env._getProxyAdmin(address(Env.proxy.releaseManager())) == pa, "releaseManager proxyAdmin incorrect");
 
         /// permissions/
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.permissionController())) == pa, "permissionController proxyAdmin incorrect");
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.permissionController())) == pa,
+            "permissionController proxyAdmin incorrect"
+        );
         assertTrue(Env._getProxyAdmin(address(Env.proxy.keyRegistrar())) == pa, "keyRegistrar proxyAdmin incorrect");
 
         /// multichain/
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect");
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
+        );
 
         /// strategies/
         assertTrue(Env._getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
 
         assertTrue(Env.beacon.strategyBase().owner() == Env.executorMultisig(), "strategyBase beacon owner incorrect");
 
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect");
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect"
+        );
 
         /// pods/
-        assertTrue(Env._getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa, "eigenPodManager proxyAdmin incorrect");
+        assertTrue(
+            Env._getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa, "eigenPodManager proxyAdmin incorrect"
+        );
 
         assertTrue(Env.beacon.eigenPod().owner() == Env.executorMultisig(), "eigenPod beacon owner incorrect");
     }
@@ -444,8 +471,16 @@ contract DeployCore is DeployToken {
 
     /// @dev Validate that the beacons are set to the correct implementation contracts
     function _validateBeacons() internal view {
-        assertEq(address(Env.beacon.eigenPod().implementation()), address(Env.impl.eigenPod()), "eigenPod beacon implementation incorrect");
-        assertEq(address(Env.beacon.strategyBase().implementation()), address(Env.impl.strategyBase()), "strategyBase beacon implementation incorrect");
+        assertEq(
+            address(Env.beacon.eigenPod().implementation()),
+            address(Env.impl.eigenPod()),
+            "eigenPod beacon implementation incorrect"
+        );
+        assertEq(
+            address(Env.beacon.strategyBase().implementation()),
+            address(Env.impl.strategyBase()),
+            "strategyBase beacon implementation incorrect"
+        );
     }
 
     function _validateVersion() internal view {
@@ -461,7 +496,7 @@ contract DeployCore is DeployToken {
             assertEq(Env.impl.strategyManager().version(), expected, "strategyManager version mismatch");
             assertEq(Env.impl.releaseManager().version(), expected, "releaseManager version mismatch");
         }
-        
+
         {
             /// permissions/
             assertEq(Env.impl.permissionController().version(), expected, "permissionController version mismatch");

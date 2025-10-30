@@ -15,7 +15,7 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
         if (!Env._strEq(Env.env(), "base")) {
             return;
         }
-        
+
         ProxyAdmin proxyAdmin = ProxyAdmin(address(Env.proxyAdmin()));
         proxyAdmin.transferOwnership(Env.executorMultisig());
     }

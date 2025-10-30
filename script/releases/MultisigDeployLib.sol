@@ -20,8 +20,8 @@ library MultisigDeployLib {
         // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
         // NOTE: double check these addresses are correct on each chain
         address safeFactory = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
-        // @dev Gnosis safe L2 singleton - This value is ignored on L1 deployments. 
-        address safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762; 
+        // @dev Gnosis safe L2 singleton - This value is ignored on L1 deployments.
+        address safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
         address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
 
         bytes memory emptyData;
@@ -60,10 +60,7 @@ library MultisigDeployLib {
         return IMultisig(multisig).getOwners();
     }
 
-    function isOwner(
-        address multisig,
-        address owner
-    ) internal view returns (bool) {
+    function isOwner(address multisig, address owner) internal view returns (bool) {
         return IMultisig(multisig).isOwner(owner);
     }
 }
@@ -71,5 +68,7 @@ library MultisigDeployLib {
 interface IMultisig {
     function getThreshold() external view returns (uint256);
     function getOwners() external view returns (address[] memory);
-    function isOwner(address owner) external view returns (bool);
+    function isOwner(
+        address owner
+    ) external view returns (bool);
 }

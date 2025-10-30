@@ -41,8 +41,14 @@ contract DeployToken is DeployPauser {
         });
 
         // 3. Deploy the bEIGEN and Eigen implementations
-        deployImpl({name: type(BackingEigen).name, deployedTo: address(new BackingEigen({_EIGEN: IERC20(address(Env.proxy.eigen()))}))});
-        deployImpl({name: type(Eigen).name, deployedTo: address(new Eigen({_bEIGEN: IERC20(address(Env.proxy.beigen())), _version: Env.deployVersion()}))});
+        deployImpl({
+            name: type(BackingEigen).name,
+            deployedTo: address(new BackingEigen({_EIGEN: IERC20(address(Env.proxy.eigen()))}))
+        });
+        deployImpl({
+            name: type(Eigen).name,
+            deployedTo: address(new Eigen({_bEIGEN: IERC20(address(Env.proxy.beigen())), _version: Env.deployVersion()}))
+        });
 
         // 4. Upgrade the EIGEN Proxy to point to the implementation
         address initialOwner = msg.sender;
@@ -101,8 +107,13 @@ contract DeployToken is DeployPauser {
 
         // Check the proxy impl and proxy admin for bEIGEN - we can't use the Env helpers here because the proxy admin is a different contract
         ProxyAdmin beigenProxyAdmin = ProxyAdmin(Env.beigenProxyAdmin());
-        assertEq(beigenProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(address(beigen))), address(Env.impl.beigen()));
-        assertEq(beigenProxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(address(beigen))), address(beigenProxyAdmin));
+        assertEq(
+            beigenProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(address(beigen))),
+            address(Env.impl.beigen())
+        );
+        assertEq(
+            beigenProxyAdmin.getProxyAdmin(ITransparentUpgradeableProxy(address(beigen))), address(beigenProxyAdmin)
+        );
 
         // Assert that transfer restrictions are disabled
         assertEq(beigen.transferRestrictionsDisabledAfter(), 0);

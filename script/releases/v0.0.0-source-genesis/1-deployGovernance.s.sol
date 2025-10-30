@@ -85,13 +85,19 @@ contract DeployGovernance is EOADeployer {
         initialOwners[0] = TESTNET_OWNER;
 
         // 1. Deploy protocolCouncilMultisig
-        address protocolCouncilMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address protocolCouncilMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("protocolCouncilMultisig", protocolCouncilMultisig);
 
         // 2. Deploy communityMultisig
-        address communityMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address communityMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("communityMultisig", communityMultisig);
 
         // 3. Deploy primary executorMultisig
@@ -102,28 +108,40 @@ contract DeployGovernance is EOADeployer {
         owners_executorMultisig[0] = address(Env.timelockController());
         owners_executorMultisig[1] = Env.communityMultisig();
 
-        address executorMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: owners_executorMultisig, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address executorMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: owners_executorMultisig,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("executorMultisig", executorMultisig);
 
         // 4. Deploy beigenExecutorMultisig
         require(
-            address(Env.beigenTimelockController()) != address(0), "must deploy beigenTimelockController before beigenExecutorMultisig"
+            address(Env.beigenTimelockController()) != address(0),
+            "must deploy beigenTimelockController before beigenExecutorMultisig"
         );
         address[] memory owners_beigenExecutorMultisig = new address[](2);
         owners_beigenExecutorMultisig[0] = address(Env.beigenTimelockController());
         owners_beigenExecutorMultisig[1] = Env.communityMultisig();
-        address beigenExecutorMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: owners_beigenExecutorMultisig, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address beigenExecutorMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: owners_beigenExecutorMultisig,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("beigenExecutorMultisig", beigenExecutorMultisig);
 
         // 5. Deploy operationsMultisig
-        address operationsMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address operationsMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("operationsMultisig", operationsMultisig);
     }
 
-    function configureTimelockController(TimelockController timelockController) public {
+    function configureTimelockController(
+        TimelockController timelockController
+    ) public {
         // We have 10 actions to perform on the timelock controller
         uint256 tx_array_length = 10;
         address[] memory targets = new address[](tx_array_length);
@@ -245,7 +263,11 @@ contract DeployGovernance is EOADeployer {
         assertEq(MultisigDeployLib.getThreshold(Env.beigenExecutorMultisig()), TESTNET_THRESHOLD);
 
         // Check owner count
-        assertEq(MultisigDeployLib.getOwners(Env.beigenExecutorMultisig()).length, 2, "beigenExecutorMultisig owner count mismatch");
+        assertEq(
+            MultisigDeployLib.getOwners(Env.beigenExecutorMultisig()).length,
+            2,
+            "beigenExecutorMultisig owner count mismatch"
+        );
 
         // Check owners
         assertTrue(
@@ -258,7 +280,9 @@ contract DeployGovernance is EOADeployer {
         );
     }
 
-    function checkTimelockControllerConfig(TimelockController timelockController) public view {
+    function checkTimelockControllerConfig(
+        TimelockController timelockController
+    ) public view {
         // check for proposer + executor rights on Protocol Council multisig
         require(
             timelockController.hasRole(timelockController.PROPOSER_ROLE(), Env.protocolCouncilMultisig()),

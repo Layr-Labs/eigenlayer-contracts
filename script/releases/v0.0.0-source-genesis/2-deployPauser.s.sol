@@ -5,7 +5,6 @@ import {DeployGovernance} from "script/releases/v0.0.0-source-genesis/1-deployGo
 import {MultisigDeployLib} from "../MultisigDeployLib.sol";
 import "../Env.sol";
 
-
 /// @dev This script is used to deploy the operations contracts on a testnet environment.
 /// This script deploys the following contracts/msigs:
 /// - pauserMultisig
@@ -23,8 +22,11 @@ contract DeployPauser is DeployGovernance {
         vm.startBroadcast();
 
         // Deploy pauserMultisig
-        address pauserMultisig =
-            MultisigDeployLib.deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address pauserMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
 
         // Deploy pauserRegistry
         address[] memory pausers = new address[](2);
@@ -46,7 +48,7 @@ contract DeployPauser is DeployGovernance {
     function testScript() public virtual override {
         // Run the deploy governance script, since we need the executor multisig to be deployed
         DeployGovernance._runAsEOA();
-        
+
         // Run the deploy operations script
         runAsEOA();
 

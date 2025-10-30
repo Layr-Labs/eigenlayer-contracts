@@ -33,7 +33,6 @@ contract Execute is Queue {
         DeployPauser._runAsEOA();
         DeployToken._runAsEOA();
         DeployCore._runAsEOA();
-        
 
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
@@ -191,7 +190,6 @@ contract Execute is Queue {
             assertTrue(rewards.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(), "rc.futureLength invalid");
             assertTrue(rewards.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(), "rc.genesis invalid");
 
-
             AVSDirectory avsDirectory = Env.proxy.avsDirectory();
             assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsD.dm invalid");
             assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsD.pR invalid");
@@ -297,7 +295,10 @@ contract Execute is Queue {
             vm.expectRevert(errInit);
             crossChainRegistry.initialize(address(0), 0, 0);
             assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "ccr.owner invalid");
-            assertTrue(crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(), "ccr.tableUpdateCadence invalid");
+            assertTrue(
+                crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
+                "ccr.tableUpdateCadence invalid"
+            );
             assertTrue(crossChainRegistry.paused() == 0, "ccr.paused invalid");
         }
 
@@ -320,7 +321,9 @@ contract Execute is Queue {
             eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
             assertTrue(eigenStrategy.paused() == 0, "eigenStrat.paused invalid");
             assertEq(address(eigenStrategy.EIGEN()), address(Env.proxy.eigen()), "eigenStrat.EIGEN invalid");
-            assertEq(address(eigenStrategy.underlyingToken()), address(Env.proxy.beigen()), "eigenStrat.underlying invalid");
+            assertEq(
+                address(eigenStrategy.underlyingToken()), address(Env.proxy.beigen()), "eigenStrat.underlying invalid"
+            );
 
             // StrategyBase proxies are initialized when deployed by factory
             StrategyFactory strategyFactory = Env.proxy.strategyFactory();
