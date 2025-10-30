@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "./1-deployMultichainDeployer.s.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import {IMultisig} from "script/releases/MultisigDeployLib.sol";
 import "../../releases/Env.sol";
 
 // For TOML parsing

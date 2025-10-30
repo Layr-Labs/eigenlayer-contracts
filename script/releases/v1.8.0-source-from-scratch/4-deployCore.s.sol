@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {DeployToken} from "script/releases/v0.0.0-source-genesis/3-deployToken.s.sol";
-import {DeployPauser} from "script/releases/v0.0.0-source-genesis/2-deployPauser.s.sol";
-import {DeployGovernance} from "script/releases/v0.0.0-source-genesis/1-deployGovernance.s.sol";
+import {DeployToken} from "script/releases/v1.8.0-source-from-scratch/3-deployToken.s.sol";
+import {DeployPauser} from "script/releases/v1.8.0-source-from-scratch/2-deployPauser.s.sol";
+import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
 import "../Env.sol";
 
 /// This script deploys the following contracts/proxies:

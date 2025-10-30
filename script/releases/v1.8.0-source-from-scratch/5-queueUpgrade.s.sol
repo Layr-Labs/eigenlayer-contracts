@@ -2,10 +2,10 @@
 pragma solidity ^0.8.12;
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
-import {DeployToken} from "script/releases/v0.0.0-source-genesis/3-deployToken.s.sol";
-import {DeployPauser} from "script/releases/v0.0.0-source-genesis/2-deployPauser.s.sol";
-import {DeployGovernance} from "script/releases/v0.0.0-source-genesis/1-deployGovernance.s.sol";
-import {DeployCore} from "script/releases/v0.0.0-source-genesis/4-deployCore.s.sol";
+import {DeployToken} from "script/releases/v1.8.0-source-from-scratch/3-deployToken.s.sol";
+import {DeployPauser} from "script/releases/v1.8.0-source-from-scratch/2-deployPauser.s.sol";
+import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
+import {DeployCore} from "script/releases/v1.8.0-source-from-scratch/4-deployCore.s.sol";
 import "../Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 

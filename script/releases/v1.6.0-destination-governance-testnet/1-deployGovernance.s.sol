@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
+import {MultisigDeployLib, IMultisig} from "script/releases/MultisigDeployLib.sol";
 import "../Env.sol";
 
 import "@openzeppelin/contracts/governance/TimelockController.sol";
@@ -39,8 +40,8 @@ contract DeployGovernance is EOADeployer {
         runAsEOA();
 
         // Assert that the multisigs have the proper owners - protocolCouncilMultisig and communityMultisig have the same owners & threshold
-        checkMultisig(Multisig(Env.protocolCouncilMultisig()));
-        checkMultisig(Multisig(Env.communityMultisig()));
+        checkMultisig(IMultisig(Env.protocolCouncilMultisig()));
+        checkMultisig(IMultisig(Env.communityMultisig()));
 
         // Assert that the executorMultisig has the proper configuration
         checkExecutorMultisig();
@@ -77,13 +78,19 @@ contract DeployGovernance is EOADeployer {
         initialOwners[0] = TESTNET_OWNER;
 
         // 1. Deploy protocolCouncilMultisig
-        address protocolCouncilMultisig =
-            deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address protocolCouncilMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("protocolCouncilMultisig", protocolCouncilMultisig);
 
         // 2. Deploy communityMultisig
-        address communityMultisig =
-            deployMultisig({initialOwners: initialOwners, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address communityMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: initialOwners,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("communityMultisig", communityMultisig);
 
         // 3. Deploy primary executorMultisig
@@ -94,44 +101,12 @@ contract DeployGovernance is EOADeployer {
         owners_executorMultisig[0] = address(Env.timelockController());
         owners_executorMultisig[1] = Env.communityMultisig();
 
-        address executorMultisig =
-            deployMultisig({initialOwners: owners_executorMultisig, initialThreshold: TESTNET_THRESHOLD, salt: ++salt});
+        address executorMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: owners_executorMultisig,
+            initialThreshold: TESTNET_THRESHOLD,
+            salt: ++salt
+        });
         zUpdate("executorMultisig", executorMultisig);
-    }
-
-    function deployMultisig(
-        address[] memory initialOwners,
-        uint256 initialThreshold,
-        uint256 salt
-    ) internal returns (address) {
-        // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
-        // NOTE: double check these addresses are correct on each chain
-        address safeFactory = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
-        address safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762; // Gnosis safe L2 singleton
-        address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
-
-        bytes memory emptyData;
-
-        bytes memory initializerData = abi.encodeWithSignature(
-            "setup(address[],uint256,address,bytes,address,address,uint256,address)",
-            initialOwners, /* signers */
-            initialThreshold, /* threshold */
-            address(0), /* to (used in setupModules) */
-            emptyData, /* data (used in setupModules) */
-            safeFallbackHandler,
-            address(0), /* paymentToken */
-            0, /* payment */
-            payable(address(0)) /* paymentReceiver */
-        );
-
-        bytes memory calldataToFactory =
-            abi.encodeWithSignature("createProxyWithNonce(address,bytes,uint256)", safeSingleton, initializerData, salt);
-
-        (bool success, bytes memory returndata) = safeFactory.call(calldataToFactory);
-        require(success, "multisig deployment failed");
-        address deployedMultisig = abi.decode(returndata, (address));
-        require(deployedMultisig != address(0), "something wrong in multisig deployment, zero address returned");
-        return deployedMultisig;
     }
 
     function configureTimelockController() public {
@@ -219,7 +194,7 @@ contract DeployGovernance is EOADeployer {
 
     /// @dev Used to check the configuration of the protocolCouncilMultisig and communityMultisig
     function checkMultisig(
-        Multisig multisig
+        IMultisig multisig
     ) public view {
         // Check threshold for testnet
         assertEq(multisig.getThreshold(), TESTNET_THRESHOLD);
@@ -238,18 +213,18 @@ contract DeployGovernance is EOADeployer {
 
     function checkExecutorMultisig() public view {
         // Check threshold
-        assertEq(Multisig(Env.executorMultisig()).getThreshold(), TESTNET_THRESHOLD);
+        assertEq(IMultisig(Env.executorMultisig()).getThreshold(), TESTNET_THRESHOLD);
 
         // Check owner count
-        assertEq(Multisig(Env.executorMultisig()).getOwners().length, 2, "executorMultisig owner count mismatch");
+        assertEq(IMultisig(Env.executorMultisig()).getOwners().length, 2, "executorMultisig owner count mismatch");
 
         // Check owners
         assertTrue(
-            Multisig(Env.executorMultisig()).isOwner(address(Env.timelockController())),
+            IMultisig(Env.executorMultisig()).isOwner(address(Env.timelockController())),
             "timelockController not in executorMultisig"
         );
         assertTrue(
-            Multisig(Env.executorMultisig()).isOwner(Env.communityMultisig()),
+            IMultisig(Env.executorMultisig()).isOwner(Env.communityMultisig()),
             "communityMultisig not in executorMultisig"
         );
     }
@@ -310,12 +285,4 @@ contract DeployGovernance is EOADeployer {
         // Check the delay for testnet (1 second)
         assertEq(timelockController.getMinDelay(), 1);
     }
-}
-
-interface Multisig {
-    function getThreshold() external view returns (uint256);
-    function getOwners() external view returns (address[] memory);
-    function isOwner(
-        address owner
-    ) external view returns (bool);
 }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
+import {MultisigDeployLib, IMultisig} from "script/releases/MultisigDeployLib.sol";
 import "../Env.sol";
 
 // For TOML parsing
@@ -30,12 +31,18 @@ contract DeployDestinationGenesis is EOADeployer {
         vm.startBroadcast();
 
         // Deploy opsMultisig
-        address opsMultisig =
-            deployMultisig({initialOwners: opsMultisigInitialOwners, initialThreshold: 3, salt: ++salt});
+        address opsMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: opsMultisigInitialOwners,
+            initialThreshold: 3,
+            salt: ++salt
+        });
 
         // Deploy pauserMultisig
-        address pauserMultisig =
-            deployMultisig({initialOwners: pauserMultisigInitialOwners, initialThreshold: 1, salt: ++salt});
+        address pauserMultisig = MultisigDeployLib.deployMultisig({
+            initialOwners: pauserMultisigInitialOwners,
+            initialThreshold: 1,
+            salt: ++salt
+        });
 
         // Deploy pauserRegistry
         address[] memory pausers = new address[](2);
@@ -74,8 +81,8 @@ contract DeployDestinationGenesis is EOADeployer {
         assertNotEq(Env.pauserMultisig(), address(0));
 
         // Check the threshold of each multisig
-        assertEq(Multisig(address(Env.opsMultisig())).getThreshold(), 3);
-        assertEq(Multisig(address(Env.pauserMultisig())).getThreshold(), 1);
+        assertEq(IMultisig(address(Env.opsMultisig())).getThreshold(), 3);
+        assertEq(IMultisig(address(Env.pauserMultisig())).getThreshold(), 1);
 
         // Assert the owners of each multisig
         address[] memory opsMultisigOwners =
@@ -83,21 +90,21 @@ contract DeployDestinationGenesis is EOADeployer {
         address[] memory pauserMultisigOwners =
             _getMultisigOwner("script/releases/v1.6.0-destination-genesis/pauserOwners.toml");
         for (uint256 i = 0; i < opsMultisigOwners.length; i++) {
-            assertTrue(Multisig(address(Env.opsMultisig())).isOwner(opsMultisigOwners[i]));
+            assertTrue(IMultisig(address(Env.opsMultisig())).isOwner(opsMultisigOwners[i]));
         }
         for (uint256 i = 0; i < pauserMultisigOwners.length; i++) {
-            assertTrue(Multisig(address(Env.pauserMultisig())).isOwner(pauserMultisigOwners[i]));
+            assertTrue(IMultisig(address(Env.pauserMultisig())).isOwner(pauserMultisigOwners[i]));
         }
 
         // Assert owner counts are correct
         assertEq(
             opsMultisigOwners.length,
-            Multisig(address(Env.opsMultisig())).getOwners().length,
+            IMultisig(address(Env.opsMultisig())).getOwners().length,
             "opsMultisigOwners length mismatch"
         );
         assertEq(
             pauserMultisigOwners.length,
-            Multisig(address(Env.pauserMultisig())).getOwners().length,
+            IMultisig(address(Env.pauserMultisig())).getOwners().length,
             "pauserMultisigOwners length mismatch"
         );
 
@@ -105,41 +112,6 @@ contract DeployDestinationGenesis is EOADeployer {
         assertTrue(Env.impl.pauserRegistry().isPauser(Env.opsMultisig()));
         assertTrue(Env.impl.pauserRegistry().isPauser(Env.pauserMultisig()));
         assertEq(Env.impl.pauserRegistry().unpauser(), Env.opsMultisig());
-    }
-
-    function deployMultisig(
-        address[] memory initialOwners,
-        uint256 initialThreshold,
-        uint256 salt
-    ) internal returns (address) {
-        // addresses taken from https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#expected-addresses-with-deterministic-deployment-proxy-default
-        // NOTE: double check these addresses are correct on each chain
-        address safeFactory = 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67;
-        address safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762; // Gnosis safe L2 singleton
-        address safeFallbackHandler = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
-
-        bytes memory emptyData;
-
-        bytes memory initializerData = abi.encodeWithSignature(
-            "setup(address[],uint256,address,bytes,address,address,uint256,address)",
-            initialOwners, /* signers */
-            initialThreshold, /* threshold */
-            address(0), /* to (used in setupModules) */
-            emptyData, /* data (used in setupModules) */
-            safeFallbackHandler,
-            address(0), /* paymentToken */
-            0, /* payment */
-            payable(address(0)) /* paymentReceiver */
-        );
-
-        bytes memory calldataToFactory =
-            abi.encodeWithSignature("createProxyWithNonce(address,bytes,uint256)", safeSingleton, initializerData, salt);
-
-        (bool success, bytes memory returndata) = safeFactory.call(calldataToFactory);
-        require(success, "multisig deployment failed");
-        address deployedMultisig = abi.decode(returndata, (address));
-        require(deployedMultisig != address(0), "something wrong in multisig deployment, zero address returned");
-        return deployedMultisig;
     }
 
     function _getMultisigOwner(
@@ -155,12 +127,4 @@ contract DeployDestinationGenesis is EOADeployer {
 
         return owners;
     }
-}
-
-interface Multisig {
-    function getThreshold() external view returns (uint256);
-    function getOwners() external view returns (address[] memory);
-    function isOwner(
-        address owner
-    ) external view returns (bool);
 }
