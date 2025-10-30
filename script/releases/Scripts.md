@@ -40,10 +40,10 @@ Same as the mainnet governance deployment above, but with testnet-specific confi
 
 ### 6. v1.6.0-protocol-from-scratch
 Deploys the entire EigenLayer protocol from scratch to v1.6.0, including:
-- All core contracts
+- All contracts up to slashing
 - Governance infrastructure
 - Token contracts
-- Strategy contracts
+*Note: This should not be used on destination chains, only the below should be used.* This script is useful to initiate a net new *full core protocol deployment* on a testnet chain. 
 
 ### 7. v1.7.0-v1.8.0-multichain-hourglass-combined
 Upgrades the protocol to support:
