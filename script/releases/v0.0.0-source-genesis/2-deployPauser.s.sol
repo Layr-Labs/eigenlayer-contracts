@@ -11,10 +11,10 @@ import "../Env.sol";
 /// - pauserMultisig
 /// - pauserRegistry
 /// - proxyAdmin
-contract DeployOperations is DeployGovernance {
+contract DeployPauser is DeployGovernance {
     using Env for *;
 
-    function _runAsEOA() internal override {
+    function _runAsEOA() internal virtual override {
         // Setup safe deploy parameters
         uint256 salt = uint256(keccak256(abi.encode(block.chainid, block.timestamp + 1))); // Pseudo-random salt; We add 1 to the timestamp to ensure the salt is different from the governance script
         address[] memory initialOwners = new address[](1);
@@ -29,6 +29,7 @@ contract DeployOperations is DeployGovernance {
         // Deploy pauserRegistry
         address[] memory pausers = new address[](2);
         pausers[0] = Env.opsMultisig();
+        pausers[0] = Env.executorMultisig();
         pausers[1] = pauserMultisig;
 
         deployImpl({
@@ -36,15 +37,10 @@ contract DeployOperations is DeployGovernance {
             deployedTo: address(new PauserRegistry({_pausers: pausers, _unpauser: Env.executorMultisig()}))
         });
 
-        // Deploy proxyAdmin
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
-        proxyAdmin.transferOwnership(Env.executorMultisig());
-
         vm.stopBroadcast();
 
         // Update config
         zUpdate("pauserMultisig", pauserMultisig);
-        zUpdate("proxyAdmin", address(proxyAdmin));
     }
 
     function testScript() public virtual override {
@@ -53,9 +49,6 @@ contract DeployOperations is DeployGovernance {
         
         // Run the deploy operations script
         runAsEOA();
-
-        // Check proxyAdmin owner
-        assertEq(ProxyAdmin(Env.proxyAdmin()).owner(), Env.executorMultisig());
 
         // Check the pauser multisig
         assertNotEq(Env.pauserMultisig(), address(0));
@@ -76,6 +69,7 @@ contract DeployOperations is DeployGovernance {
         // Assert that the pauserRegistry is non-zero, and that the pausers are set correctly
         assertTrue(Env.impl.pauserRegistry().isPauser(Env.opsMultisig()));
         assertTrue(Env.impl.pauserRegistry().isPauser(Env.pauserMultisig()));
+        assertTrue(Env.impl.pauserRegistry().isPauser(Env.executorMultisig()));
         assertEq(Env.impl.pauserRegistry().unpauser(), Env.executorMultisig());
     }
 }
