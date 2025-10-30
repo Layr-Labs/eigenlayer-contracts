@@ -8,6 +8,7 @@ import "../Env.sol";
 import "@openzeppelin/contracts/governance/TimelockController.sol";
 
 /// @notice This script is used to deploy the governance contracts on a testnet environment.
+/// @dev Before running this script, please ensure that you have deployed the MultichainDeployer multisig
 /// This script deploys the following contracts/msigs:
 /// - TimelockController
 /// - protocolCouncilMultisig

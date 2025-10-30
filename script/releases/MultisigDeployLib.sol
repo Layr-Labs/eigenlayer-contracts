@@ -33,6 +33,16 @@ library MultisigDeployLib {
         uint256 initialThreshold,
         uint256 salt
     ) internal returns (address) {
+        return deployMultisigWithPaymentReceiver(initialOwners, initialThreshold, salt, address(0));
+    }
+
+    /// @notice Used to deploy a multisig with a payment receiver. This is used by multichain deployer on testnet chains.
+    function deployMultisigWithPaymentReceiver(
+        address[] memory initialOwners,
+        uint256 initialThreshold,
+        uint256 salt,
+        address paymentReceiver
+    ) internal returns (address) {
         bytes memory initializerData = abi.encodeWithSelector(
             IMultisig.setup.selector,
             initialOwners, /* signers */
@@ -42,7 +52,7 @@ library MultisigDeployLib {
             SAFE_FALLBACK_HANDLER, /* fallbackHandler */
             address(0), /* paymentToken */
             0, /* payment */
-            payable(address(0)) /* paymentReceiver */
+            payable(paymentReceiver) /* paymentReceiver */
         );
 
         address deployedMultisig =
