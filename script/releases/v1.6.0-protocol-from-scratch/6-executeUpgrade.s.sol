@@ -2,18 +2,18 @@
 pragma solidity ^0.8.12;
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
-import {DeployToken} from "script/releases/v1.8.0-source-from-scratch/3-deployToken.s.sol";
-import {DeployPauser} from "script/releases/v1.8.0-source-from-scratch/2-deployPauser.s.sol";
-import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
-import {DeployCore} from "script/releases/v1.8.0-source-from-scratch/4-deployCore.s.sol";
-import {Queue} from "script/releases/v1.8.0-source-from-scratch/5-queueUpgrade.s.sol";
+import {DeployToken} from "./3-deployToken.s.sol";
+import {DeployPauser} from "./2-deployPauser.s.sol";
+import {DeployGovernance} from "./1-deployGovernance.s.sol";
+import {DeployCore} from "./4-deployCore.s.sol";
+import {Queue} from "./5-queueUpgrade.s.sol";
 import "../Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 
 contract Execute is Queue {
     using Env for *;
 
-    function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
+    function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -131,12 +131,6 @@ contract Execute is Queue {
             "keyRegistrar impl failed"
         );
 
-        /// multichain/
-        assertion(
-            Env._getProxyImpl(address(Env.proxy.crossChainRegistry())) == address(Env.impl.crossChainRegistry()),
-            "crossChainRegistry impl failed"
-        );
-
         /// strategies/
         assertion(
             Env._getProxyImpl(address(Env.proxy.eigenStrategy())) == address(Env.impl.eigenStrategy()),
@@ -203,15 +197,6 @@ contract Execute is Queue {
             KeyRegistrar keyRegistrar = Env.proxy.keyRegistrar();
             assertTrue(keyRegistrar.permissionController() == Env.proxy.permissionController(), "kr.pc invalid");
             assertTrue(keyRegistrar.allocationManager() == Env.proxy.allocationManager(), "kr.alm invalid");
-        }
-
-        {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
-            assertTrue(crossChainRegistry.allocationManager() == Env.proxy.allocationManager(), "ccr.alm invalid");
-            assertTrue(crossChainRegistry.keyRegistrar() == Env.proxy.keyRegistrar(), "ccr.kr invalid");
-            assertTrue(crossChainRegistry.permissionController() == Env.proxy.permissionController(), "ccr.pc invalid");
-            assertTrue(crossChainRegistry.pauserRegistry() == Env.impl.pauserRegistry(), "ccr.pR invalid");
         }
 
         {
@@ -288,19 +273,6 @@ contract Execute is Queue {
         }
 
         // KeyRegistrar and PermissionController are not initializable
-
-        {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
-            vm.expectRevert(errInit);
-            crossChainRegistry.initialize(address(0), 0, 0);
-            assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "ccr.owner invalid");
-            assertTrue(
-                crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
-                "ccr.tableUpdateCadence invalid"
-            );
-            assertTrue(crossChainRegistry.paused() == 0, "ccr.paused invalid");
-        }
 
         {
             /// pods/

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {DeployToken} from "script/releases/v1.8.0-source-from-scratch/3-deployToken.s.sol";
-import {DeployPauser} from "script/releases/v1.8.0-source-from-scratch/2-deployPauser.s.sol";
-import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
+import {DeployToken} from "./3-deployToken.s.sol";
+import {DeployPauser} from "./2-deployPauser.s.sol";
+import {DeployGovernance} from "./1-deployGovernance.s.sol";
 import "../Env.sol";
 
 /// This script deploys the following contracts/proxies:
@@ -17,7 +17,6 @@ import "../Env.sol";
 /// - ReleaseManager
 /// - PermissionController
 /// - KeyRegistrar
-/// - CrossChainRegistry
 /// - EigenStrategy
 /// - EigenPod - Implementation & Beacon
 /// - StrategyBase - Implementation & Beacon
@@ -61,8 +60,6 @@ contract DeployCore is DeployToken {
         deployBlankProxy({name: type(PermissionController).name});
 
         deployBlankProxy({name: type(KeyRegistrar).name});
-
-        deployBlankProxy({name: type(CrossChainRegistry).name});
 
         deployBlankProxy({name: type(ReleaseManager).name});
 
@@ -208,19 +205,6 @@ contract DeployCore is DeployToken {
         });
 
         deployImpl({
-            name: type(CrossChainRegistry).name,
-            deployedTo: address(
-                new CrossChainRegistry(
-                    Env.proxy.allocationManager(),
-                    Env.proxy.keyRegistrar(),
-                    Env.proxy.permissionController(),
-                    Env.impl.pauserRegistry(),
-                    Env.deployVersion()
-                )
-            )
-        });
-
-        deployImpl({
             name: type(ReleaseManager).name,
             deployedTo: address(new ReleaseManager(Env.proxy.permissionController(), Env.deployVersion()))
         });
@@ -279,11 +263,6 @@ contract DeployCore is DeployToken {
             "permissionController proxyAdmin incorrect"
         );
         assertTrue(Env._getProxyAdmin(address(Env.proxy.keyRegistrar())) == pa, "keyRegistrar proxyAdmin incorrect");
-
-        /// multichain/
-        assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
-        );
 
         /// strategies/
         assertTrue(Env._getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
@@ -363,15 +342,6 @@ contract DeployCore is DeployToken {
         }
 
         {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
-            assertTrue(crossChainRegistry.allocationManager() == Env.proxy.allocationManager(), "ccr.alm invalid");
-            assertTrue(crossChainRegistry.keyRegistrar() == Env.proxy.keyRegistrar(), "ccr.kr invalid");
-            assertTrue(crossChainRegistry.permissionController() == Env.proxy.permissionController(), "ccr.pc invalid");
-            assertTrue(crossChainRegistry.pauserRegistry() == Env.impl.pauserRegistry(), "ccr.pR invalid");
-        }
-
-        {
             /// pods/
             EigenPod eigenPod = Env.impl.eigenPod();
             assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "ep.ethPOS invalid");
@@ -436,13 +406,6 @@ contract DeployCore is DeployToken {
         // KeyRegistrar and PermissionController are not initializable
 
         {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
-            vm.expectRevert(errInit);
-            crossChainRegistry.initialize(address(0), 0, 0);
-        }
-
-        {
             /// pods/
             EigenPod eigenPod = Env.impl.eigenPod();
             vm.expectRevert(errInit);
@@ -501,11 +464,6 @@ contract DeployCore is DeployToken {
             /// permissions/
             assertEq(Env.impl.permissionController().version(), expected, "permissionController version mismatch");
             assertEq(Env.impl.keyRegistrar().version(), expected, "keyRegistrar version mismatch");
-        }
-
-        {
-            /// multichain/
-            assertEq(Env.impl.crossChainRegistry().version(), expected, "crossChainRegistry version mismatch");
         }
 
         {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
+import {DeployGovernance} from "./1-deployGovernance.s.sol";
 import {MultisigDeployLib} from "../MultisigDeployLib.sol";
 import "../Env.sol";
 

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.12;
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
-import {DeployToken} from "script/releases/v1.8.0-source-from-scratch/3-deployToken.s.sol";
-import {DeployPauser} from "script/releases/v1.8.0-source-from-scratch/2-deployPauser.s.sol";
-import {DeployGovernance} from "script/releases/v1.8.0-source-from-scratch/1-deployGovernance.s.sol";
-import {DeployCore} from "script/releases/v1.8.0-source-from-scratch/4-deployCore.s.sol";
+import {DeployToken} from "./3-deployToken.s.sol";
+import {DeployPauser} from "./2-deployPauser.s.sol";
+import {DeployGovernance} from "./1-deployGovernance.s.sol";
+import {DeployCore} from "./4-deployCore.s.sol";
 import "../Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 
@@ -22,7 +22,6 @@ import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 /// - ReleaseManager
 /// - PermissionController
 /// - KeyRegistrar
-/// - CrossChainRegistry
 /// - EigenStrategy
 contract Queue is MultisigBuilder, DeployCore {
     using Env for *;
@@ -146,18 +145,6 @@ contract Queue is MultisigBuilder, DeployCore {
                 proxy: address(Env.proxy.keyRegistrar()),
                 impl: address(Env.impl.keyRegistrar())
             })
-        }).append({
-            to: Env.proxyAdmin(),
-            data: abi.encodeCall(
-                proxyAdmin.upgradeAndCall,
-                (
-                    ITransparentUpgradeableProxy(payable(address(Env.proxy.crossChainRegistry()))),
-                    address(Env.impl.crossChainRegistry()),
-                    abi.encodeCall(
-                        CrossChainRegistry.initialize, (address(Env.opsMultisig()), Env.TABLE_UPDATE_CADENCE(), 0)
-                    )
-                )
-            )
         }).append({
             to: Env.proxyAdmin(),
             data: abi.encodeCall(
