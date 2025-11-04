@@ -619,12 +619,6 @@ contract ExistingDeploymentParser is Script, Logger {
                 address(strategyFactory),
                 "strategyManager: strategyWhitelister not set correctly"
             );
-        } else if (block.chainid == 17_000) {
-            // On holesky, for ease of whitelisting we set to executorMultisig
-            // assertEq(
-            //     strategyManager.strategyWhitelister(), executorMultisig,
-            //     "strategyManager: strategyWhitelister not set correctly"
-            // );
         }
         // EigenPodManager
         assertTrue(

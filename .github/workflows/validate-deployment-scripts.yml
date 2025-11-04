@@ -81,12 +81,10 @@ jobs:
           fi
           
           # Set RPC URL based on environment
-          if [ "${{ matrix.env }}" = "testnet" ] || [ "${{ matrix.env }}" = "preprod" ]; then
-            RPC_URL="${{ secrets.RPC_HOLESKY }}"
+          if [ "${{ matrix.env }}" = "testnet-hoodi" ]; then
+            RPC_URL="${{ secrets.RPC_HOODI }}"
           elif [ "${{ matrix.env }}" = "testnet-sepolia" ]; then
             RPC_URL="${{ secrets.RPC_SEPOLIA }}"
-          elif [ "${{ matrix.env }}" = "testnet-hoodi" ]; then
-            RPC_URL="${{ secrets.RPC_HOODI }}"
           elif [ "${{ matrix.env }}" = "testnet-base-sepolia" ]; then
             RPC_URL="${{ secrets.RPC_BASE_SEPOLIA }}"
           elif [ "${{ matrix.env }}" = "mainnet" ]; then

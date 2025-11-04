@@ -1982,7 +1982,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
 }
 
 /// @notice No unit tests as of now but would be good to add specific unit tests using proofs from our proofGen library
-/// for a EigenPod on Holesky
+/// for a EigenPod on Hoodi
 contract EigenPodUnitTests_proofParsingTests is EigenPodHarnessSetup, ProofParsing {
     using BytesLib for bytes;
     using BeaconChainProofs for *;

@@ -35,7 +35,6 @@ jobs:
             github.com:443
             release-assets.githubusercontent.com:443
             eth-mainnet.g.alchemy.com:443
-            powerful-dimensional-season.ethereum-holesky.quiknode.pro:443
             objects.githubusercontent.com:443
 
       # Check out repository with all submodules for complete codebase access.
@@ -84,7 +83,6 @@ jobs:
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
 
   # -----------------------------------------------------------------------
   # Forge Storage Diff

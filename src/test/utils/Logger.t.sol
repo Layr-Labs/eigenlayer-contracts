@@ -31,7 +31,6 @@ uint constant ALT_METHODS = (FLAG << 1);
 /// @dev Types representing the different types of forks that can be simulated.
 uint constant LOCAL = (FLAG << 0);
 uint constant MAINNET = (FLAG << 1);
-uint constant HOLESKY = (FLAG << 2);
 
 abstract contract Logger is Test {
     using StdStyle for *;
@@ -227,7 +226,6 @@ library print {
     function asForkType(uint t) internal pure returns (string memory s) {
         if (t == LOCAL) s = "LOCAL";
         else if (t == MAINNET) s = "MAINNET";
-        else if (t == HOLESKY) s = "HOLESKY";
     }
 
     function asGwei(uint x) internal pure returns (string memory) {
