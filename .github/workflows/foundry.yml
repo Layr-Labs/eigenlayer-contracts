@@ -84,7 +84,6 @@ jobs:
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-          RPC_HOLESKY: ${{ secrets.RPC_HOLESKY }}
           RPC_HOODI: ${{ secrets.RPC_HOODI }}
 
   # -----------------------------------------------------------------------

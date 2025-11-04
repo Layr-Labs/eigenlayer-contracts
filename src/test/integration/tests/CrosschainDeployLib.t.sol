@@ -17,7 +17,7 @@ contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
         vm.startPrank(deployer);
 
         // Test empty contract deployment
-        uint hoodiFork = vm.createSelectFork(vm.envString("RPC_HOODI"), 4_089_445);
+        uint hoodiFork = vm.createSelectFork(vm.envString("RPC_HOODI"), 1_549_268);
         address hoodiExpected = CrosschainDeployLib.deployEmptyContract(deployer);
         uint mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22_819_288);
         address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
