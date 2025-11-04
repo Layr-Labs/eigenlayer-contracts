@@ -17,24 +17,24 @@ contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
         vm.startPrank(deployer);
 
         // Test empty contract deployment
-        uint holeskyFork = vm.createSelectFork(vm.envString("RPC_HOLESKY"), 4_089_445);
-        address holeskyExpected = CrosschainDeployLib.deployEmptyContract(deployer);
+        uint hoodiFork = vm.createSelectFork(vm.envString("RPC_HOODI"), 4_089_445);
+        address hoodiExpected = CrosschainDeployLib.deployEmptyContract(deployer);
         uint mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22_819_288);
         address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
-        assertEq(holeskyExpected, mainnetExpected, "holeskyExpected != mainnetExpected");
+        assertEq(hoodiExpected, mainnetExpected, "hoodiExpected != mainnetExpected");
 
         // Test proxy deployment
-        vm.selectFork(holeskyFork);
-        address holeskyProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, holeskyExpected, "ExampleContract"));
+        vm.selectFork(hoodiFork);
+        address hoodiProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, hoodiExpected, "ExampleContract"));
         vm.selectFork(mainnetFork);
         address mainnetProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
-        assertEq(holeskyProxy, mainnetProxy, "holeskyProxy != mainnetProxy");
+        assertEq(hoodiProxy, mainnetProxy, "hoodiProxy != mainnetProxy");
 
         // Test address prediction
         assertEq(
             CrosschainDeployLib.computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), "EmptyContract"),
-            holeskyExpected
+            hoodiExpected
         );
-        assertEq(CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, holeskyExpected, "ExampleContract"), holeskyProxy);
+        assertEq(CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, hoodiExpected, "ExampleContract"), hoodiProxy);
     }
 }
