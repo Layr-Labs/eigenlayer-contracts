@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./ISemVerMixin.sol";
-
 interface IPermissionControllerErrors {
     /// @notice Thrown when a non-admin caller attempts to perform an admin-only action.
     error NotAdmin();
@@ -42,7 +40,7 @@ interface IPermissionControllerEvents {
     event AdminRemoved(address indexed account, address admin);
 }
 
-interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents, ISemVerMixin {
+interface IPermissionController is IPermissionControllerErrors, IPermissionControllerEvents {
     /**
      * @notice Sets a pending admin for an account.
      * @param account The account to set the pending admin for.
@@ -145,7 +143,7 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * This is only possible if a function's selector changes (e.g. if a function's parameters are modified).
      * @return Returns true if the caller has permission, false otherwise.
      */
-    function canCall(address account, address caller, address target, bytes4 selector) external returns (bool);
+    function canCall(address account, address caller, address target, bytes4 selector) external view returns (bool);
 
     /**
      * @notice Retrieves all permissions granted to an appointee for a given account.
