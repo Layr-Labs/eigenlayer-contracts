@@ -84,7 +84,7 @@ jobs:
         env:
           FOUNDRY_PROFILE: ${{ matrix.suite == 'Fork' && 'forktest' || 'medium' }}
           RPC_MAINNET: ${{ secrets.RPC_MAINNET }}
-          RPC_HOODI: ${{ secrets.RPC_HOODI }}
+          RPC_BASE: ${{ secrets.RPC_BASE }}
 
   # -----------------------------------------------------------------------
   # Forge Storage Diff

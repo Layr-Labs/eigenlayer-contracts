@@ -17,24 +17,24 @@ contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
         vm.startPrank(deployer);
 
         // Test empty contract deployment
-        uint hoodiFork = vm.createSelectFork(vm.envString("RPC_HOODI"), 1_549_268);
-        address hoodiExpected = CrosschainDeployLib.deployEmptyContract(deployer);
+        uint baseFork = vm.createSelectFork(vm.envString("RPC_BASE"), 37_783_655);
+        address baseExpected = CrosschainDeployLib.deployEmptyContract(deployer);
         uint mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22_819_288);
         address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
-        assertEq(hoodiExpected, mainnetExpected, "hoodiExpected != mainnetExpected");
+        assertEq(baseExpected, mainnetExpected, "baseExpected != mainnetExpected");
 
         // Test proxy deployment
-        vm.selectFork(hoodiFork);
-        address hoodiProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, hoodiExpected, "ExampleContract"));
+        vm.selectFork(baseFork);
+        address baseProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, baseExpected, "ExampleContract"));
         vm.selectFork(mainnetFork);
         address mainnetProxy = address(CrosschainDeployLib.deployCrosschainProxy(deployer, mainnetExpected, "ExampleContract"));
-        assertEq(hoodiProxy, mainnetProxy, "hoodiProxy != mainnetProxy");
+        assertEq(baseProxy, mainnetProxy, "baseProxy != mainnetProxy");
 
         // Test address prediction
         assertEq(
             CrosschainDeployLib.computeCrosschainAddress(deployer, keccak256(type(EmptyContract).creationCode), "EmptyContract"),
-            hoodiExpected
+            baseExpected
         );
-        assertEq(CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, hoodiExpected, "ExampleContract"), hoodiProxy);
+        assertEq(CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress(deployer, baseExpected, "ExampleContract"), baseProxy);
     }
 }
