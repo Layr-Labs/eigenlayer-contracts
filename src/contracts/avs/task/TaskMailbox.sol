@@ -19,7 +19,6 @@ import {IBaseCertificateVerifier} from "../../interfaces/IBaseCertificateVerifie
 import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
 import {ITaskMailbox} from "../../interfaces/ITaskMailbox.sol";
 import {OperatorSet} from "../../libraries/OperatorSetLib.sol";
-import {SemVerMixin} from "../../mixins/SemVerMixin.sol";
 import {TaskMailboxStorage} from "./TaskMailboxStorage.sol";
 
 /**
@@ -27,13 +26,7 @@ import {TaskMailboxStorage} from "./TaskMailboxStorage.sol";
  * @author Layr Labs, Inc.
  * @notice Contract for managing the lifecycle of tasks that are executed by operator sets of task-based AVSs.
  */
-contract TaskMailbox is
-    Initializable,
-    OwnableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    TaskMailboxStorage,
-    SemVerMixin
-{
+contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, TaskMailboxStorage {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
@@ -42,14 +35,12 @@ contract TaskMailbox is
      * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
      * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
      * @param _maxTaskSLA Maximum task SLA in seconds
-     * @param _version The semantic version of the contract
      */
     constructor(
         address _bn254CertificateVerifier,
         address _ecdsaCertificateVerifier,
-        uint96 _maxTaskSLA,
-        string memory _version
-    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier, _maxTaskSLA) SemVerMixin(_version) {
+        uint96 _maxTaskSLA
+    ) TaskMailboxStorage(_bn254CertificateVerifier, _ecdsaCertificateVerifier, _maxTaskSLA) {
         _disableInitializers();
     }
 

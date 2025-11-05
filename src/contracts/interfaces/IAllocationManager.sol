@@ -7,7 +7,6 @@ import "./IPauserRegistry.sol";
 import "./IPausable.sol";
 import "./IStrategy.sol";
 import "./IAVSRegistrar.sol";
-import "./ISemVerMixin.sol";
 
 interface IAllocationManagerErrors {
     /// Input Validation
@@ -250,12 +249,7 @@ interface IAllocationManagerStorage is IAllocationManagerEvents {
     function ALLOCATION_CONFIGURATION_DELAY() external view returns (uint32);
 }
 
-interface IAllocationManagerActions is
-    IAllocationManagerErrors,
-    IAllocationManagerEvents,
-    IAllocationManagerStorage,
-    ISemVerMixin
-{
+interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
     /**
      * @dev Initializes the initial owner and paused status.
      */

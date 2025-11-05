@@ -63,7 +63,7 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
     /// OPERATOR => OPERATOR SET (REGISTRATION/DEREGISTRATION)
 
     /// @notice Returns the allocation delay info for each `operator`; the delay and whether or not it's previously been set.
-    mapping(address operator => AllocationDelayInfo) internal _allocationDelayInfo;
+    mapping(address operator => IAllocationManagerTypes.AllocationDelayInfo) internal _allocationDelayInfo;
 
     /// @dev Lists the operator sets the operator is registered for. Note that an operator
     /// can be registered without allocated stake. Likewise, an operator can allocate
@@ -74,15 +74,18 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
     mapping(address operator => EnumerableSet.Bytes32Set) internal allocatedSets;
 
     /// @dev Contains the operator's registration status for an operator set.
-    mapping(address operator => mapping(bytes32 operatorSetKey => RegistrationStatus)) internal registrationStatus;
+    mapping(address operator => mapping(bytes32 operatorSetKey => IAllocationManagerTypes.RegistrationStatus)) internal
+        registrationStatus;
 
     /// @dev For an operator set, lists all strategies an operator has outstanding allocations from.
     mapping(address operator => mapping(bytes32 operatorSetKey => EnumerableSet.AddressSet)) internal
         allocatedStrategies;
 
     /// @dev For an operator set and strategy, the current allocated magnitude and any pending modification
-    mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => Allocation))) internal
-        allocations;
+    mapping(
+        address operator
+            => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => IAllocationManagerTypes.Allocation))
+    ) internal allocations;
 
     /// OPERATOR => STRATEGY (MAX/USED AND DEALLOCATIONS)
 
