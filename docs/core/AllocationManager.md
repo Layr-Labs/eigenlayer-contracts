@@ -20,7 +20,7 @@ Libraries and Mixins:
 
 ### Function Deprecation Notice Q2 2026
 
-The `v1.9.0` slashing upgrade introduces a single slasher per operatorSet that is stored  in the `AllocationManager`. The below functions will be deprecated in Q2 2026. 
+The `v1.9.0` slashing upgrade introduces a single slasher per operatorSet that is stored in the `AllocationManager`. The functions in the leftmost column will be deprecated in Q2 2026 in favor of the newly specified function (if applicable). 
 
 | Function | MigrateTo | Notes |
 | -------- | -------- | -------- |
