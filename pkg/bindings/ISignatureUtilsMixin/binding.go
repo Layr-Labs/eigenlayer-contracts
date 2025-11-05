@@ -31,7 +31,7 @@ var (
 
 // ISignatureUtilsMixinMetaData contains all meta data concerning the ISignatureUtilsMixin contract.
 var ISignatureUtilsMixinMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"error\",\"name\":\"InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignatureExpired\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"domainSeparator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"stateMutability\":\"view\"},{\"type\":\"error\",\"name\":\"InvalidSignature\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"SignatureExpired\",\"inputs\":[]}]",
 }
 
 // ISignatureUtilsMixinABI is the input ABI used to generate the binding from.
@@ -209,35 +209,4 @@ func (_ISignatureUtilsMixin *ISignatureUtilsMixinSession) DomainSeparator() ([32
 // Solidity: function domainSeparator() view returns(bytes32)
 func (_ISignatureUtilsMixin *ISignatureUtilsMixinCallerSession) DomainSeparator() ([32]byte, error) {
 	return _ISignatureUtilsMixin.Contract.DomainSeparator(&_ISignatureUtilsMixin.CallOpts)
-}
-
-// Version is a free data retrieval call binding the contract method 0x54fd4d50.
-//
-// Solidity: function version() view returns(string)
-func (_ISignatureUtilsMixin *ISignatureUtilsMixinCaller) Version(opts *bind.CallOpts) (string, error) {
-	var out []interface{}
-	err := _ISignatureUtilsMixin.contract.Call(opts, &out, "version")
-
-	if err != nil {
-		return *new(string), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(string)).(*string)
-
-	return out0, err
-
-}
-
-// Version is a free data retrieval call binding the contract method 0x54fd4d50.
-//
-// Solidity: function version() view returns(string)
-func (_ISignatureUtilsMixin *ISignatureUtilsMixinSession) Version() (string, error) {
-	return _ISignatureUtilsMixin.Contract.Version(&_ISignatureUtilsMixin.CallOpts)
-}
-
-// Version is a free data retrieval call binding the contract method 0x54fd4d50.
-//
-// Solidity: function version() view returns(string)
-func (_ISignatureUtilsMixin *ISignatureUtilsMixinCallerSession) Version() (string, error) {
-	return _ISignatureUtilsMixin.Contract.Version(&_ISignatureUtilsMixin.CallOpts)
 }
