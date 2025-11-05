@@ -17,9 +17,9 @@ contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
         vm.startPrank(deployer);
 
         // Test empty contract deployment
-        uint baseFork = vm.createSelectFork(vm.envString("RPC_BASE"), 37_783_655);
+        uint baseFork = vm.createSelectFork(cheats.rpcUrl("base"), 37_783_655);
         address baseExpected = CrosschainDeployLib.deployEmptyContract(deployer);
-        uint mainnetFork = vm.createSelectFork(vm.envString("RPC_MAINNET"), 22_819_288);
+        uint mainnetFork = vm.createSelectFork(cheats.rpcUrl("mainnet"), 22_819_288);
         address mainnetExpected = CrosschainDeployLib.deployEmptyContract(deployer);
         assertEq(baseExpected, mainnetExpected, "baseExpected != mainnetExpected");
 
