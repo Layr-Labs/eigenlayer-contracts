@@ -494,4 +494,38 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
         return
             _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
     }
+
+    /// @inheritdoc IAllocationManagerView
+    function getPendingSlasher(
+        OperatorSet memory operatorSet
+    ) external view returns (address, uint32) {
+        // Initialize the pending slasher and effect block to the address(0) and 0 respectively
+        address pendingSlasher;
+        uint32 effectBlock;
+
+        // If there is a pending slasher, set it
+        SlasherParams memory params = _slashers[operatorSet.key()];
+        if (block.number < params.effectBlock) {
+            pendingSlasher = params.pendingSlasher;
+            effectBlock = params.effectBlock;
+        }
+
+        return (pendingSlasher, effectBlock);
+    }
+
+    /// @inheritdoc IAllocationManagerView
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) public view returns (address) {
+        SlasherParams memory params = _slashers[operatorSet.key()];
+
+        address slasher = params.slasher;
+
+        // If there is a pending slasher that can be applied, apply it
+        if (params.effectBlock != 0 && block.number >= params.effectBlock) {
+            slasher = params.pendingSlasher;
+        }
+
+        return slasher;
+    }
 }

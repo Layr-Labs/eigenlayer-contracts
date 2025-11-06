@@ -20,13 +20,13 @@ abstract contract UpgradeTest is IntegrationCheckUtils {
         require(forkType == MAINNET, "_upgradeEigenLayerContracts: somehow running upgrade test locally");
         require(!isUpgraded, "_upgradeEigenLayerContracts: already performed upgrade");
 
-        emit log("_upgradeEigenLayerContracts: upgrading mainnet to redistribution");
+        emit log("_upgradeEigenLayerContracts: upgrading mainnet to slashing UX improvements");
 
         _upgradeMainnetContracts();
 
         emit log("======");
 
         isUpgraded = true;
-        emit log("_upgradeEigenLayerContracts: redistribution upgrade complete");
+        emit log("_upgradeEigenLayerContracts: slashing UX improvements upgrade complete");
     }
 }

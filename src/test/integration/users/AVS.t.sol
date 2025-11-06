@@ -90,6 +90,26 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         print.method("createOperatorSets");
 
         uint len = strategies.length;
+        CreateSetParamsV2[] memory p = new CreateSetParamsV2[](len);
+        operatorSets = new OperatorSet[](len);
+
+        for (uint i; i < len; ++i) {
+            p[i] = CreateSetParamsV2({operatorSetId: totalOperatorSets++, strategies: strategies[i], slasher: address(this)});
+
+            operatorSets[i] = OperatorSet(address(this), p[i].operatorSetId);
+        }
+
+        print.createOperatorSets(p);
+
+        allocationManager.createOperatorSets(address(this), p);
+
+        print.gasUsed();
+    }
+
+    function createOperatorSets_v1(IStrategy[][] memory strategies) public createSnapshot returns (OperatorSet[] memory operatorSets) {
+        print.method("createOperatorSets_v1");
+
+        uint len = strategies.length;
         CreateSetParams[] memory p = new CreateSetParams[](len);
         operatorSets = new OperatorSet[](len);
 
@@ -135,6 +155,21 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         operatorSet = OperatorSet(address(this), totalOperatorSets++);
 
+        CreateSetParamsV2[] memory p =
+            CreateSetParamsV2({operatorSetId: operatorSet.id, strategies: strategies, slasher: address(this)}).toArray();
+
+        print.createOperatorSets(p);
+        allocationManager.createOperatorSets(address(this), p);
+        print.gasUsed();
+    }
+
+    /// @dev Creates an operator set with the *soon to be deprecated* `createOperatorSets` method without a slasher
+    /// @dev This method is only used by the slasher migration test
+    function createOperatorSet_v1(IStrategy[] memory strategies) public createSnapshot returns (OperatorSet memory operatorSet) {
+        print.method("createOperatorSet_v1");
+
+        operatorSet = OperatorSet(address(this), totalOperatorSets++);
+
         CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
 
         print.createOperatorSets(p);
@@ -151,7 +186,8 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
         operatorSet = OperatorSet(address(this), totalOperatorSets++);
 
-        CreateSetParams[] memory p = CreateSetParams({operatorSetId: operatorSet.id, strategies: strategies}).toArray();
+        CreateSetParamsV2[] memory p =
+            CreateSetParamsV2({operatorSetId: operatorSet.id, strategies: strategies, slasher: address(this)}).toArray();
 
         print.createOperatorSets(p);
         allocationManager.createRedistributingOperatorSets(address(this), p, redistributionRecipient.toArray());
@@ -323,6 +359,25 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
         }
         _tryPrankAppointee_AllocationManager(IAllocationManagerActions.removeStrategiesFromOperatorSet.selector);
         allocationManager.removeStrategiesFromOperatorSet(address(this), operatorSetId, strategies);
+        print.gasUsed();
+    }
+
+    function updateSlasher(uint32 operatorSetId, address slasher) public createSnapshot {
+        print.method("updateSlasher");
+
+        console.log("Updating slasher for operator set: %d to %s", operatorSetId, address(slasher));
+
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.updateSlasher.selector);
+        allocationManager.updateSlasher(OperatorSet(address(this), operatorSetId), slasher);
+        print.gasUsed();
+    }
+
+    function addAppointee(address appointee, address target, bytes4 selector) public createSnapshot {
+        print.method("addAppointee");
+
+        console.log("Adding appointee: %s for %s", appointee, target);
+
+        permissionController.setAppointee(address(this), appointee, target, selector);
         print.gasUsed();
     }
 

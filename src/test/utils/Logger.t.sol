@@ -199,6 +199,17 @@ library print {
         }
     }
 
+    function createOperatorSets(IAllocationManagerTypes.CreateSetParamsV2[] memory p) internal pure {
+        console.log("Creating operator sets:");
+        for (uint i; i < p.length; ++i) {
+            console.log("   operatorSet%d:".yellow(), p[i].operatorSetId);
+            for (uint j; j < p[i].strategies.length; ++j) {
+                console.log("       strategy%s: %s", cheats.toString(j), address(p[i].strategies[j]));
+            }
+            console.log("       slasher: %s", address(p[i].slasher));
+        }
+    }
+
     function deregisterFromOperatorSets(IAllocationManagerTypes.DeregisterParams memory p) internal pure {
         console.log("Deregistering operator: %s", address(p.operator));
         console.log("   from operator sets:");
