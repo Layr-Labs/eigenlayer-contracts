@@ -22,6 +22,8 @@ interface IAllocationManagerErrors {
     error InvalidStrategy();
     /// @dev Thrown when an invalid redistribution recipient is provided.
     error InvalidRedistributionRecipient();
+    /// @dev Thrown when an operatorSet is already migrated
+    error OperatorSetAlreadyMigrated();
 
     /// Caller
 
@@ -62,6 +64,11 @@ interface IAllocationManagerErrors {
     error ModificationAlreadyPending();
     /// @dev Thrown when an allocation is attempted that exceeds a given operators total allocatable magnitude.
     error InsufficientMagnitude();
+
+    /// SlasherStatus
+
+    /// @dev Thrown when an operator set does not have a slasher set
+    error SlasherNotSet();
 }
 
 interface IAllocationManagerTypes {
@@ -74,6 +81,19 @@ interface IAllocationManagerTypes {
     struct Allocation {
         uint64 currentMagnitude;
         int128 pendingDiff;
+        uint32 effectBlock;
+    }
+
+    /**
+     * @notice Parameters for addresses that can slash operatorSets
+     * @param slasher the address that can slash the operator set
+     * @param pendingSlasher the address that will become the slasher for the operator set after a delay
+     * @param effectBlock the block at which the pending slasher will take effect
+     * @dev It is not possible for the slasher to be the 0 address, which is used to denote if the slasher is not set
+     */
+    struct SlasherParams {
+        address slasher;
+        address pendingSlasher;
         uint32 effectBlock;
     }
 
@@ -170,16 +190,35 @@ interface IAllocationManagerTypes {
      * @notice Parameters used by an AVS to create new operator sets
      * @param operatorSetId the id of the operator set to create
      * @param strategies the strategies to add as slashable to the operator set
+     * @dev This struct and its associated method will be deprecated in Early Q2 2026
      */
     struct CreateSetParams {
         uint32 operatorSetId;
         IStrategy[] strategies;
+    }
+    /**
+     * @notice Parameters used by an AVS to create new operator sets
+     * @param operatorSetId the id of the operator set to create
+     * @param strategies the strategies to add as slashable to the operator set
+     * @param slasher the address that will be the slasher for the operator set
+     */
+
+    struct CreateSetParamsV2 {
+        uint32 operatorSetId;
+        IStrategy[] strategies;
+        address slasher;
     }
 }
 
 interface IAllocationManagerEvents is IAllocationManagerTypes {
     /// @notice Emitted when operator updates their allocation delay.
     event AllocationDelaySet(address operator, uint32 delay, uint32 effectBlock);
+
+    /// @notice Emitted when an operator set's slasher is updated.
+    event SlasherUpdated(OperatorSet operatorSet, address slasher, uint32 effectBlock);
+
+    /// @notice Emitted when an operator set's slasher is migrated.
+    event SlasherMigrated(OperatorSet operatorSet, address slasher);
 
     /// @notice Emitted when an operator's magnitude is updated for a given operatorSet and strategy
     event AllocationUpdated(
@@ -366,8 +405,24 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
 
     /**
      * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+     * @dev Upon creation, the address that can slash the operatorSet is the `avs` address. If you would like to use a different address,
+     *      use the `createOperatorSets` method which takes in `CreateSetParamsV2` instead.
+     * @dev THIS FUNCTION WILL BE DEPRECATED IN EARLY Q2 2026 IN FAVOR OF `createOperatorSets`, WHICH TAKES IN `CreateSetParamsV2`
+     * @dev Reverts for:
+     *      - NonexistentAVSMetadata: The AVS metadata is not registered
+     *      - InvalidOperatorSet: The operatorSet already exists
+     *      - InputAddressZero: The slasher is the zero address
      */
     function createOperatorSets(address avs, CreateSetParams[] calldata params) external;
+
+    /**
+     * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+     * @dev Reverts for:
+     *      - NonexistentAVSMetadata: The AVS metadata is not registered
+     *      - InvalidOperatorSet: The operatorSet already exists
+     *      - InputAddressZero: The slasher is the zero address
+     */
+    function createOperatorSets(address avs, CreateSetParamsV2[] calldata params) external;
 
     /**
      * @notice Allows an AVS to create new Redistribution operator sets.
@@ -376,10 +431,43 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
      * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
      * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
      *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+     * @dev The address that can slash the operatorSet is the `avs` address. If you would like to use a different address,
+     *      use the `createOperatorSets` method which takes in `CreateSetParamsV2` instead.
+     * @dev THIS FUNCTION WILL BE DEPRECATED IN EARLY Q2 2026 IN FAVOR OF `createRedistributingOperatorSets` WHICH TAKES IN `CreateSetParamsV2`
+     * @dev Reverts for:
+     *      - InputArrayLengthMismatch: The length of the params array does not match the length of the redistributionRecipients array
+     *      - NonexistentAVSMetadata: The AVS metadata is not registered
+     *      - InputAddressZero: The redistribution recipient is the zero address
+     *      - InvalidRedistributionRecipient: The redistribution recipient is the zero address or the default burn address
+     *      - InvalidOperatorSet: The operatorSet already exists
+     *      - InvalidStrategy: The strategy is the BEACONCHAIN_ETH_STRAT or the EIGEN strategy
+     *      - InputAddressZero: The slasher is the zero address
      */
     function createRedistributingOperatorSets(
         address avs,
         CreateSetParams[] calldata params,
+        address[] calldata redistributionRecipients
+    ) external;
+
+    /**
+     * @notice Allows an AVS to create new Redistribution operator sets.
+     * @param avs The AVS creating the new operator sets.
+     * @param params An array of operator set creation parameters.
+     * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
+     * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
+     *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+     * @dev Reverts for:
+     *      - InputArrayLengthMismatch: The length of the params array does not match the length of the redistributionRecipients array
+     *      - NonexistentAVSMetadata: The AVS metadata is not registered
+     *      - InputAddressZero: The redistribution recipient is the zero address
+     *      - InvalidRedistributionRecipient: The redistribution recipient is the zero address or the default burn address
+     *      - InvalidOperatorSet: The operatorSet already exists
+     *      - InvalidStrategy: The strategy is the BEACONCHAIN_ETH_STRAT or the EIGEN strategy
+     *      - InputAddressZero: The slasher is the zero address
+     */
+    function createRedistributingOperatorSets(
+        address avs,
+        CreateSetParamsV2[] calldata params,
         address[] calldata redistributionRecipients
     ) external;
 
@@ -404,6 +492,38 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
         address avs,
         uint32 operatorSetId,
         IStrategy[] calldata strategies
+    ) external;
+
+    /**
+     * @notice Allows an AVS to update the slasher for an operator set
+     * @param operatorSet the operator set to update the slasher for
+     * @param slasher the new slasher
+     * @dev The new slasher will take effect in DEALLOCATION_DELAY blocks
+     * @dev The slasher can only be updated if it has already been set. The slasher is set either on operatorSet creation or,
+     *      for operatorSets created prior to v1.9.0, via `migrateSlashers`
+     * @dev Reverts for:
+     *      - InvalidCaller: The caller cannot update the slasher for the operator set (set via the `PermissionController`)
+     *      - InvalidOperatorSet: The operator set does not exist
+     *      - SlasherNotSet: The slasher has not been set yet
+     *      - InputAddressZero: The slasher is the zero address
+     */
+    function updateSlasher(OperatorSet memory operatorSet, address slasher) external;
+
+    /**
+     * @notice Allows any address to migrate the slasher from the permission controller to the ALM
+     * @param operatorSets the list of operator sets to migrate the slasher for
+     * @dev This function is used to migrate the slasher from the permission controller to the ALM for operatorSets created prior to `v1.9.0`
+     * @dev Migrates based on the following rules:
+     *      - If there is no slasher set or the slasher in the `PermissionController`is the 0 address, the AVS address will be set as the slasher
+     *      - If there are multiple slashers set in the `PermissionController`, the first address will be set as the slasher
+     * @dev A migration can only be completed once for a given operatorSet
+     * @dev This function will be deprecated in Early Q2 2026. EigenLabs will migrate the slasher for all operatorSets created prior to `v1.9.0`
+     * @dev This function does not revert to allow for simpler offchain calling. It will no-op if:
+     *      - The operator set does not exist
+     *      - The slasher has already been set, either via migration or creation of the operatorSet
+     */
+    function migrateSlashers(
+        OperatorSet[] memory operatorSets
     ) external;
 }
 
@@ -662,6 +782,26 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
      * @param operatorSet the operator set to check slashability for
      */
     function isOperatorSlashable(address operator, OperatorSet memory operatorSet) external view returns (bool);
+
+    /**
+     * @notice Returns the address that can slash a given operator set.
+     * @param operatorSet The operator set to query.
+     * @return The address that can slash the operator set.
+     * @dev If there is a pending slasher that can be applied after the `effectBlock`, the pending slasher will be returned.
+     */
+    function getSlasher(
+        OperatorSet memory operatorSet
+    ) external view returns (address);
+
+    /**
+     * @notice Returns pending slasher for a given operator set.
+     * @param operatorSet The operator set to query.
+     * @return pendingSlasher The pending slasher for the operator set. This value is 0 if there is no pending slasher.
+     * @return effectBlock The block at which the pending slasher will take effect. This value is 0 if there is no pending slasher.
+     */
+    function getPendingSlasher(
+        OperatorSet memory operatorSet
+    ) external view returns (address pendingSlasher, uint32 effectBlock);
 
     /**
      * @notice Returns the address where slashed funds will be sent for a given operator set.

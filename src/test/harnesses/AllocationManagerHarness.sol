@@ -31,4 +31,8 @@ contract AllocationManagerHarness is AllocationManager {
     function deallocationQueueAtIndex(address operator, IStrategy strategy, uint index) external view returns (bytes32) {
         return deallocationQueue[operator][strategy].at(index);
     }
+
+    function setSlasherToZero(OperatorSet memory operatorSet) external {
+        _slashers[operatorSet.key()] = SlasherParams(address(0), address(0), 0);
+    }
 }
