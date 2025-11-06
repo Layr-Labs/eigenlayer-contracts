@@ -28,7 +28,6 @@
 		"PRIVATE_KEY": "${localEnv:PRIVATE_KEY}",
 		"PUBLIC_KEY": "${localEnv:PUBLIC_KEY}",
 		"RPC_MAINNET": "${localEnv:RPC_MAINNET}",
-		"RPC_HOLESKY": "${localEnv:RPC_HOLESKY}"
 	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],

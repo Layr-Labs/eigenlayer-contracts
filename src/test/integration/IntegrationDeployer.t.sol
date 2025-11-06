@@ -102,18 +102,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     constructor() {
-        address stETH_Holesky = 0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034;
         address stETH_Mainnet = 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
         address OETH_Mainnet = 0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3;
-        address osETH_Holesky = 0xF603c5A3F774F05d4D848A9bB139809790890864;
         address osETH_Mainnet = 0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38;
-        address cbETH_Holesky = 0x8720095Fa5739Ab051799211B146a2EEE4Dd8B37;
-        tokensNotTested[stETH_Holesky] = true;
         tokensNotTested[stETH_Mainnet] = true;
         tokensNotTested[OETH_Mainnet] = true;
-        tokensNotTested[osETH_Holesky] = true;
         tokensNotTested[osETH_Mainnet] = true;
-        tokensNotTested[cbETH_Holesky] = true;
 
         // Use current contracts by default. Upgrade tests are only run with mainnet fork tests
         // using the `UpgradeTest.t.sol` mixin.

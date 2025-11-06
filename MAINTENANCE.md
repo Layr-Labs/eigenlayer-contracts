@@ -100,20 +100,6 @@ Regex rules can be changed by modifying `exempt-branches-regex` config in the [y
 
 ## Release Management
 
-
-### Environment Networks
-
-Before diving into maintenance details, it's important to understand our environment network structure.
-
-| Environment | Environment Network | Definition and Practices |
-|-------------|---------------------|--------------------------|
-| **mainnet** | mainnet-ethereum | - Production environment on Ethereum mainnet<br>- Single canonical mainnet instance in foreseeable future<br>- External facing with highest security requirements |
-| **testnet** | testnet-holesky<br>testnet-sepolia<br>testnet-hoodi | - Test environments on Ethereum testnets (holesky, sepolia, etc.)<br>- Multiple testnet environments may exist simultaneously<br>- External facing, long-lived environments for both internal and external developers<br>- Used for integration testing, AVS onboarding, and community engagement |
-| **preprod** | preprod-holesky<br>preprod-sepolia<br>preprod-hoodi | - Pre-production environments on Ethereum testnets<br>- Multiple preprod environments may exist simultaneously<br>- Internal facing for development team use<br>- Used for feature verification before promoting to testnet<br>- Provides safe environment for testing breaking changes |
-
-For more details on our testing infrastructure strategy, see our blog post: [The Future of EigenLayer Testing: New & Improved Testnets & Tooling Coming Soon](https://www.blog.eigenlayer.xyz/the-future-of-eigenlayer-testing-new-and-improved-testnets-tooling-coming-soon/)
-
-
 ### Release Tags and Semver
 
 This section defines release tag semver where `<semver>` = `<major>.<minor>.<patch>`

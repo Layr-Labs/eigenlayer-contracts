@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        env: [preprod, testnet, mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base]
+        env: [mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base]
 
     steps:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
@@ -81,12 +81,10 @@ jobs:
           fi
           
           # Set RPC URL based on environment
-          if [ "${{ matrix.env }}" = "testnet" ] || [ "${{ matrix.env }}" = "preprod" ]; then
-            RPC_URL="${{ secrets.RPC_HOLESKY }}"
+          if [ "${{ matrix.env }}" = "testnet-hoodi" ]; then
+            RPC_URL="${{ secrets.RPC_HOODI }}"
           elif [ "${{ matrix.env }}" = "testnet-sepolia" ]; then
             RPC_URL="${{ secrets.RPC_SEPOLIA }}"
-          elif [ "${{ matrix.env }}" = "testnet-hoodi" ]; then
-            RPC_URL="${{ secrets.RPC_HOODI }}"
           elif [ "${{ matrix.env }}" = "testnet-base-sepolia" ]; then
             RPC_URL="${{ secrets.RPC_BASE_SEPOLIA }}"
           elif [ "${{ matrix.env }}" = "mainnet" ]; then
