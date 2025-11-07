@@ -187,7 +187,7 @@ contract DeployDestinationChainProxies is MultisigBuilder {
 
     /// @dev Check if the version is already deployed
     function _isAlreadyDeployed() internal view returns (bool) {
-        if (Env._strEq(Env.envVersion(), "1.8.0")) {
+        if (Env._strEq(Env.envVersion(), "1.8.0") || Env._strEq(Env.envVersion(), "1.8.1")) {
             return true;
         }
         return false;
