@@ -20,7 +20,7 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
 
         // Update the call to the cross chain registry based on the environment
         address operatorTableUpdater = address(Env.proxy.operatorTableUpdater());
-        if (Env._strEq(Env.env(), "preprod")) {
+        if (Env._strEq(Env.env(), "preprod-hoodi")) {
             _callPreprod(operatorTableUpdater);
         } else if (Env._strEq(Env.env(), "testnet-sepolia")) {
             _callTestnet(operatorTableUpdater);

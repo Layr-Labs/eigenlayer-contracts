@@ -12,16 +12,16 @@ contract ValidateOwnership is MultisigBuilder, DeployGovernance {
 
     /// @notice This function doesn't actually transfer ownership, it's for manual processes
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
-        if (!Env._strEq(Env.env(), "base")) {
+        if (!Env._strEq(Env.env(), "base") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
-        
+
         ProxyAdmin proxyAdmin = ProxyAdmin(address(Env.proxyAdmin()));
         proxyAdmin.transferOwnership(Env.executorMultisig());
     }
 
     function testScript() public virtual {
-        if (!Env._strEq(Env.env(), "base")) {
+        if (!Env._strEq(Env.env(), "base") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 

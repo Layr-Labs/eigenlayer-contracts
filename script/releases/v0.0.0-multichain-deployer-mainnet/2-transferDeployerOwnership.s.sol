@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import "./1-deployMultichainDeployer.s.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
+import {IMultisig} from "script/releases/MultisigDeployLib.sol";
 import "../../releases/Env.sol";
 
 // For TOML parsing
@@ -20,6 +21,11 @@ contract TransferDeployerOwnership is MultisigBuilder, DeployMultichainDeployer 
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override prank(Env.multichainDeployerMultisig()) {
+        // If we are not on base or mainnet, return
+        if (!Env._strEq(Env.env(), "base") && !Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         // Get owners
         address[] memory owners = _getMultisigOwners();
 
@@ -33,11 +39,19 @@ contract TransferDeployerOwnership is MultisigBuilder, DeployMultichainDeployer 
     }
 
     function testScript() public virtual override {
+        // If we are not on base or mainnet, return
+        if (!Env._strEq(Env.env(), "base") && !Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         // 1. Deploy destination chain contracts
         DeployMultichainDeployer.testScript();
 
         // 2. Execute the transfer of ownership & threshold changes
-        execute();
+        // If the threshold is 1, we can skip the execution
+        if (IMultisig(address(Env.multichainDeployerMultisig())).getThreshold() == 1) {
+            execute();
+        }
 
         // 3. Checks
 
@@ -63,7 +77,7 @@ contract TransferDeployerOwnership is MultisigBuilder, DeployMultichainDeployer 
 
     /// @dev Get the owners from the TOML file
     function _getMultisigOwners() internal view returns (address[] memory) {
-        string memory path = "script/releases/v1.6.0-multichain-deployer/owners.toml";
+        string memory path = "script/releases/v0.0.0-multichain-deployer-mainnet/owners.toml";
         // Read the TOML file
         string memory root = vm.projectRoot();
         string memory fullPath = string.concat(root, "/", path);

@@ -1,0 +1,35 @@
+{
+    "name": "v0.0.0-source-genesis",
+    "from": "0.0.0",
+    "to": "1.6.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployGovernance.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "2-deployPauser.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "3-deployToken.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "4-deployCore.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-queueUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "6-executeUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "7-setForkTimestamp.s.sol"
+        }
+    ]
+}

@@ -1,29 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.12;
 
-import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
-import "forge-std/console.sol";
-import "../../releases/Env.sol";
-
-/// @notice Deploy the multichain deployer multisig
-/// @dev This script is used to deploy the multichain deployer multisig on the destination chain
-/// @dev This script should ONLY be used for mainnet environments. Testnet environments should follow our notion guide
-/// TODO: Add a testnet version of this script
-/// @dev The SAFE version is 1.4.1
-contract DeployMultichainDeployer is EOADeployer {
-    using Env for *;
-
-    /// @dev The expected address of the multichain deployer on the destination chain
-    address public constant MULTICHAIN_DEPLOYER_EXPECTED_ADDRESS = 0xa3053EF25F1F7d9D55a7655372B8a31D0f40eCA9;
-
-    /// @dev Salt for deploying the multichain deployer multisig
-    uint256 public constant SALT = 0;
-
-    /// @dev Initial threshold for the multichain deployer multisig
-    uint256 public constant INITIAL_THRESHOLD = 1;
-
-    /// @dev Initial owner of the multichain deployer multisig
-    address public constant INITIAL_OWNER = 0x792e42f05E87Fb9D8b8F9FdFC598B1de20507964;
+/// @notice A library for deploying Safe multisigs
+/// @dev Double check the constant addresses are correct on each chain prior to deployment
+library MultisigDeployLib {
+    using MultisigDeployLib for *;
 
     /// @dev Safe proxy factory, this should be the same for all chains
     /// @dev See https://github.com/safe-global/safe-smart-account/blob/main/CHANGELOG.md#version-141 for more details
@@ -35,76 +16,65 @@ contract DeployMultichainDeployer is EOADeployer {
     /// @dev L2 Singletons still need to be passed into the L1 deployment
     /// @dev `SAFE_TO_L2_SETUP` does a no-op if the chain is mainnet
     /// @dev See: https://github.com/safe-global/safe-smart-account/blob/0095f1aa113255d97b476e625760514cc7d10982/contracts/libraries/SafeToL2Setup.sol#L59-L69
+    /// @dev Even mainnet testnet chains (eg. sepolia, hoodi) should use the SAFE_L2_SINGLETON
     address public constant SAFE_L2_SINGLETON = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
     address public constant SAFE_TO_L2_SETUP = 0xBD89A1CE4DDe368FFAB0eC35506eEcE0b1fFdc54;
+    bytes public constant SETUP_TO_L2_DATA = abi.encodeWithSignature("setupToL2(address)", SAFE_L2_SINGLETON);
 
-    function _runAsEOA() internal override {
-        vm.startBroadcast();
-
-        address multichainDeployerMultisig = ISafeProxyFactory(SAFE_PROXY_FACTORY).createProxyWithNonce({
-            _singleton: SAFE_SINGLETON,
-            initializer: getInitializationData(),
-            saltNonce: SALT
-        });
-
-        vm.stopBroadcast();
-
-        // Update config
-        zUpdate("multichainDeployerMultisig", multichainDeployerMultisig);
+    /**
+     * @notice Deploys a Safe multisig
+     * @param initialOwners The initial owners of the multisig
+     * @param initialThreshold The initial threshold of the multisig
+     * @param salt The salt to use for the deployment
+     * @return The address of the deployed multisig
+     */
+    function deployMultisig(
+        address[] memory initialOwners,
+        uint256 initialThreshold,
+        uint256 salt
+    ) internal returns (address) {
+        return deployMultisigWithPaymentReceiver(initialOwners, initialThreshold, salt, address(0));
     }
 
-    function testScript() public virtual {
-        // If the multichain deployer multisig is already deployed, we need to add the contracts to the env
-        if (_isDeployerMultisigDeployed()) {
-            _addContractsToEnv();
-        } else {
-            // Otherwise, we need to deploy the multichain deployer multisig
-            super.runAsEOA();
-        }
-
-        // Check that the multichain deployer multisig is deployed at the expected address
-        assertEq(Env.multichainDeployerMultisig(), MULTICHAIN_DEPLOYER_EXPECTED_ADDRESS);
-
-        // Check the threshold is 1
-        assertEq(IMultisig(address(Env.multichainDeployerMultisig())).getThreshold(), 1);
-
-        // Check owners
-        address[] memory owners = IMultisig(address(Env.multichainDeployerMultisig())).getOwners();
-        assertEq(owners.length, 1, "Expected 1 owner");
-        assertEq(owners[0], INITIAL_OWNER, "Expected initial owner");
-
-        // Check the version is 1.4.1
-        assertEq(IMultisig(address(Env.multichainDeployerMultisig())).VERSION(), "1.4.1");
-    }
-
-    function getInitializationData() internal pure returns (bytes memory) {
-        // Setup initial owners
-        address[] memory initialOwners = new address[](1);
-        initialOwners[0] = INITIAL_OWNER;
-
-        // Setup the multisig
-        return abi.encodeWithSelector(
+    /// @notice Used to deploy a multisig with a payment receiver. This is used by multichain deployer on testnet chains.
+    function deployMultisigWithPaymentReceiver(
+        address[] memory initialOwners,
+        uint256 initialThreshold,
+        uint256 salt,
+        address paymentReceiver
+    ) internal returns (address) {
+        bytes memory initializerData = abi.encodeWithSelector(
             IMultisig.setup.selector,
             initialOwners, /* signers */
-            INITIAL_THRESHOLD, /* threshold */
+            initialThreshold, /* threshold */
             SAFE_TO_L2_SETUP, /* to (used in setupModules) */
-            abi.encodeWithSignature("setupToL2(address)", SAFE_L2_SINGLETON), /* data (used in setupModules) */
+            SETUP_TO_L2_DATA, /* data (used in setupModules) */
             SAFE_FALLBACK_HANDLER, /* fallbackHandler */
             address(0), /* paymentToken */
             0, /* payment */
-            payable(address(0)) /* paymentReceiver */
+            payable(paymentReceiver) /* paymentReceiver */
         );
+
+        address deployedMultisig =
+            ISafeProxyFactory(SAFE_PROXY_FACTORY).createProxyWithNonce(SAFE_SINGLETON, initializerData, salt);
+        require(deployedMultisig != address(0), "something wrong in multisig deployment, zero address returned");
+        return deployedMultisig;
     }
 
-    function _isDeployerMultisigDeployed() internal view returns (bool) {
-        return MULTICHAIN_DEPLOYER_EXPECTED_ADDRESS.code.length > 0;
+    function getThreshold(
+        address multisig
+    ) internal view returns (uint256) {
+        return IMultisig(multisig).getThreshold();
     }
 
-    /// @dev Add contracts to the env
-    /// @dev This function should only be called if the multichain deployer multisig is already deployed
-    function _addContractsToEnv() internal {
-        require(MULTICHAIN_DEPLOYER_EXPECTED_ADDRESS.code.length > 0, "Multichain deployer multisig not deployed");
-        zUpdate("multichainDeployerMultisig", MULTICHAIN_DEPLOYER_EXPECTED_ADDRESS);
+    function getOwners(
+        address multisig
+    ) internal view returns (address[] memory) {
+        return IMultisig(multisig).getOwners();
+    }
+
+    function isOwner(address multisig, address owner) internal view returns (bool) {
+        return IMultisig(multisig).isOwner(owner);
     }
 }
 
