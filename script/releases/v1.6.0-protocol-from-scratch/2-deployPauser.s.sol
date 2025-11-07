@@ -29,10 +29,10 @@ contract DeployPauser is DeployGovernance {
         });
 
         // Deploy pauserRegistry
-        address[] memory pausers = new address[](2);
+        address[] memory pausers = new address[](3);
         pausers[0] = Env.opsMultisig();
-        pausers[0] = Env.executorMultisig();
-        pausers[1] = pauserMultisig;
+        pausers[1] = Env.executorMultisig();
+        pausers[2] = pauserMultisig;
 
         deployImpl({
             name: type(PauserRegistry).name,

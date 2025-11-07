@@ -9,7 +9,7 @@ import "../../releases/Env.sol";
 /// @notice Deploy the multichain deployer multisig
 /// @dev This script is used to deploy the multichain deployer multisig on the destination chain
 /// @dev This script should ONLY be used for mainnet environments. Testnet environments should follow our notion guide
-/// @dev Use v1.6.0-multichain-deployer-testnet-preprod for testnet environments
+/// @dev Use v0.0.0-multichain-deployer-testnet-preprod for testnet environments
 /// @dev The SAFE version is 1.4.1
 contract DeployMultichainDeployer is EOADeployer {
     using Env for *;
@@ -27,6 +27,11 @@ contract DeployMultichainDeployer is EOADeployer {
     address public constant INITIAL_OWNER = 0x792e42f05E87Fb9D8b8F9FdFC598B1de20507964;
 
     function _runAsEOA() internal override {
+        // If we are not on base or mainnet, return
+        if (!Env._strEq(Env.env(), "base") && !Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         vm.startBroadcast();
 
         address[] memory initialOwners = new address[](1);
@@ -45,9 +50,15 @@ contract DeployMultichainDeployer is EOADeployer {
     }
 
     function testScript() public virtual {
+        // If we are not on base or mainnet, return
+        if (!Env._strEq(Env.env(), "base") && !Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         // If the multichain deployer multisig is already deployed, we need to add the contracts to the env
         if (_isDeployerMultisigDeployed()) {
             _addContractsToEnv();
+            return;
         } else {
             // Otherwise, we need to deploy the multichain deployer multisig
             super.runAsEOA();

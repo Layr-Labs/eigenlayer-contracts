@@ -25,7 +25,7 @@ contract DeployMultichainDeployer is EOADeployer {
 
     /// @dev Setup the environment type
     modifier setupEnv() {
-        if (Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "preprod-hoodi")) {
+        if (Env._strEq(Env.env(), "preprod-hoodi")) {
             envType = EnvType.PREPROD;
         } else if (
             Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")
@@ -57,6 +57,11 @@ contract DeployMultichainDeployer is EOADeployer {
     address public constant PAYMENT_RECEIVER = 0x5afe7A11E7000000000000000000000000000000;
 
     function _runAsEOA() internal override setupEnv {
+        // Dont' run if we're on base or mainnet
+        if (Env._strEq(Env.env(), "base") || Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         vm.startBroadcast();
 
         address[] memory initialOwners = new address[](1);
@@ -76,6 +81,11 @@ contract DeployMultichainDeployer is EOADeployer {
     }
 
     function testScript() public virtual setupEnv {
+        // Dont' run if we're on base or mainnet
+        if (Env._strEq(Env.env(), "base") || Env._strEq(Env.env(), "mainnet")) {
+            return;
+        }
+
         // If the multichain deployer multisig is already deployed, we need to add the contracts to the env
         if (_isDeployerMultisigDeployed()) {
             _addContractsToEnv();
