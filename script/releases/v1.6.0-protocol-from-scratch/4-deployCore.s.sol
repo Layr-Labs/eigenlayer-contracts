@@ -384,9 +384,6 @@ contract DeployCore is DeployToken {
     function _validateImplsInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
 
-        /// permissions/
-        // PermissionController is initializable, but does not expose the `initialize` method
-
         {
             /// core/
 

@@ -153,9 +153,6 @@ contract Execute is Queue {
     function _validateProxyConstructors() internal view {
         {
             /// core/
-
-            // Permission controller has no constructor
-
             DelegationManager delegation = Env.proxy.delegationManager();
             assertTrue(delegation.strategyManager() == Env.proxy.strategyManager(), "dm.sm invalid");
             assertTrue(delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "dm.epm invalid");
@@ -204,6 +201,9 @@ contract Execute is Queue {
 
         {
             /// permissions/
+
+            // Permission controller has no constructor
+
             KeyRegistrar keyRegistrar = Env.proxy.keyRegistrar();
             assertTrue(keyRegistrar.permissionController() == Env.proxy.permissionController(), "kr.pc invalid");
             assertTrue(keyRegistrar.allocationManager() == Env.proxy.allocationManager(), "kr.alm invalid");
