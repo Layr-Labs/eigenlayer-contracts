@@ -22,11 +22,13 @@ contract DeployDestinationGenesis is EOADeployer {
 
         // Setup ops multisig initial owners
         address[] memory opsMultisigInitialOwners;
-        opsMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-destination-genesis/opsOwners.toml");
+        opsMultisigInitialOwners =
+            _getMultisigOwner("script/releases/v1.6.0-destination-genesis-mainnet/opsOwners.toml");
 
         // Setup pauser multisig initial owners
         address[] memory pauserMultisigInitialOwners;
-        pauserMultisigInitialOwners = _getMultisigOwner("script/releases/v1.6.0-destination-genesis/pauserOwners.toml");
+        pauserMultisigInitialOwners =
+            _getMultisigOwner("script/releases/v1.6.0-destination-genesis-mainnet/pauserOwners.toml");
 
         vm.startBroadcast();
 
@@ -86,9 +88,9 @@ contract DeployDestinationGenesis is EOADeployer {
 
         // Assert the owners of each multisig
         address[] memory opsMultisigOwners =
-            _getMultisigOwner("script/releases/v1.6.0-destination-genesis/opsOwners.toml");
+            _getMultisigOwner("script/releases/v1.6.0-destination-genesis-mainnet/opsOwners.toml");
         address[] memory pauserMultisigOwners =
-            _getMultisigOwner("script/releases/v1.6.0-destination-genesis/pauserOwners.toml");
+            _getMultisigOwner("script/releases/v1.6.0-destination-genesis-mainnet/pauserOwners.toml");
         for (uint256 i = 0; i < opsMultisigOwners.length; i++) {
             assertTrue(IMultisig(address(Env.opsMultisig())).isOwner(opsMultisigOwners[i]));
         }
