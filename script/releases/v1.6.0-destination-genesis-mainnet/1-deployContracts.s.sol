@@ -13,7 +13,7 @@ contract DeployDestinationGenesis is EOADeployer {
     using stdToml for string;
 
     function _runAsEOA() internal override {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 
@@ -69,7 +69,7 @@ contract DeployDestinationGenesis is EOADeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain()) {
+        if (!Env.isDestinationChain() || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 
