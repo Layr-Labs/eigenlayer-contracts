@@ -30,6 +30,11 @@ contract Queue is MultisigBuilder, DeployCore {
     ProxyAdmin public proxyAdmin;
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         proxyAdmin = ProxyAdmin(address(Env.proxyAdmin()));
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
@@ -174,6 +179,11 @@ contract Queue is MultisigBuilder, DeployCore {
     }
 
     function testScript() public virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         // Run all the previous steps of the upgrade script
         _mode = OperationalMode.EOA;
         DeployGovernance._runAsEOA();

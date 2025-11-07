@@ -23,6 +23,11 @@ contract DeployGovernance is EOADeployer {
     uint256 public constant TESTNET_THRESHOLD = 1;
 
     function _runAsEOA() internal virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         vm.startBroadcast();
 
         deployTimelockControllers();
@@ -34,6 +39,11 @@ contract DeployGovernance is EOADeployer {
     }
 
     function testScript() public virtual {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         runAsEOA();
 
         // Assert that the multisigs have the proper owners - protocolCouncilMultisig, communityMultisig, and operationsMultisig have the same owners & threshold

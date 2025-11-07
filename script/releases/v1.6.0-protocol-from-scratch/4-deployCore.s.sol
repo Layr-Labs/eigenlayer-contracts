@@ -35,6 +35,11 @@ contract DeployCore is DeployToken {
     }
 
     function _runAsEOA() internal virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         vm.startBroadcast();
 
         // 0. Deploy the empty contract
@@ -217,6 +222,11 @@ contract DeployCore is DeployToken {
     }
 
     function testScript() public virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         // Deploy older contracts. We have to manually set the EOA mode so we don't revert
         _mode = OperationalMode.EOA;
         DeployGovernance._runAsEOA();

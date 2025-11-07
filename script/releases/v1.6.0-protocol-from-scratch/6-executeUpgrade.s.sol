@@ -14,6 +14,11 @@ contract Execute is Queue {
     using Env for *;
 
     function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -27,6 +32,11 @@ contract Execute is Queue {
     }
 
     function testScript() public virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         // 0- Run all the previous steps of the upgrade
         _mode = OperationalMode.EOA;
         DeployGovernance._runAsEOA();

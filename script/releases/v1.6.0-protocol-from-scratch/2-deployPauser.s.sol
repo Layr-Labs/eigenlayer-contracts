@@ -14,6 +14,11 @@ contract DeployPauser is DeployGovernance {
     using Env for *;
 
     function _runAsEOA() internal virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         // Setup safe deploy parameters
         uint256 salt = uint256(keccak256(abi.encode(block.chainid, block.timestamp + 1))); // Pseudo-random salt; We add 1 to the timestamp to ensure the salt is different from the governance script
         address[] memory initialOwners = new address[](1);
@@ -46,6 +51,11 @@ contract DeployPauser is DeployGovernance {
     }
 
     function testScript() public virtual override {
+        // Skip if not on source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         // Run the deploy governance script, since we need the executor multisig to be deployed
         DeployGovernance._runAsEOA();
 
