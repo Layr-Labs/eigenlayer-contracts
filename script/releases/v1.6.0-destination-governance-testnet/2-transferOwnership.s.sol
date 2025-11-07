@@ -13,7 +13,8 @@ contract TransferOwnership is MultisigBuilder, DeployGovernance {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
+        // If we are not on testnet-base-sepolia or not on version 0.0.0, return
+        if (!Env._strEq(Env.env(), "testnet-base-sepolia") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 
@@ -22,7 +23,8 @@ contract TransferOwnership is MultisigBuilder, DeployGovernance {
     }
 
     function testScript() public virtual {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
+        // If we are not on testnet-base-sepolia or not on version 0.0.0, return
+        if (!Env._strEq(Env.env(), "testnet-base-sepolia") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 

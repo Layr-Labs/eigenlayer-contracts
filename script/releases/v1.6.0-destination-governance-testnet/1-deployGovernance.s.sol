@@ -16,8 +16,8 @@ contract DeployGovernance is EOADeployer {
     uint256 public constant TESTNET_THRESHOLD = 1;
 
     function _runAsEOA() internal override {
-        // If we are not on testnet-base-sepolia, return
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
+        // If we are not on testnet-base-sepolia or not on version 0.0.0, return
+        if (!Env._strEq(Env.env(), "testnet-base-sepolia") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 
@@ -31,7 +31,8 @@ contract DeployGovernance is EOADeployer {
     }
 
     function testDeploy() public virtual {
-        if (!Env.isDestinationChain() || !Env._strEq(Env.env(), "testnet-base-sepolia")) {
+        // If we are not on testnet-base-sepolia or not on version 0.0.0, return
+        if (!Env._strEq(Env.env(), "testnet-base-sepolia") || !Env._strEq(Env.envVersion(), "0.0.0")) {
             return;
         }
 
