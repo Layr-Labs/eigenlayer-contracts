@@ -20,6 +20,11 @@ contract SetForkTimestamp is Execute {
     uint64 proofTimestamp;
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
+        // Skip if not a source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         proofTimestamp = ZEnvHelpers.state().envU64("PECTRA_FORK_TIMESTAMP");
 
         // Sanity check that the timestamp is nonzero
@@ -35,6 +40,11 @@ contract SetForkTimestamp is Execute {
     }
 
     function testScript() public virtual override {
+        // Skip if not a source chain
+        if (!Env.isSourceChain()) {
+            return;
+        }
+
         /// Complete steps 1-6 of the upgrade script
         _mode = OperationalMode.EOA;
         DeployGovernance._runAsEOA();
