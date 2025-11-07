@@ -32,8 +32,6 @@ contract DeployMultichainDeployer is EOADeployer {
                 || Env._strEq(Env.env(), "testnet-hoodi")
         ) {
             envType = EnvType.TESTNET;
-        } else {
-            revert("Invalid environment");
         }
         _;
     }
