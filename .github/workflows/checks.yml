@@ -12,6 +12,29 @@ env:
   CLICOLOR: 1
 
 jobs:
+  natspec:
+    name: Natspec Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            release-assets.githubusercontent.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+      
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: beeb/lintspec@6722a8dd45592fd30f89c51534b3cd35b094e462 # v0.7.0
+        # all the lines below are optional
+        with:
+          working-directory: "./"
+          extra-args: "--config=.github/configs/.lintspec.toml"
+          fail-on-problem: "true"
+
   typos:
     name: Typo Linting
     runs-on: ubuntu-latest
