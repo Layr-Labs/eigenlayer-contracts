@@ -26,7 +26,7 @@ contract DeployGenerator is Script, Test {
          *
          */
         require(
-            _strEq(network, "preprod") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
+            _strEq(network, "preprod-hoodi") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
             "Invalid network"
         );
 

@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 /// core/
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AVSDirectory.sol";
@@ -208,20 +209,20 @@ library Env {
      */
     function allocationManager(
         DeployedProxy
-    ) internal view returns (IAllocationManager) {
-        return IAllocationManager(_deployedProxy(type(AllocationManager).name));
+    ) internal view returns (AllocationManager) {
+        return AllocationManager(_deployedProxy(type(AllocationManager).name));
     }
 
     function allocationManager(
         DeployedImpl
-    ) internal view returns (IAllocationManager) {
-        return IAllocationManager(_deployedImpl(type(AllocationManager).name));
+    ) internal view returns (AllocationManager) {
+        return AllocationManager(_deployedImpl(type(AllocationManager).name));
     }
 
     function allocationManagerView(
         DeployedImpl
-    ) internal view returns (IAllocationManagerView) {
-        return IAllocationManagerView(_deployedImpl(type(AllocationManagerView).name));
+    ) internal view returns (AllocationManagerView) {
+        return AllocationManagerView(_deployedImpl(type(AllocationManagerView).name));
     }
 
     function avsDirectory(
@@ -585,27 +586,5 @@ library Env {
         string memory key
     ) private view returns (string memory) {
         return vm.envString(key);
-    }
-
-    /**
-     * Test Helpers
-     */
-
-    /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
-    function _getProxyImpl(
-        address _proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(_proxy));
-    }
-
-    /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
-    function _getProxyAdmin(
-        address _proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
-    }
-
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

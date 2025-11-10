@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "../../releases/Env.sol";
+import "../../releases/TestUtils.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 
 // Types
@@ -17,6 +18,7 @@ import {stdToml} from "forge-std/StdToml.sol";
  * Purpose: Update the generator on a PREPROD/TESTNET environment
  */
 contract QueueTransferProxyAdmin is MultisigBuilder {
+    using TestUtils for *;
     using Env for *;
     using OperatorSetLib for OperatorSet;
     using stdToml for string;
@@ -32,8 +34,8 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
     function testScript() public virtual {
         // Require that the environment is a testnet environment supported by multichain
         require(
-            Env._strEq(Env.env(), "preprod") || Env._strEq(Env.env(), "testnet-sepolia")
-                || Env._strEq(Env.env(), "testnet-base-sepolia"),
+            TestUtils._strEq(Env.env(), "preprod-hoodi") || TestUtils._strEq(Env.env(), "testnet-sepolia")
+                || TestUtils._strEq(Env.env(), "testnet-base-sepolia"),
             "Environment must be a preprod/testnet environment"
         );
 

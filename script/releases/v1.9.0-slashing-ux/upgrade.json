@@ -4,6 +4,10 @@
     "to": "1.9.0",
     "phases": [
         {
+            "type": "eoa",
+            "filename": "1-deployContracts.s.sol"
+        },
+        {
             "type": "script",
             "filename": "4-script/start.sh",
             "arguments": [
