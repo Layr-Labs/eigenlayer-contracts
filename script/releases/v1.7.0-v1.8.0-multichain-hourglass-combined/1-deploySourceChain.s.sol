@@ -19,30 +19,6 @@ contract DeploySourceChain is EOADeployer {
 
         vm.startBroadcast();
 
-        // // Deploy KeyRegistrar implementation
-        // deployImpl({
-        //     name: type(KeyRegistrar).name,
-        //     deployedTo: address(
-        //         new KeyRegistrar({
-        //             _permissionController: Env.proxy.permissionController(),
-        //             _allocationManager: Env.proxy.allocationManager(),
-        //             _version: Env.deployVersion()
-        //         })
-        //     )
-        // });
-
-        // // Deploy KeyRegistrar proxy
-        // deployProxy({
-        //     name: type(KeyRegistrar).name,
-        //     deployedTo: address(
-        //         new TransparentUpgradeableProxy({
-        //             _logic: address(Env.impl.keyRegistrar()),
-        //             admin_: Env.proxyAdmin(),
-        //             _data: "" // No initialization needed for KeyRegistrar
-        //         })
-        //     )
-        // });
-
         // Deploy CrossChainRegistry implementation
         deployImpl({
             name: type(CrossChainRegistry).name,
@@ -75,26 +51,6 @@ contract DeploySourceChain is EOADeployer {
                 })
             )
         });
-
-        // // Deploy ReleaseManager implementation
-        // deployImpl({
-        //     name: type(ReleaseManager).name,
-        //     deployedTo: address(
-        //         new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
-        //     )
-        // });
-
-        // // Deploy ReleaseManager proxy
-        // deployProxy({
-        //     name: type(ReleaseManager).name,
-        //     deployedTo: address(
-        //         new TransparentUpgradeableProxy({
-        //             _logic: address(Env.impl.releaseManager()),
-        //             admin_: Env.proxyAdmin(),
-        //             _data: "" // No initialize function for ReleaseManager
-        //         })
-        //     )
-        // });
 
         vm.stopBroadcast();
     }
