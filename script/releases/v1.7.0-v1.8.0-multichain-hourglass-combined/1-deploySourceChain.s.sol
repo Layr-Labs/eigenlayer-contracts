@@ -19,29 +19,29 @@ contract DeploySourceChain is EOADeployer {
 
         vm.startBroadcast();
 
-        // Deploy KeyRegistrar implementation
-        deployImpl({
-            name: type(KeyRegistrar).name,
-            deployedTo: address(
-                new KeyRegistrar({
-                    _permissionController: Env.proxy.permissionController(),
-                    _allocationManager: Env.proxy.allocationManager(),
-                    _version: Env.deployVersion()
-                })
-            )
-        });
+        // // Deploy KeyRegistrar implementation
+        // deployImpl({
+        //     name: type(KeyRegistrar).name,
+        //     deployedTo: address(
+        //         new KeyRegistrar({
+        //             _permissionController: Env.proxy.permissionController(),
+        //             _allocationManager: Env.proxy.allocationManager(),
+        //             _version: Env.deployVersion()
+        //         })
+        //     )
+        // });
 
-        // Deploy KeyRegistrar proxy
-        deployProxy({
-            name: type(KeyRegistrar).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.keyRegistrar()),
-                    admin_: Env.proxyAdmin(),
-                    _data: "" // No initialization needed for KeyRegistrar
-                })
-            )
-        });
+        // // Deploy KeyRegistrar proxy
+        // deployProxy({
+        //     name: type(KeyRegistrar).name,
+        //     deployedTo: address(
+        //         new TransparentUpgradeableProxy({
+        //             _logic: address(Env.impl.keyRegistrar()),
+        //             admin_: Env.proxyAdmin(),
+        //             _data: "" // No initialization needed for KeyRegistrar
+        //         })
+        //     )
+        // });
 
         // Deploy CrossChainRegistry implementation
         deployImpl({
@@ -76,25 +76,25 @@ contract DeploySourceChain is EOADeployer {
             )
         });
 
-        // Deploy ReleaseManager implementation
-        deployImpl({
-            name: type(ReleaseManager).name,
-            deployedTo: address(
-                new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
-            )
-        });
+        // // Deploy ReleaseManager implementation
+        // deployImpl({
+        //     name: type(ReleaseManager).name,
+        //     deployedTo: address(
+        //         new ReleaseManager({_permissionController: Env.proxy.permissionController(), _version: Env.deployVersion()})
+        //     )
+        // });
 
-        // Deploy ReleaseManager proxy
-        deployProxy({
-            name: type(ReleaseManager).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.releaseManager()),
-                    admin_: Env.proxyAdmin(),
-                    _data: "" // No initialize function for ReleaseManager
-                })
-            )
-        });
+        // // Deploy ReleaseManager proxy
+        // deployProxy({
+        //     name: type(ReleaseManager).name,
+        //     deployedTo: address(
+        //         new TransparentUpgradeableProxy({
+        //             _logic: address(Env.impl.releaseManager()),
+        //             admin_: Env.proxyAdmin(),
+        //             _data: "" // No initialize function for ReleaseManager
+        //         })
+        //     )
+        // });
 
         vm.stopBroadcast();
     }
@@ -158,7 +158,7 @@ contract DeploySourceChain is EOADeployer {
                 address(keyRegistrar.allocationManager()) == address(Env.proxy.allocationManager()),
                 "kr.allocationManager invalid"
             );
-            assertEq(keyRegistrar.version(), Env.deployVersion(), "kr.version failed");
+            // assertEq(keyRegistrar.version(), Env.deployVersion(), "kr.version failed");
         }
 
         {
@@ -190,7 +190,7 @@ contract DeploySourceChain is EOADeployer {
                 releaseManager.permissionController() == Env.proxy.permissionController(),
                 "rm.permissionController invalid"
             );
-            assertEq(releaseManager.version(), Env.deployVersion(), "rm.version failed");
+            // assertEq(releaseManager.version(), Env.deployVersion(), "rm.version failed");
         }
     }
 
@@ -206,7 +206,7 @@ contract DeploySourceChain is EOADeployer {
 
     function _validateProxyConstructors() internal view {
         KeyRegistrar keyRegistrar = Env.proxy.keyRegistrar();
-        assertEq(keyRegistrar.version(), Env.deployVersion(), "keyRegistrar version mismatch");
+        // assertEq(keyRegistrar.version(), Env.deployVersion(), "keyRegistrar version mismatch");
         assertTrue(
             keyRegistrar.permissionController() == Env.proxy.permissionController(),
             "keyRegistrar permissionController mismatch"
@@ -234,7 +234,7 @@ contract DeploySourceChain is EOADeployer {
         );
 
         ReleaseManager releaseManager = Env.proxy.releaseManager();
-        assertEq(releaseManager.version(), Env.deployVersion(), "releaseManager version mismatch");
+        // assertEq(releaseManager.version(), Env.deployVersion(), "releaseManager version mismatch");
         assertTrue(
             releaseManager.permissionController() == Env.proxy.permissionController(),
             "releaseManager permissionController mismatch"

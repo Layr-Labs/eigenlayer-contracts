@@ -58,7 +58,7 @@ contract ConfigureCrossChainRegistry is DeploySourceChain, DeployDestinationChai
         (uint256[] memory chainIDs, address[] memory operatorTableUpdaters) =
             Env.proxy.crossChainRegistry().getSupportedChains();
 
-        if (Env._strEq(Env.env(), "preprod")) {
+        if (Env._strEq(Env.env(), "preprod-hoodi")) {
             // Preprod should have 1 chain: current chain
             require(chainIDs.length == 1, "Invalid number of chains for preprod");
             require(chainIDs[0] == block.chainid, "Invalid chain ID for preprod");

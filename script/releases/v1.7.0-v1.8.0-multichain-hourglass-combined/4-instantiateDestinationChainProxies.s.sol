@@ -376,7 +376,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     function _getTableUpdaterInitParams() internal view returns (OperatorTableUpdaterInitParams memory) {
         OperatorTableUpdaterInitParams memory initParams;
 
-        if (Env._strEq(Env.env(), "preprod")) {
+        if (Env._strEq(Env.env(), "preprod-hoodi")) {
             initParams = _parseToml("script/releases/v1.7.0-v1.8.0-multichain-hourglass-combined/configs/preprod.toml");
         }
         // NOTE: For testnet-holesky and testnet-hoodi, the operator table updater is not used
@@ -390,7 +390,7 @@ contract InstantiateDestinationChainProxies is DeployDestinationChainImpls {
     }
 
     function _getGeneratorAddress() internal view returns (address generatorAddress) {
-        if (Env._strEq(Env.env(), "preprod")) {
+        if (Env._strEq(Env.env(), "preprod-hoodi")) {
             generatorAddress = 0x6d609cD2812bDA02a75dcABa7DaafE4B20Ff5608;
         } else if (Env._strEq(Env.env(), "testnet-sepolia") || Env._strEq(Env.env(), "testnet-base-sepolia")) {
             generatorAddress = 0xb094Ba769b4976Dc37fC689A76675f31bc4923b0;
