@@ -16,6 +16,9 @@ contract Integration_CrosschainDeployLibTest is IntegrationDeployer {
 
         vm.startPrank(deployer);
 
+        // Set env for tests to pass
+        vm.setEnv("ZEUS_ENV", "mainnet");
+
         // Test empty contract deployment
         uint hoodiFork = vm.createSelectFork(vm.envString("RPC_HOODI"), 1_549_268);
         address hoodiExpected = CrosschainDeployLib.deployEmptyContract(deployer);
