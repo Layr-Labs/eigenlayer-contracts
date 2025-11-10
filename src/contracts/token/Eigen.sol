@@ -177,12 +177,11 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     }
 
     /**
-     * @notice Overridden to return the total bEIGEN supply instead.
-     * @dev The issued supply of EIGEN should match the bEIGEN balance of this contract,
-     * less any bEIGEN tokens that were sent directly to the contract (rather than being wrapped)
+     * @notice Use the ERC20 supply for EIGEN itself.
+     * @dev Returning bEIGEN total supply breaks ERC20/Votes invariants; this must report EIGEN's own supply.
      */
     function totalSupply() public view override returns (uint256) {
-        return bEIGEN.totalSupply();
+        return super.totalSupply();
     }
 
     /**
