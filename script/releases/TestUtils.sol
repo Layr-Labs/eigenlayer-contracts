@@ -15,6 +15,7 @@ import "src/contracts/mixins/SplitContractMixin.sol";
 library TestUtils {
     using Env for *;
 
+    bytes constant errInit = "Initializable: contract is already initialized";
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     Vm internal constant vm = Vm(VM_ADDRESS);
 
@@ -88,362 +89,248 @@ library TestUtils {
 
     /**
      *
-     *                        IMPLEMENTATION VALIDATION
+     *                         PROXY VALIDATION
      *
      */
-    function validateImplConstructors() internal view {
+
+    /// @dev Validate that the proxy constructors are correctly set
+    function validateProxyConstructors() internal view {
+        /// permissions/
+        // PermissionController has no constructor
+        validateKeyRegistrarImmutables(Env.proxy.keyRegistrar());
+
+        /// core/
+        validateAllocationManagerImmutables(Env.proxy.allocationManager());
+        validateAVSDirectoryImmutables(Env.proxy.avsDirectory());
+        validateDelegationManagerImmutables(Env.proxy.delegationManager());
+        // ProtocolRegistry has no constructor
+        validateReleaseManagerImmutables(Env.proxy.releaseManager());
+        validateRewardsCoordinatorImmutables(Env.proxy.rewardsCoordinator());
+        validateStrategyManagerImmutables(Env.proxy.strategyManager());
+
+        /// pods/
+        validateEigenPodImmutables(EigenPod(payable(address(Env.beacon.eigenPod()))));
+        validateEigenPodManagerImmutables(Env.proxy.eigenPodManager());
+
+        /// strategies/
+        validateEigenStrategyImmutables(Env.proxy.eigenStrategy());
+        validateStrategyBaseImmutables(StrategyBase(address(Env.beacon.strategyBase())));
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
+            validateStrategyBaseTVLLimitsImmutables(Env.instance.strategyBaseTVLLimits(i));
+        }
+        validateStrategyFactoryImmutables(Env.proxy.strategyFactory());
+
+        /// multichain/
+        validateCrossChainRegistryImmutables(Env.proxy.crossChainRegistry());
+        validateOperatorTableUpdaterImmutables(Env.proxy.operatorTableUpdater());
+        validateECDSACertificateVerifierImmutables(Env.proxy.ecdsaCertificateVerifier());
+        validateBN254CertificateVerifierImmutables(Env.proxy.bn254CertificateVerifier());
+
+        /// avs/
+        validateTaskMailboxImmutables(Env.proxy.taskMailbox());
+    }
+
+    /// @dev Validate that the proxies are already initialized.
+    function validateProxiesAlreadyInitialized() internal {
+        /// permissions/
+        // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
+
+        /// core/
+        validateAllocationManagerInitialized(Env.proxy.allocationManager());
+        validateAVSDirectoryInitialized(Env.proxy.avsDirectory());
+        validateDelegationManagerInitialized(Env.proxy.delegationManager());
+        validateProtocolRegistryInitialized(Env.proxy.protocolRegistry());
+        // ReleaseManager is initializable, but does not expose the `initialize` function.
+        validateRewardsCoordinatorInitialized(Env.proxy.rewardsCoordinator());
+        validateStrategyManagerInitialized(Env.proxy.strategyManager());
+
+        /// pods/
+        // EigenPod proxies are initialized by individual users
+        validateEigenPodManagerInitialized(Env.proxy.eigenPodManager());
+
+        /// strategies/
+        validateEigenStrategyInitialized(Env.proxy.eigenStrategy());
+        // StrategyBase proxies are initialized when deployed by factory
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        for (uint256 i = 0; i < count; i++) {
+            validateStrategyBaseTVLLimitsInitialized(Env.instance.strategyBaseTVLLimits(i));
+        }
+        validateStrategyFactoryInitialized(Env.proxy.strategyFactory());
+
+        /// multichain/
+        validateCrossChainRegistryInitialized(Env.proxy.crossChainRegistry());
+        validateOperatorTableUpdaterInitialized(Env.proxy.operatorTableUpdater());
+        // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
+
+        /// avs/
+        validateTaskMailboxInitialized(Env.proxy.taskMailbox());
+    }
+
+    function validateProxyStorage() internal view {
         {
-            /// permissions/
+            ///permissions/
+
+            // exception: PauserRegistry doesn't have a proxy!
             PauserRegistry registry = Env.impl.pauserRegistry();
             assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
             assertTrue(registry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
             assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
             assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
 
-            // PermissionController has no initial storage
-
-            KeyRegistrar keyRegistrar = Env.impl.keyRegistrar();
-            assertTrue(
-                keyRegistrar.permissionController() == Env.proxy.permissionController(),
-                "keyRegistrar permissionController incorrect"
-            );
-            assertTrue(
-                keyRegistrar.allocationManager() == Env.proxy.allocationManager(),
-                "keyRegistrar allocationManager incorrect"
-            );
+            // PermissionController and KeyRegistrar have no initial storage
         }
 
         {
             /// core/
-            AllocationManagerView allocationManagerView = Env.impl.allocationManagerView();
+            AllocationManager allocationManager = Env.proxy.allocationManager();
+            assertTrue(allocationManager.paused() == 0, "alm.paused invalid");
+
+            AVSDirectory avsDirectory = Env.proxy.avsDirectory();
+            assertTrue(avsDirectory.owner() == Env.executorMultisig(), "avsD.owner invalid");
+            assertTrue(avsDirectory.paused() == 0, "avsD.paused invalid");
+
+            DelegationManager delegation = Env.proxy.delegationManager();
+            assertTrue(delegation.paused() == 0, "dm.paused invalid");
+
+            ProtocolRegistry protocolRegistry = Env.proxy.protocolRegistry();
             assertTrue(
-                allocationManagerView.delegation() == Env.proxy.delegationManager(),
-                "allocationManagerView delegation incorrect"
+                protocolRegistry.hasRole(protocolRegistry.PAUSER_ROLE(), Env.pauserMultisig()),
+                "pr.pauserMultisig invalid"
             );
             assertTrue(
-                allocationManagerView.eigenStrategy() == Env.proxy.eigenStrategy(),
-                "allocationManagerView eigenStrategy incorrect"
-            );
-            assertTrue(
-                allocationManagerView.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(),
-                "allocationManagerView DEALLOCATION_DELAY incorrect"
-            );
-            assertTrue(
-                allocationManagerView.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-                "allocationManagerView ALLOCATION_CONFIGURATION_DELAY incorrect"
+                protocolRegistry.hasRole(protocolRegistry.DEFAULT_ADMIN_ROLE(), Env.executorMultisig()),
+                "pr.defaultAdmin invalid"
             );
 
-            AllocationManager allocationManager = Env.impl.allocationManager();
-            assertTrue(
-                allocationManager.viewImplementation() == address(Env.impl.allocationManagerView()),
-                "allocationManager allocationManagerView incorrect"
-            );
-            assertTrue(
-                allocationManager.delegation() == Env.proxy.delegationManager(),
-                "allocationManager delegation incorrect"
-            );
-            assertTrue(
-                allocationManager.eigenStrategy() == Env.proxy.eigenStrategy(),
-                "allocationManager eigenStrategy incorrect"
-            );
-            assertTrue(
-                allocationManager.pauserRegistry() == Env.impl.pauserRegistry(),
-                "allocationManager pauserRegistry incorrect"
-            );
-            assertTrue(
-                allocationManager.permissionController() == Env.proxy.permissionController(),
-                "allocationManager permissionController incorrect"
-            );
-            assertTrue(
-                allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(),
-                "allocationManager DEALLOCATION_DELAY incorrect"
-            );
-            assertTrue(
-                allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-                "allocationManager ALLOCATION_CONFIGURATION_DELAY incorrect"
-            );
+            // ReleaseManager has no initial storage
 
-            AVSDirectory avsDirectory = Env.impl.avsDirectory();
-            assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsDirectory delegation incorrect");
-            assertTrue(
-                avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsDirectory pauserRegistry incorrect"
-            );
+            RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
+            assertTrue(rewards.owner() == Env.opsMultisig(), "rc.owner invalid");
+            assertTrue(rewards.paused() == Env.REWARDS_PAUSE_STATUS(), "rc.paused invalid");
+            assertTrue(rewards.rewardsUpdater() == Env.REWARDS_UPDATER(), "rc.updater invalid");
+            assertTrue(rewards.activationDelay() == Env.ACTIVATION_DELAY(), "rc.activationDelay invalid");
+            assertTrue(rewards.defaultOperatorSplitBips() == Env.DEFAULT_SPLIT_BIPS(), "rc.splitBips invalid");
 
-            DelegationManager delegation = Env.impl.delegationManager();
+            StrategyManager strategyManager = Env.proxy.strategyManager();
+            assertTrue(strategyManager.owner() == Env.executorMultisig(), "sm.owner invalid");
+            assertTrue(strategyManager.paused() == 0, "sm.paused invalid");
             assertTrue(
-                delegation.strategyManager() == Env.proxy.strategyManager(),
-                "delegationManager strategyManager incorrect"
-            );
-            assertTrue(
-                delegation.eigenPodManager() == Env.proxy.eigenPodManager(),
-                "delegationManager eigenPodManager incorrect"
-            );
-            assertTrue(
-                delegation.allocationManager() == Env.proxy.allocationManager(),
-                "delegationManager allocationManager incorrect"
-            );
-            assertTrue(
-                delegation.pauserRegistry() == Env.impl.pauserRegistry(), "delegationManager pauserRegistry incorrect"
-            );
-            assertTrue(
-                delegation.permissionController() == Env.proxy.permissionController(),
-                "delegationManager permissionController incorrect"
-            );
-            assertTrue(
-                delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(),
-                "delegationManager minWithdrawalDelayBlocks incorrect"
-            );
-
-            ReleaseManager releaseManager = Env.impl.releaseManager();
-            assertTrue(
-                releaseManager.permissionController() == Env.proxy.permissionController(),
-                "releaseManager permissionController incorrect"
-            );
-
-            RewardsCoordinator rewardsCoordinator = Env.impl.rewardsCoordinator();
-            assertTrue(
-                rewardsCoordinator.delegationManager() == Env.proxy.delegationManager(),
-                "rewardsCoordinator delegationManager incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.strategyManager() == Env.proxy.strategyManager(),
-                "rewardsCoordinator strategyManager incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.allocationManager() == Env.proxy.allocationManager(),
-                "rewardsCoordinator allocationManager incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.pauserRegistry() == Env.impl.pauserRegistry(),
-                "rewardsCoordinator pauserRegistry incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.permissionController() == Env.proxy.permissionController(),
-                "rewardsCoordinator permissionController incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(),
-                "rewardsCoordinator CALCULATION_INTERVAL_SECONDS incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.MAX_REWARDS_DURATION() == Env.MAX_REWARDS_DURATION(),
-                "rewardsCoordinator MAX_REWARDS_DURATION incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.MAX_RETROACTIVE_LENGTH() == Env.MAX_RETROACTIVE_LENGTH(),
-                "rewardsCoordinator MAX_RETROACTIVE_LENGTH incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(),
-                "rewardsCoordinator MAX_FUTURE_LENGTH incorrect"
-            );
-            assertTrue(
-                rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(),
-                "rewardsCoordinator GENESIS_REWARDS_TIMESTAMP incorrect"
-            );
-
-            StrategyManager strategyManager = Env.impl.strategyManager();
-            assertTrue(
-                strategyManager.allocationManager() == Env.proxy.allocationManager(),
-                "strategyManager allocationManager incorrect"
-            );
-            assertTrue(
-                strategyManager.delegation() == Env.proxy.delegationManager(), "strategyManager delegation incorrect"
-            );
-            assertTrue(
-                strategyManager.pauserRegistry() == Env.impl.pauserRegistry(),
-                "strategyManager pauserRegistry incorrect"
+                strategyManager.strategyWhitelister() == address(Env.proxy.strategyFactory()), "sm.whitelister invalid"
             );
         }
 
         {
             /// pods/
-            EigenPod eigenPod = Env.impl.eigenPod();
-            assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "eigenPod ethPOS incorrect");
-            assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "eigenPod eigenPodManager incorrect");
+            // EigenPod proxies are initialized by individual users
 
-            EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
-            assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "eigenPodManager ethPOS incorrect");
-            assertTrue(
-                eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "eigenPodManager eigenPodBeacon incorrect"
-            );
-            assertTrue(
-                eigenPodManager.delegationManager() == Env.proxy.delegationManager(),
-                "eigenPodManager delegationManager incorrect"
-            );
-            assertTrue(
-                eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(),
-                "eigenPodManager pauserRegistry incorrect"
-            );
+            EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
+            assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
+            assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
         }
 
         {
             /// strategies/
-            EigenStrategy eigenStrategy = Env.impl.eigenStrategy();
+
+            EigenStrategy eigenStrategy = Env.proxy.eigenStrategy();
+            assertTrue(eigenStrategy.paused() == 0, "eigenStrat.paused invalid");
+            assertTrue(address(eigenStrategy.EIGEN()) == address(Env.proxy.eigen()), "eigenStrat.EIGEN invalid");
             assertTrue(
-                eigenStrategy.strategyManager() == Env.proxy.strategyManager(),
-                "eigenStrategy strategyManager incorrect"
-            );
-            assertTrue(
-                eigenStrategy.pauserRegistry() == Env.impl.pauserRegistry(), "eigenStrategy pauserRegistry incorrect"
+                address(eigenStrategy.underlyingToken()) == address(Env.proxy.beigen()), "eigenStrat.underlying invalid"
             );
 
-            StrategyBase strategyBase = Env.impl.strategyBase();
-            assertTrue(strategyBase.strategyManager() == Env.proxy.strategyManager(), "stratBase.sm invalid");
-            assertTrue(strategyBase.pauserRegistry() == Env.impl.pauserRegistry(), "stratBase.pR invalid");
+            // StrategyBase proxies are initialized when deployed by factory
 
-            StrategyBaseTVLLimits strategyBaseTVLLimits = Env.impl.strategyBaseTVLLimits();
-            assertTrue(
-                strategyBaseTVLLimits.strategyManager() == Env.proxy.strategyManager(), "stratBaseTVL.sm invalid"
-            );
-            assertTrue(strategyBaseTVLLimits.pauserRegistry() == Env.impl.pauserRegistry(), "stratBaseTVL.pR invalid");
+            uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+            for (uint256 i = 0; i < count; i++) {
+                StrategyBaseTVLLimits strategy = Env.instance.strategyBaseTVLLimits(i);
 
-            StrategyFactory strategyFactory = Env.impl.strategyFactory();
-            assertTrue(strategyFactory.strategyManager() == Env.proxy.strategyManager(), "sFact.sm invalid");
-            assertTrue(strategyFactory.pauserRegistry() == Env.impl.pauserRegistry(), "sFact.pR invalid");
-        }
+                assertTrue(strategy.maxPerDeposit() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
+                assertTrue(strategy.maxTotalDeposits() == type(uint256).max, "stratTVLLim.maxPerDeposit invalid");
+            }
 
-        {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
-            assertTrue(
-                crossChainRegistry.allocationManager() == Env.proxy.allocationManager(),
-                "crossChainRegistry.alm invalid"
-            );
-            assertTrue(crossChainRegistry.keyRegistrar() == Env.proxy.keyRegistrar(), "crossChainRegistry.kr invalid");
-            assertTrue(
-                crossChainRegistry.permissionController() == Env.proxy.permissionController(),
-                "crossChainRegistry.pc invalid"
-            );
-            assertTrue(
-                crossChainRegistry.pauserRegistry() == Env.impl.pauserRegistry(), "crossChainRegistry.pR invalid"
-            );
-
-            OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
-            assertTrue(
-                operatorTableUpdater.bn254CertificateVerifier() == Env.proxy.bn254CertificateVerifier(),
-                "opTable.bn254CV invalid"
-            );
-            assertTrue(
-                operatorTableUpdater.ecdsaCertificateVerifier() == Env.proxy.ecdsaCertificateVerifier(),
-                "opTable.ecdsaCV invalid"
-            );
-            assertTrue(operatorTableUpdater.pauserRegistry() == Env.impl.pauserRegistry(), "opTable.pR invalid");
-
-            ECDSACertificateVerifier ecdsaCertificateVerifier = Env.impl.ecdsaCertificateVerifier();
-            assertTrue(
-                ecdsaCertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
-                "ecdsaCV.opTable invalid"
-            );
-
-            BN254CertificateVerifier bn254CertificateVerifier = Env.impl.bn254CertificateVerifier();
-            assertTrue(
-                bn254CertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
-                "bn254CV.opTable invalid"
-            );
-        }
-
-        {
-            /// avs/
-            TaskMailbox taskMailbox = Env.impl.taskMailbox();
-            assertTrue(
-                taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
-                "taskMailbox.bn254CV invalid"
-            );
-            assertTrue(
-                taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
-                "taskMailbox.ecdsaCV invalid"
-            );
-            assertTrue(taskMailbox.MAX_TASK_SLA() == Env.MAX_TASK_SLA(), "taskMailbox.maxTaskSLA invalid");
+            StrategyFactory strategyFactory = Env.proxy.strategyFactory();
+            assertTrue(strategyFactory.owner() == Env.opsMultisig(), "sFact.owner invalid");
+            assertTrue(strategyFactory.paused() == 0, "sFact.paused invalid");
+            assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
     }
 
-    function validateImplsInitialized() internal {
-        bytes memory errInit = "Initializable: contract is already initialized";
+    /**
+     *
+     *                        IMPLEMENTATION VALIDATION
+     *
+     */
 
+    /// @dev Validate that the implementation constructors are correctly set
+    function validateImplConstructors() internal view {
+        /// permissions/
+        // PermissionController has no constructor
+        validateKeyRegistrarImmutables(Env.impl.keyRegistrar());
+
+        /// core/
+        validateAllocationManagerViewImmutables(Env.impl.allocationManagerView());
+        validateAllocationManagerImmutables(Env.impl.allocationManager());
+        validateAVSDirectoryImmutables(Env.impl.avsDirectory());
+        validateDelegationManagerImmutables(Env.impl.delegationManager());
+        // ProtocolRegistry has no constructor
+        validateReleaseManagerImmutables(Env.impl.releaseManager());
+        validateRewardsCoordinatorImmutables(Env.impl.rewardsCoordinator());
+        validateStrategyManagerImmutables(Env.impl.strategyManager());
+
+        /// pods/
+        validateEigenPodImmutables(Env.impl.eigenPod());
+        validateEigenPodManagerImmutables(Env.impl.eigenPodManager());
+
+        /// strategies/
+        validateEigenStrategyImmutables(Env.impl.eigenStrategy());
+        validateStrategyBaseImmutables(Env.impl.strategyBase());
+        validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
+        validateStrategyFactoryImmutables(Env.impl.strategyFactory());
+
+        /// multichain/
+        validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
+        validateOperatorTableUpdaterImmutables(Env.impl.operatorTableUpdater());
+        validateECDSACertificateVerifierImmutables(Env.impl.ecdsaCertificateVerifier());
+        validateBN254CertificateVerifierImmutables(Env.impl.bn254CertificateVerifier());
+
+        /// avs/
+        validateTaskMailboxImmutables(Env.impl.taskMailbox());
+    }
+
+    /// @dev Validate that the implementation contracts are not initializable.
+    /// @dev Each function checks that initializing the contract will revert.
+    function validateImplsNotInitializable() internal {
         /// permissions/
         // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
 
-        {
-            /// core/
-            AllocationManager allocationManager = Env.impl.allocationManager();
-            vm.expectRevert(errInit);
-            allocationManager.initialize(0);
+        /// core/
+        // AllocationManagerView is initializable, but does not expose the `initialize` function.
+        validateAllocationManagerInitialized(Env.impl.allocationManager());
+        validateAVSDirectoryInitialized(Env.impl.avsDirectory());
+        validateDelegationManagerInitialized(Env.impl.delegationManager());
+        validateProtocolRegistryInitialized(Env.impl.protocolRegistry());
+        // ReleaseManager is initializable, but does not expose the `initialize` function.
+        validateRewardsCoordinatorInitialized(Env.impl.rewardsCoordinator());
+        validateStrategyManagerInitialized(Env.impl.strategyManager());
 
-            AVSDirectory avsDirectory = Env.impl.avsDirectory();
-            vm.expectRevert(errInit);
-            avsDirectory.initialize(address(0), 0);
+        /// pods/
+        // EigenPod implementations are initialized by individual users
+        validateEigenPodManagerInitialized(Env.impl.eigenPodManager());
 
-            DelegationManager delegationManager = Env.impl.delegationManager();
-            vm.expectRevert(errInit);
-            delegationManager.initialize(0);
+        /// strategies/
+        validateEigenStrategyInitialized(Env.impl.eigenStrategy());
+        // StrategyBase implementations are initialized when deployed by factory
+        validateStrategyBaseTVLLimitsInitialized(Env.impl.strategyBaseTVLLimits());
+        validateStrategyFactoryInitialized(Env.impl.strategyFactory());
 
-            ProtocolRegistry protocolRegistry = Env.impl.protocolRegistry();
-            vm.expectRevert(errInit);
-            protocolRegistry.initialize(address(0), address(0));
+        /// multichain/
+        validateCrossChainRegistryInitialized(Env.impl.crossChainRegistry());
+        validateOperatorTableUpdaterInitialized(Env.impl.operatorTableUpdater());
+        // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
-            // ReleaseManager is initializable, but does not expose the `initialize` function.
-
-            RewardsCoordinator rewardsCoordinator = Env.impl.rewardsCoordinator();
-            vm.expectRevert(errInit);
-            rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0);
-
-            StrategyManager strategyManager = Env.impl.strategyManager();
-            vm.expectRevert(errInit);
-            strategyManager.initialize(address(0), address(0), 0);
-        }
-
-        {
-            /// pods/
-            EigenPod eigenPod = Env.impl.eigenPod();
-            vm.expectRevert(errInit);
-            eigenPod.initialize(address(0));
-
-            EigenPodManager eigenPodManager = Env.impl.eigenPodManager();
-            vm.expectRevert(errInit);
-            eigenPodManager.initialize(address(0), 0);
-        }
-
-        {
-            /// strategies/
-            EigenStrategy eigenStrategy = Env.impl.eigenStrategy();
-            vm.expectRevert(errInit);
-            eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
-
-            StrategyBase strategyBase = Env.impl.strategyBase();
-            vm.expectRevert(errInit);
-            strategyBase.initialize(IERC20(address(0)));
-
-            StrategyBaseTVLLimits strategyBaseTVLLimits = Env.impl.strategyBaseTVLLimits();
-            vm.expectRevert(errInit);
-            strategyBaseTVLLimits.initialize(0, 0, IERC20(address(0)));
-
-            StrategyFactory strategyFactory = Env.impl.strategyFactory();
-            vm.expectRevert(errInit);
-            strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
-        }
-
-        {
-            /// multichain/
-            CrossChainRegistry crossChainRegistry = Env.impl.crossChainRegistry();
-            vm.expectRevert(errInit);
-            crossChainRegistry.initialize(address(0), 0, 0);
-
-            OperatorTableUpdater operatorTableUpdater = Env.impl.operatorTableUpdater();
-            OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
-            IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
-            vm.expectRevert(errInit);
-            operatorTableUpdater.initialize(address(0), uint256(0), dummyOperatorSet, 0, dummyBN254Info);
-
-            // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
-        }
-
-        {
-            /// avs/
-            TaskMailbox taskMailbox = Env.impl.taskMailbox();
-            vm.expectRevert(errInit);
-            taskMailbox.initialize(address(0), 0, address(0));
-        }
+        /// avs/
+        validateTaskMailboxInitialized(Env.impl.taskMailbox());
     }
 
     /**
@@ -585,6 +472,453 @@ library TestUtils {
             _strEq(Env.impl.ecdsaCertificateVerifier().version(), Env.deployVersion()),
             "ecdsaCertificateVerifier version incorrect"
         );
+    }
+
+    /**
+     *
+     *                         VALIDATE IMMUTABLES
+     *
+     */
+    /// @dev These functions are used to validate the immutables of either proxy or implementation contracts.
+
+    /// permissions/
+    function validateKeyRegistrarImmutables(
+        KeyRegistrar keyRegistrar
+    ) internal view {
+        assertTrue(
+            keyRegistrar.permissionController() == Env.proxy.permissionController(),
+            "keyRegistrar permissionController incorrect"
+        );
+        assertTrue(
+            keyRegistrar.allocationManager() == Env.proxy.allocationManager(),
+            "keyRegistrar allocationManager incorrect"
+        );
+    }
+
+    // PermissionController has no immutables
+
+    /// core/
+    function validateAllocationManagerViewImmutables(
+        AllocationManagerView allocationManagerView
+    ) internal view {
+        assertTrue(
+            allocationManagerView.delegation() == Env.proxy.delegationManager(),
+            "allocationManagerView delegation incorrect"
+        );
+        assertTrue(
+            allocationManagerView.eigenStrategy() == Env.proxy.eigenStrategy(),
+            "allocationManagerView eigenStrategy incorrect"
+        );
+        assertTrue(
+            allocationManagerView.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(),
+            "allocationManagerView DEALLOCATION_DELAY incorrect"
+        );
+        assertTrue(
+            allocationManagerView.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+            "allocationManagerView ALLOCATION_CONFIGURATION_DELAY incorrect"
+        );
+    }
+
+    function validateAllocationManagerImmutables(
+        AllocationManager allocationManager
+    ) internal view {
+        assertTrue(
+            allocationManager.viewImplementation() == address(Env.impl.allocationManagerView()),
+            "allocationManager allocationManagerView incorrect"
+        );
+        assertTrue(
+            allocationManager.delegation() == Env.proxy.delegationManager(), "allocationManager delegation incorrect"
+        );
+        assertTrue(
+            allocationManager.eigenStrategy() == Env.proxy.eigenStrategy(), "allocationManager eigenStrategy incorrect"
+        );
+        assertTrue(
+            allocationManager.pauserRegistry() == Env.impl.pauserRegistry(),
+            "allocationManager pauserRegistry incorrect"
+        );
+        assertTrue(
+            allocationManager.permissionController() == Env.proxy.permissionController(),
+            "allocationManager permissionController incorrect"
+        );
+        assertTrue(
+            allocationManager.DEALLOCATION_DELAY() == Env.MIN_WITHDRAWAL_DELAY(),
+            "allocationManager DEALLOCATION_DELAY incorrect"
+        );
+        assertTrue(
+            allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+            "allocationManager ALLOCATION_CONFIGURATION_DELAY incorrect"
+        );
+    }
+
+    function validateAVSDirectoryImmutables(
+        AVSDirectory avsDirectory
+    ) internal view {
+        assertTrue(avsDirectory.delegation() == Env.proxy.delegationManager(), "avsDirectory delegation incorrect");
+        assertTrue(avsDirectory.pauserRegistry() == Env.impl.pauserRegistry(), "avsDirectory pauserRegistry incorrect");
+    }
+
+    function validateDelegationManagerImmutables(
+        DelegationManager delegation
+    ) internal view {
+        assertTrue(
+            delegation.strategyManager() == Env.proxy.strategyManager(), "delegationManager strategyManager incorrect"
+        );
+        assertTrue(
+            delegation.eigenPodManager() == Env.proxy.eigenPodManager(), "delegationManager eigenPodManager incorrect"
+        );
+        assertTrue(
+            delegation.allocationManager() == Env.proxy.allocationManager(),
+            "delegationManager allocationManager incorrect"
+        );
+        assertTrue(
+            delegation.pauserRegistry() == Env.impl.pauserRegistry(), "delegationManager pauserRegistry incorrect"
+        );
+        assertTrue(
+            delegation.permissionController() == Env.proxy.permissionController(),
+            "delegationManager permissionController incorrect"
+        );
+        assertTrue(
+            delegation.minWithdrawalDelayBlocks() == Env.MIN_WITHDRAWAL_DELAY(),
+            "delegationManager minWithdrawalDelayBlocks incorrect"
+        );
+    }
+
+    function validateReleaseManagerImmutables(
+        ReleaseManager releaseManager
+    ) internal view {
+        assertTrue(
+            releaseManager.permissionController() == Env.proxy.permissionController(),
+            "releaseManager permissionController incorrect"
+        );
+    }
+
+    function validateRewardsCoordinatorImmutables(
+        RewardsCoordinator rewardsCoordinator
+    ) internal view {
+        assertTrue(
+            rewardsCoordinator.delegationManager() == Env.proxy.delegationManager(),
+            "rewardsCoordinator delegationManager incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.strategyManager() == Env.proxy.strategyManager(),
+            "rewardsCoordinator strategyManager incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.allocationManager() == Env.proxy.allocationManager(),
+            "rewardsCoordinator allocationManager incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.pauserRegistry() == Env.impl.pauserRegistry(),
+            "rewardsCoordinator pauserRegistry incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.permissionController() == Env.proxy.permissionController(),
+            "rewardsCoordinator permissionController incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.CALCULATION_INTERVAL_SECONDS() == Env.CALCULATION_INTERVAL_SECONDS(),
+            "rewardsCoordinator CALCULATION_INTERVAL_SECONDS incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.MAX_REWARDS_DURATION() == Env.MAX_REWARDS_DURATION(),
+            "rewardsCoordinator MAX_REWARDS_DURATION incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.MAX_RETROACTIVE_LENGTH() == Env.MAX_RETROACTIVE_LENGTH(),
+            "rewardsCoordinator MAX_RETROACTIVE_LENGTH incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.MAX_FUTURE_LENGTH() == Env.MAX_FUTURE_LENGTH(),
+            "rewardsCoordinator MAX_FUTURE_LENGTH incorrect"
+        );
+        assertTrue(
+            rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(),
+            "rewardsCoordinator GENESIS_REWARDS_TIMESTAMP incorrect"
+        );
+    }
+
+    function validateStrategyManagerImmutables(
+        StrategyManager strategyManager
+    ) internal view {
+        assertTrue(
+            strategyManager.allocationManager() == Env.proxy.allocationManager(),
+            "strategyManager allocationManager incorrect"
+        );
+        assertTrue(
+            strategyManager.delegation() == Env.proxy.delegationManager(), "strategyManager delegation incorrect"
+        );
+        assertTrue(
+            strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "strategyManager pauserRegistry incorrect"
+        );
+    }
+
+    /// pods/
+    function validateEigenPodImmutables(
+        EigenPod eigenPod
+    ) internal view {
+        assertTrue(eigenPod.ethPOS() == Env.ethPOS(), "eigenPod ethPOS incorrect");
+        assertTrue(eigenPod.eigenPodManager() == Env.proxy.eigenPodManager(), "eigenPod eigenPodManager incorrect");
+    }
+
+    function validateEigenPodManagerImmutables(
+        EigenPodManager eigenPodManager
+    ) internal view {
+        assertTrue(eigenPodManager.ethPOS() == Env.ethPOS(), "eigenPodManager ethPOS incorrect");
+        assertTrue(
+            eigenPodManager.eigenPodBeacon() == Env.beacon.eigenPod(), "eigenPodManager eigenPodBeacon incorrect"
+        );
+        assertTrue(
+            eigenPodManager.delegationManager() == Env.proxy.delegationManager(),
+            "eigenPodManager delegationManager incorrect"
+        );
+        assertTrue(
+            eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "eigenPodManager pauserRegistry incorrect"
+        );
+    }
+
+    /// strategies/
+    function validateEigenStrategyImmutables(
+        EigenStrategy eigenStrategy
+    ) internal view {
+        assertTrue(
+            eigenStrategy.strategyManager() == Env.proxy.strategyManager(), "eigenStrategy strategyManager incorrect"
+        );
+        assertTrue(
+            eigenStrategy.pauserRegistry() == Env.impl.pauserRegistry(), "eigenStrategy pauserRegistry incorrect"
+        );
+    }
+
+    function validateStrategyBaseImmutables(
+        StrategyBase strategyBase
+    ) internal view {
+        assertTrue(
+            strategyBase.strategyManager() == Env.proxy.strategyManager(), "strategyBase strategyManager incorrect"
+        );
+        assertTrue(strategyBase.pauserRegistry() == Env.impl.pauserRegistry(), "strategyBase pauserRegistry incorrect");
+    }
+
+    function validateStrategyBaseTVLLimitsImmutables(
+        StrategyBaseTVLLimits strategyBaseTVLLimits
+    ) internal view {
+        assertTrue(
+            strategyBaseTVLLimits.strategyManager() == Env.proxy.strategyManager(),
+            "strategyBaseTVLLimits strategyManager incorrect"
+        );
+        assertTrue(
+            strategyBaseTVLLimits.pauserRegistry() == Env.impl.pauserRegistry(),
+            "strategyBaseTVLLimits pauserRegistry incorrect"
+        );
+    }
+
+    function validateStrategyFactoryImmutables(
+        StrategyFactory strategyFactory
+    ) internal view {
+        assertTrue(
+            strategyFactory.strategyManager() == Env.proxy.strategyManager(),
+            "strategyFactory strategyManager incorrect"
+        );
+        assertTrue(
+            strategyFactory.pauserRegistry() == Env.impl.pauserRegistry(), "strategyFactory pauserRegistry incorrect"
+        );
+    }
+
+    /// multichain/
+    function validateCrossChainRegistryImmutables(
+        CrossChainRegistry crossChainRegistry
+    ) internal view {
+        assertTrue(
+            crossChainRegistry.allocationManager() == Env.proxy.allocationManager(),
+            "crossChainRegistry allocationManager incorrect"
+        );
+        assertTrue(
+            crossChainRegistry.keyRegistrar() == Env.proxy.keyRegistrar(), "crossChainRegistry keyRegistrar incorrect"
+        );
+        assertTrue(
+            crossChainRegistry.permissionController() == Env.proxy.permissionController(),
+            "crossChainRegistry permissionController incorrect"
+        );
+        assertTrue(
+            crossChainRegistry.pauserRegistry() == Env.impl.pauserRegistry(),
+            "crossChainRegistry pauserRegistry incorrect"
+        );
+    }
+
+    function validateOperatorTableUpdaterImmutables(
+        OperatorTableUpdater operatorTableUpdater
+    ) internal view {
+        assertTrue(
+            operatorTableUpdater.bn254CertificateVerifier() == Env.proxy.bn254CertificateVerifier(),
+            "operatorTableUpdater bn254CertificateVerifier incorrect"
+        );
+        assertTrue(
+            operatorTableUpdater.ecdsaCertificateVerifier() == Env.proxy.ecdsaCertificateVerifier(),
+            "operatorTableUpdater ecdsaCertificateVerifier incorrect"
+        );
+        assertTrue(
+            operatorTableUpdater.pauserRegistry() == Env.impl.pauserRegistry(),
+            "operatorTableUpdater pauserRegistry incorrect"
+        );
+    }
+
+    function validateECDSACertificateVerifierImmutables(
+        ECDSACertificateVerifier ecdsaCertificateVerifier
+    ) internal view {
+        assertTrue(
+            ecdsaCertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
+            "ecdsaCertificateVerifier operatorTableUpdater incorrect"
+        );
+    }
+
+    function validateBN254CertificateVerifierImmutables(
+        BN254CertificateVerifier bn254CertificateVerifier
+    ) internal view {
+        assertTrue(
+            bn254CertificateVerifier.operatorTableUpdater() == Env.proxy.operatorTableUpdater(),
+            "bn254CertificateVerifier operatorTableUpdater incorrect"
+        );
+    }
+
+    /// avs/
+    function validateTaskMailboxImmutables(
+        TaskMailbox taskMailbox
+    ) internal view {
+        assertTrue(
+            taskMailbox.BN254_CERTIFICATE_VERIFIER() == address(Env.proxy.bn254CertificateVerifier()),
+            "taskMailbox BN254_CERTIFICATE_VERIFIER incorrect"
+        );
+        assertTrue(
+            taskMailbox.ECDSA_CERTIFICATE_VERIFIER() == address(Env.proxy.ecdsaCertificateVerifier()),
+            "taskMailbox ECDSA_CERTIFICATE_VERIFIER incorrect"
+        );
+        assertTrue(taskMailbox.MAX_TASK_SLA() == Env.MAX_TASK_SLA(), "taskMailbox MAX_TASK_SLA incorrect");
+    }
+
+    /**
+     *
+     *                         VALIDATE INITIALIZED
+     *
+     */
+
+    /// @dev These functions are used to validate the initialized state of either proxy or implementation contracts.
+
+    /// permissions/
+    // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
+
+    /// core/
+    function validateAllocationManagerInitialized(
+        AllocationManager allocationManager
+    ) internal {
+        vm.expectRevert(errInit);
+        allocationManager.initialize(0);
+    }
+
+    function validateAVSDirectoryInitialized(
+        AVSDirectory avsDirectory
+    ) internal {
+        vm.expectRevert(errInit);
+        avsDirectory.initialize(address(0), 0);
+    }
+
+    function validateDelegationManagerInitialized(
+        DelegationManager delegationManager
+    ) internal {
+        vm.expectRevert(errInit);
+        delegationManager.initialize(0);
+    }
+
+    function validateProtocolRegistryInitialized(
+        ProtocolRegistry protocolRegistry
+    ) internal {
+        vm.expectRevert(errInit);
+        protocolRegistry.initialize(address(0), address(0));
+    }
+
+    // ReleaseManager is initializable, but does not expose the `initialize` function.
+
+    function validateRewardsCoordinatorInitialized(
+        RewardsCoordinator rewardsCoordinator
+    ) internal {
+        vm.expectRevert(errInit);
+        rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0);
+    }
+
+    function validateStrategyManagerInitialized(
+        StrategyManager strategyManager
+    ) internal {
+        vm.expectRevert(errInit);
+        strategyManager.initialize(address(0), address(0), 0);
+    }
+
+    /// pods/
+    // EigenPod proxies are initialized by individual users
+
+    function validateEigenPodManagerInitialized(
+        EigenPodManager eigenPodManager
+    ) internal {
+        vm.expectRevert(errInit);
+        eigenPodManager.initialize(address(0), 0);
+    }
+
+    /// strategies/
+    function validateEigenStrategyInitialized(
+        EigenStrategy eigenStrategy
+    ) internal {
+        vm.expectRevert(errInit);
+        eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
+    }
+
+    // StrategyBase proxies are initialized when deployed by factory
+
+    function validateStrategyBaseTVLLimitsInitialized(
+        StrategyBaseTVLLimits strategyBaseTVLLimits
+    ) internal {
+        vm.expectRevert(errInit);
+        strategyBaseTVLLimits.initialize(0, 0, IERC20(address(0)));
+    }
+
+    function validateStrategyFactoryInitialized(
+        StrategyFactory strategyFactory
+    ) internal {
+        vm.expectRevert(errInit);
+        strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+    }
+
+    /// multichain/
+    function validateCrossChainRegistryInitialized(
+        CrossChainRegistry crossChainRegistry
+    ) internal {
+        vm.expectRevert(errInit);
+        crossChainRegistry.initialize(address(0), 0, 0);
+    }
+
+    function validateOperatorTableUpdaterInitialized(
+        OperatorTableUpdater operatorTableUpdater
+    ) internal {
+        OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
+        vm.expectRevert(errInit);
+        operatorTableUpdater.initialize(address(0), uint256(0), dummyOperatorSet, 0, dummyBN254Info);
+    }
+
+    // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
+
+    /// avs/
+    function validateTaskMailboxInitialized(
+        TaskMailbox taskMailbox
+    ) internal {
+        vm.expectRevert(errInit);
+        taskMailbox.initialize(address(0), 0, address(0));
+    }
+
+    ///// Helpers for storage validation
+    /// @dev This is used by proxy and implementation functions to get the constructor storage
+    function validatePauserRegistryStorage(
+        PauserRegistry pauserRegistry
+    ) internal view {
+        assertTrue(pauserRegistry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
+        assertTrue(pauserRegistry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
+        assertTrue(pauserRegistry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
+        assertTrue(pauserRegistry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`

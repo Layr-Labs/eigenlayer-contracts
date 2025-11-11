@@ -2,6 +2,9 @@
 pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
+import {DeployProtocolRegistryProxy} from "./1-deployProtocolRegistryProxy.s.sol";
+import {DeployProtocolRegistryImpl} from "./2-deployProtocolRegistryImpl.s.sol";
+import {UpgradeProtocolRegistry} from "./3-upgradeProtocolRegistry.s.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
@@ -38,7 +41,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  * /// AVS
  * - TaskMailbox
  */
-contract Deploy is EOADeployer {
+contract Deploy is UpgradeProtocolRegistry {
     using Env for *;
 
     function _runAsEOA() internal override {
@@ -116,17 +119,6 @@ contract Deploy is EOADeployer {
 
         // Deploy impl AND proxy for protocol registry
         deployImpl({name: type(ProtocolRegistry).name, deployedTo: address(new ProtocolRegistry())});
-
-        deployProxy({
-            name: type(ProtocolRegistry).name,
-            deployedTo: address(
-                new TransparentUpgradeableProxy({
-                    _logic: address(Env.impl.protocolRegistry()),
-                    admin_: address(Env.proxyAdmin()),
-                    _data: abi.encodeCall(ProtocolRegistry.initialize, (Env.executorMultisig(), Env.pauserMultisig()))
-                })
-            )
-        });
 
         deployImpl({
             name: type(ReleaseManager).name,
@@ -280,13 +272,17 @@ contract Deploy is EOADeployer {
         vm.stopBroadcast();
     }
 
-    function testScript() public virtual {
+    function testScript() public virtual override {
+        // Deploy protocol registry and initialize it
+        UpgradeProtocolRegistry.testScript();
+
+        // Deploy the core contracts
         runAsEOA();
 
         // Run tests
         TestUtils.validateProxyAdmins();
         TestUtils.validateImplConstructors();
-        TestUtils.validateImplsInitialized();
+        TestUtils.validateImplsNotInitializable();
 
         // Check individual version addresses
         TestUtils.validateKeyRegistrarVersion();

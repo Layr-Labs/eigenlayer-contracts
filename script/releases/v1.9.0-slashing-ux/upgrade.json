@@ -4,12 +4,24 @@
     "to": "1.9.0",
     "phases": [
         {
+            "type": "multisig",
+            "filename": "1-deployProtocolRegistryProxy.s.sol"
+        },
+        {
             "type": "eoa",
-            "filename": "1-deployContracts.s.sol"
+            "filename": "2-deployProtocolRegistryImpl.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-upgradeProtocolRegistry.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "4-deployCoreContracts.s.sol"
         },
         {
             "type": "script",
-            "filename": "4-script/start.sh",
+            "filename": "7-script/start.sh",
             "arguments": [
                 {
                     "type": "url",
