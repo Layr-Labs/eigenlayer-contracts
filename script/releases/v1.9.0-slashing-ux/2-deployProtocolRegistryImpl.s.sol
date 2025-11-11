@@ -3,20 +3,21 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import {DeployProtocolRegistryProxy} from "./1-deployProtocolRegistryProxy.s.sol";
+import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
 /**
  * Purpose: Deploy Protocol Registry implementation
  */
-contract DeployProtocolRegistryImpl is EOADeployer, DeployProtocolRegistryProxy {
+contract DeployProtocolRegistryImpl is DeployProtocolRegistryProxy, CoreContractsDeployer {
     using Env for *;
 
     function _runAsEOA() internal virtual override {
         vm.startBroadcast();
 
         // Deploy Protocol Registry implementation
-        deployImpl({name: type(ProtocolRegistry).name, deployedTo: address(new ProtocolRegistry())});
+        deployProtocolRegistry();
 
         vm.stopBroadcast();
     }

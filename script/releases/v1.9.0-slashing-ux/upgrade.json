@@ -20,6 +20,10 @@
             "filename": "4-deployCoreContracts.s.sol"
         },
         {
+            "type": "multisig",
+            "filename": "5-queueUpgrade.s.sol"
+        },
+        {
             "type": "script",
             "filename": "7-script/start.sh",
             "arguments": [

@@ -4,6 +4,8 @@ pragma solidity ^0.8.12;
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {DeployProtocolRegistryProxy} from "./1-deployProtocolRegistryProxy.s.sol";
 import {DeployProtocolRegistryImpl} from "./2-deployProtocolRegistryImpl.s.sol";
+import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
+
 import "../Env.sol";
 import "../TestUtils.sol";
 
@@ -14,7 +16,7 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     using Env for *;
 
     /// forgefmt: disable-next-item
-    function _runAsMultisig() internal override prank(Env.multichainDeployerMultisig()) {
+    function _runAsMultisig() internal virtual override prank(Env.multichainDeployerMultisig()) {
         // Upgrade the proxies to point to the actual implementations
         ITransparentUpgradeableProxy protocolRegistryProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.protocolRegistry())));

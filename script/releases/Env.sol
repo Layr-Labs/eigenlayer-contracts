@@ -9,7 +9,9 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-/// core/
+/**
+ * core/
+ */
 import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AllocationManagerView.sol";
@@ -21,34 +23,46 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/core/ProtocolRegistry.sol";
 
-/// permissions/
+/**
+ * pemissions/
+ */
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 
-/// pods/
+/**
+ * pods/
+ */
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
-/// strategies/
+/**
+ * strategies/
+ */
 import "src/contracts/strategies/EigenStrategy.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
-/// token/
+/**
+ * token/
+ */
 import "src/contracts/interfaces/IEigen.sol";
 import "src/contracts/interfaces/IBackingEigen.sol";
 import "src/contracts/token/Eigen.sol";
 import "src/contracts/token/BackingEigen.sol";
 
-/// multichain/
+/**
+ * multichain/
+ */
 import "src/contracts/multichain/CrossChainRegistry.sol";
 import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/multichain/ECDSACertificateVerifier.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
 
-/// avs/
+/**
+ * avs/
+ */
 import "src/contracts/avs/task/TaskMailbox.sol";
 
 // For destination chains
