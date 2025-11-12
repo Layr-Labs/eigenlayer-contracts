@@ -77,6 +77,14 @@ library TestUtils {
         }
 
         assertTrue(_getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect");
+
+        /**
+         * multichain/
+         */
+        assertTrue(
+            _getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
+        );
+
         validateDestinationProxyAdmins();
     }
 
@@ -93,9 +101,6 @@ library TestUtils {
         assertTrue(
             _getProxyAdmin(address(Env.proxy.bn254CertificateVerifier())) == pa,
             "bn254CertificateVerifier proxyAdmin incorrect"
-        );
-        assertTrue(
-            _getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
         );
         assertTrue(
             _getProxyAdmin(address(Env.proxy.ecdsaCertificateVerifier())) == pa,
@@ -153,6 +158,11 @@ library TestUtils {
         }
         validateStrategyFactoryImmutables(Env.proxy.strategyFactory());
 
+        /**
+         * multichain/
+         */
+        validateCrossChainRegistryImmutables(Env.proxy.crossChainRegistry());
+
         validateDestinationProxyConstructors();
     }
 
@@ -161,7 +171,6 @@ library TestUtils {
          * multichain/
          */
         validateBN254CertificateVerifierImmutables(Env.proxy.bn254CertificateVerifier());
-        validateCrossChainRegistryImmutables(Env.proxy.crossChainRegistry());
         validateECDSACertificateVerifierImmutables(Env.proxy.ecdsaCertificateVerifier());
         validateOperatorTableUpdaterImmutables(Env.proxy.operatorTableUpdater());
 
@@ -206,6 +215,11 @@ library TestUtils {
         }
         validateStrategyFactoryInitialized(Env.proxy.strategyFactory());
 
+        /**
+         * multichain/
+         */
+        validateCrossChainRegistryInitialized(Env.proxy.crossChainRegistry());
+
         validateDestinationProxiesAlreadyInitialized();
     }
 
@@ -218,7 +232,6 @@ library TestUtils {
         /**
          * multichain/
          */
-        validateCrossChainRegistryInitialized(Env.proxy.crossChainRegistry());
         validateOperatorTableUpdaterInitialized(Env.proxy.operatorTableUpdater());
         // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
@@ -308,6 +321,19 @@ library TestUtils {
             assertTrue(strategyFactory.paused() == 0, "sFact.paused invalid");
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
+        {
+            /**
+             * multichain/
+             */
+            // Operator table updater and certificate verifies do not have initial storage
+            CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
+            assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "crossChainRegistry owner invalid");
+            assertTrue(
+                crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
+                "crossChainRegistry table update cadence invalid"
+            );
+            assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
+        }
 
         validateDestinationProxyStorage();
     }
@@ -321,8 +347,12 @@ library TestUtils {
             PauserRegistry registry = Env.impl.pauserRegistry();
             assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
             assertTrue(registry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
-            assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
-            assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
+            if (Env.isCoreProtocolDeployed()) {
+                assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
+                assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
+            } else {
+                assertTrue(registry.unpauser() == Env.opsMultisig(), "ops multisig should be unpauser");
+            }
         }
 
         {
@@ -344,14 +374,13 @@ library TestUtils {
             /**
              * multichain/
              */
-            // Operator table updater and certificate verifies do not have initial storage
-            CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
-            assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "crossChainRegistry owner invalid");
+            OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
+            assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "operatorTableUpdater owner invalid");
             assertTrue(
-                crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
-                "crossChainRegistry table update cadence invalid"
+                operatorTableUpdater.globalRootConfirmationThreshold() == 10_000,
+                "operatorTableUpdater globalRootConfirmationThreshold invalid"
             );
-            assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
+            // Reset of params are dependent on per chain state (eg. generator state)
         }
 
         {
@@ -405,6 +434,11 @@ library TestUtils {
         validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryImmutables(Env.impl.strategyFactory());
 
+        /**
+         * multichain/
+         */
+        validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
+
         validateDestinationImplConstructors();
     }
 
@@ -413,7 +447,6 @@ library TestUtils {
          * multichain/
          */
         validateBN254CertificateVerifierImmutables(Env.impl.bn254CertificateVerifier());
-        validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
         validateECDSACertificateVerifierImmutables(Env.impl.ecdsaCertificateVerifier());
         validateOperatorTableUpdaterImmutables(Env.impl.operatorTableUpdater());
 
@@ -457,6 +490,11 @@ library TestUtils {
         validateStrategyBaseTVLLimitsInitialized(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryInitialized(Env.impl.strategyFactory());
 
+        /**
+         * multichain/
+         */
+        validateCrossChainRegistryInitialized(Env.impl.crossChainRegistry());
+
         validateDestinationImplsNotInitializable();
     }
 
@@ -469,7 +507,6 @@ library TestUtils {
         /**
          * multichain/
          */
-        validateCrossChainRegistryInitialized(Env.impl.crossChainRegistry());
         validateOperatorTableUpdaterInitialized(Env.impl.operatorTableUpdater());
         // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
@@ -559,6 +596,14 @@ library TestUtils {
             "strategyFactory impl address mismatch"
         );
 
+        /**
+         * multichain/
+         */
+        assertTrue(
+            _getProxyImpl(address(Env.proxy.crossChainRegistry())) == address(Env.impl.crossChainRegistry()),
+            "operatorTableUpdater impl address mismatch"
+        );
+
         validateDestinationImplAddressesMatchProxy();
     }
 
@@ -579,16 +624,12 @@ library TestUtils {
             "bn254CertificateVerifier impl address mismatch"
         );
         assertTrue(
-            _getProxyImpl(address(Env.proxy.operatorTableUpdater())) == address(Env.impl.operatorTableUpdater()),
-            "crossChainRegistry impl address mismatch"
-        );
-        assertTrue(
             _getProxyImpl(address(Env.proxy.ecdsaCertificateVerifier())) == address(Env.impl.ecdsaCertificateVerifier()),
             "ecdsaCertificateVerifier impl address mismatch"
         );
         assertTrue(
-            _getProxyImpl(address(Env.proxy.crossChainRegistry())) == address(Env.impl.crossChainRegistry()),
-            "operatorTableUpdater impl address mismatch"
+            _getProxyImpl(address(Env.proxy.operatorTableUpdater())) == address(Env.impl.operatorTableUpdater()),
+            "crossChainRegistry impl address mismatch"
         );
 
         /**
@@ -1220,6 +1261,16 @@ library TestUtils {
             assertFalse(config.deprecated, "eigenToken should not be deprecated");
         }
 
+        {
+            /**
+             * multichain/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(CrossChainRegistry).name);
+            assertTrue(addr == address(Env.proxy.crossChainRegistry()), "crossChainRegistry address incorrect");
+            assertTrue(config.pausable, "crossChainRegistry should be pausable");
+            assertFalse(config.deprecated, "crossChainRegistry should not be deprecated");
+        }
+
         validateDestinationProtocolRegistry();
     }
 
@@ -1263,11 +1314,6 @@ library TestUtils {
             );
             assertFalse(config.pausable, "bn254CertificateVerifier should not be pausable");
             assertFalse(config.deprecated, "bn254CertificateVerifier should not be deprecated");
-
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(CrossChainRegistry).name);
-            assertTrue(addr == address(Env.proxy.crossChainRegistry()), "crossChainRegistry address incorrect");
-            assertTrue(config.pausable, "crossChainRegistry should be pausable");
-            assertFalse(config.deprecated, "crossChainRegistry should not be deprecated");
 
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ECDSACertificateVerifier).name);
             assertTrue(

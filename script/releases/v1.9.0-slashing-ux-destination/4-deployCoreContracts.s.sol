@@ -34,7 +34,7 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
          * multichain/
          */
         deployBN254CertificateVerifier();
-        deployCrossChainRegistry();
+        // CrossChainRegistry only deployed on destination chain
         deployECDSACertificateVerifier();
         deployOperatorTableUpdater();
 
@@ -58,15 +58,11 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         runAsEOA();
 
         // Run tests
-        TestUtils.validateProxyAdmins();
-        TestUtils.validateImplConstructors();
-        TestUtils.validateImplsNotInitializable();
+        TestUtils.validateDestinationProxyAdmins();
+        TestUtils.validateDestinationImplConstructors();
+        TestUtils.validateDestinationImplsNotInitializable();
 
         // Check individual version addresses
-        TestUtils.validateKeyRegistrarVersion();
-        TestUtils.validateAVSDirectoryVersion();
-        TestUtils.validateDelegationManagerVersion();
-        TestUtils.validateStrategyManagerVersion();
         TestUtils.validateECDSACertificateVerifierVersion();
     }
 

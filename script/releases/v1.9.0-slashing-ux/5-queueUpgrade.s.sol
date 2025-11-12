@@ -84,7 +84,6 @@ contract QueueUpgrade is DeployCoreContracts {
         address[] memory addresses = new address[](22);
         IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](22);
         string[] memory names = new string[](22);
-        string memory semanticVersion = "1.9.0";
 
         IProtocolRegistryTypes.DeploymentConfig memory pausableConfig =
             IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
@@ -224,7 +223,7 @@ contract QueueUpgrade is DeployCoreContracts {
         // Lastly, append to the multisig calls
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, semanticVersion)
+            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
         });
     }
 

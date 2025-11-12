@@ -36,7 +36,6 @@ contract QueueUpgrade is DeployCoreContracts {
 
         /// multichain
         executorCalls.upgradeBN254CertificateVerifier();
-        executorCalls.upgradeCrossChainRegistry();
         executorCalls.upgradeECDSACertificateVerifier();
         executorCalls.upgradeOperatorTableUpdater();
 
@@ -58,10 +57,9 @@ contract QueueUpgrade is DeployCoreContracts {
         MultisigCall[] storage calls
     ) internal {
         // We want to add all addresses that are deployed to the protocol registry
-        address[] memory addresses = new address[](5);
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](5);
-        string[] memory names = new string[](5);
-        string memory semanticVersion = "1.9.0";
+        address[] memory addresses = new address[](6);
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](6);
+        string[] memory names = new string[](6);
 
         IProtocolRegistryTypes.DeploymentConfig memory pausableConfig =
             IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
@@ -69,35 +67,45 @@ contract QueueUpgrade is DeployCoreContracts {
             IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
 
         /**
+         * permissions/
+         */
+        addresses[0] = address(Env.impl.pauserRegistry());
+        configs[0] = unpausableConfig;
+        names[0] = type(PauserRegistry).name;
+
+        /**
+         * core/
+         */
+        addresses[1] = address(Env.proxy.protocolRegistry());
+        configs[1] = unpausableConfig;
+        names[1] = type(ProtocolRegistry).name;
+
+        /**
          * multichain/
          */
-        addresses[0] = address(Env.proxy.bn254CertificateVerifier());
-        configs[0] = unpausableConfig;
-        names[0] = type(BN254CertificateVerifier).name;
-
-        addresses[1] = address(Env.proxy.crossChainRegistry());
-        configs[1] = pausableConfig;
-        names[1] = type(CrossChainRegistry).name;
-
-        addresses[2] = address(Env.proxy.ecdsaCertificateVerifier());
+        addresses[2] = address(Env.proxy.bn254CertificateVerifier());
         configs[2] = unpausableConfig;
-        names[2] = type(ECDSACertificateVerifier).name;
+        names[2] = type(BN254CertificateVerifier).name;
 
-        addresses[3] = address(Env.proxy.operatorTableUpdater());
-        configs[3] = pausableConfig;
-        names[3] = type(OperatorTableUpdater).name;
+        addresses[3] = address(Env.proxy.ecdsaCertificateVerifier());
+        configs[3] = unpausableConfig;
+        names[3] = type(ECDSACertificateVerifier).name;
+
+        addresses[4] = address(Env.proxy.operatorTableUpdater());
+        configs[4] = pausableConfig;
+        names[4] = type(OperatorTableUpdater).name;
 
         /**
          * avs/
          */
-        addresses[4] = address(Env.proxy.taskMailbox());
-        configs[4] = pausableConfig;
-        names[4] = type(TaskMailbox).name;
+        addresses[5] = address(Env.proxy.taskMailbox());
+        configs[5] = pausableConfig;
+        names[5] = type(TaskMailbox).name;
 
         // Lastly, append to the multisig calls
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, semanticVersion)
+            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
         });
     }
 
