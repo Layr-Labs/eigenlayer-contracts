@@ -8,10 +8,13 @@ import "src/contracts/mixins/SplitContractMixin.sol";
 /// @notice Utility library for testing contract deployments
 /// @dev This library exposes the following test functions:
 /// @dev - validateProxyAdmins - Check that proxy admins are correctly set.
+/// @dev - validateProxyConstructors - Check that proxy constructors are correctly set.
+/// @dev - validateProxiesAlreadyInitialized - Check that proxies are already initialized.
+/// @dev - validateProxyStorage - Check that proxy storage is correctly set.
 /// @dev - validateImplConstructors - Check that implementation constructors are correctly set.
-/// @dev - validateImplsInitialized - Check that implementation cannot be initialized.
+/// @dev - validateImplsNotInitializable - Check that implementation cannot be initialized.
 /// @dev - validateImplAddressesMatchProxy - Check that implementation addresses match the proxy admin's reported implementation address.
-/// @dev - validateProtocolVersion - Check that the protocol version is correctly set.
+/// @dev - validateProtocolRegistry - Check that the protocol version is correctly set.
 library TestUtils {
     using Env for *;
 
@@ -127,14 +130,14 @@ library TestUtils {
         /**
          * pods/
          */
-        validateEigenPodImmutables(EigenPod(payable(address(Env.beacon.eigenPod()))));
+        // EigenPod beacon doesn't have immutable, only implementation does
         validateEigenPodManagerImmutables(Env.proxy.eigenPodManager());
 
         /**
          * strategies/
          */
         validateEigenStrategyImmutables(Env.proxy.eigenStrategy());
-        validateStrategyBaseImmutables(StrategyBase(address(Env.beacon.strategyBase())));
+        // StrategyBase beacon doesn't have immutables, only implementation does
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint256 i = 0; i < count; i++) {
             validateStrategyBaseTVLLimitsImmutables(Env.instance.strategyBaseTVLLimits(i));
@@ -296,6 +299,20 @@ library TestUtils {
             assertTrue(strategyFactory.owner() == Env.opsMultisig(), "sFact.owner invalid");
             assertTrue(strategyFactory.paused() == 0, "sFact.paused invalid");
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
+        }
+
+        {
+            /**
+             * multichain/
+             */
+            // Operator table updater and certificate verifies do not have initial storage
+            CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
+            assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "crossChainRegistry owner invalid");
+            assertTrue(
+                crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
+                "crossChainRegistry table update cadence invalid"
+            );
+            assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
         }
     }
 
@@ -517,15 +534,6 @@ library TestUtils {
      *                        VERSION VALIDATION FUNCTIONS
      *
      */
-
-    /// @dev Validate versions of entire protocol
-    /// @dev This should be called on every release
-    function validateProtocolVersion() internal view {
-        require(
-            TestUtils._strEq(Env.proxy.protocolRegistry().version(), Env.deployVersion()), "protocol version incorrect"
-        );
-    }
-
     /// Validate versions of specific contracts
     /// @dev We need to validate versions of specific contracts because some contracts can have mismatched versions.
     function validateKeyRegistrarVersion() internal view {
@@ -1013,15 +1021,183 @@ library TestUtils {
         taskMailbox.initialize(address(0), 0, address(0));
     }
 
-    ///// Helpers for storage validation
-    /// @dev This is used by proxy and implementation functions to get the constructor storage
-    function validatePauserRegistryStorage(
-        PauserRegistry pauserRegistry
-    ) internal view {
-        assertTrue(pauserRegistry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
-        assertTrue(pauserRegistry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
-        assertTrue(pauserRegistry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
-        assertTrue(pauserRegistry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
+    /**
+     *
+     *                         VALIDATE PROTOCOL REGISTRY
+     *
+     */
+
+    /// @notice Validate the protocol registry by checking the version and all contracts
+    /// @dev This should be called *after* an upgrade has been completed
+    function validateProtocolRegistry() internal view {
+        /// First, check the version of the registry
+        assertTrue(
+            _strEq(Env.proxy.protocolRegistry().version(), Env.deployVersion()), "protocol registry version incorrect"
+        );
+
+        // Then, check the deployments
+        address addr;
+        IProtocolRegistryTypes.DeploymentConfig memory config;
+        {
+            /**
+             * permissions/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(KeyRegistrar).name);
+            assertTrue(addr == address(Env.proxy.keyRegistrar()), "keyRegistrar address incorrect");
+            assertTrue(config.pausable, "keyRegistrar should be pausable");
+            assertFalse(config.deprecated, "keyRegistrar should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PermissionController).name);
+            assertTrue(addr == address(Env.proxy.permissionController()), "permissionController address incorrect");
+            assertFalse(config.pausable, "permissionController should not be pausable");
+            assertFalse(config.deprecated, "permissionController should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PauserRegistry).name);
+            assertTrue(addr == address(Env.impl.pauserRegistry()), "pauserRegistry address incorrect");
+            assertFalse(config.pausable, "pauserRegistry should not be pausable");
+            assertFalse(config.deprecated, "pauserRegistry should not be deprecated");
+        }
+
+        {
+            /**
+             * core/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(AllocationManager).name);
+            assertTrue(addr == address(Env.proxy.allocationManager()), "allocationManager address incorrect");
+            assertTrue(config.pausable, "allocationManager should be pausable");
+            assertFalse(config.deprecated, "allocationManager should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(AVSDirectory).name);
+            assertTrue(addr == address(Env.proxy.avsDirectory()), "avsDirectory address incorrect");
+            assertTrue(config.pausable, "avsDirectory should be pausable");
+            assertFalse(config.deprecated, "avsDirectory should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DelegationManager).name);
+            assertTrue(addr == address(Env.proxy.delegationManager()), "delegationManager address incorrect");
+            assertTrue(config.pausable, "delegationManager should be pausable");
+            assertFalse(config.deprecated, "delegationManager should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ProtocolRegistry).name);
+            assertTrue(addr == address(Env.proxy.protocolRegistry()), "protocolRegistry address incorrect");
+            assertFalse(config.pausable, "protocolRegistry should not be pausable");
+            assertFalse(config.deprecated, "protocolRegistry should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ReleaseManager).name);
+            assertTrue(addr == address(Env.proxy.releaseManager()), "releaseManager address incorrect");
+            assertTrue(config.pausable, "releaseManager should be pausable");
+            assertFalse(config.deprecated, "releaseManager should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(RewardsCoordinator).name);
+            assertTrue(addr == address(Env.proxy.rewardsCoordinator()), "rewardsCoordinator address incorrect");
+            assertTrue(config.pausable, "rewardsCoordinator should be pausable");
+            assertFalse(config.deprecated, "rewardsCoordinator should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(StrategyManager).name);
+            assertTrue(addr == address(Env.proxy.strategyManager()), "strategyManager address incorrect");
+            assertTrue(config.pausable, "strategyManager should be pausable");
+            assertFalse(config.deprecated, "strategyManager should not be deprecated");
+        }
+
+        {
+            /**
+             * pods/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(EigenPodManager).name);
+            assertTrue(addr == address(Env.proxy.eigenPodManager()), "eigenPodManager address incorrect");
+            assertTrue(config.pausable, "eigenPodManager should be pausable");
+            assertFalse(config.deprecated, "eigenPodManager should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(EigenPod).name);
+            assertTrue(addr == address(Env.beacon.eigenPod()), "eigenPod address incorrect");
+            assertFalse(config.pausable, "eigenPod should not be pausable");
+            assertFalse(config.deprecated, "eigenPod should not be deprecated");
+        }
+
+        {
+            /**
+             * strategies/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(EigenStrategy).name);
+            assertTrue(addr == address(Env.proxy.eigenStrategy()), "eigenStrategy address incorrect");
+            assertTrue(config.pausable, "eigenStrategy should be pausable");
+            assertFalse(config.deprecated, "eigenStrategy should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(StrategyBase).name);
+            assertTrue(addr == address(Env.beacon.strategyBase()), "strategyBase address incorrect");
+            assertFalse(config.pausable, "strategyBase should not be pausable");
+            assertFalse(config.deprecated, "strategyBase should not be deprecated");
+
+            uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+            string memory baseName = type(StrategyBaseTVLLimits).name;
+            for (uint256 i = 0; i < count; i++) {
+                (addr, config) =
+                    Env.proxy.protocolRegistry().getDeployment(string.concat(baseName, "_", Strings.toString(i)));
+                assertTrue(
+                    addr == address(Env.instance.strategyBaseTVLLimits(i)), "strategyBaseTVLLimits address incorrect"
+                );
+                assertTrue(config.pausable, "strategyBaseTVLLimits should be pausable");
+                assertFalse(config.deprecated, "strategyBaseTVLLimits should not be deprecated");
+            }
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(StrategyFactory).name);
+            assertTrue(addr == address(Env.proxy.strategyFactory()), "strategyFactory address incorrect");
+            assertTrue(config.pausable, "strategyFactory should be pausable");
+            assertFalse(config.deprecated, "strategyFactory should not be deprecated");
+        }
+
+        {
+            /**
+             * multichain/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BN254CertificateVerifier).name);
+            assertTrue(
+                addr == address(Env.proxy.bn254CertificateVerifier()), "bn254CertificateVerifier address incorrect"
+            );
+            assertFalse(config.pausable, "bn254CertificateVerifier should not be pausable");
+            assertFalse(config.deprecated, "bn254CertificateVerifier should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(CrossChainRegistry).name);
+            assertTrue(addr == address(Env.proxy.crossChainRegistry()), "crossChainRegistry address incorrect");
+            assertTrue(config.pausable, "crossChainRegistry should be pausable");
+            assertFalse(config.deprecated, "crossChainRegistry should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ECDSACertificateVerifier).name);
+            assertTrue(
+                addr == address(Env.proxy.ecdsaCertificateVerifier()), "ecdsaCertificateVerifier address incorrect"
+            );
+            assertFalse(config.pausable, "ecdsaCertificateVerifier should not be pausable");
+            assertFalse(config.deprecated, "ecdsaCertificateVerifier should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(OperatorTableUpdater).name);
+            assertTrue(addr == address(Env.proxy.operatorTableUpdater()), "operatorTableUpdater address incorrect");
+            assertTrue(config.pausable, "operatorTableUpdater should not be pausable");
+            assertFalse(config.deprecated, "operatorTableUpdater should not be deprecated");
+        }
+
+        {
+            /**
+             * avs/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(TaskMailbox).name);
+            assertTrue(addr == address(Env.proxy.taskMailbox()), "taskMailbox address incorrect");
+            assertTrue(config.pausable, "taskMailbox should be pausable");
+            assertFalse(config.deprecated, "taskMailbox should not be deprecated");
+        }
+
+        {
+            /**
+             * token/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BackingEigen).name);
+            assertTrue(addr == address(Env.proxy.beigen()), "bEIGEN address incorrect");
+            assertFalse(config.pausable, "bEIGEN should not be pausable");
+            assertFalse(config.deprecated, "bEIGEN should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(Eigen).name);
+            assertTrue(addr == address(Env.proxy.eigen()), "eigenToken address incorrect");
+            assertFalse(config.pausable, "eigenToken should not be pausable");
+            assertFalse(config.deprecated, "eigenToken should not be deprecated");
+        }
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`

@@ -98,12 +98,12 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[0] = unpausableConfig;
         names[0] = type(PauserRegistry).name;
 
-        addresses[1] = address(Env.impl.permissionController());
-        configs[1] = pausableConfig;
+        addresses[1] = address(Env.proxy.permissionController());
+        configs[1] = unpausableConfig;
         names[1] = type(PermissionController).name;
 
-        addresses[2] = address(Env.impl.keyRegistrar());
-        configs[2] = unpausableConfig;
+        addresses[2] = address(Env.proxy.keyRegistrar());
+        configs[2] = pausableConfig;
         names[2] = type(KeyRegistrar).name;
 
         /**
@@ -121,8 +121,8 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[5] = pausableConfig;
         names[5] = type(DelegationManager).name;
 
-        addresses[6] = address(Env.impl.protocolRegistry());
-        configs[6] = pausableConfig;
+        addresses[6] = address(Env.proxy.protocolRegistry());
+        configs[6] = unpausableConfig;
         names[6] = type(ProtocolRegistry).name;
 
         addresses[7] = address(Env.proxy.releaseManager());

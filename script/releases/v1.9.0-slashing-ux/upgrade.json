@@ -24,6 +24,10 @@
             "filename": "5-queueUpgrade.s.sol"
         },
         {
+            "type": "multisig",
+            "filename": "6-completeUpgrade.s.sol"
+        },
+        {
             "type": "script",
             "filename": "7-script/start.sh",
             "arguments": [
