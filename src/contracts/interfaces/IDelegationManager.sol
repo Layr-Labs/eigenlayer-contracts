@@ -447,11 +447,12 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
 
     /**
      * @notice Returns amount of withdrawable shares from an operator for a strategy that is still in the queue
-     * and therefore slashable. Note that the *actual* slashable amount could be less than this value as this doesn't account
-     * for amounts that have already been slashed. This assumes that none of the shares have been slashed.
+     * and therefore slashable.
      * @param operator the operator to get shares for
      * @param strategy the strategy to get shares for
      * @return the amount of shares that are slashable in the withdrawal queue for an operator and a strategy
+     * @dev If multiple slashes occur to shares in the queue, the function properly accounts for the fewer
+     *      number of shares that are available to be slashed.
      */
     function getSlashableSharesInQueue(address operator, IStrategy strategy) external view returns (uint256);
 
