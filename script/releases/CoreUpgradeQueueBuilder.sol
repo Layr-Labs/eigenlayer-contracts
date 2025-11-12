@@ -4,7 +4,6 @@ pragma solidity ^0.8.12;
 import "./Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import {IPausable} from "src/contracts/interfaces/IPausable.sol";
-import {console} from "forge-std/console.sol";
 
 /**
  * @title CoreUpgradeQueueBuilder
@@ -26,7 +25,6 @@ library CoreUpgradeQueueBuilder {
     function upgradePermissionController(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
-        console.log("Upgrading permission controller");
         return calls.append({
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin.upgrade({
