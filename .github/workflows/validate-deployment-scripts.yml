@@ -91,6 +91,8 @@ jobs:
             RPC_URL="${{ secrets.RPC_MAINNET }}"
           elif [ "${{ matrix.env }}" = "base" ]; then
             RPC_URL="${{ secrets.RPC_BASE }}"
+          elif [ "${{ matrix.env }}" = "preprod-hoodi" ]; then
+            RPC_URL="${{ secrets.RPC_HOODI }}"
           fi
           
           # Run zeus test on each file with the specified environment and RPC URL
