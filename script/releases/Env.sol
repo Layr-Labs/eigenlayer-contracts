@@ -601,4 +601,66 @@ library Env {
     ) private view returns (string memory) {
         return vm.envString(key);
     }
+
+    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+    }
+
+    /**
+     *
+     * Environment Type Helpers
+     *
+     */
+
+    /// Types that help facilitate network type differentation
+    /// @dev Mimics the deployment matrix in: https://github.com/Layr-Labs/eigenlayer-contracts?tab=readme-ov-file#deployments
+    function isCoreProtocolDeployed() internal view returns (bool) {
+        return _isMainnet() || _isSepolia() || _isHoodi() || _isPreprod();
+    }
+
+    function supportsEigenPods() internal view returns (bool) {
+        return _isMainnet() || _isHoodi() || _isPreprod();
+    }
+
+    function isSource() internal view returns (bool) {
+        return _isMainnet() || _isSepolia() || _isPreprod();
+    }
+
+    function isDestination() internal view returns (bool) {
+        return _isMainnet() || _isBase() || _isSepolia() || _isBaseSepolia() || _isPreprod();
+    }
+
+    /// @dev Whether the environment is a testnet environment
+    function _isTestnetEnvironment() internal view returns (bool) {
+        return _isSepolia() || _isBaseSepolia() || _isHoodi() || _isPreprod();
+    }
+
+    /// @dev Whether the environment is a production environment with real funds
+    function _isProductionEnvironment() internal view returns (bool) {
+        return _isMainnet() || _isBase();
+    }
+
+    function _isMainnet() private view returns (bool) {
+        return _strEq(env(), "mainnet");
+    }
+
+    function _isBase() private view returns (bool) {
+        return _strEq(env(), "base");
+    }
+
+    function _isSepolia() private view returns (bool) {
+        return _strEq(env(), "testnet-sepolia");
+    }
+
+    function _isBaseSepolia() private view returns (bool) {
+        return _strEq(env(), "testnet-base-sepolia");
+    }
+
+    function _isHoodi() private view returns (bool) {
+        return _strEq(env(), "testnet-hoodi");
+    }
+
+    function _isPreprod() private view returns (bool) {
+        return _strEq(env(), "preprod-hoodi");
+    }
 }

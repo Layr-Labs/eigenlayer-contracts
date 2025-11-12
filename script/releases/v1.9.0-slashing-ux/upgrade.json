@@ -1,5 +1,5 @@
 {
-    "name": "hourglass-testnet-replay-fix-v1.8.1",
+    "name": "slashing-ux-improvements",
     "from": ">=1.8.0",
     "to": "1.9.0",
     "phases": [

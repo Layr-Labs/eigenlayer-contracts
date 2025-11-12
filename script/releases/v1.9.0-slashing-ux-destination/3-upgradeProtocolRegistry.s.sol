@@ -27,6 +27,9 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     }
 
     function testScript() public virtual override {
+        if (Env.isCoreProtocolDeployed()) {
+            return;
+        }
         // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {

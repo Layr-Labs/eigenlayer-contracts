@@ -7,14 +7,14 @@ import "src/contracts/mixins/SplitContractMixin.sol";
 
 /// @notice Utility library for testing contract deployments
 /// @dev This library exposes the following test functions:
-/// @dev - validateProxyAdmins - Check that proxy admins are correctly set.
-/// @dev - validateProxyConstructors - Check that proxy constructors are correctly set.
-/// @dev - validateProxiesAlreadyInitialized - Check that proxies are already initialized.
-/// @dev - validateProxyStorage - Check that proxy storage is correctly set.
-/// @dev - validateImplConstructors - Check that implementation constructors are correctly set.
-/// @dev - validateImplsNotInitializable - Check that implementation cannot be initialized.
-/// @dev - validateImplAddressesMatchProxy - Check that implementation addresses match the proxy admin's reported implementation address.
-/// @dev - validateProtocolRegistry - Check that the protocol version is correctly set.
+/// @dev - validateProxyAdmins/validateDestinationProxyAdmins - Check that proxy admins are correctly set.
+/// @dev - validateProxyConstructors/validateDestinationProxyConstructors - Check that proxy constructors are correctly set.
+/// @dev - validateProxiesAlreadyInitialized/validateDestinationProxiesAlreadyInitialized - Check that proxies are already initialized.
+/// @dev - validateProxyStorage/validateDestinationProxyStorage - Check that proxy storage is correctly set.
+/// @dev - validateImplConstructors/validateDestinationImplConstructors - Check that implementation constructors are correctly set.
+/// @dev - validateImplsNotInitializable/validateDestinationImplsNotInitializable - Check that implementation cannot be initialized.
+/// @dev - validateImplAddressesMatchProxy/validateDestinationImplAddressesMatchProxy - Check that implementation addresses match the proxy admin's reported implementation address.
+/// @dev - validateProtocolRegistry/validateDestinationProtocolRegistry - Check that the protocol version is correctly set.
 library TestUtils {
     using Env for *;
 
@@ -49,7 +49,7 @@ library TestUtils {
         assertTrue(
             _getProxyAdmin(address(Env.proxy.delegationManager())) == pa, "delegationManager proxyAdmin incorrect"
         );
-        assertTrue(_getProxyAdmin(address(Env.proxy.protocolRegistry())) == pa, "protocolRegistry proxyAdmin incorrect");
+        // Protocol registry tested in the `validateDestinationProxyAdmins` function
         assertTrue(_getProxyAdmin(address(Env.proxy.releaseManager())) == pa, "releaseManager proxyAdmin incorrect");
         assertTrue(
             _getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa, "rewardsCoordinator proxyAdmin incorrect"
@@ -77,6 +77,15 @@ library TestUtils {
         }
 
         assertTrue(_getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect");
+        validateDestinationProxyAdmins();
+    }
+
+    function validateDestinationProxyAdmins() internal view {
+        address pa = Env.proxyAdmin();
+        /**
+         * core/
+         */
+        assertTrue(_getProxyAdmin(address(Env.proxy.protocolRegistry())) == pa, "protocolRegistry proxyAdmin incorrect");
 
         /**
          * multichain/
@@ -144,6 +153,10 @@ library TestUtils {
         }
         validateStrategyFactoryImmutables(Env.proxy.strategyFactory());
 
+        validateDestinationProxyConstructors();
+    }
+
+    function validateDestinationProxyConstructors() internal view {
         /**
          * multichain/
          */
@@ -171,7 +184,7 @@ library TestUtils {
         validateAllocationManagerInitialized(Env.proxy.allocationManager());
         validateAVSDirectoryInitialized(Env.proxy.avsDirectory());
         validateDelegationManagerInitialized(Env.proxy.delegationManager());
-        validateProtocolRegistryInitialized(Env.proxy.protocolRegistry());
+        // Protocol registry tested in the `validateDestinationProxiesAlreadyInitialized` function
         // ReleaseManager is initializable, but does not expose the `initialize` function.
         validateRewardsCoordinatorInitialized(Env.proxy.rewardsCoordinator());
         validateStrategyManagerInitialized(Env.proxy.strategyManager());
@@ -193,6 +206,15 @@ library TestUtils {
         }
         validateStrategyFactoryInitialized(Env.proxy.strategyFactory());
 
+        validateDestinationProxiesAlreadyInitialized();
+    }
+
+    function validateDestinationProxiesAlreadyInitialized() internal {
+        /**
+         * core/
+         */
+        validateProtocolRegistryInitialized(Env.proxy.protocolRegistry());
+
         /**
          * multichain/
          */
@@ -212,13 +234,7 @@ library TestUtils {
              * permissions/
              */
 
-            // exception: PauserRegistry doesn't have a proxy!
-            PauserRegistry registry = Env.impl.pauserRegistry();
-            assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
-            assertTrue(registry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
-            assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
-            assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
-
+            // PauserRegistry is also deployed on destination chain and tested in the `validateDestinationProxyStorage` function
             // PermissionController and KeyRegistrar have no initial storage
         }
 
@@ -236,15 +252,7 @@ library TestUtils {
             DelegationManager delegation = Env.proxy.delegationManager();
             assertTrue(delegation.paused() == 0, "dm.paused invalid");
 
-            ProtocolRegistry protocolRegistry = Env.proxy.protocolRegistry();
-            assertTrue(
-                protocolRegistry.hasRole(protocolRegistry.PAUSER_ROLE(), Env.pauserMultisig()),
-                "pr.pauserMultisig invalid"
-            );
-            assertTrue(
-                protocolRegistry.hasRole(protocolRegistry.DEFAULT_ADMIN_ROLE(), Env.executorMultisig()),
-                "pr.defaultAdmin invalid"
-            );
+            // Protocol registry tested in the `validateDestinationProxyStorage` function
 
             // ReleaseManager has no initial storage
 
@@ -301,6 +309,37 @@ library TestUtils {
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
 
+        validateDestinationProxyStorage();
+    }
+
+    function validateDestinationProxyStorage() internal view {
+        {
+            /**
+             * permissions/
+             */
+            // PauserRegistry is also deployed on destination chain
+            PauserRegistry registry = Env.impl.pauserRegistry();
+            assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
+            assertTrue(registry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
+            assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
+            assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
+        }
+
+        {
+            /**
+             * core/
+             */
+            ProtocolRegistry protocolRegistry = Env.proxy.protocolRegistry();
+            assertTrue(
+                protocolRegistry.hasRole(protocolRegistry.PAUSER_ROLE(), Env.pauserMultisig()),
+                "pr.pauserMultisig invalid"
+            );
+            assertTrue(
+                protocolRegistry.hasRole(protocolRegistry.DEFAULT_ADMIN_ROLE(), Env.executorMultisig()),
+                "pr.defaultAdmin invalid"
+            );
+        }
+
         {
             /**
              * multichain/
@@ -313,6 +352,16 @@ library TestUtils {
                 "crossChainRegistry table update cadence invalid"
             );
             assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
+        }
+
+        {
+            /**
+             * avs/
+             */
+            TaskMailbox taskMailbox = Env.proxy.taskMailbox();
+            assertTrue(taskMailbox.owner() == Env.opsMultisig(), "taskMailbox owner invalid");
+            assertTrue(taskMailbox.feeSplit() == 0, "taskMailbox feeSplit invalid");
+            assertTrue(taskMailbox.feeSplitCollector() == Env.opsMultisig(), "taskMailbox feeSplitCollector invalid");
         }
     }
 
@@ -356,6 +405,10 @@ library TestUtils {
         validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryImmutables(Env.impl.strategyFactory());
 
+        validateDestinationImplConstructors();
+    }
+
+    function validateDestinationImplConstructors() internal view {
         /**
          * multichain/
          */
@@ -385,7 +438,7 @@ library TestUtils {
         validateAllocationManagerInitialized(Env.impl.allocationManager());
         validateAVSDirectoryInitialized(Env.impl.avsDirectory());
         validateDelegationManagerInitialized(Env.impl.delegationManager());
-        validateProtocolRegistryInitialized(Env.impl.protocolRegistry());
+        // Protocol registry tested in the `validateDestinationImplsNotInitializable` function
         // ReleaseManager is initializable, but does not expose the `initialize` function.
         validateRewardsCoordinatorInitialized(Env.impl.rewardsCoordinator());
         validateStrategyManagerInitialized(Env.impl.strategyManager());
@@ -403,6 +456,15 @@ library TestUtils {
         // StrategyBase implementations are initialized when deployed by factory
         validateStrategyBaseTVLLimitsInitialized(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryInitialized(Env.impl.strategyFactory());
+
+        validateDestinationImplsNotInitializable();
+    }
+
+    function validateDestinationImplsNotInitializable() internal {
+        /**
+         * core/
+         */
+        validateProtocolRegistryInitialized(Env.impl.protocolRegistry());
 
         /**
          * multichain/
@@ -448,10 +510,7 @@ library TestUtils {
             _getProxyImpl(address(Env.proxy.delegationManager())) == address(Env.impl.delegationManager()),
             "delegationManager impl address mismatch"
         );
-        assertTrue(
-            _getProxyImpl(address(Env.proxy.protocolRegistry())) == address(Env.impl.protocolRegistry()),
-            "protocolRegistry impl address mismatch"
-        );
+        // Protocol registry tested in the `validateDestinationImplAddressesMatchProxy` function
         assertTrue(
             _getProxyImpl(address(Env.proxy.releaseManager())) == address(Env.impl.releaseManager()),
             "releaseManager impl address mismatch"
@@ -498,6 +557,18 @@ library TestUtils {
         assertTrue(
             _getProxyImpl(address(Env.proxy.strategyFactory())) == address(Env.impl.strategyFactory()),
             "strategyFactory impl address mismatch"
+        );
+
+        validateDestinationImplAddressesMatchProxy();
+    }
+
+    function validateDestinationImplAddressesMatchProxy() internal view {
+        /**
+         * core/
+         */
+        assertTrue(
+            _getProxyImpl(address(Env.proxy.protocolRegistry())) == address(Env.impl.protocolRegistry()),
+            "protocolRegistry impl address mismatch"
         );
 
         /**
@@ -1030,12 +1101,9 @@ library TestUtils {
     /// @notice Validate the protocol registry by checking the version and all contracts
     /// @dev This should be called *after* an upgrade has been completed
     function validateProtocolRegistry() internal view {
-        /// First, check the version of the registry
-        assertTrue(
-            _strEq(Env.proxy.protocolRegistry().version(), Env.deployVersion()), "protocol registry version incorrect"
-        );
+        // Version is checked in the `validateDestinationProtocolRegistry` function
 
-        // Then, check the deployments
+        // Check the deployments
         address addr;
         IProtocolRegistryTypes.DeploymentConfig memory config;
         {
@@ -1051,11 +1119,6 @@ library TestUtils {
             assertTrue(addr == address(Env.proxy.permissionController()), "permissionController address incorrect");
             assertFalse(config.pausable, "permissionController should not be pausable");
             assertFalse(config.deprecated, "permissionController should not be deprecated");
-
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PauserRegistry).name);
-            assertTrue(addr == address(Env.impl.pauserRegistry()), "pauserRegistry address incorrect");
-            assertFalse(config.pausable, "pauserRegistry should not be pausable");
-            assertFalse(config.deprecated, "pauserRegistry should not be deprecated");
         }
 
         {
@@ -1077,10 +1140,7 @@ library TestUtils {
             assertTrue(config.pausable, "delegationManager should be pausable");
             assertFalse(config.deprecated, "delegationManager should not be deprecated");
 
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ProtocolRegistry).name);
-            assertTrue(addr == address(Env.proxy.protocolRegistry()), "protocolRegistry address incorrect");
-            assertFalse(config.pausable, "protocolRegistry should not be pausable");
-            assertFalse(config.deprecated, "protocolRegistry should not be deprecated");
+            // Protocol registry tested in the `validateDestinationProtocolRegistry` function
 
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ReleaseManager).name);
             assertTrue(addr == address(Env.proxy.releaseManager()), "releaseManager address incorrect");
@@ -1147,6 +1207,54 @@ library TestUtils {
 
         {
             /**
+             * token/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BackingEigen).name);
+            assertTrue(addr == address(Env.proxy.beigen()), "bEIGEN address incorrect");
+            assertFalse(config.pausable, "bEIGEN should not be pausable");
+            assertFalse(config.deprecated, "bEIGEN should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(Eigen).name);
+            assertTrue(addr == address(Env.proxy.eigen()), "eigenToken address incorrect");
+            assertFalse(config.pausable, "eigenToken should not be pausable");
+            assertFalse(config.deprecated, "eigenToken should not be deprecated");
+        }
+
+        validateDestinationProtocolRegistry();
+    }
+
+    function validateDestinationProtocolRegistry() internal view {
+        /// First, check the version of the registry
+        assertTrue(
+            _strEq(Env.proxy.protocolRegistry().version(), Env.deployVersion()), "protocol registry version incorrect"
+        );
+
+        // Then, check the deployments
+        address addr;
+        IProtocolRegistryTypes.DeploymentConfig memory config;
+
+        {
+            /**
+             * permissions/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PauserRegistry).name);
+            assertTrue(addr == address(Env.impl.pauserRegistry()), "pauserRegistry address incorrect");
+            assertFalse(config.pausable, "pauserRegistry should not be pausable");
+            assertFalse(config.deprecated, "pauserRegistry should not be deprecated");
+        }
+
+        {
+            /**
+             * core/
+             */
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ProtocolRegistry).name);
+            assertTrue(addr == address(Env.proxy.protocolRegistry()), "protocolRegistry address incorrect");
+            assertFalse(config.pausable, "protocolRegistry should not be pausable");
+            assertFalse(config.deprecated, "protocolRegistry should not be deprecated");
+        }
+
+        {
+            /**
              * multichain/
              */
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BN254CertificateVerifier).name);
@@ -1182,21 +1290,6 @@ library TestUtils {
             assertTrue(addr == address(Env.proxy.taskMailbox()), "taskMailbox address incorrect");
             assertTrue(config.pausable, "taskMailbox should be pausable");
             assertFalse(config.deprecated, "taskMailbox should not be deprecated");
-        }
-
-        {
-            /**
-             * token/
-             */
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BackingEigen).name);
-            assertTrue(addr == address(Env.proxy.beigen()), "bEIGEN address incorrect");
-            assertFalse(config.pausable, "bEIGEN should not be pausable");
-            assertFalse(config.deprecated, "bEIGEN should not be deprecated");
-
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(Eigen).name);
-            assertTrue(addr == address(Env.proxy.eigen()), "eigenToken address incorrect");
-            assertFalse(config.pausable, "eigenToken should not be pausable");
-            assertFalse(config.deprecated, "eigenToken should not be deprecated");
         }
     }
 
