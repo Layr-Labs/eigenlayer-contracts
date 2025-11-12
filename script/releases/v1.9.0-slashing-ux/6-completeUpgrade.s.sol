@@ -61,11 +61,11 @@ contract ExecuteUpgrade is QueueUpgrade {
         execute();
 
         // Run Tests
-        // TestUtils.validateProxyAdmins();
-        // TestUtils.validateProxyConstructors();
-        // TestUtils.validateProxiesAlreadyInitialized();
-        // TestUtils.validateProxyStorage();
-        // TestUtils.validateImplAddressesMatchProxy();
+        TestUtils.validateProxyAdmins();
+        TestUtils.validateProxyConstructors();
+        TestUtils.validateProxiesAlreadyInitialized();
+        TestUtils.validateProxyStorage();
+        TestUtils.validateImplAddressesMatchProxy();
         TestUtils.validateProtocolRegistry();
     }
 }
