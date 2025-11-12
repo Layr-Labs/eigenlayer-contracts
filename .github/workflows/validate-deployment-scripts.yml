@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        env: [mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base]
+        env: [mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base, preprod-hoodi]
 
     steps:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
