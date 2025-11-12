@@ -97,6 +97,9 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function testScript() public virtual override {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
         // Deploy protocol registry and initialize it
         _completeProtocolRegistryUpgrade();
 

@@ -23,6 +23,9 @@ contract DeployProtocolRegistryImpl is DeployProtocolRegistryProxy, CoreContract
     }
 
     function testScript() public virtual override {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
         // 1. Deploy Protocol Registry Proxy
         // Only deploy the proxies if they haven't been deployed yet
         /// @dev This is needed in the production environment tests since this step would fail if the proxies are already deployed

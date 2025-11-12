@@ -228,6 +228,9 @@ contract QueueUpgrade is DeployCoreContracts {
     }
 
     function testScript() public virtual override {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
         // Complete previous steps
         _completeProtocolRegistryUpgrade();
 

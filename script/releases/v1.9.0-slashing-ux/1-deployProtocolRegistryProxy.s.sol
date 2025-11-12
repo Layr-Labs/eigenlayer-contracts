@@ -33,6 +33,9 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     function testScript() public virtual {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
         execute();
 
         _validateProxyAdminIsMultisig();
