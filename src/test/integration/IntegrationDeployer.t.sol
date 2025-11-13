@@ -411,10 +411,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             ITransparentUpgradeableProxy(payable(address(allocationManager))), address(allocationManagerImplementation)
         );
 
-        // AllocationManagerView is not a proxy, so no upgrade needed
-
-        // AllocationManagerView is not a proxy, so no upgrade needed
-
         // PermissionController
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
@@ -441,6 +437,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Key Registrar
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation));
+
+        // PermissionController
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
+        );
     }
 
     function _initializeProxies() public noTracing {
