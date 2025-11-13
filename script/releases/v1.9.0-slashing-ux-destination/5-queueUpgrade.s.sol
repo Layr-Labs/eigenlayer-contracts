@@ -45,6 +45,12 @@ contract QueueUpgrade is DeployCoreContracts {
         // Add the protocol registry upgrade to the executor calls
         _appendProtocolRegistryUpgrade(executorCalls);
 
+        // Add the pauser registry upgrade to the executor calls
+        executorCalls.append({
+            to: address(Env.impl.pauserRegistry()),
+            data: abi.encodeWithSelector(PauserRegistry.setIsPauser.selector, address(Env.proxy.protocolRegistry()), true)
+        });
+
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
             to: Env.multiSendCallOnly(),
