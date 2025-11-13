@@ -334,7 +334,12 @@ library TestUtils {
                 crossChainRegistry.getTableUpdateCadence() == Env.TABLE_UPDATE_CADENCE(),
                 "crossChainRegistry table update cadence invalid"
             );
-            assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
+            if (Env.isSource()) {
+                assertTrue(crossChainRegistry.paused() == 0, "crossChainRegistry paused invalid");
+            } else {
+                // For hoodi, the paused status is 31 (all flags set)
+                assertTrue(crossChainRegistry.paused() == 31, "crossChainRegistry paused invalid");
+            }
         }
 
         validateDestinationProxyStorage();
