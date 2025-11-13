@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 abstract contract SplitContractMixin {
     /// @notice The address of the second half of the contract.
-    address internal immutable viewImplementation;
+    address public immutable viewImplementation;
 
     constructor(
         address _viewImplementation

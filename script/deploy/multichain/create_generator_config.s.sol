@@ -19,7 +19,7 @@ contract CreateGeneratorConfig is Script, Test {
     function run(string memory network, uint256 xCoord, uint256 yCoord) public {
         // Network must be preprod, testnet-sepolia, or mainnet
         require(
-            _strEq(network, "preprod") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
+            _strEq(network, "preprod-hoodi") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
             "Invalid network"
         );
 
