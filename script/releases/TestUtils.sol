@@ -292,7 +292,9 @@ library TestUtils {
 
             EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
             assertTrue(eigenPodManager.owner() == Env.executorMultisig(), "epm.owner invalid");
-            assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+            if (Env.supportsEigenPods()) {
+                assertTrue(eigenPodManager.paused() == 0, "epm.paused invalid");
+            }
         }
 
         {
