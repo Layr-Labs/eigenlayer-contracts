@@ -221,9 +221,10 @@ contract QueueUpgrade is DeployCoreContracts {
         }
 
         // Lastly, append to the multisig calls
+        string memory version = "1.9.0";
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
+            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, version)
         });
     }
 
