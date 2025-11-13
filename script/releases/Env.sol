@@ -606,6 +606,17 @@ library Env {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
+    /// @dev Use this function to get the proxy admin when it is not `Env.proxyAdmin()`
+    /// @dev `_getProxyAdmin` expects the caller to be the actual proxy admin
+    function getProxyAdminBySlot(
+        address _proxy
+    ) internal view returns (address) {
+        // https://eips.ethereum.org/EIPS/eip-1967
+        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
+        return admin;
+    }
+
     /**
      *
      * Environment Type Helpers

@@ -48,7 +48,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
         address multisig = Env.multichainDeployerMultisig();
 
         assertTrue(
-            _getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == multisig,
+            Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == multisig,
             "protocolRegistry proxyAdmin should be multisig"
         );
     }
@@ -67,10 +67,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
             _computeExpectedProxyAddress(type(ProtocolRegistry).name, address(Env.impl.emptyContract()));
 
         // If the empty contract is deployed, then the proxies are deployed
-        if (expectedProtocolRegistry.code.length > 0) {
-            return true;
-        }
-        return false;
+        return expectedProtocolRegistry.code.length > 0;
     }
 
     /// @dev Add the contracts to the env
@@ -87,14 +84,5 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
             implementation: emptyContract,
             name: name
         });
-    }
-
-    /// @dev We have to use the slot directly since _getProxyAdmin expects the caller to be the actual proxy admin
-    function _getProxyAdminBySlot(
-        address _proxy
-    ) internal view returns (address) {
-        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
-        return admin;
     }
 }

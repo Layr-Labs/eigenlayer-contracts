@@ -215,7 +215,8 @@ contract QueueUpgrade is DeployCoreContracts {
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         if (count > 0) {
             address[] memory strategyAddresses = new address[](count);
-            IProtocolRegistryTypes.DeploymentConfig[] memory strategyConfigs = new IProtocolRegistryTypes.DeploymentConfig[](count);
+            IProtocolRegistryTypes.DeploymentConfig[] memory strategyConfigs =
+                new IProtocolRegistryTypes.DeploymentConfig[](count);
             string[] memory strategyNames = new string[](count);
             for (uint256 i = 0; i < count; i++) {
                 strategyAddresses[i] = address(Env.instance.strategyBaseTVLLimits(i));
@@ -225,7 +226,9 @@ contract QueueUpgrade is DeployCoreContracts {
 
             calls.append({
                 to: address(Env.proxy.protocolRegistry()),
-                data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, strategyAddresses, strategyConfigs, strategyNames, Env.deployVersion())
+                data: abi.encodeWithSelector(
+                    IProtocolRegistry.ship.selector, strategyAddresses, strategyConfigs, strategyNames, Env.deployVersion()
+                )
             });
         }
     }
