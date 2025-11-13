@@ -29,6 +29,9 @@ contract QueueUpgrade is DeployCoreContracts {
             salt: 0,
             delay: timelock.getMinDelay()
         });
+
+        // Add the protocol registry as a pauser to the pauser registry
+        Env.impl.pauserRegistry().setIsPauser(address(Env.proxy.protocolRegistry()), true);
     }
 
     function _getCalldataToExecutor() internal returns (bytes memory) {
@@ -44,12 +47,6 @@ contract QueueUpgrade is DeployCoreContracts {
 
         // Add the protocol registry upgrade to the executor calls
         _appendProtocolRegistryUpgrade(executorCalls);
-
-        // Add the pauser registry upgrade to the executor calls
-        executorCalls.append({
-            to: address(Env.impl.pauserRegistry()),
-            data: abi.encodeWithSelector(PauserRegistry.setIsPauser.selector, address(Env.proxy.protocolRegistry()), true)
-        });
 
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
@@ -105,7 +102,7 @@ contract QueueUpgrade is DeployCoreContracts {
          * avs/
          */
         addresses[5] = address(Env.proxy.taskMailbox());
-        configs[5] = pausableConfig;
+        configs[5] = unpausableConfig;
         names[5] = type(TaskMailbox).name;
 
         // Lastly, append to the multisig calls
