@@ -349,6 +349,7 @@ library TestUtils {
             PauserRegistry registry = Env.impl.pauserRegistry();
             assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
             assertTrue(registry.isPauser(Env.opsMultisig()), "ops multisig should be pauser");
+            assertTrue(registry.isPauser(address(Env.proxy.protocolRegistry())), "protocol registry should be pauser");
             if (Env.isCoreProtocolDeployed()) {
                 assertTrue(registry.isPauser(Env.executorMultisig()), "executor multisig should be pauser");
                 assertTrue(registry.unpauser() == Env.executorMultisig(), "executor multisig should be unpauser");
@@ -1143,7 +1144,7 @@ library TestUtils {
 
     /// @notice Validate the protocol registry by checking the version and all contracts
     /// @dev This should be called *after* an upgrade has been completed
-    function validateProtocolRegistry() internal view {
+    function validateProtocolRegistry() internal {
         // Version is checked in the `validateDestinationProtocolRegistry` function
 
         // Check the deployments
@@ -1155,7 +1156,7 @@ library TestUtils {
              */
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(KeyRegistrar).name);
             assertTrue(addr == address(Env.proxy.keyRegistrar()), "keyRegistrar address incorrect");
-            assertTrue(config.pausable, "keyRegistrar should be pausable");
+            assertFalse(config.pausable, "keyRegistrar should not be pausable");
             assertFalse(config.deprecated, "keyRegistrar should not be deprecated");
 
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PermissionController).name);
@@ -1187,7 +1188,7 @@ library TestUtils {
 
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ReleaseManager).name);
             assertTrue(addr == address(Env.proxy.releaseManager()), "releaseManager address incorrect");
-            assertTrue(config.pausable, "releaseManager should be pausable");
+            assertFalse(config.pausable, "releaseManager should not be pausable");
             assertFalse(config.deprecated, "releaseManager should not be deprecated");
 
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(RewardsCoordinator).name);
@@ -1276,7 +1277,7 @@ library TestUtils {
         validateDestinationProtocolRegistry();
     }
 
-    function validateDestinationProtocolRegistry() internal view {
+    function validateDestinationProtocolRegistry() internal {
         /// First, check the version of the registry
         assertTrue(
             _strEq(Env.proxy.protocolRegistry().version(), Env.deployVersion()), "protocol registry version incorrect"
@@ -1336,9 +1337,13 @@ library TestUtils {
              */
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(TaskMailbox).name);
             assertTrue(addr == address(Env.proxy.taskMailbox()), "taskMailbox address incorrect");
-            assertTrue(config.pausable, "taskMailbox should be pausable");
+            assertFalse(config.pausable, "taskMailbox should not be pausable");
             assertFalse(config.deprecated, "taskMailbox should not be deprecated");
         }
+
+        // Lastly, attempt to call pauseAll on the protocol registry
+        vm.prank(Env.pauserMultisig());
+        Env.proxy.protocolRegistry().pauseAll();
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`

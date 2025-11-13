@@ -176,7 +176,3 @@
 
 [rpc_endpoints]
     mainnet = "${RPC_MAINNET}"
-
-# Zeus configuration for CI
-[profile.zeus]
-    gas_limit = "18446744073709551615" # u64::MAX

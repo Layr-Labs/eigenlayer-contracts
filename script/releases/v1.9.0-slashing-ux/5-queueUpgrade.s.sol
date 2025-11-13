@@ -69,6 +69,12 @@ contract QueueUpgrade is DeployCoreContracts {
         // Add the protocol registry upgrade to the executor calls
         _appendProtocolRegistryUpgrade(executorCalls);
 
+        // Lastly, add the protocol registry as a pauser to the pauser registry
+        executorCalls.append({
+            to: address(Env.impl.pauserRegistry()),
+            data: abi.encodeWithSelector(PauserRegistry.setIsPauser.selector, address(Env.proxy.protocolRegistry()), true)
+        });
+
         return Encode.gnosisSafe.execTransaction({
             from: address(Env.timelockController()),
             to: Env.multiSendCallOnly(),
@@ -102,7 +108,7 @@ contract QueueUpgrade is DeployCoreContracts {
         names[1] = type(PermissionController).name;
 
         addresses[2] = address(Env.proxy.keyRegistrar());
-        configs[2] = pausableConfig;
+        configs[2] = unpausableConfig;
         names[2] = type(KeyRegistrar).name;
 
         /**
@@ -125,7 +131,7 @@ contract QueueUpgrade is DeployCoreContracts {
         names[6] = type(ProtocolRegistry).name;
 
         addresses[7] = address(Env.proxy.releaseManager());
-        configs[7] = pausableConfig;
+        configs[7] = unpausableConfig;
         names[7] = type(ReleaseManager).name;
 
         addresses[8] = address(Env.proxy.rewardsCoordinator());
@@ -185,7 +191,7 @@ contract QueueUpgrade is DeployCoreContracts {
          * avs/
          */
         addresses[19] = address(Env.proxy.taskMailbox());
-        configs[19] = pausableConfig;
+        configs[19] = unpausableConfig;
         names[19] = type(TaskMailbox).name;
 
         /**
@@ -199,33 +205,29 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[21] = unpausableConfig;
         names[21] = type(Eigen).name;
 
-        // Add all the StrategyBaseTVLLimits addresses to the protocol registry
-        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
-        if (count > 0) {
-            uint256 baseLength = addresses.length;
-            string memory baseName = type(StrategyBaseTVLLimits).name;
-            // Resize the arrays to fit the new addresses
-            uint256 newLength = baseLength + count;
-            assembly {
-                mstore(addresses, newLength)
-                mstore(configs, newLength)
-                mstore(names, newLength)
-            }
-            for (uint256 i = 0; i < count; i++) {
-                uint256 index = baseLength + i;
-                address strategy = address(Env.instance.strategyBaseTVLLimits(i));
-                addresses[index] = strategy;
-                configs[index] = pausableConfig;
-                names[index] = string.concat(baseName, "_", Strings.toString(i));
-            }
-        }
-
-        // Lastly, append to the multisig calls
-        string memory version = "1.9.0";
+        // Append to the multisig calls
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, version)
+            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
         });
+
+        // Now, if we have any strategy base TVLLimits, we need to add them to the protocol registry
+        uint256 count = Env.instance.strategyBaseTVLLimits_Count();
+        if (count > 0) {
+            address[] memory strategyAddresses = new address[](count);
+            IProtocolRegistryTypes.DeploymentConfig[] memory strategyConfigs = new IProtocolRegistryTypes.DeploymentConfig[](count);
+            string[] memory strategyNames = new string[](count);
+            for (uint256 i = 0; i < count; i++) {
+                strategyAddresses[i] = address(Env.instance.strategyBaseTVLLimits(i));
+                strategyConfigs[i] = pausableConfig;
+                strategyNames[i] = string.concat(type(StrategyBaseTVLLimits).name, "_", Strings.toString(i));
+            }
+
+            calls.append({
+                to: address(Env.proxy.protocolRegistry()),
+                data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, strategyAddresses, strategyConfigs, strategyNames, Env.deployVersion())
+            });
+        }
     }
 
     function testScript() public virtual override {
