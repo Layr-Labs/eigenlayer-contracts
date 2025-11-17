@@ -27,7 +27,10 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (
+            !Env.isCoreProtocolDeployed()
+                || Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()
+        ) {
             return;
         }
         // 1. Deploy the Protocol Registry Proxy
