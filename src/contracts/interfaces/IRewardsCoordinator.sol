@@ -349,6 +349,22 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         RewardsSubmission rewardsSubmission
     );
 
+    /**
+     * @notice Emitted when an AVS creates a valid `TotalStakeRewardsSubmission` for an operator set.
+     * @param caller The address calling `createTotalStakeRewardsSubmission`.
+     * @param rewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `rewardsSubmission`).
+     * @param operatorSet The operatorSet on behalf of which the rewards are being submitted.
+     * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
+     * @param rewardsSubmission The Rewards Submission. Contains the token, start timestamp, duration, strategies and multipliers.
+     */
+    event TotalStakeRewardsSubmissionCreated(
+        address indexed caller,
+        bytes32 indexed rewardsSubmissionHash,
+        OperatorSet operatorSet,
+        uint256 submissionNonce,
+        RewardsSubmission rewardsSubmission
+    );
+
     /// @notice rewardsUpdater is responsible for submitting DistributionRoots, only owner can set rewardsUpdater
     event RewardsUpdaterSet(address indexed oldRewardsUpdater, address indexed newRewardsUpdater);
 
@@ -533,7 +549,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
 
     /**
      * @notice Creates a new unique stake rewards submission for an operator set, to be split amongst the operators and
-     * set of stakers delegated to operators. The operators have to allocate unique slashable stake to the operator set to be rewarded.
+     * set of stakers delegated to operators. The operators have to both be registered and allocate unique slashable stake to the operator set to be rewarded.
      * @param operatorSet The operator set for which the rewards are being submitted
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the AVS that created the operator set
@@ -544,6 +560,23 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
      * @dev This function will revert if the `rewardsSubmissions` is malformed.
      */
     function createUniqueStakeRewardsSubmission(
+        OperatorSet calldata operatorSet,
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external;
+
+    /**
+     * @notice Creates a new total stake rewards submission for an operator set, to be split amongst the operators and
+     * set of stakers delegated to operators. The operators have to just be registered to the operator set to be rewarded.
+     * @param operatorSet The operator set for which the rewards are being submitted
+     * @param rewardsSubmissions The rewards submissions being created
+     * @dev Expected to be called by the AVS that created the operator set
+     * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+     * @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
+     * @dev The tokens are sent to the `RewardsCoordinator` contract
+     * @dev Strategies must be in ascending order of addresses to check for duplicates
+     * @dev This function will revert if the `rewardsSubmissions` is malformed.
+     */
+    function createTotalStakeRewardsSubmission(
         OperatorSet calldata operatorSet,
         RewardsSubmission[] calldata rewardsSubmissions
     ) external;

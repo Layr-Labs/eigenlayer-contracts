@@ -34,6 +34,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
     /// @dev Index for flag that pauses calling createOperatorSetRewardsSubmission
     uint8 internal constant PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION = 10;
+    /// @dev Index for flag that pauses calling createTotalStakeRewardsSubmission
+    uint8 internal constant PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION = 11;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -135,6 +137,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns whether a `hash` is a `valid` unique stake rewards submission hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isUniqueStakeRewardsSubmissionHash;
 
+    /// @notice Returns whether a `hash` is a `valid` total stake rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isTotalStakeRewardsSubmissionHash;
+
     // Construction
     constructor(
         IDelegationManager _delegationManager,
@@ -165,5 +170,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[34] private __gap;
+    uint256[33] private __gap;
 }
