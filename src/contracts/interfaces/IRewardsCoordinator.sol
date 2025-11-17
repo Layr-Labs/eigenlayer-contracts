@@ -334,14 +334,14 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     );
 
     /**
-     * @notice Emitted when an AVS creates a valid `OperatorSetRewardsSubmission` for an operator set.
-     * @param caller The address calling `createOperatorSetRewardsSubmission`.
+     * @notice Emitted when an AVS creates a valid `UniqueStakeRewardsSubmission` for an operator set.
+     * @param caller The address calling `createUniqueStakeRewardsSubmission`.
      * @param rewardsSubmissionHash Keccak256 hash of (`avs`, `submissionNonce` and `rewardsSubmission`).
      * @param operatorSet The operatorSet on behalf of which the rewards are being submitted.
      * @param submissionNonce Current nonce of the avs. Used to generate a unique submission hash.
      * @param rewardsSubmission The Rewards Submission. Contains the token, start timestamp, duration, strategies and multipliers.
      */
-    event OperatorSetRewardsSubmissionCreated(
+    event UniqueStakeRewardsSubmissionCreated(
         address indexed caller,
         bytes32 indexed rewardsSubmissionHash,
         OperatorSet operatorSet,
@@ -532,19 +532,18 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     ) external;
 
     /**
-     * @notice Creates a new rewards submission for an operator set, to be split amongst the operators and
-     * set of stakers delegated to operators. The operators have to allocate slashable stake to the operator set to be rewarded.
+     * @notice Creates a new unique stake rewards submission for an operator set, to be split amongst the operators and
+     * set of stakers delegated to operators. The operators have to allocate unique slashable stake to the operator set to be rewarded.
      * @param operatorSet The operator set for which the rewards are being submitted
      * @param rewardsSubmissions The rewards submissions being created
      * @dev Expected to be called by the AVS that created the operator set
      * @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
      * @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
      * @dev The tokens are sent to the `RewardsCoordinator` contract
-     * @dev The `RewardsCoordinator` contract needs a token approval of sum of all `strategies` in the `rewardsSubmissions`, before calling this function
      * @dev Strategies must be in ascending order of addresses to check for duplicates
      * @dev This function will revert if the `rewardsSubmissions` is malformed.
      */
-    function createOperatorSetRewardsSubmission(
+    function createUniqueStakeRewardsSubmission(
         OperatorSet calldata operatorSet,
         RewardsSubmission[] calldata rewardsSubmissions
     ) external;

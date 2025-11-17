@@ -204,10 +204,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function createOperatorSetRewardsSubmission(
+    function createUniqueStakeRewardsSubmission(
         OperatorSet calldata operatorSet,
         RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
             RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
@@ -216,10 +216,10 @@ contract RewardsCoordinator is
 
             _validateRewardsSubmission(rewardsSubmission);
 
-            isOperatorSetRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
+            isUniqueStakeRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
             submissionNonce[operatorSet.avs] = nonce + 1;
 
-            emit OperatorSetRewardsSubmissionCreated(
+            emit UniqueStakeRewardsSubmissionCreated(
                 msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);

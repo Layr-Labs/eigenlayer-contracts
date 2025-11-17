@@ -33,7 +33,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
     /// @dev Index for flag that pauses calling createOperatorSetRewardsSubmission
-    uint8 internal constant PAUSED_OPERATOR_SET_REWARDS_SUBMISSION = 10;
+    uint8 internal constant PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION = 10;
 
     /// @dev Salt for the earner leaf, meant to distinguish from tokenLeaf since they have the same sized data
     uint8 internal constant EARNER_LEAF_SALT = 0;
@@ -132,8 +132,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     mapping(address avs => mapping(bytes32 hash => bool valid)) public
         isOperatorDirectedOperatorSetRewardsSubmissionHash;
 
-    /// @notice Returns whether a `hash` is a `valid` operator set rewards submission hash for a given `avs`.
-    mapping(address avs => mapping(bytes32 hash => bool valid)) public isOperatorSetRewardsSubmissionHash;
+    /// @notice Returns whether a `hash` is a `valid` unique stake rewards submission hash for a given `avs`.
+    mapping(address avs => mapping(bytes32 hash => bool valid)) public isUniqueStakeRewardsSubmissionHash;
 
     // Construction
     constructor(
