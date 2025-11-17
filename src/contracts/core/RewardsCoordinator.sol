@@ -204,6 +204,29 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function createOperatorSetRewardsSubmission(
+        OperatorSet calldata operatorSet,
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_OPERATOR_SET_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
+        require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[operatorSet.avs];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
+
+            isOperatorSetRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
+            submissionNonce[operatorSet.avs] = nonce + 1;
+
+            emit OperatorSetRewardsSubmissionCreated(
+                msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission
+            );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+        }
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function processClaim(
         RewardsMerkleClaim calldata claim,
         address recipient
