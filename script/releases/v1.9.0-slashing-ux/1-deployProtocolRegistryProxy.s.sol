@@ -33,7 +33,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || address(Env.proxy.protocolRegistry()).code.length > 0) {
             return;
         }
         execute();
