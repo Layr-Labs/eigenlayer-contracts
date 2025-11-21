@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import "../Env.sol";
+import "../TestUtils.sol";
 import {QueueRewardsCoordinatorUpgrade} from "./2-queueRewardsCoordinatorUpgrade.s.sol";
 import {Encode} from "zeus-templates/utils/Encode.sol";
 
@@ -16,6 +17,7 @@ import {Encode} from "zeus-templates/utils/Encode.sol";
 contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     using Env for *;
     using Encode for *;
+    using TestUtils for *;
 
     function _runAsMultisig() internal override prank(Env.protocolCouncilMultisig()) {
         if (!(Env.isSourceChain() && Env._strEq(Env.envVersion(), "1.9.0"))) {
@@ -79,7 +81,7 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
 
     /// @dev Validate that the RewardsCoordinator proxy now points to the new implementation
     function _validateUpgradeComplete() internal view {
-        address currentImpl = Env._getProxyImpl(address(Env.proxy.rewardsCoordinator()));
+        address currentImpl = TestUtils._getProxyImpl(address(Env.proxy.rewardsCoordinator()));
         address expectedImpl = address(Env.impl.rewardsCoordinator());
 
         assertTrue(currentImpl == expectedImpl, "RewardsCoordinator proxy should point to new implementation");
@@ -89,12 +91,7 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     function _validateProxyConstructor() internal view {
         RewardsCoordinator rewardsCoordinator = Env.proxy.rewardsCoordinator();
 
-        // Validate version
-        assertEq(
-            keccak256(bytes(rewardsCoordinator.version())),
-            keccak256(bytes(Env.deployVersion())),
-            "RewardsCoordinator version mismatch"
-        );
+        // Note: version() function has been removed in this upgrade
 
         // Validate core dependencies
         assertTrue(

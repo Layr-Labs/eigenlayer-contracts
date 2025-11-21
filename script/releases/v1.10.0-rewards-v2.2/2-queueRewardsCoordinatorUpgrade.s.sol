@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {DeployRewardsCoordinatorImpl} from "./1-deployRewardsCoordinatorImpl.s.sol";
 import "../Env.sol";
+import "../TestUtils.sol";
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {MultisigCall, Encode} from "zeus-templates/utils/Encode.sol";
@@ -20,6 +21,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordinatorImpl {
     using Env for *;
     using Encode for *;
+    using TestUtils for *;
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
         if (!(Env.isSourceChain() && Env._strEq(Env.envVersion(), "1.9.0"))) {
@@ -103,7 +105,7 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
         RewardsCoordinator rewardsCoordinator = Env.proxy.rewardsCoordinator();
 
         // Validate current implementation is different from new implementation
-        address currentImpl = Env._getProxyImpl(address(rewardsCoordinator));
+        address currentImpl = TestUtils._getProxyImpl(address(rewardsCoordinator));
         address newImpl = address(Env.impl.rewardsCoordinator());
         assertTrue(currentImpl != newImpl, "Current and new implementations should be different");
 

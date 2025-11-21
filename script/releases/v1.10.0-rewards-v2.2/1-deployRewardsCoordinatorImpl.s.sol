@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "../Env.sol";
+import "../TestUtils.sol";
 
 /**
  * @title DeployRewardsCoordinatorImpl
@@ -13,6 +14,7 @@ import "../Env.sol";
  */
 contract DeployRewardsCoordinatorImpl is EOADeployer {
     using Env for *;
+    using TestUtils for *;
 
     /// forgefmt: disable-next-item
     function _runAsEOA() internal override {
@@ -38,8 +40,7 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
                         MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
                         MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
                         MAX_FUTURE_LENGTH: 63072000, // 730 days (2 years)
-                        GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP(),
-                        version: Env.deployVersion()
+                        GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
                     })
                 )
             )
@@ -63,14 +64,13 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         _validateProxyAdmin();
         _validateImplConstructor();
         _validateImplInitialized();
-        _validateVersion();
         _validateNewFunctionality();
         _validateStorageLayout();
     }
 
     /// @dev Validate that the new RewardsCoordinator impl address is distinct from the current one
     function _validateNewImplAddress() internal view {
-        address currentImpl = Env._getProxyImpl(address(Env.proxy.rewardsCoordinator()));
+        address currentImpl = TestUtils._getProxyImpl(address(Env.proxy.rewardsCoordinator()));
         address newImpl = address(Env.impl.rewardsCoordinator());
 
         assertFalse(currentImpl == newImpl, "RewardsCoordinator impl should be different from current implementation");
@@ -81,7 +81,7 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         address pa = Env.proxyAdmin();
 
         assertTrue(
-            Env._getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa, "RewardsCoordinator proxyAdmin incorrect"
+            TestUtils._getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa, "RewardsCoordinator proxyAdmin incorrect"
         );
     }
 
@@ -89,12 +89,7 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
     function _validateImplConstructor() internal view {
         RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
 
-        // Validate version
-        assertEq(
-            keccak256(bytes(rewardsCoordinatorImpl.version())),
-            keccak256(bytes(Env.deployVersion())),
-            "RewardsCoordinator impl version mismatch"
-        );
+        // Note: version() function has been removed in this upgrade
 
         // Validate core dependencies
         assertTrue(
@@ -152,14 +147,6 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         );
     }
 
-    /// @dev Validate the version is correctly set
-    function _validateVersion() internal view {
-        assertEq(
-            keccak256(bytes(Env.impl.rewardsCoordinator().version())),
-            keccak256(bytes(Env.deployVersion())),
-            "RewardsCoordinator version should match deploy version"
-        );
-    }
 
     /// @dev Validate new Rewards v2.2 functionality
     function _validateNewFunctionality() internal view {
