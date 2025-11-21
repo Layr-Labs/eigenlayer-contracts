@@ -76,7 +76,6 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         _validateProxyConstructor();
         _validateProxyInitialized();
         _validateNewFunctionalityThroughProxy();
-        _validateStoragePreservation();
     }
 
     /// @dev Validate that the RewardsCoordinator proxy now points to the new implementation
@@ -91,8 +90,6 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     function _validateProxyConstructor() internal view {
         RewardsCoordinator rewardsCoordinator = Env.proxy.rewardsCoordinator();
 
-        // Note: version() function has been removed in this upgrade
-
         // Validate core dependencies
         assertTrue(
             address(rewardsCoordinator.delegationManager()) == address(Env.proxy.delegationManager()),
@@ -105,6 +102,14 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         assertTrue(
             address(rewardsCoordinator.allocationManager()) == address(Env.proxy.allocationManager()),
             "RewardsCoordinator allocationManager mismatch"
+        );
+        assertTrue(
+            address(rewardsCoordinator.pauserRegistry()) == address(Env.impl.pauserRegistry()),
+            "RewardsCoordinator pauserRegistry mismatch"
+        );
+        assertTrue(
+            address(rewardsCoordinator.permissionController()) == address(Env.proxy.permissionController()),
+            "RewardsCoordinator permissionController mismatch"
         );
 
         // Validate reward parameters
@@ -136,12 +141,17 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     function _validateProxyInitialized() internal {
         RewardsCoordinator rewardsCoordinator = Env.proxy.rewardsCoordinator();
 
-        // Validate that key state variables are still set (proving initialization is preserved)
-        address owner = rewardsCoordinator.owner();
-        assertTrue(owner != address(0), "Owner should still be set");
-
-        address rewardsUpdater = rewardsCoordinator.rewardsUpdater();
-        assertTrue(rewardsUpdater != address(0), "RewardsUpdater should still be set");
+        // Validate the existing initializable state variables are still set
+        assertTrue(rewardsCoordinator.paused() == Env.REWARDS_PAUSE_STATUS(), "Paused status should still be set");
+        assertTrue(rewardsCoordinator.owner() == Env.opsMultisig(), "Owner should still be set");
+        assertTrue(rewardsCoordinator.rewardsUpdater() == Env.REWARDS_UPDATER(), "RewardsUpdater should still be set");
+        assertTrue(
+            rewardsCoordinator.activationDelay() == Env.ACTIVATION_DELAY(), "Activation delay should still be set"
+        );
+        assertTrue(
+            rewardsCoordinator.defaultOperatorSplitBips() == Env.DEFAULT_SPLIT_BIPS(),
+            "Default split bips should still be set"
+        );
 
         // Attempt to re-initialize should fail
         bytes memory errInit = "Initializable: contract is already initialized";
@@ -181,41 +191,5 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
 
         assertFalse(isUniqueStake, "Test hash should not be a unique stake submission");
         assertFalse(isTotalStake, "Test hash should not be a total stake submission");
-    }
-
-    /// @dev Validate that existing storage is preserved after upgrade
-    function _validateStoragePreservation() internal view {
-        RewardsCoordinator rewardsCoordinator = Env.proxy.rewardsCoordinator();
-
-        // Check that existing storage mappings are still accessible
-        address testAvs = address(0xBEEF);
-        bytes32 testHash = keccak256("existing_storage_test");
-
-        // These calls should not revert, validating that storage layout is preserved
-        bool isRewardsSubmission = rewardsCoordinator.isAVSRewardsSubmissionHash(testAvs, testHash);
-        bool isOperatorDirected = rewardsCoordinator.isOperatorDirectedAVSRewardsSubmissionHash(testAvs, testHash);
-        bool isOperatorSetRewards =
-            rewardsCoordinator.isOperatorDirectedOperatorSetRewardsSubmissionHash(testAvs, testHash);
-
-        // All should be false for test values
-        assertFalse(isRewardsSubmission, "Test hash should not be a rewards submission");
-        assertFalse(isOperatorDirected, "Test hash should not be operator directed");
-        assertFalse(isOperatorSetRewards, "Test hash should not be operator set rewards");
-
-        // Check that core state variables are preserved
-        uint256 currRewardsCalculationEndTimestamp = rewardsCoordinator.currRewardsCalculationEndTimestamp();
-        // Note: This may be 0 in test environments, which is acceptable
-        assertTrue(currRewardsCalculationEndTimestamp >= 0, "currRewardsCalculationEndTimestamp should be accessible");
-
-        // Check that submission nonce is accessible
-        uint256 nonce = rewardsCoordinator.submissionNonce(testAvs);
-        // Nonce should be 0 for a test address, but accessing it validates storage
-        assertEq(nonce, 0, "Nonce for test AVS should be 0");
-
-        // Validate distribution roots are still accessible
-        uint256 distributionRootCount = rewardsCoordinator.getDistributionRootsLength();
-        // There should be some distribution roots if this is an existing deployment
-        // If it's 0, that's also fine for a test environment
-        assertTrue(distributionRootCount >= 0, "Distribution roots should be accessible");
     }
 }

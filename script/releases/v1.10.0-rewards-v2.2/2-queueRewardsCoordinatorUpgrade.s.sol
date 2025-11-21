@@ -16,7 +16,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *         This queues the upgrade to add Rewards v2.2 support:
  *         - Unique stake rewards (linear to allocated unique stake)
  *         - Total stake rewards (linear to total stake)
- *         - Updated MAX_FUTURE_LENGTH to 730 days
+ *         - Updated MAX_FUTURE_LENGTH to 730 days (63072000 seconds)
  */
 contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordinatorImpl {
     using Env for *;
@@ -113,9 +113,6 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
         // Note: We access this through the proxy, which still points to the old implementation
         uint32 currentMaxFutureLength = rewardsCoordinator.MAX_FUTURE_LENGTH();
         assertTrue(currentMaxFutureLength != 63_072_000, "Current MAX_FUTURE_LENGTH should not be 730 days yet");
-
-        // Note: Cannot check version() on old implementation as it may not have this function
-        // The upgrade is needed to add new functions and update MAX_FUTURE_LENGTH
 
         // Validate that we're upgrading from the correct version
         // We can't directly call them since they don't exist, but we can verify the upgrade is needed

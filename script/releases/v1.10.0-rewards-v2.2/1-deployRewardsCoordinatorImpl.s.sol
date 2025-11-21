@@ -11,6 +11,7 @@ import "../TestUtils.sol";
  *         This adds support for:
  *         - Unique stake rewards submissions (rewards linear to allocated unique stake)
  *         - Total stake rewards submissions (rewards linear to total stake)
+ *         - Updated MAX_FUTURE_LENGTH to 730 days (63072000 seconds)
  */
 contract DeployRewardsCoordinatorImpl is EOADeployer {
     using Env for *;
@@ -24,6 +25,10 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         }
 
         vm.startBroadcast();
+
+        // Update the MAX_FUTURE_LENGTH environment variable before deployment
+        // 63072000s = 730 days = 2 years
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_FUTURE_LENGTH", 63072000);
 
         // Deploy RewardsCoordinator implementation with the new MAX_FUTURE_LENGTH
         deployImpl({
@@ -39,15 +44,12 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
                         CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
                         MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
                         MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
-                        MAX_FUTURE_LENGTH: 63072000, // 730 days (2 years)
+                        MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(), // Using updated env value
                         GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
                     })
                 )
             )
         });
-
-        // Update the MAX_FUTURE_LENGTH environment variable
-        zUpdateUint32("REWARDS_COORDINATOR_MAX_FUTURE_LENGTH", 63072000);
 
         vm.stopBroadcast();
     }
@@ -63,6 +65,7 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         _validateNewImplAddress();
         _validateProxyAdmin();
         _validateImplConstructor();
+        _validateZeusEnvUpdated();
         _validateImplInitialized();
         _validateNewFunctionality();
         _validateStorageLayout();
@@ -81,15 +84,14 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         address pa = Env.proxyAdmin();
 
         assertTrue(
-            TestUtils._getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa, "RewardsCoordinator proxyAdmin incorrect"
+            TestUtils._getProxyAdmin(address(Env.proxy.rewardsCoordinator())) == pa,
+            "RewardsCoordinator proxyAdmin incorrect"
         );
     }
 
     /// @dev Validate the immutables set in the new RewardsCoordinator implementation constructor
     function _validateImplConstructor() internal view {
         RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
-
-        // Note: version() function has been removed in this upgrade
 
         // Validate core dependencies
         assertTrue(
@@ -103,6 +105,14 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         assertTrue(
             address(rewardsCoordinatorImpl.allocationManager()) == address(Env.proxy.allocationManager()),
             "RewardsCoordinator allocationManager mismatch"
+        );
+        assertTrue(
+            address(rewardsCoordinatorImpl.pauserRegistry()) == address(Env.impl.pauserRegistry()),
+            "RewardsCoordinator pauserRegistry mismatch"
+        );
+        assertTrue(
+            address(rewardsCoordinatorImpl.permissionController()) == address(Env.proxy.permissionController()),
+            "RewardsCoordinator permissionController mismatch"
         );
 
         // Validate reward parameters
@@ -131,6 +141,25 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         );
     }
 
+    /// @dev Validate that the zeus environment variable has been updated correctly
+    function _validateZeusEnvUpdated() internal view {
+        RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
+
+        // Validate that the zeus env MAX_FUTURE_LENGTH matches what was deployed
+        assertEq(
+            rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(),
+            Env.MAX_FUTURE_LENGTH(),
+            "Deployed MAX_FUTURE_LENGTH should match zeus env value"
+        );
+
+        // Also validate it equals the expected value
+        assertEq(
+            Env.MAX_FUTURE_LENGTH(),
+            63_072_000,
+            "Zeus env MAX_FUTURE_LENGTH should be updated to 730 days (63072000 seconds)"
+        );
+    }
+
     /// @dev Validate that the new implementation cannot be initialized (should revert)
     function _validateImplInitialized() internal {
         bytes memory errInit = "Initializable: contract is already initialized";
@@ -147,7 +176,6 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         );
     }
 
-
     /// @dev Validate new Rewards v2.2 functionality
     function _validateNewFunctionality() internal view {
         RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
@@ -160,10 +188,6 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         // Verify the selectors are non-zero (functions exist)
         assertTrue(createUniqueStakeSelector != bytes4(0), "createUniqueStakeRewardsSubmission function should exist");
         assertTrue(createTotalStakeSelector != bytes4(0), "createTotalStakeRewardsSubmission function should exist");
-
-        // Check new pause constants are defined
-        // These are internal constants, so we can't directly access them, but we can verify
-        // the contract compiles with them and that the pause functionality would work
     }
 
     /// @dev Validate storage layout changes
@@ -185,17 +209,18 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
         bytes32 testHash = keccak256("test");
 
         // These calls should not revert, validating storage is accessible
-        bool isRewardsSubmission = rewardsCoordinatorImpl.isAVSRewardsSubmissionHash(testAvs, testHash);
-        bool isOperatorDirected = rewardsCoordinatorImpl.isOperatorDirectedAVSRewardsSubmissionHash(testAvs, testHash);
-        bool isOperatorSet =
+        bool isAVS = rewardsCoordinatorImpl.isAVSRewardsSubmissionHash(testAvs, testHash);
+        bool isOperatorDirectedAVS =
+            rewardsCoordinatorImpl.isOperatorDirectedAVSRewardsSubmissionHash(testAvs, testHash);
+        bool isOperatorDirectedOperatorSet =
             rewardsCoordinatorImpl.isOperatorDirectedOperatorSetRewardsSubmissionHash(testAvs, testHash);
         bool isUniqueStake = rewardsCoordinatorImpl.isUniqueStakeRewardsSubmissionHash(testAvs, testHash);
         bool isTotalStake = rewardsCoordinatorImpl.isTotalStakeRewardsSubmissionHash(testAvs, testHash);
 
         // All should be false for a random hash
-        assertFalse(isRewardsSubmission, "Random hash should not be a rewards submission");
-        assertFalse(isOperatorDirected, "Random hash should not be operator directed");
-        assertFalse(isOperatorSet, "Random hash should not be operator set");
+        assertFalse(isAVS, "Random hash should not be a rewards submission");
+        assertFalse(isOperatorDirectedAVS, "Random hash should not be operator directed");
+        assertFalse(isOperatorDirectedOperatorSet, "Random hash should not be operator set");
         assertFalse(isUniqueStake, "Random hash should not be unique stake");
         assertFalse(isTotalStake, "Random hash should not be total stake");
     }
