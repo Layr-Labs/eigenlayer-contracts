@@ -11,7 +11,7 @@ import "../TestUtils.sol";
  *         This adds support for:
  *         - Unique stake rewards submissions (rewards linear to allocated unique stake)
  *         - Total stake rewards submissions (rewards linear to total stake)
- *         - Updated MAX_FUTURE_LENGTH to 730 days (63072000 seconds)
+ *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
  */
 contract DeployRewardsCoordinatorImpl is EOADeployer {
     using Env for *;
@@ -26,11 +26,11 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
 
         vm.startBroadcast();
 
-        // Update the MAX_FUTURE_LENGTH environment variable before deployment
+        // Update the MAX_REWARDS_DURATION environment variable before deployment
         // 63072000s = 730 days = 2 years
-        zUpdateUint32("REWARDS_COORDINATOR_MAX_FUTURE_LENGTH", 63072000);
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63072000);
 
-        // Deploy RewardsCoordinator implementation with the new MAX_FUTURE_LENGTH
+        // Deploy RewardsCoordinator implementation with the updated MAX_REWARDS_DURATION
         deployImpl({
             name: type(RewardsCoordinator).name,
             deployedTo: address(
@@ -42,9 +42,9 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
                         pauserRegistry: Env.impl.pauserRegistry(),
                         permissionController: Env.proxy.permissionController(),
                         CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
-                        MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(),
+                        MAX_REWARDS_DURATION: Env.MAX_REWARDS_DURATION(), // Using updated env value
                         MAX_RETROACTIVE_LENGTH: Env.MAX_RETROACTIVE_LENGTH(),
-                        MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(), // Using updated env value
+                        MAX_FUTURE_LENGTH: Env.MAX_FUTURE_LENGTH(),
                         GENESIS_REWARDS_TIMESTAMP: Env.GENESIS_REWARDS_TIMESTAMP()
                     })
                 )
@@ -122,18 +122,16 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
             "CALCULATION_INTERVAL_SECONDS mismatch"
         );
         assertEq(
-            rewardsCoordinatorImpl.MAX_REWARDS_DURATION(), Env.MAX_REWARDS_DURATION(), "MAX_REWARDS_DURATION mismatch"
+            rewardsCoordinatorImpl.MAX_REWARDS_DURATION(),
+            63_072_000,
+            "MAX_REWARDS_DURATION should be updated to 730 days (63072000 seconds)"
         );
         assertEq(
             rewardsCoordinatorImpl.MAX_RETROACTIVE_LENGTH(),
             Env.MAX_RETROACTIVE_LENGTH(),
             "MAX_RETROACTIVE_LENGTH mismatch"
         );
-        assertEq(
-            rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(),
-            63_072_000,
-            "MAX_FUTURE_LENGTH should be 730 days (63072000 seconds)"
-        );
+        assertEq(rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(), Env.MAX_FUTURE_LENGTH(), "MAX_FUTURE_LENGTH mismatch");
         assertEq(
             rewardsCoordinatorImpl.GENESIS_REWARDS_TIMESTAMP(),
             Env.GENESIS_REWARDS_TIMESTAMP(),
@@ -145,18 +143,18 @@ contract DeployRewardsCoordinatorImpl is EOADeployer {
     function _validateZeusEnvUpdated() internal view {
         RewardsCoordinator rewardsCoordinatorImpl = Env.impl.rewardsCoordinator();
 
-        // Validate that the zeus env MAX_FUTURE_LENGTH matches what was deployed
+        // Validate that the zeus env MAX_REWARDS_DURATION matches what was deployed
         assertEq(
-            rewardsCoordinatorImpl.MAX_FUTURE_LENGTH(),
-            Env.MAX_FUTURE_LENGTH(),
-            "Deployed MAX_FUTURE_LENGTH should match zeus env value"
+            rewardsCoordinatorImpl.MAX_REWARDS_DURATION(),
+            Env.MAX_REWARDS_DURATION(),
+            "Deployed MAX_REWARDS_DURATION should match zeus env value"
         );
 
         // Also validate it equals the expected value
         assertEq(
-            Env.MAX_FUTURE_LENGTH(),
+            Env.MAX_REWARDS_DURATION(),
             63_072_000,
-            "Zeus env MAX_FUTURE_LENGTH should be updated to 730 days (63072000 seconds)"
+            "Zeus env MAX_REWARDS_DURATION should be updated to 730 days (63072000 seconds)"
         );
     }
 

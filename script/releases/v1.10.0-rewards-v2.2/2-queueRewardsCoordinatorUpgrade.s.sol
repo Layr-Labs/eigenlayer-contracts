@@ -16,7 +16,7 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
  *         This queues the upgrade to add Rewards v2.2 support:
  *         - Unique stake rewards (linear to allocated unique stake)
  *         - Total stake rewards (linear to total stake)
- *         - Updated MAX_FUTURE_LENGTH to 730 days (63072000 seconds)
+ *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
  */
 contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordinatorImpl {
     using Env for *;
@@ -52,12 +52,13 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
             })
         });
 
-        return Encode.gnosisSafe.execTransaction({
-            from: address(Env.timelockController()),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(executorCalls)
-        });
+        return Encode.gnosisSafe
+            .execTransaction({
+                from: address(Env.timelockController()),
+                to: Env.multiSendCallOnly(),
+                op: Encode.Operation.DelegateCall,
+                data: Encode.multiSend(executorCalls)
+            });
     }
 
     function testScript() public virtual override {
@@ -71,11 +72,7 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(),
-            value: 0,
-            data: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
+            target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0
         });
 
         // Ensure transaction is not already queued
@@ -109,10 +106,10 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
         address newImpl = address(Env.impl.rewardsCoordinator());
         assertTrue(currentImpl != newImpl, "Current and new implementations should be different");
 
-        // Validate current MAX_FUTURE_LENGTH is different from new value
+        // Validate current MAX_REWARDS_DURATION is different from new value
         // Note: We access this through the proxy, which still points to the old implementation
-        uint32 currentMaxFutureLength = rewardsCoordinator.MAX_FUTURE_LENGTH();
-        assertTrue(currentMaxFutureLength != 63_072_000, "Current MAX_FUTURE_LENGTH should not be 730 days yet");
+        uint32 currentMaxRewardsDuration = rewardsCoordinator.MAX_REWARDS_DURATION();
+        assertTrue(currentMaxRewardsDuration != 63_072_000, "Current MAX_REWARDS_DURATION should not be 730 days yet");
 
         // Validate that we're upgrading from the correct version
         // We can't directly call them since they don't exist, but we can verify the upgrade is needed

@@ -12,7 +12,7 @@ import {Encode} from "zeus-templates/utils/Encode.sol";
  *         This completes the upgrade to add Rewards v2.2 support:
  *         - Unique stake rewards (linear to allocated unique stake)
  *         - Total stake rewards (linear to total stake)
- *         - Updated MAX_FUTURE_LENGTH to 730 days (63072000 seconds)
+ *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
  */
 contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     using Env for *;
@@ -28,11 +28,7 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         TimelockController timelock = Env.timelockController();
 
         timelock.execute({
-            target: Env.executorMultisig(),
-            value: 0,
-            payload: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
+            target: Env.executorMultisig(), value: 0, payload: calldata_to_executor, predecessor: 0, salt: 0
         });
     }
 
@@ -47,11 +43,7 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(),
-            value: 0,
-            data: calldata_to_executor,
-            predecessor: 0,
-            salt: 0
+            target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0
         });
 
         // 2 - Queue. Check that the operation IS ready
@@ -118,17 +110,18 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
             Env.CALCULATION_INTERVAL_SECONDS(),
             "CALCULATION_INTERVAL_SECONDS mismatch"
         );
-        assertEq(rewardsCoordinator.MAX_REWARDS_DURATION(), Env.MAX_REWARDS_DURATION(), "MAX_REWARDS_DURATION mismatch");
+
+        // Validate the updated MAX_REWARDS_DURATION
+        assertEq(
+            rewardsCoordinator.MAX_REWARDS_DURATION(),
+            63_072_000,
+            "MAX_REWARDS_DURATION should be updated to 730 days (63072000 seconds)"
+        );
+
         assertEq(
             rewardsCoordinator.MAX_RETROACTIVE_LENGTH(), Env.MAX_RETROACTIVE_LENGTH(), "MAX_RETROACTIVE_LENGTH mismatch"
         );
-
-        // Validate the updated MAX_FUTURE_LENGTH
-        assertEq(
-            rewardsCoordinator.MAX_FUTURE_LENGTH(),
-            63_072_000,
-            "MAX_FUTURE_LENGTH should be 730 days (63072000 seconds)"
-        );
+        assertEq(rewardsCoordinator.MAX_FUTURE_LENGTH(), Env.MAX_FUTURE_LENGTH(), "MAX_FUTURE_LENGTH mismatch");
 
         assertEq(
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP(),
