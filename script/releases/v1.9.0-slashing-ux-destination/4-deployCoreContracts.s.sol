@@ -28,6 +28,11 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     using Env for *;
 
     function _runAsEOA() internal override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         vm.startBroadcast();
 
         /**
@@ -47,7 +52,7 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function testScript() public virtual override {
-        if (Env.isCoreProtocolDeployed()) {
+        if (Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
 
