@@ -28,7 +28,11 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         TimelockController timelock = Env.timelockController();
 
         timelock.execute({
-            target: Env.executorMultisig(), value: 0, payload: calldata_to_executor, predecessor: 0, salt: 0
+            target: Env.executorMultisig(),
+            value: 0,
+            payload: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
         });
     }
 
@@ -43,7 +47,11 @@ contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
         });
 
         // 2 - Queue. Check that the operation IS ready

@@ -52,13 +52,12 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
             })
         });
 
-        return Encode.gnosisSafe
-            .execTransaction({
-                from: address(Env.timelockController()),
-                to: Env.multiSendCallOnly(),
-                op: Encode.Operation.DelegateCall,
-                data: Encode.multiSend(executorCalls)
-            });
+        return Encode.gnosisSafe.execTransaction({
+            from: address(Env.timelockController()),
+            to: Env.multiSendCallOnly(),
+            op: Encode.Operation.DelegateCall,
+            data: Encode.multiSend(executorCalls)
+        });
     }
 
     function testScript() public virtual override {
@@ -72,7 +71,11 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
         TimelockController timelock = Env.timelockController();
         bytes memory calldata_to_executor = _getCalldataToExecutor();
         bytes32 txHash = timelock.hashOperation({
-            target: Env.executorMultisig(), value: 0, data: calldata_to_executor, predecessor: 0, salt: 0
+            target: Env.executorMultisig(),
+            value: 0,
+            data: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
         });
 
         // Ensure transaction is not already queued
