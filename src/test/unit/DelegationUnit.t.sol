@@ -5683,7 +5683,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         _registerOperatorWithBaseDetails(defaultOperator);
         _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
 
-        uint256 depositAmount = 100e18;
+        uint depositAmount = 100e18;
         strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
         _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
 
@@ -5699,7 +5699,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, uint64(0));
 
         // After full slashing, there are no more slashable shares - should return 0
-        uint256 slashableShares = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        uint slashableShares = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
         assertEq(slashableShares, 0, "fully slashed operator should have 0 slashable shares in queue");
     }
 
