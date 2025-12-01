@@ -125,7 +125,8 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         newVault = IDurationVaultStrategy(
             address(
                 new BeaconProxy(
-                    address(durationVaultBeacon), abi.encodeWithSelector(DurationVaultStrategy.initialize.selector, config)
+                    address(durationVaultBeacon),
+                    abi.encodeWithSelector(DurationVaultStrategy.initialize.selector, config)
                 )
             )
         );
@@ -192,10 +193,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         durationVaultBeacon = newDurationVaultBeacon;
     }
 
-    function _registerDurationVault(
-        IERC20 token,
-        IDurationVaultStrategy vault
-    ) internal {
+    function _registerDurationVault(IERC20 token, IDurationVaultStrategy vault) internal {
         durationVaultsByToken[token].push(vault);
     }
 }

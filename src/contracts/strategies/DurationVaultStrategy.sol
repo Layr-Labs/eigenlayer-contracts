@@ -122,10 +122,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
     /**
      * @notice Updates the deposit window bounds. Cannot be called after locking.
      */
-    function updateDepositWindow(
-        uint64 newStart,
-        uint64 newEnd
-    ) external override onlyVaultAdmin {
+    function updateDepositWindow(uint64 newStart, uint64 newEnd) external override onlyVaultAdmin {
         if (lockedAt != 0) revert VaultAlreadyLocked();
         if (newEnd != 0 && newEnd <= newStart) revert InvalidDepositWindow();
         depositWindowStart = newStart;
@@ -196,10 +193,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         return true;
     }
 
-    function _beforeDeposit(
-        IERC20 token,
-        uint256 amount
-    ) internal virtual override {
+    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
         if (!isLocked()) {
             uint64 start = depositWindowStart;
             if (start != 0 && block.timestamp < start) revert DepositWindowNotStarted();
@@ -212,11 +206,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         super._beforeDeposit(token, amount);
     }
 
-    function _beforeWithdrawal(
-        address recipient,
-        IERC20 token,
-        uint256 amountShares
-    ) internal virtual override {
+    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual override {
         if (isLocked() && !isMatured()) {
             revert WithdrawalsLocked();
         }
@@ -229,4 +219,3 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
      */
     uint256[40] private __gap;
 }
-

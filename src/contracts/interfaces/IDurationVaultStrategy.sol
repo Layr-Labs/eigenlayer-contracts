@@ -85,10 +85,7 @@ interface IDurationVaultStrategy is IStrategy {
     /**
      * @notice Updates the deposit window bounds. Only callable before the vault is locked.
      */
-    function updateDepositWindow(
-        uint64 newStart,
-        uint64 newEnd
-    ) external;
+    function updateDepositWindow(uint64 newStart, uint64 newEnd) external;
 
     /**
      * @notice Transfers vault admin privileges to a new address.
@@ -110,4 +107,3 @@ interface IDurationVaultStrategy is IStrategy {
     function depositsOpen() external view returns (bool);
     function withdrawalsOpen() external view returns (bool);
 }
-
