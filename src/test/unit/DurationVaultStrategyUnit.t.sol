@@ -46,7 +46,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         // reconfigure deposit window to start in future
         durationVault.updateDepositWindow(uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours));
 
-        uint256 depositAmount = 1e18;
+        uint depositAmount = 1e18;
         underlyingToken.transfer(address(durationVault), depositAmount);
 
         cheats.prank(address(strategyManager));
@@ -57,7 +57,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
     function testDepositWindowClosedAfterEnd() public {
         cheats.warp(block.timestamp + defaultDepositWindowLength + 1);
 
-        uint256 depositAmount = 1e18;
+        uint depositAmount = 1e18;
         underlyingToken.transfer(address(durationVault), depositAmount);
 
         cheats.prank(address(strategyManager));
@@ -68,7 +68,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
     function testDepositsBlockedAfterManualLock() public {
         durationVault.lock();
 
-        uint256 depositAmount = 1e18;
+        uint depositAmount = 1e18;
 
         underlyingToken.transfer(address(durationVault), depositAmount);
         cheats.prank(address(strategyManager));
@@ -78,7 +78,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
 
     function testWithdrawalsBlockedUntilMaturity() public {
         // prepare deposit
-        uint256 depositAmount = 10 ether;
+        uint depositAmount = 10 ether;
         underlyingToken.transfer(address(durationVault), depositAmount);
         cheats.prank(address(strategyManager));
         durationVault.deposit(underlyingToken, depositAmount);
@@ -88,7 +88,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         assertTrue(durationVault.isLocked(), "vault should be locked");
         assertFalse(durationVault.withdrawalsOpen(), "withdrawals should be closed before maturity");
 
-        uint256 shares = durationVault.totalShares();
+        uint shares = durationVault.totalShares();
 
         // Attempt withdrawal before maturity
         cheats.startPrank(address(strategyManager));
@@ -103,4 +103,3 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         cheats.stopPrank();
     }
 }
-

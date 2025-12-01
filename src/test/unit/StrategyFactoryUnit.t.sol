@@ -55,8 +55,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        durationVaultImplementation =
-            new DurationVaultStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        durationVaultImplementation = new DurationVaultStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
@@ -137,9 +136,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             metadataURI: "ipfs://duration"
         });
 
-        DurationVaultStrategy vault = DurationVaultStrategy(
-            address(strategyFactory.deployDurationVaultStrategy(config))
-        );
+        DurationVaultStrategy vault = DurationVaultStrategy(address(strategyFactory.deployDurationVaultStrategy(config)));
 
         IDurationVaultStrategy[] memory deployedVaults = strategyFactory.getDurationVaults(underlyingToken);
         require(deployedVaults.length == 1, "vault not tracked");
@@ -184,7 +181,9 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
         IDurationVaultStrategy[] memory deployedVaults = strategyFactory.getDurationVaults(underlyingToken);
         require(deployedVaults.length == 1, "duration vault missing");
-        assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(IDurationVaultStrategy(address(deployedVaults[0]))), "vault not whitelisted");
+        assertTrue(
+            strategyManagerMock.strategyIsWhitelistedForDeposit(IDurationVaultStrategy(address(deployedVaults[0]))), "vault not whitelisted"
+        );
 
         // Base mapping should remain untouched.
         require(strategyFactory.deployedStrategies(underlyingToken) == base, "base strategy overwritten");

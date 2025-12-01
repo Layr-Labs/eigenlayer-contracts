@@ -21,7 +21,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     ERC20PresetFixedSupply public underlyingToken;
 
     address internal constant STAKER = address(0xBEEF);
-    uint256 internal constant INITIAL_SUPPLY = 1e36;
+    uint internal constant INITIAL_SUPPLY = 1e36;
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
@@ -42,9 +42,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         underlyingToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", INITIAL_SUPPLY, address(this));
 
-        durationVaultImplementation = new DurationVaultStrategy(
-            IStrategyManager(address(strategyManager)), pauserRegistry, "9.9.9"
-        );
+        durationVaultImplementation = new DurationVaultStrategy(IStrategyManager(address(strategyManager)), pauserRegistry, "9.9.9");
 
         IDurationVaultStrategy.VaultConfig memory cfg = IDurationVaultStrategy.VaultConfig({
             underlyingToken: IERC20(address(underlyingToken)),
@@ -75,7 +73,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     }
 
     function testDepositIntoDurationVaultViaStrategyManager() public {
-        uint256 amount = 10 ether;
+        uint amount = 10 ether;
         underlyingToken.transfer(STAKER, amount);
 
         cheats.startPrank(STAKER);
@@ -85,14 +83,14 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         strategyManager.depositIntoStrategy(IStrategy(address(durationVault)), IERC20(address(underlyingToken)), amount);
         cheats.stopPrank();
 
-        uint256 shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
+        uint shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
         assertEq(shares, amount, "staker shares mismatch");
     }
 
     function testDepositRevertsAfterVaultLock() public {
         durationVault.lock();
 
-        uint256 amount = 5 ether;
+        uint amount = 5 ether;
         underlyingToken.transfer(STAKER, amount);
 
         cheats.startPrank(STAKER);
@@ -102,7 +100,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         cheats.stopPrank();
     }
 
-    function _depositFor(address staker, uint256 amount) internal {
+    function _depositFor(address staker, uint amount) internal {
         underlyingToken.transfer(staker, amount);
         cheats.startPrank(staker);
         underlyingToken.approve(address(strategyManager), amount);
@@ -111,44 +109,35 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     }
 
     function testWithdrawalsBlockedViaStrategyManagerBeforeMaturity() public {
-        uint256 amount = 8 ether;
+        uint amount = 8 ether;
         _depositFor(STAKER, amount);
         durationVault.lock();
 
-        uint256 shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
+        uint shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
 
         cheats.prank(address(delegationManagerMock));
         cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLocked.selector);
-        strategyManager.withdrawSharesAsTokens(
-            STAKER, IStrategy(address(durationVault)), IERC20(address(underlyingToken)), shares
-        );
+        strategyManager.withdrawSharesAsTokens(STAKER, IStrategy(address(durationVault)), IERC20(address(underlyingToken)), shares);
     }
 
     function testWithdrawalsAllowedAfterMaturity() public {
-        uint256 amount = 6 ether;
+        uint amount = 6 ether;
         _depositFor(STAKER, amount);
         durationVault.lock();
 
         cheats.warp(block.timestamp + durationVault.duration() + 1);
 
-        uint256 shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
+        uint shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
 
         cheats.prank(address(delegationManagerMock));
         strategyManager.removeDepositShares(STAKER, IStrategy(address(durationVault)), shares);
 
-        uint256 balanceBefore = underlyingToken.balanceOf(STAKER);
+        uint balanceBefore = underlyingToken.balanceOf(STAKER);
 
         cheats.prank(address(delegationManagerMock));
-        strategyManager.withdrawSharesAsTokens(
-            STAKER, IStrategy(address(durationVault)), IERC20(address(underlyingToken)), shares
-        );
+        strategyManager.withdrawSharesAsTokens(STAKER, IStrategy(address(durationVault)), IERC20(address(underlyingToken)), shares);
 
         assertEq(strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault))), 0, "shares should be zero after removal");
-        assertEq(
-            underlyingToken.balanceOf(STAKER),
-            balanceBefore + amount,
-            "staker did not receive withdrawn tokens"
-        );
+        assertEq(underlyingToken.balanceOf(STAKER), balanceBefore + amount, "staker did not receive withdrawn tokens");
     }
 }
-
