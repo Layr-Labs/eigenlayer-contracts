@@ -1,10 +1,8 @@
 pragma solidity ^0.8.0;
 
-/**
- * @title Elliptic curve operations on twist points for alt_bn128
- * @author Mustafa Al-Bassam (mus@musalbas.com)
- * @dev Homepage: https://github.com/musalbas/solidity-BN256G2
- */
+/// @title Elliptic curve operations on twist points for alt_bn128
+/// @author Mustafa Al-Bassam (mus@musalbas.com)
+/// @dev Homepage: https://github.com/musalbas/solidity-BN256G2
 library BN256G2 {
     uint internal constant FIELD_MODULUS = 0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47;
     uint internal constant TWISTBX = 0x2b149d40ceb8aaae81be18991be06ac3b5b4c5e559dbefa33267e6dc24a138e5;
@@ -16,18 +14,16 @@ library BN256G2 {
     uint internal constant PTZX = 4;
     uint internal constant PTZY = 5;
 
-    /**
-     * @notice Add two twist points
-     * @param pt1xx Coefficient 1 of x on point 1
-     * @param pt1xy Coefficient 2 of x on point 1
-     * @param pt1yx Coefficient 1 of y on point 1
-     * @param pt1yy Coefficient 2 of y on point 1
-     * @param pt2xx Coefficient 1 of x on point 2
-     * @param pt2xy Coefficient 2 of x on point 2
-     * @param pt2yx Coefficient 1 of y on point 2
-     * @param pt2yy Coefficient 2 of y on point 2
-     * @return (pt3xx, pt3xy, pt3yx, pt3yy)
-     */
+    /// @notice Add two twist points
+    /// @param pt1xx Coefficient 1 of x on point 1
+    /// @param pt1xy Coefficient 2 of x on point 1
+    /// @param pt1yx Coefficient 1 of y on point 1
+    /// @param pt1yy Coefficient 2 of y on point 1
+    /// @param pt2xx Coefficient 1 of x on point 2
+    /// @param pt2xy Coefficient 2 of x on point 2
+    /// @param pt2yx Coefficient 1 of y on point 2
+    /// @param pt2yy Coefficient 2 of y on point 2
+    /// @return (pt3xx, pt3xy, pt3yx, pt3yy)
     function ECTwistAdd(uint pt1xx, uint pt1xy, uint pt1yx, uint pt1yy, uint pt2xx, uint pt2xy, uint pt2yx, uint pt2yy)
         public
         view
@@ -49,15 +45,13 @@ library BN256G2 {
         return _fromJacobian(pt3[PTXX], pt3[PTXY], pt3[PTYX], pt3[PTYY], pt3[PTZX], pt3[PTZY]);
     }
 
-    /**
-     * @notice Multiply a twist point by a scalar
-     * @param s     Scalar to multiply by
-     * @param pt1xx Coefficient 1 of x
-     * @param pt1xy Coefficient 2 of x
-     * @param pt1yx Coefficient 1 of y
-     * @param pt1yy Coefficient 2 of y
-     * @return (pt2xx, pt2xy, pt2yx, pt2yy)
-     */
+    /// @notice Multiply a twist point by a scalar
+    /// @param s     Scalar to multiply by
+    /// @param pt1xx Coefficient 1 of x
+    /// @param pt1xy Coefficient 2 of x
+    /// @param pt1yx Coefficient 1 of y
+    /// @param pt1yy Coefficient 2 of y
+    /// @return (pt2xx, pt2xy, pt2yx, pt2yy)
     function ECTwistMul(uint s, uint pt1xx, uint pt1xy, uint pt1yx, uint pt1yy) public view returns (uint, uint, uint, uint) {
         uint pt1zx = 1;
         if (pt1xx == 0 && pt1xy == 0 && pt1yx == 0 && pt1yy == 0) {
@@ -73,10 +67,8 @@ library BN256G2 {
         return _fromJacobian(pt2[PTXX], pt2[PTXY], pt2[PTYX], pt2[PTYY], pt2[PTZX], pt2[PTZY]);
     }
 
-    /**
-     * @notice Get the field modulus
-     * @return The field modulus
-     */
+    /// @notice Get the field modulus
+    /// @return The field modulus
     function GetFieldModulus() public pure returns (uint) {
         return FIELD_MODULUS;
     }

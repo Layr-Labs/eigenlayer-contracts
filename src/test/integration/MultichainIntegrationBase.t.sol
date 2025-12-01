@@ -19,11 +19,9 @@ import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/interfaces/IOperatorTableUpdater.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-/**
- * @title MultichainIntegrationBase
- * @notice Base contract for multichain integration tests
- * @dev Provides deployment, setup, and utility methods for multichain contracts
- */
+/// @title MultichainIntegrationBase
+/// @notice Base contract for multichain integration tests
+/// @dev Provides deployment, setup, and utility methods for multichain contracts
 abstract contract MultichainIntegrationBase is IntegrationBase {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
@@ -55,22 +53,16 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
     uint constant ECDSA_PRIVATE_KEY_2 = 0x22;
     uint constant ECDSA_PRIVATE_KEY_3 = 0x33;
 
-    /**
-     * Deployment and Setup Methods
-     */
+    /// Deployment and Setup Methods
 
-    /**
-     * @notice Deploy all multichain contracts
-     */
+    /// @notice Deploy all multichain contracts
     function _deployContracts() internal {
         // The base contracts are already deployed by IntegrationDeployer
         // We just need to deploy the multichain-specific contracts
         _deployMultichainContracts();
     }
 
-    /**
-     * @notice Deploy multichain-specific contracts
-     */
+    /// @notice Deploy multichain-specific contracts
     function _deployMultichainContracts() internal {
         // Deploy OperatorTableCalculatorMock
         operatorTableCalculatorMock = new OperatorTableCalculatorMock();
@@ -149,8 +141,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         uint[] memory totalWeights = new uint[](1);
         totalWeights[0] = operatorWeights[0];
 
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory initialOperatorSetInfo = IOperatorTableCalculatorTypes
-            .BN254OperatorSetInfo({
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory initialOperatorSetInfo = IOperatorTableCalculatorTypes.BN254OperatorSetInfo({
             operatorInfoTreeRoot: operatorInfoTreeRoot,
             numOperators: 1,
             aggregatePubkey: aggregatePubkey,
@@ -193,9 +184,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         console.log("Multichain contracts setup completed");
     }
 
-    /**
-     * User and Operator Helper Methods
-     */
+    /// User and Operator Helper Methods
 
     // Operator set IDs for different curve types (each operator set supports only one curve type)
     uint32 constant BN254_OPERATOR_SET_ID = 1;
@@ -243,8 +232,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Configure the operator set for BN254 curve type (only once)
         try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.BN254) {
-            // Configuration successful
-        } catch {
+        // Configuration successful
+        }
+            catch {
             // Already configured, which is fine
         }
 
@@ -287,8 +277,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
 
         // Configure the operator set for ECDSA curve type (only once)
         try keyRegistrar.configureOperatorSet(operatorSet, IKeyRegistrarTypes.CurveType.ECDSA) {
-            // Configuration successful
-        } catch {
+        // Configuration successful
+        }
+            catch {
             // Already configured, which is fine
         }
 
@@ -305,13 +296,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         keyRegistrar.registerKey(address(operator), operatorSet, keyData, signatureBytes);
     }
 
-    /**
-     * Table Generation and Transport Simulation
-     */
+    /// Table Generation and Transport Simulation
 
-    /**
-     * @notice Generate BN254 operator table for testing
-     */
+    /// @notice Generate BN254 operator table for testing
     function _generateBN254OperatorTable(OperatorSet memory operatorSet, User[] memory operators)
         internal
         view
@@ -361,9 +348,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
     }
 
-    /**
-     * @notice Generate ECDSA operator table for testing
-     */
+    /// @notice Generate ECDSA operator table for testing
     function _generateECDSAOperatorTable(OperatorSet memory operatorSet, User[] memory operators)
         internal
         view
@@ -396,13 +381,9 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         // For testing, we just log the simulation
     }
 
-    /**
-     * Certificate Generation and Verification Helpers
-     */
+    /// Certificate Generation and Verification Helpers
 
-    /**
-     * @notice Generate BN254 certificate for testing
-     */
+    /// @notice Generate BN254 certificate for testing
     function _generateBN254Certificate(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
@@ -455,9 +436,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
     }
 
-    /**
-     * @notice Generate ECDSA certificate for testing
-     */
+    /// @notice Generate ECDSA certificate for testing
     function _generateECDSACertificate(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp,
@@ -511,9 +490,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
     }
 
-    /**
-     * Cross-Chain Registry Helpers
-     */
+    /// Cross-Chain Registry Helpers
 
     /// @dev Create a generation reservation using the real CrossChainRegistry
     function _createGenerationReservation(uint chainId, uint generationId, User operator, uint32 operatorSetId) internal {
@@ -610,9 +587,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         ecdsaCertificateVerifier.updateOperatorTable(operatorSet, uint32(block.timestamp), operatorInfos, config);
     }
 
-    /**
-     * Utility Methods
-     */
+    /// Utility Methods
 
     /// @dev Calculate hash of BN254 operator table
     function _hashBN254Table(IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo) internal pure returns (bytes32) {
@@ -639,9 +614,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         cheats.warp(block.timestamp + seconds_);
     }
 
-    /**
-     * HELPER FUNCTIONS FOR MULTICHAIN TESTS
-     */
+    /// HELPER FUNCTIONS FOR MULTICHAIN TESTS
 
     /// @dev Create and configure test operator set
     function _createTestOperatorSet(uint32 operatorSetId) internal {
@@ -871,9 +844,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         });
     }
 
-    /**
-     * PRIVATE KEY HELPERS
-     */
+    /// PRIVATE KEY HELPERS
     function _getBN254PrivateKeys() internal pure returns (uint[] memory) {
         uint[] memory keys = new uint[](1);
         keys[0] = 123; // Main test operator key
@@ -912,9 +883,7 @@ abstract contract MultichainIntegrationBase is IntegrationBase {
         }
     }
 
-    /**
-     * Initialization Override
-     */
+    /// Initialization Override
     function setUp() public virtual override {
         super.setUp();
 

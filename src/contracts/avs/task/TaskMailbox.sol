@@ -10,10 +10,12 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IAVSTaskHook} from "../../interfaces/IAVSTaskHook.sol";
 import {
-    IBN254CertificateVerifier, IBN254CertificateVerifierTypes
+    IBN254CertificateVerifier,
+    IBN254CertificateVerifierTypes
 } from "../../interfaces/IBN254CertificateVerifier.sol";
 import {
-    IECDSACertificateVerifier, IECDSACertificateVerifierTypes
+    IECDSACertificateVerifier,
+    IECDSACertificateVerifierTypes
 } from "../../interfaces/IECDSACertificateVerifier.sol";
 import {IBaseCertificateVerifier} from "../../interfaces/IBaseCertificateVerifier.sol";
 import {IKeyRegistrarTypes} from "../../interfaces/IKeyRegistrar.sol";
@@ -21,21 +23,17 @@ import {ITaskMailbox} from "../../interfaces/ITaskMailbox.sol";
 import {OperatorSet} from "../../libraries/OperatorSetLib.sol";
 import {TaskMailboxStorage} from "./TaskMailboxStorage.sol";
 
-/**
- * @title TaskMailbox
- * @author Layr Labs, Inc.
- * @notice Contract for managing the lifecycle of tasks that are executed by operator sets of task-based AVSs.
- */
+/// @title TaskMailbox
+/// @author Layr Labs, Inc.
+/// @notice Contract for managing the lifecycle of tasks that are executed by operator sets of task-based AVSs.
 contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgradeable, TaskMailboxStorage {
     using SafeERC20 for IERC20;
     using SafeCast for *;
 
-    /**
-     * @notice Constructor for TaskMailbox
-     * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
-     * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
-     * @param _maxTaskSLA Maximum task SLA in seconds
-     */
+    /// @notice Constructor for TaskMailbox
+    /// @param _bn254CertificateVerifier Address of the BN254 certificate verifier
+    /// @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
+    /// @param _maxTaskSLA Maximum task SLA in seconds
     constructor(
         address _bn254CertificateVerifier,
         address _ecdsaCertificateVerifier,
@@ -44,13 +42,15 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         _disableInitializers();
     }
 
-    /**
-     * @notice Initializer for TaskMailbox
-     * @param _owner The owner of the contract
-     * @param _feeSplit The initial fee split in basis points
-     * @param _feeSplitCollector The initial fee split collector address
-     */
-    function initialize(address _owner, uint16 _feeSplit, address _feeSplitCollector) external initializer {
+    /// @notice Initializer for TaskMailbox
+    /// @param _owner The owner of the contract
+    /// @param _feeSplit The initial fee split in basis points
+    /// @param _feeSplitCollector The initial fee split collector address
+    function initialize(
+        address _owner,
+        uint16 _feeSplit,
+        address _feeSplitCollector
+    ) external initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
         _transferOwnership(_owner);
@@ -58,11 +58,9 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         _setFeeSplitCollector(_feeSplitCollector);
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc ITaskMailbox
     function setExecutorOperatorSetTaskConfig(
@@ -90,7 +88,10 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     /// @inheritdoc ITaskMailbox
-    function registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) external {
+    function registerExecutorOperatorSet(
+        OperatorSet memory operatorSet,
+        bool isRegistered
+    ) external {
         ExecutorOperatorSetTaskConfig memory taskConfig = _executorOperatorSetTaskConfigs[operatorSet.key()];
 
         // Validate that task config has been set before registration can be toggled.
@@ -181,16 +182,19 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     /// @inheritdoc ITaskMailbox
-    function submitResult(bytes32 taskHash, bytes memory executorCert, bytes memory result) external nonReentrant {
+    function submitResult(
+        bytes32 taskHash,
+        bytes memory executorCert,
+        bytes memory result
+    ) external nonReentrant {
         Task storage task = _tasks[taskHash];
         TaskStatus status = _getTaskStatus(task);
         require(status == TaskStatus.CREATED, InvalidTaskStatus(TaskStatus.CREATED, status));
         require(block.timestamp > task.creationTime, TimestampAtCreation());
 
         // Pre-task result submission checks: AVS can validate the caller, task result, params and certificate.
-        task.executorOperatorSetTaskConfig.taskHook.validatePreTaskResultSubmission(
-            msg.sender, taskHash, executorCert, result
-        );
+        task.executorOperatorSetTaskConfig.taskHook
+            .validatePreTaskResultSubmission(msg.sender, taskHash, executorCert, result);
 
         // Verify certificate based on consensus configuration
         OperatorSet memory executorOperatorSet = OperatorSet(task.avs, task.executorOperatorSetId);
@@ -220,9 +224,8 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
             // Transfer remaining fee to AVS fee collector
             uint96 avsAmount = task.avsFee - feeSplitAmount;
             if (avsAmount > 0) {
-                task.executorOperatorSetTaskConfig.feeToken.safeTransfer(
-                    task.executorOperatorSetTaskConfig.feeCollector, avsAmount
-                );
+                task.executorOperatorSetTaskConfig.feeToken
+                    .safeTransfer(task.executorOperatorSetTaskConfig.feeCollector, avsAmount);
             }
         }
 
@@ -268,16 +271,12 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         _setFeeSplitCollector(_feeSplitCollector);
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Sets the fee split percentage
-     * @param _feeSplit The fee split in basis points (0-10000)
-     */
+    /// @notice Sets the fee split percentage
+    /// @param _feeSplit The fee split in basis points (0-10000)
     function _setFeeSplit(
         uint16 _feeSplit
     ) internal {
@@ -286,10 +285,8 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         emit FeeSplitSet(_feeSplit);
     }
 
-    /**
-     * @notice Sets the fee split collector address
-     * @param _feeSplitCollector The address to receive fee splits
-     */
+    /// @notice Sets the fee split collector address
+    /// @param _feeSplitCollector The address to receive fee splits
     function _setFeeSplitCollector(
         address _feeSplitCollector
     ) internal {
@@ -298,11 +295,9 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         emit FeeSplitCollectorSet(_feeSplitCollector);
     }
 
-    /**
-     * @notice Gets the current status of a task
-     * @param task The task to get the status for
-     * @return The current status of the task, considering expiration
-     */
+    /// @notice Gets the current status of a task
+    /// @param task The task to get the status for
+    /// @return The current status of the task, considering expiration
     function _getTaskStatus(
         Task memory task
     ) internal view returns (TaskStatus) {
@@ -315,22 +310,21 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         return task.status;
     }
 
-    /**
-     * @notice Registers an executor operator set with the TaskMailbox
-     * @param operatorSet The operator set to register
-     * @param isRegistered Whether the operator set is registered
-     */
-    function _registerExecutorOperatorSet(OperatorSet memory operatorSet, bool isRegistered) internal {
+    /// @notice Registers an executor operator set with the TaskMailbox
+    /// @param operatorSet The operator set to register
+    /// @param isRegistered Whether the operator set is registered
+    function _registerExecutorOperatorSet(
+        OperatorSet memory operatorSet,
+        bool isRegistered
+    ) internal {
         isExecutorOperatorSetRegistered[operatorSet.key()] = isRegistered;
         emit ExecutorOperatorSetRegistered(msg.sender, operatorSet.avs, operatorSet.id, isRegistered);
     }
 
-    /**
-     * @notice Gets the certificate verifier for a given curve type
-     * @param curveType The curve type to get the certificate verifier for
-     * @return The address of the certificate verifier
-     * @dev This function will revert if the curve type is invalid
-     */
+    /// @notice Gets the certificate verifier for a given curve type
+    /// @param curveType The curve type to get the certificate verifier for
+    /// @return The address of the certificate verifier
+    /// @dev This function will revert if the curve type is invalid
     function _getCertificateVerifier(
         IKeyRegistrarTypes.CurveType curveType
     ) internal view returns (address) {
@@ -343,11 +337,9 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         }
     }
 
-    /**
-     * @notice Checks if a task config is populated
-     * @param taskConfig The task config to check
-     * @return True if all elements of the task config are populated, false otherwise
-     */
+    /// @notice Checks if a task config is populated
+    /// @param taskConfig The task config to check
+    /// @return True if all elements of the task config are populated, false otherwise
     function _isConfigPopulated(
         ExecutorOperatorSetTaskConfig memory taskConfig
     ) internal pure returns (bool) {
@@ -355,12 +347,10 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
             && taskConfig.taskHook != IAVSTaskHook(address(0)) && taskConfig.taskSLA > 0;
     }
 
-    /**
-     * @notice Validates that the caller is the owner of the operator set
-     * @param operatorSet The operator set to validate ownership for
-     * @param curveType The curve type used to determine the certificate verifier
-     * @dev This function will revert if the curve type is invalid or if msg.sender is not the owner of the operator set
-     */
+    /// @notice Validates that the caller is the owner of the operator set
+    /// @param operatorSet The operator set to validate ownership for
+    /// @param curveType The curve type used to determine the certificate verifier
+    /// @dev This function will revert if the curve type is invalid or if msg.sender is not the owner of the operator set
     function _validateOperatorSetOwner(
         OperatorSet memory operatorSet,
         IKeyRegistrarTypes.CurveType curveType
@@ -373,10 +363,8 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         );
     }
 
-    /**
-     * @notice Validates the consensus configuration
-     * @param consensus The consensus configuration to validate
-     */
+    /// @notice Validates the consensus configuration
+    /// @param consensus The consensus configuration to validate
     function _validateConsensus(
         Consensus memory consensus
     ) internal pure {
@@ -393,12 +381,10 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         }
     }
 
-    /**
-     * @notice Validates a BN254 certificate's basic requirements
-     * @param cert The BN254 certificate to validate
-     * @param operatorTableReferenceTimestamp The expected reference timestamp
-     * @param messageHash The expected message hash
-     */
+    /// @notice Validates a BN254 certificate's basic requirements
+    /// @param cert The BN254 certificate to validate
+    /// @param operatorTableReferenceTimestamp The expected reference timestamp
+    /// @param messageHash The expected message hash
     function _validateBN254Certificate(
         IBN254CertificateVerifierTypes.BN254Certificate memory cert,
         uint32 operatorTableReferenceTimestamp,
@@ -409,12 +395,10 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         require(!(cert.signature.X == 0 && cert.signature.Y == 0), EmptyCertificateSignature());
     }
 
-    /**
-     * @notice Validates an ECDSA certificate's basic requirements
-     * @param cert The ECDSA certificate to validate
-     * @param operatorTableReferenceTimestamp The expected reference timestamp
-     * @param messageHash The expected message hash
-     */
+    /// @notice Validates an ECDSA certificate's basic requirements
+    /// @param cert The ECDSA certificate to validate
+    /// @param operatorTableReferenceTimestamp The expected reference timestamp
+    /// @param messageHash The expected message hash
     function _validateECDSACertificate(
         IECDSACertificateVerifierTypes.ECDSACertificate memory cert,
         uint32 operatorTableReferenceTimestamp,
@@ -425,15 +409,13 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         require(cert.sig.length > 0, EmptyCertificateSignature());
     }
 
-    /**
-     * @notice Verifies an executor certificate based on the consensus configuration
-     * @param curveType The curve type used for signature verification
-     * @param consensus The consensus configuration
-     * @param executorOperatorSet The executor operator set
-     * @param operatorTableReferenceTimestamp The reference timestamp of the operator table
-     * @param messageHash The hash of the message that was signed by the operators
-     * @param executorCert The executor certificate to verify
-     */
+    /// @notice Verifies an executor certificate based on the consensus configuration
+    /// @param curveType The curve type used for signature verification
+    /// @param consensus The consensus configuration
+    /// @param executorOperatorSet The executor operator set
+    /// @param operatorTableReferenceTimestamp The reference timestamp of the operator table
+    /// @param messageHash The hash of the message that was signed by the operators
+    /// @param executorCert The executor certificate to verify
     function _verifyExecutorCertificate(
         IKeyRegistrarTypes.CurveType curveType,
         Consensus memory consensus,
@@ -486,9 +468,8 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
                 // Validate the certificate
                 _validateBN254Certificate(bn254Cert, operatorTableReferenceTimestamp, messageHash);
 
-                isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER).verifyCertificateProportion(
-                    executorOperatorSet, bn254Cert, totalStakeProportionThresholds
-                );
+                isThresholdMet = IBN254CertificateVerifier(BN254_CERTIFICATE_VERIFIER)
+                    .verifyCertificateProportion(executorOperatorSet, bn254Cert, totalStakeProportionThresholds);
             } else if (curveType == IKeyRegistrarTypes.CurveType.ECDSA) {
                 // ECDSA Certificate verification
                 IECDSACertificateVerifierTypes.ECDSACertificate memory ecdsaCert =
@@ -497,9 +478,8 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
                 // Validate the certificate
                 _validateECDSACertificate(ecdsaCert, operatorTableReferenceTimestamp, messageHash);
 
-                (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER).verifyCertificateProportion(
-                    executorOperatorSet, ecdsaCert, totalStakeProportionThresholds
-                );
+                (isThresholdMet,) = IECDSACertificateVerifier(ECDSA_CERTIFICATE_VERIFIER)
+                    .verifyCertificateProportion(executorOperatorSet, ecdsaCert, totalStakeProportionThresholds);
             } else {
                 revert InvalidCurveType();
             }
@@ -510,11 +490,9 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
         }
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc ITaskMailbox
     function getExecutorOperatorSetTaskConfig(
@@ -579,7 +557,10 @@ contract TaskMailbox is Initializable, OwnableUpgradeable, ReentrancyGuardUpgrad
     }
 
     /// @inheritdoc ITaskMailbox
-    function getMessageHash(bytes32 taskHash, bytes memory result) public pure returns (bytes32) {
+    function getMessageHash(
+        bytes32 taskHash,
+        bytes memory result
+    ) public pure returns (bytes32) {
         return keccak256(abi.encode(taskHash, result));
     }
 }

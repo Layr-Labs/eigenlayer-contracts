@@ -123,15 +123,13 @@ library BeaconChainProofs_DeprecatedM1 {
         uint40 validatorIndex;
     }
 
-    /**
-     *
-     * @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the
-     * beacon state balance tree, four uint64 values (making 32 bytes) are grouped together and treated as a single leaf in the merkle tree. Thus the
-     * validatorIndex mod 4 is used to determine which of the four uint64 values to extract from the balanceRoot.
-     * @param validatorIndex is the index of the validator being proven for.
-     * @param balanceRoot is the combination of 4 validator balances being proven for.
-     * @return The validator's balance, in Gwei
-     */
+    ///
+    /// @notice This function is parses the balanceRoot to get the uint64 balance of a validator.  During merkleization of the
+    /// beacon state balance tree, four uint64 values (making 32 bytes) are grouped together and treated as a single leaf in the merkle tree. Thus the
+    /// validatorIndex mod 4 is used to determine which of the four uint64 values to extract from the balanceRoot.
+    /// @param validatorIndex is the index of the validator being proven for.
+    /// @param balanceRoot is the combination of 4 validator balances being proven for.
+    /// @return The validator's balance, in Gwei
     function getBalanceFromBalanceRoot(uint40 validatorIndex, bytes32 balanceRoot) internal pure returns (uint64) {
         uint bitShiftAmount = (validatorIndex % 4) * 64;
         bytes32 validatorBalanceLittleEndian = bytes32((uint(balanceRoot) << bitShiftAmount));
@@ -139,26 +137,22 @@ library BeaconChainProofs_DeprecatedM1 {
         return validatorBalance;
     }
 
-    /**
-     * @notice This function verifies merkle proofs of the fields of a certain validator against a beacon chain state root
-     * @param validatorIndex the index of the proven validator
-     * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param proof is the data used in proving the validator's fields
-     * @param validatorFields the claimed fields of the validator
-     */
+    /// @notice This function verifies merkle proofs of the fields of a certain validator against a beacon chain state root
+    /// @param validatorIndex the index of the proven validator
+    /// @param beaconStateRoot is the beacon chain state root to be proven against.
+    /// @param proof is the data used in proving the validator's fields
+    /// @param validatorFields the claimed fields of the validator
     function verifyValidatorFields(uint40 validatorIndex, bytes32 beaconStateRoot, bytes calldata proof, bytes32[] calldata validatorFields)
         internal
         view
     {
         require(
-            validatorFields.length == 2 ** VALIDATOR_FIELD_TREE_HEIGHT,
+            validatorFields.length == 2**VALIDATOR_FIELD_TREE_HEIGHT,
             "BeaconChainProofs.verifyValidatorFields: Validator fields has incorrect length"
         );
 
-        /**
-         * Note: the length of the validator merkle proof is BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1.
-         * There is an additional layer added by hashing the root with the length of the validator list
-         */
+        /// Note: the length of the validator merkle proof is BeaconChainProofs.VALIDATOR_TREE_HEIGHT + 1.
+        /// There is an additional layer added by hashing the root with the length of the validator list
         require(
             proof.length == 32 * ((VALIDATOR_TREE_HEIGHT + 1) + BEACON_STATE_FIELD_TREE_HEIGHT),
             "BeaconChainProofs.verifyValidatorFields: Proof has incorrect length"
@@ -174,13 +168,11 @@ library BeaconChainProofs_DeprecatedM1 {
         );
     }
 
-    /**
-     * @notice This function verifies merkle proofs of the balance of a certain validator against a beacon chain state root
-     * @param validatorIndex the index of the proven validator
-     * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param proof is the proof of the balance against the beacon chain state root
-     * @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation)
-     */
+    /// @notice This function verifies merkle proofs of the balance of a certain validator against a beacon chain state root
+    /// @param validatorIndex the index of the proven validator
+    /// @param beaconStateRoot is the beacon chain state root to be proven against.
+    /// @param proof is the proof of the balance against the beacon chain state root
+    /// @param balanceRoot is the serialized balance used to prove the balance of the validator (refer to `getBalanceFromBalanceRoot` above for detailed explanation)
     function verifyValidatorBalance(uint40 validatorIndex, bytes32 beaconStateRoot, bytes calldata proof, bytes32 balanceRoot)
         internal
         view
@@ -190,10 +182,8 @@ library BeaconChainProofs_DeprecatedM1 {
             "BeaconChainProofs.verifyValidatorBalance: Proof has incorrect length"
         );
 
-        /**
-         * the beacon state's balance list is a list of uint64 values, and these are grouped together in 4s when merkleized.
-         * Therefore, the index of the balance of a validator is validatorIndex/4
-         */
+        /// the beacon state's balance list is a list of uint64 values, and these are grouped together in 4s when merkleized.
+        /// Therefore, the index of the balance of a validator is validatorIndex/4
         uint balanceIndex = uint(validatorIndex / 4);
         balanceIndex = (BALANCE_INDEX << (BALANCE_TREE_HEIGHT + 1)) | balanceIndex;
 
@@ -203,27 +193,25 @@ library BeaconChainProofs_DeprecatedM1 {
         );
     }
 
-    /**
-     * @notice This function verifies the slot and the withdrawal fields for a given withdrawal
-     * @param beaconStateRoot is the beacon chain state root to be proven against.
-     * @param proofs is the provided set of merkle proofs
-     * @param withdrawalFields is the serialized withdrawal container to be proven
-     */
+    /// @notice This function verifies the slot and the withdrawal fields for a given withdrawal
+    /// @param beaconStateRoot is the beacon chain state root to be proven against.
+    /// @param proofs is the provided set of merkle proofs
+    /// @param withdrawalFields is the serialized withdrawal container to be proven
     function verifyWithdrawalProofs(bytes32 beaconStateRoot, WithdrawalProofs calldata proofs, bytes32[] calldata withdrawalFields)
         internal
         view
     {
         require(
-            withdrawalFields.length == 2 ** WITHDRAWAL_FIELD_TREE_HEIGHT,
+            withdrawalFields.length == 2**WITHDRAWAL_FIELD_TREE_HEIGHT,
             "BeaconChainProofs.verifyWithdrawalProofs: withdrawalFields has incorrect length"
         );
 
         require(
-            proofs.blockHeaderRootIndex < 2 ** BLOCK_ROOTS_TREE_HEIGHT,
+            proofs.blockHeaderRootIndex < 2**BLOCK_ROOTS_TREE_HEIGHT,
             "BeaconChainProofs.verifyWithdrawalProofs: blockRootIndex is too large"
         );
         require(
-            proofs.withdrawalIndex < 2 ** WITHDRAWALS_TREE_HEIGHT, "BeaconChainProofs.verifyWithdrawalProofs: withdrawalIndex is too large"
+            proofs.withdrawalIndex < 2**WITHDRAWALS_TREE_HEIGHT, "BeaconChainProofs.verifyWithdrawalProofs: withdrawalIndex is too large"
         );
 
         // verify the block header proof length
@@ -248,10 +236,8 @@ library BeaconChainProofs_DeprecatedM1 {
             "BeaconChainProofs.verifyWithdrawalProofs: blockNumberProof has incorrect length"
         );
 
-        /**
-         * Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
-         * intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree
-         */
+        /// Computes the block_header_index relative to the beaconStateRoot.  It concatenates the indexes of all the
+        /// intermediate root indexes from the bottom of the sub trees (the block header container) to the top of the tree
         uint blockHeaderIndex = BLOCK_ROOTS_INDEX << (BLOCK_ROOTS_TREE_HEIGHT) | uint(proofs.blockHeaderRootIndex);
         // Verify the blockHeaderRoot against the beaconStateRoot
         require(
@@ -280,13 +266,11 @@ library BeaconChainProofs_DeprecatedM1 {
             "BeaconChainProofs.verifyWithdrawalProofs: Invalid blockNumber merkle proof"
         );
 
-        /**
-         * Next we verify the withdrawal fields against the blockHeaderRoot:
-         * First we compute the withdrawal_index relative to the blockHeaderRoot by concatenating the indexes of all the
-         * intermediate root indexes from the bottom of the sub trees (the withdrawal container) to the top, the blockHeaderRoot.
-         * Then we calculate merkleize the withdrawalFields container to calculate the the withdrawalRoot.
-         * Finally we verify the withdrawalRoot against the executionPayloadRoot.
-         */
+        /// Next we verify the withdrawal fields against the blockHeaderRoot:
+        /// First we compute the withdrawal_index relative to the blockHeaderRoot by concatenating the indexes of all the
+        /// intermediate root indexes from the bottom of the sub trees (the withdrawal container) to the top, the blockHeaderRoot.
+        /// Then we calculate merkleize the withdrawalFields container to calculate the the withdrawalRoot.
+        /// Finally we verify the withdrawalRoot against the executionPayloadRoot.
         uint withdrawalIndex = WITHDRAWALS_INDEX << (WITHDRAWALS_TREE_HEIGHT + 1) | uint(proofs.withdrawalIndex);
         bytes32 withdrawalRoot = Merkle.merkleizeSha256(withdrawalFields);
         require(

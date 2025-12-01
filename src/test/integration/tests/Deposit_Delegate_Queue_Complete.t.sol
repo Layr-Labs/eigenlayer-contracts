@@ -5,12 +5,9 @@ import "src/test/integration/IntegrationChecks.t.sol";
 import "src/test/integration/users/User.t.sol";
 
 contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
-    /**
-     *
-     *                             FULL WITHDRAWALS
-     *
-     */
-
+    ///
+    ///                             FULL WITHDRAWALS
+    ///
     // TODO: fix test
     /// Generates a random staker and operator. The staker:
     /// 1. deposits all assets into strategies
@@ -111,11 +108,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     *
-     *                           RANDOM WITHDRAWALS
-     *
-     */
+    ///
+    ///                           RANDOM WITHDRAWALS
+    ///
 
     /// Generates a random staker and operator. The staker:
     /// 1. deposits all assets into strategies
@@ -217,11 +212,9 @@ contract Integration_Deposit_Delegate_Queue_Complete is IntegrationCheckUtils {
         assert_NoWithdrawalsPending(withdrawalRoots, "all withdrawals should be removed from pending");
     }
 
-    /**
-     *
-     *                            UNHAPPY PATH TESTS
-     *
-     */
+    ///
+    ///                            UNHAPPY PATH TESTS
+    ///
 
     /// Generates a random staker and operator. The staker:
     /// 1. deposits all assets into strategies

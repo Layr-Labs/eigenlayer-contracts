@@ -475,12 +475,16 @@ contract ExistingDeploymentParser is Script, Logger {
             "delegationManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(strategyManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(strategyManager)))
+            ),
             address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(eigenPodManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager)))
+            ),
             address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
@@ -502,11 +506,9 @@ contract ExistingDeploymentParser is Script, Logger {
         );
     }
 
-    /**
-     * @notice Verify initialization of Transparent Upgradeable Proxies. Also check
-     * initialization params if this is the first deployment.
-     * @dev isInitialDeployment True if this is the first deployment of contracts from scratch
-     */
+    /// @notice Verify initialization of Transparent Upgradeable Proxies. Also check
+    /// initialization params if this is the first deployment.
+    /// @dev isInitialDeployment True if this is the first deployment of contracts from scratch
     function _verifyContractsInitialized(
         bool /* isInitialDeployment */
     ) internal virtual {
@@ -703,9 +705,7 @@ contract ExistingDeploymentParser is Script, Logger {
         }
     }
 
-    /**
-     * @notice Log contract addresses and write to output json file
-     */
+    /// @notice Log contract addresses and write to output json file
     function logAndOutputContractAddresses(
         string memory outputPath
     ) public {

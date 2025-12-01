@@ -40,16 +40,17 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
     /// @notice Emitted when EIGEN tokens are unwrapped into bEIGEN
     event TokenUnwrapped(address indexed account, uint256 amount);
 
-    constructor(IERC20 _bEIGEN, string memory _version) SemVerMixin(_version) {
+    constructor(
+        IERC20 _bEIGEN,
+        string memory _version
+    ) SemVerMixin(_version) {
         bEIGEN = _bEIGEN;
         _disableInitializers();
     }
 
-    /**
-     * @notice An initializer function that sets initial values for the contract's state variables.
-     * @param minters the addresses that are allowed to mint
-     * @param mintingAllowances the amount of tokens that each minter is allowed to mint
-     */
+    /// @notice An initializer function that sets initial values for the contract's state variables.
+    /// @param minters the addresses that are allowed to mint
+    /// @param mintingAllowances the amount of tokens that each minter is allowed to mint
     function initialize(
         address initialOwner,
         address[] memory minters,
@@ -82,29 +83,29 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         transferRestrictionsDisabledAfter = type(uint256).max;
     }
 
-    /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     */
-    function setAllowedFrom(address from, bool isAllowedFrom) external onlyOwner {
+    /// @notice This function allows the owner to set the allowedFrom status of an address
+    /// @param from the address whose allowedFrom status is being set
+    /// @param isAllowedFrom the new allowedFrom status
+    function setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) external onlyOwner {
         allowedFrom[from] = isAllowedFrom;
         emit SetAllowedFrom(from, isAllowedFrom);
     }
 
-    /**
-     * @notice This function allows the owner to set the allowedTo status of an address
-     * @param to the address whose allowedTo status is being set
-     * @param isAllowedTo the new allowedTo status
-     */
-    function setAllowedTo(address to, bool isAllowedTo) external onlyOwner {
+    /// @notice This function allows the owner to set the allowedTo status of an address
+    /// @param to the address whose allowedTo status is being set
+    /// @param isAllowedTo the new allowedTo status
+    function setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) external onlyOwner {
         allowedTo[to] = isAllowedTo;
         emit SetAllowedTo(to, isAllowedTo);
     }
 
-    /**
-     * @notice Allows the owner to disable transfer restrictions
-     */
+    /// @notice Allows the owner to disable transfer restrictions
     function disableTransferRestrictions() external onlyOwner {
         require(
             transferRestrictionsDisabledAfter == type(uint256).max,
@@ -114,9 +115,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         emit TransferRestrictionsDisabled();
     }
 
-    /**
-     * @notice This function allows minter to mint tokens
-     */
+    /// @notice This function allows minter to mint tokens
     function mint() external {
         require(mintingAllowance[msg.sender] > 0, "Eigen.mint: msg.sender has no minting allowance");
         require(block.timestamp > mintAllowedAfter[msg.sender], "Eigen.mint: msg.sender is not allowed to mint yet");
@@ -126,9 +125,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         emit Mint(msg.sender, amount);
     }
 
-    /**
-     * @notice This function allows bEIGEN holders to wrap their tokens into Eigen
-     */
+    /// @notice This function allows bEIGEN holders to wrap their tokens into Eigen
     function wrap(
         uint256 amount
     ) external {
@@ -137,9 +134,7 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         emit TokenWrapped(msg.sender, amount);
     }
 
-    /**
-     * @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
-     */
+    /// @notice This function allows Eigen holders to unwrap their tokens into bEIGEN
     function unwrap(
         uint256 amount
     ) external {
@@ -148,23 +143,26 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         emit TokenUnwrapped(msg.sender, amount);
     }
 
-    /**
-     * @notice Allows the sender to transfer tokens to multiple addresses in a single transaction
-     */
-    function multisend(address[] calldata receivers, uint256[] calldata amounts) public {
+    /// @notice Allows the sender to transfer tokens to multiple addresses in a single transaction
+    function multisend(
+        address[] calldata receivers,
+        uint256[] calldata amounts
+    ) public {
         require(receivers.length == amounts.length, "Eigen.multisend: receivers and amounts must be the same length");
         for (uint256 i = 0; i < receivers.length; i++) {
             _transfer(msg.sender, receivers[i], amounts[i]);
         }
     }
 
-    /**
-     * @notice Overrides the beforeTokenTransfer function to enforce transfer restrictions
-     * @param from the address tokens are being transferred from
-     * @param to the address tokens are being transferred to
-     * @param amount the amount of tokens being transferred
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+    /// @notice Overrides the beforeTokenTransfer function to enforce transfer restrictions
+    /// @param from the address tokens are being transferred from
+    /// @param to the address tokens are being transferred to
+    /// @param amount the amount of tokens being transferred
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         // if transfer restrictions are enabled
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted
@@ -176,27 +174,21 @@ contract Eigen is OwnableUpgradeable, ERC20VotesUpgradeable, SemVerMixin {
         super._beforeTokenTransfer(from, to, amount);
     }
 
-    /**
-     * @notice Overridden to return the total bEIGEN supply instead.
-     * @dev The issued supply of EIGEN should match the bEIGEN balance of this contract,
-     * less any bEIGEN tokens that were sent directly to the contract (rather than being wrapped)
-     */
+    /// @notice Overridden to return the total bEIGEN supply instead.
+    /// @dev The issued supply of EIGEN should match the bEIGEN balance of this contract,
+    /// less any bEIGEN tokens that were sent directly to the contract (rather than being wrapped)
     function totalSupply() public view override returns (uint256) {
         return bEIGEN.totalSupply();
     }
 
-    /**
-     * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
-     * checkpoints (and voting).
-     */
+    /// @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
+    /// checkpoints (and voting).
     function clock() public view override returns (uint48) {
         return SafeCastUpgradeable.toUint48(block.timestamp);
     }
 
-    /**
-     * @dev Machine-readable description of the clock as specified in EIP-6372.
-     * Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
-     */
+    /// @dev Machine-readable description of the clock as specified in EIP-6372.
+    /// Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
     // solhint-disable-next-line func-name-mixedcase
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";

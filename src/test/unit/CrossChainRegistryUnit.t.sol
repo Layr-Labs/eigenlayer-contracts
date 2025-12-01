@@ -6,10 +6,8 @@ import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/test/mocks/OperatorTableCalculatorMock.sol";
 import "src/contracts/interfaces/IKeyRegistrar.sol";
 
-/**
- * @title CrossChainRegistryUnitTests
- * @notice Base contract for all CrossChainRegistry unit tests
- */
+/// @title CrossChainRegistryUnitTests
+/// @notice Base contract for all CrossChainRegistry unit tests
 contract CrossChainRegistryUnitTests is
     EigenLayerMultichainUnitTestSetup,
     ICrossChainRegistryErrors,
@@ -130,10 +128,8 @@ contract CrossChainRegistryUnitTests is
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_initialize
- * @notice Unit tests for CrossChainRegistry.initialize
- */
+/// @title CrossChainRegistryUnitTests_initialize
+/// @notice Unit tests for CrossChainRegistry.initialize
 contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
     function test_initialize_AlreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
@@ -170,10 +166,8 @@ contract CrossChainRegistryUnitTests_initialize is CrossChainRegistryUnitTests {
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_createGenerationReservation
- * @notice Unit tests for CrossChainRegistry.createGenerationReservation
- */
+/// @title CrossChainRegistryUnitTests_createGenerationReservation
+/// @notice Unit tests for CrossChainRegistry.createGenerationReservation
 contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRegistryUnitTests {
     function test_Revert_Paused() public {
         cheats.prank(pauser);
@@ -260,10 +254,8 @@ contract CrossChainRegistryUnitTests_createGenerationReservation is CrossChainRe
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_removeGenerationReservation
- * @notice Unit tests for CrossChainRegistry.removeGenerationReservation
- */
+/// @title CrossChainRegistryUnitTests_removeGenerationReservation
+/// @notice Unit tests for CrossChainRegistry.removeGenerationReservation
 contract CrossChainRegistryUnitTests_removeGenerationReservation is CrossChainRegistryUnitTests {
     function setUp() public override {
         super.setUp();
@@ -329,10 +321,8 @@ contract CrossChainRegistryUnitTests_removeGenerationReservation is CrossChainRe
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_setOperatorTableCalculator
- * @notice Unit tests for CrossChainRegistry.setOperatorTableCalculator
- */
+/// @title CrossChainRegistryUnitTests_setOperatorTableCalculator
+/// @notice Unit tests for CrossChainRegistry.setOperatorTableCalculator
 contract CrossChainRegistryUnitTests_setOperatorTableCalculator is CrossChainRegistryUnitTests {
     OperatorTableCalculatorMock newCalculator;
 
@@ -400,10 +390,8 @@ contract CrossChainRegistryUnitTests_setOperatorTableCalculator is CrossChainReg
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_setOperatorSetConfig
- * @notice Unit tests for CrossChainRegistry.setOperatorSetConfig
- */
+/// @title CrossChainRegistryUnitTests_setOperatorSetConfig
+/// @notice Unit tests for CrossChainRegistry.setOperatorSetConfig
 contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryUnitTests {
     OperatorSetConfig newConfig;
 
@@ -499,10 +487,8 @@ contract CrossChainRegistryUnitTests_setOperatorSetConfig is CrossChainRegistryU
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_addChainIDsToWhitelist
- * @notice Unit tests for CrossChainRegistry.addChainIDsToWhitelist
- */
+/// @title CrossChainRegistryUnitTests_addChainIDsToWhitelist
+/// @notice Unit tests for CrossChainRegistry.addChainIDsToWhitelist
 contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistryUnitTests {
     uint[] newChainIDs;
     address[] newOperatorTableUpdaters;
@@ -607,10 +593,8 @@ contract CrossChainRegistryUnitTests_addChainIDsToWhitelist is CrossChainRegistr
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_removeChainIDsFromWhitelist
- * @notice Unit tests for CrossChainRegistry.removeChainIDsFromWhitelist
- */
+/// @title CrossChainRegistryUnitTests_removeChainIDsFromWhitelist
+/// @notice Unit tests for CrossChainRegistry.removeChainIDsFromWhitelist
 contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRegistryUnitTests {
     function setUp() public override {
         super.setUp();
@@ -655,10 +639,8 @@ contract CrossChainRegistryUnitTests_removeChainIDsFromWhitelist is CrossChainRe
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_getActiveGenerationReservations
- * @notice Unit tests for CrossChainRegistry.getActiveGenerationReservations
- */
+/// @title CrossChainRegistryUnitTests_getActiveGenerationReservations
+/// @notice Unit tests for CrossChainRegistry.getActiveGenerationReservations
 contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossChainRegistryUnitTests {
     function test_getActiveGenerationReservations_Empty() public {
         OperatorSet[] memory reservations = crossChainRegistry.getActiveGenerationReservations();
@@ -692,10 +674,8 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_calculateOperatorTableBytes
- * @notice Unit tests for CrossChainRegistry.calculateOperatorTableBytes
- */
+/// @title CrossChainRegistryUnitTests_calculateOperatorTableBytes
+/// @notice Unit tests for CrossChainRegistry.calculateOperatorTableBytes
 contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRegistryUnitTests {
     bytes testOperatorTableBytes = hex"1234567890";
 
@@ -737,10 +717,8 @@ contract CrossChainRegistryUnitTests_calculateOperatorTableBytes is CrossChainRe
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_getSupportedChains
- * @notice Unit tests for CrossChainRegistry.getSupportedChains
- */
+/// @title CrossChainRegistryUnitTests_getSupportedChains
+/// @notice Unit tests for CrossChainRegistry.getSupportedChains
 contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUnitTests {
     function test_getSupportedChains_Initial() public {
         (uint[] memory supportedChains, address[] memory operatorTableUpdaters) = crossChainRegistry.getSupportedChains();
@@ -787,10 +765,8 @@ contract CrossChainRegistryUnitTests_getSupportedChains is CrossChainRegistryUni
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_setTableUpdateCadence
- * @notice Unit tests for CrossChainRegistry.setTableUpdateCadence
- */
+/// @title CrossChainRegistryUnitTests_setTableUpdateCadence
+/// @notice Unit tests for CrossChainRegistry.setTableUpdateCadence
 contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistryUnitTests {
     function test_Revert_NotOwner() public {
         uint32 newTableUpdateCadence = 14 days;
@@ -848,10 +824,8 @@ contract CrossChainRegistryUnitTests_setTableUpdateCadence is CrossChainRegistry
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange
- * @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationsByRange
- */
+/// @title CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange
+/// @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationsByRange
 contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is CrossChainRegistryUnitTests {
     function test_revert_invalidRange_startGreaterThanEnd() public {
         // Create some reservations first
@@ -980,10 +954,8 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
     }
 }
 
-/**
- * @title CrossChainRegistryUnitTests_getActiveGenerationReservationCount
- * @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationCount
- */
+/// @title CrossChainRegistryUnitTests_getActiveGenerationReservationCount
+/// @notice Unit tests for CrossChainRegistry.getActiveGenerationReservationCount
 contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is CrossChainRegistryUnitTests {
     function test_getActiveGenerationReservationCount_Empty() public {
         uint count = crossChainRegistry.getActiveGenerationReservationCount();

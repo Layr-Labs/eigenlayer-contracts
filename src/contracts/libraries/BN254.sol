@@ -21,12 +21,10 @@
 
 pragma solidity ^0.8.27;
 
-/**
- * @title Library for operations on the BN254 elliptic curve.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Contains BN254 parameters, common operations (addition, scalar mul, pairing), and BLS signature functionality.
- */
+/// @title Library for operations on the BN254 elliptic curve.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice Contains BN254 parameters, common operations (addition, scalar mul, pairing), and BLS signature functionality.
 library BN254 {
     // modulus for the underlying field F_p of the elliptic curve
     uint256 internal constant FP_MODULUS =
@@ -96,12 +94,11 @@ library BN254 {
         return G2Point([nG2x1, nG2x0], [nG2y1, nG2y0]);
     }
 
-    bytes32 internal constant powersOfTauMerkleRoot = 0x22c998e49752bbb1918ba87d6d59dd0e83620a311ba91dd4b2cc84990b31b56f;
+    bytes32 internal constant powersOfTauMerkleRoot =
+        0x22c998e49752bbb1918ba87d6d59dd0e83620a311ba91dd4b2cc84990b31b56f;
 
-    /**
-     * @param p Some point in G1.
-     * @return The negation of `p`, i.e. p.plus(p.negate()) should be zero.
-     */
+    /// @param p Some point in G1.
+    /// @return The negation of `p`, i.e. p.plus(p.negate()) should be zero.
     function negate(
         G1Point memory p
     ) internal pure returns (G1Point memory) {
@@ -113,10 +110,11 @@ library BN254 {
         }
     }
 
-    /**
-     * @return r the sum of two points of G1
-     */
-    function plus(G1Point memory p1, G1Point memory p2) internal view returns (G1Point memory r) {
+    /// @return r the sum of two points of G1
+    function plus(
+        G1Point memory p1,
+        G1Point memory p2
+    ) internal view returns (G1Point memory r) {
         uint256[4] memory input;
         input[0] = p1.X;
         input[1] = p1.Y;
@@ -135,14 +133,15 @@ library BN254 {
         require(success, ECAddFailed());
     }
 
-    /**
-     * @notice an optimized ecMul implementation that takes O(log_2(s)) ecAdds
-     * @param p the point to multiply
-     * @param s the scalar to multiply by
-     * @dev this function is only safe to use if the scalar is 9 bits or less
-     */
-    function scalar_mul_tiny(BN254.G1Point memory p, uint16 s) internal view returns (BN254.G1Point memory) {
-        require(s < 2 ** 9, ScalarTooLarge());
+    /// @notice an optimized ecMul implementation that takes O(log_2(s)) ecAdds
+    /// @param p the point to multiply
+    /// @param s the scalar to multiply by
+    /// @dev this function is only safe to use if the scalar is 9 bits or less
+    function scalar_mul_tiny(
+        BN254.G1Point memory p,
+        uint16 s
+    ) internal view returns (BN254.G1Point memory) {
+        require(s < 2**9, ScalarTooLarge());
 
         // if s is 1 return p
         if (s == 1) {
@@ -178,12 +177,13 @@ library BN254 {
         return acc;
     }
 
-    /**
-     * @return r the product of a point on G1 and a scalar, i.e.
-     *         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
-     *         points p.
-     */
-    function scalar_mul(G1Point memory p, uint256 s) internal view returns (G1Point memory r) {
+    /// @return r the product of a point on G1 and a scalar, i.e.
+    ///         p == p.scalar_mul(1) and p.plus(p) == p.scalar_mul(2) for all
+    ///         points p.
+    function scalar_mul(
+        G1Point memory p,
+        uint256 s
+    ) internal view returns (G1Point memory r) {
         uint256[3] memory input;
         input[0] = p.X;
         input[1] = p.Y;
@@ -199,12 +199,10 @@ library BN254 {
         require(success, ECMulFailed());
     }
 
-    /**
-     *  @return The result of computing the pairing check
-     *         e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
-     *         For example,
-     *         pairing([P1(), P1().negate()], [P2(), P2()]) should return true.
-     */
+    ///  @return The result of computing the pairing check
+    ///         e(p1[0], p2[0]) *  .... * e(p1[n], p2[n]) == 1
+    ///         For example,
+    ///         pairing([P1(), P1().negate()], [P2(), P2()]) should return true.
     function pairing(
         G1Point memory a1,
         G2Point memory a2,
@@ -242,10 +240,8 @@ library BN254 {
         return out[0] != 0;
     }
 
-    /**
-     * @notice This function is functionally the same as pairing(), however it specifies a gas limit
-     *         the user can set, as a precompile may use the entire gas budget if it reverts.
-     */
+    /// @notice This function is functionally the same as pairing(), however it specifies a gas limit
+    ///         the user can set, as a precompile may use the entire gas budget if it reverts.
     function safePairing(
         G1Point memory a1,
         G2Point memory a2,
@@ -302,9 +298,7 @@ library BN254 {
         return keccak256(abi.encodePacked(pk.X[0], pk.X[1], pk.Y[0], pk.Y[1]));
     }
 
-    /**
-     * @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
-     */
+    /// @notice adapted from https://github.com/HarryR/solcrypto/blob/master/contracts/altbn128.sol
     function hashToG1(
         bytes32 _x
     ) internal view returns (G1Point memory) {
@@ -326,13 +320,11 @@ library BN254 {
         return G1Point(0, 0);
     }
 
-    /**
-     * Given X, find Y
-     *
-     *   where y = sqrt(x^3 + b)
-     *
-     * Returns: (x^3 + b), y
-     */
+    /// Given X, find Y
+    ///
+    ///   where y = sqrt(x^3 + b)
+    ///
+    /// Returns: (x^3 + b), y
     function findYFromX(
         uint256 x
     ) internal view returns (uint256, uint256) {
@@ -346,7 +338,11 @@ library BN254 {
         return (beta, y);
     }
 
-    function expMod(uint256 _base, uint256 _exponent, uint256 _modulus) internal view returns (uint256 retval) {
+    function expMod(
+        uint256 _base,
+        uint256 _exponent,
+        uint256 _modulus
+    ) internal view returns (uint256 retval) {
         bool success;
         uint256[1] memory output;
         uint256[6] memory input;

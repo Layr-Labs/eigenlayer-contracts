@@ -19,7 +19,11 @@ import "forge-std/Test.sol";
 contract RegisterAsOperator is Script, Test {
     Vm cheats = Vm(VM_ADDRESS);
 
-    function run(string memory configFile, address operator, string memory metadataURI) public {
+    function run(
+        string memory configFile,
+        address operator,
+        string memory metadataURI
+    ) public {
         // Load config
         string memory deployConfigPath = string(bytes(string.concat("script/output/", configFile)));
         string memory config_data = vm.readFile(deployConfigPath);
