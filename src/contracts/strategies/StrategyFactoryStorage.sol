@@ -12,9 +12,6 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// @notice Upgradeable beacon used for baseline strategies deployed by this contract.
     IBeacon public strategyBeacon;
 
-    /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
-    IBeacon public durationVaultBeacon;
-
     /// @notice Mapping token => Strategy contract for the token
     /// The strategies in this mapping are deployed by the StrategyFactory.
     /// The factory can only deploy a single strategy per token address
@@ -26,6 +23,9 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
 
     /// @notice Mapping token => Whether or not a strategy can be deployed for the token
     mapping(IERC20 => bool) public isBlacklisted;
+
+    /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
+    IBeacon public durationVaultBeacon;
 
     /// @notice Mapping token => all duration vault strategies deployed for the token.
     mapping(IERC20 => IDurationVaultStrategy[]) internal durationVaultsByToken;
