@@ -154,7 +154,7 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
     function getAppointeePermissions(
         address account,
         address appointee
-    ) external returns (address[] memory, bytes4[] memory);
+    ) external view returns (address[] memory, bytes4[] memory);
 
     /**
      * @notice Retrieves all appointees that can call a specific function for an account.
@@ -164,5 +164,5 @@ interface IPermissionController is IPermissionControllerErrors, IPermissionContr
      * @dev Does not include admins in the returned list, even though they have calling permission.
      * @return An array of appointee addresses.
      */
-    function getAppointees(address account, address target, bytes4 selector) external returns (address[] memory);
+    function getAppointees(address account, address target, bytes4 selector) external view returns (address[] memory);
 }
