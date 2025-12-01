@@ -1,4 +1,4 @@
-# v1.9.1 Slashing UX Improvements
+# v1.9.0 Slashing UX Improvements
 
 ## Release Manager
 
