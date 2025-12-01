@@ -3,12 +3,10 @@ pragma solidity ^0.8.27;
 
 import "../../interfaces/IRewardsCoordinator.sol";
 
-/**
- * @title Storage variables for the `RewardsCoordinator` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This storage contract is separate from the logic to simplify the upgrade process.
- */
+/// @title Storage variables for the `RewardsCoordinator` contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice This storage contract is separate from the logic to simplify the upgrade process.
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     // Constants
 
@@ -80,10 +78,8 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
-    /**
-     * @notice List of roots submitted by the rewardsUpdater
-     * @dev Array is internal with an external getter so we can return a `DistributionRoot[] memory` object
-     */
+    /// @notice List of roots submitted by the rewardsUpdater
+    /// @dev Array is internal with an external getter so we can return a `DistributionRoot[] memory` object
     DistributionRoot[] internal _distributionRoots;
 
     /// Slot 2

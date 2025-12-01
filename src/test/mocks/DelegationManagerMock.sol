@@ -28,9 +28,7 @@ contract DelegationManagerMock is Test {
     function slashOperatorShares(
         address operator,
         OperatorSet memory,
-        /**
-         * operatorSet
-         */
+        /// operatorSet
         uint, /*slashId*/
         IStrategy strategy,
         uint64 prevMaxMagnitude,
@@ -63,7 +61,9 @@ contract DelegationManagerMock is Test {
         address operator,
         ISignatureUtilsMixinTypes.SignatureWithExpiry memory, /*approverSignatureAndExpiry*/
         bytes32 /*approverSalt*/
-    ) external {
+    )
+        external
+    {
         delegatedTo[msg.sender] = operator;
     }
 

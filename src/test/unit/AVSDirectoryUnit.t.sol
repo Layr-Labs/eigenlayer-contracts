@@ -105,7 +105,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function test_registerOperatorToAVS_Paused() public {
         cheats.prank(pauser);
-        avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
+        avsDirectory.pause(2**PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.registerOperatorToAVS(defaultOperator, defaultOperatorSignature);
     }
@@ -155,7 +155,7 @@ contract AVSDirectoryUnitTests is EigenLayerUnitTestSetup, IAVSDirectoryEvents, 
 
     function test_deregisterOperatorFromAVS_Paused() public {
         cheats.prank(pauser);
-        avsDirectory.pause(2 ** PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
+        avsDirectory.pause(2**PAUSED_OPERATOR_REGISTER_DEREGISTER_TO_AVS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         avsDirectory.deregisterOperatorFromAVS(defaultOperator);
     }

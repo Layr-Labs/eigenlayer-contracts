@@ -3,12 +3,10 @@ pragma solidity ^0.8.27;
 
 import "../MultichainIntegrationChecks.t.sol";
 
-/**
- * @title Multichain_Full_Flow
- * @notice Integration tests for multichain functionality
- * @dev Tests the complete flow: key registration -> table calculation ->
- *      transport simulation -> table update -> certificate verification
- */
+/// @title Multichain_Full_Flow
+/// @notice Integration tests for multichain functionality
+/// @dev Tests the complete flow: key registration -> table calculation ->
+///      transport simulation -> table update -> certificate verification
 contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
@@ -37,11 +35,9 @@ contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUti
         _createGenerationReservation(operatorSet);
     }
 
-    /**
-     * @notice Test complete BN254 multichain happy path flow
-     * @dev Covers key registration, table generation, cross-chain transport simulation,
-     *      table updates, and certificate verification
-     */
+    /// @notice Test complete BN254 multichain happy path flow
+    /// @dev Covers key registration, table generation, cross-chain transport simulation,
+    ///      table updates, and certificate verification
     function test_BN254_MultichainStandard() external {
         console.log("Testing BN254 multichain flow:");
 
@@ -62,10 +58,8 @@ contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUti
         console.log("BN254 certificate verified successfully");
     }
 
-    /**
-     * @notice Test BN254 multichain flow with proportional verification
-     * @dev Test case 3: Verify BN254 certificate with proportional thresholds
-     */
+    /// @notice Test BN254 multichain flow with proportional verification
+    /// @dev Test case 3: Verify BN254 certificate with proportional thresholds
     function test_BN254_MultichainStandard_ProportionalVerification() external {
         console.log("Testing BN254 multichain flow with proportional verification:");
 
@@ -115,10 +109,8 @@ contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUti
         console.log("BN254 proportional verification tests completed successfully");
     }
 
-    /**
-     * @notice Test BN254 multichain flow with nominal verification
-     * @dev Test case 4: Verify BN254 certificate with nominal thresholds
-     */
+    /// @notice Test BN254 multichain flow with nominal verification
+    /// @dev Test case 4: Verify BN254 certificate with nominal thresholds
     function test_BN254_MultichainStandard_NominalVerification() external {
         console.log("Testing BN254 multichain flow with nominal verification:");
 
@@ -175,11 +167,9 @@ contract Integration_Multichain_Full_Flow_BN254 is MultichainIntegrationCheckUti
 contract Integration_Multichain_Full_Flow_ECDSA is MultichainIntegrationCheckUtils {
     using StdStyle for *;
 
-    /**
-     * @notice Test complete ECDSA multichain happy path flow
-     * @dev Covers key registration, table generation, cross-chain transport simulation,
-     *      table updates, and certificate verification
-     */
+    /// @notice Test complete ECDSA multichain happy path flow
+    /// @dev Covers key registration, table generation, cross-chain transport simulation,
+    ///      table updates, and certificate verification
     function test_ECDSA_MultichainStandard() external {
         console.log("Testing ECDSA multichain flow:");
         vm.warp(block.timestamp + 50_000);

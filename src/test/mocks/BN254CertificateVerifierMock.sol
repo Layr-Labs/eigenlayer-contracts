@@ -16,7 +16,8 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
 
     mapping(bytes32 certificateHash => bool isValid) internal _isValidCertificate;
 
-    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => BN254OperatorSetInfo operatorSetInfo)) internal _operatorSetInfos;
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => BN254OperatorSetInfo operatorSetInfo)) internal
+        _operatorSetInfos;
     mapping(bytes32 operatorSetKey => address owner) internal _operatorSetOwners;
     mapping(bytes32 operatorSetKey => uint32 maxStalenessPeriod) internal _maxStalenessPeriods;
     mapping(bytes32 operatorSetKey => uint32 latestReferenceTimestamp) internal _latestReferenceTimestamp;
@@ -75,11 +76,9 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
         return _isReferenceTimestampSet[operatorSet.key()][referenceTimestamp];
     }
 
-    /**
-     * @notice Validates certificate timestamp against staleness requirements
-     * @param operatorSetKey The operator set key
-     * @param referenceTimestamp The reference timestamp to validate
-     */
+    /// @notice Validates certificate timestamp against staleness requirements
+    /// @param operatorSetKey The operator set key
+    /// @param referenceTimestamp The reference timestamp to validate
     function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
@@ -88,11 +87,9 @@ contract BN254CertificateVerifierMock is Test, IBN254CertificateVerifierTypes, I
         require(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp), RootDisabled());
     }
 
-    /**
-     * @notice Public function to validate certificate timestamp (for testing)
-     * @param operatorSet The operator set
-     * @param referenceTimestamp The reference timestamp to validate
-     */
+    /// @notice Public function to validate certificate timestamp (for testing)
+    /// @param operatorSet The operator set
+    /// @param referenceTimestamp The reference timestamp to validate
     function validateCertificateTimestamp(OperatorSet memory operatorSet, uint32 referenceTimestamp) external view {
         _validateCertificateTimestamp(operatorSet.key(), referenceTimestamp);
     }

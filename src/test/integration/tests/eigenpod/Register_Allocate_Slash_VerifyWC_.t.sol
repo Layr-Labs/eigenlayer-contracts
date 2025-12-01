@@ -24,12 +24,10 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
 
     uint slashId;
 
-    /**
-     * 1. Create an operatorSet and register the operator allocating all magnitude
-     * 2. slash operator to 1 magnitude remaining
-     * 3. delegate staker to operator
-     * 4. deposit (verify withdrawal credentials)
-     */
+    /// 1. Create an operatorSet and register the operator allocating all magnitude
+    /// 2. slash operator to 1 magnitude remaining
+    /// 3. delegate staker to operator
+    /// 4. deposit (verify withdrawal credentials)
     function _init() internal override {
         _configAssetTypes(HOLDS_ETH);
         (staker, strategies, initDepositShares) = _newRandomStaker();
@@ -67,15 +65,13 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
     }
 
-    /**
-     * Test sequence following _init()
-     * 4. slash validators on beacon chain (start/complete checkpoint)
-     * 5. queue withdrawal
-     * 6. complete withdrawal
-     * Given the operator has 1 magnitude remaining, the being slashed on the beacon chain
-     * and calculating a non-WAD BCSF, their slashing factor should be rounded down to 0. Resulting in
-     * the staker having 0 withdrawable shares.
-     */
+    /// Test sequence following _init()
+    /// 4. slash validators on beacon chain (start/complete checkpoint)
+    /// 5. queue withdrawal
+    /// 6. complete withdrawal
+    /// Given the operator has 1 magnitude remaining, the being slashed on the beacon chain
+    /// and calculating a non-WAD BCSF, their slashing factor should be rounded down to 0. Resulting in
+    /// the staker having 0 withdrawable shares.
     function test_slashBC_startCompleteCP_queue_complete(uint24 _r) public rand(_r) {
         // 4. slash validators on beacon chain (start/complete checkpoint)
         uint40[] memory slashedValidators = _choose(validators);
@@ -118,14 +114,12 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_Withdrawal_AsShares_State(staker, operator, withdrawals[0], strategies, 0.toArrayU256());
     }
 
-    /**
-     * Test sequence following _init()
-     * 4. fully slash operator on opSet again to 0 magnitude
-     * 5. undelegate
-     * 6. redeposit (start/complete checkpoint)
-     * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate
-     * and "redeposit" to Eigenlayer.
-     */
+    /// Test sequence following _init()
+    /// 4. fully slash operator on opSet again to 0 magnitude
+    /// 5. undelegate
+    /// 6. redeposit (start/complete checkpoint)
+    /// This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate
+    /// and "redeposit" to Eigenlayer.
     function test_slash_undelegate_redeposit(uint24 _r) public rand(_r) {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
@@ -159,15 +153,13 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         }
     }
 
-    /**
-     * Test sequence following _init()
-     * 4. fully slash operator on opSet again to 0 magnitude
-     * 5. undelegate
-     * 6. complete withdrawals as shares(although amount 0 from fully slashed operator)
-     * 7. redeposit (start/complete checkpoint)
-     * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
-     * complete withdrawals as shares(0 shares though), and redeposit to Eigenlayer.
-     */
+    /// Test sequence following _init()
+    /// 4. fully slash operator on opSet again to 0 magnitude
+    /// 5. undelegate
+    /// 6. complete withdrawals as shares(although amount 0 from fully slashed operator)
+    /// 7. redeposit (start/complete checkpoint)
+    /// This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
+    /// complete withdrawals as shares(0 shares though), and redeposit to Eigenlayer.
     function test_slash_undelegate_completeAsShares_startCompleteCP(uint24 _r) public rand(_r) {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
@@ -196,15 +188,13 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_CompleteCheckpoint_State(staker);
     }
 
-    /**
-     * Test sequence following _init()
-     * 4. fully slash operator on opSet again to 0 magnitude
-     * 5. undelegate
-     * 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
-     * 7. redeposit (start new validators and verifywc)
-     * This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
-     * complete withdrawals as tokens(0 tokens though), and redeposit to Eigenlayer.
-     */
+    /// Test sequence following _init()
+    /// 4. fully slash operator on opSet again to 0 magnitude
+    /// 5. undelegate
+    /// 6. complete withdrawals as tokens(although amount 0 from fully slashed operator)
+    /// 7. redeposit (start new validators and verifywc)
+    /// This is testing when an operator is fully slashed with 0 magnitude, the staker can still undelegate,
+    /// complete withdrawals as tokens(0 tokens though), and redeposit to Eigenlayer.
     function test_slash_undelegate_completeAsTokens_verifyWC(uint24 _r) public rand(_r) {
         // 4. AVS slashes operator again to 0 magnitude and fully slashed
         SlashingParams memory slashParams = _genSlashing_Full(operator, operatorSet);
@@ -232,13 +222,11 @@ contract Integration_Register_Allocate_Slash_VerifyWC is IntegrationCheckUtils {
         check_VerifyWC_State(staker, validators, beaconBalanceGwei);
     }
 
-    /**
-     * Test sequence following _init()
-     * 4. queue withdrawal
-     * 5. complete withdrawal as tokens
-     * This is testing a staker can queue a withdrawal and complete as tokens even
-     * though the operator has 1 maxMagnitude
-     */
+    /// Test sequence following _init()
+    /// 4. queue withdrawal
+    /// 5. complete withdrawal as tokens
+    /// This is testing a staker can queue a withdrawal and complete as tokens even
+    /// though the operator has 1 maxMagnitude
     function test_queueAllShares_completeAsTokens(uint24 _r) public rand(_r) {
         // 4. queue withdrawal
         // ( , uint[] memory withdrawShares) = _randWithdrawal(strategies, initDepositShares);

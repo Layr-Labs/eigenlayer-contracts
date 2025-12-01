@@ -52,11 +52,9 @@ library LibProofGen {
     using LibProofGen for *;
     using LibValidator for *;
 
-    /**
-     *
-     *              CONSTANTS AND CONFIG
-     *
-     */
+    ///
+    ///              CONSTANTS AND CONFIG
+    ///
     bytes32 constant CONFIG_SLOT = keccak256("LibProofGen.config");
 
     function config() internal view returns (Config storage) {
@@ -99,11 +97,9 @@ library LibProofGen {
         cfg.BALANCE_PROOF_LEN = 32 * (BeaconChainProofs.BALANCE_TREE_HEIGHT + 1);
     }
 
-    /**
-     *
-     *             PROOFGEN: MAIN METHOD
-     *
-     */
+    ///
+    ///             PROOFGEN: MAIN METHOD
+    ///
 
     /// @dev This method is how our mock beacon chain provides EigenPods with valid proofs of beacon state.
     ///
@@ -147,16 +143,12 @@ library LibProofGen {
         bytes32 balanceContainerRoot = trees.balancesTree.build({leaves: balanceLeaves, height: BeaconChainProofs.BALANCE_TREE_HEIGHT + 1});
 
         // Build merkle tree for BeaconState
-        bytes32 beaconStateRoot = trees.stateTree.build({
-            leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot),
-            height: config().BEACON_STATE_TREE_HEIGHT
-        });
+        bytes32 beaconStateRoot = trees.stateTree
+            .build({leaves: _getBeaconStateLeaves(validatorsRoot, balanceContainerRoot), height: config().BEACON_STATE_TREE_HEIGHT});
 
         // Build merkle tree for BeaconBlock
-        beaconBlockRoot = trees.blockTree.build({
-            leaves: _getBeaconBlockLeaves(beaconStateRoot),
-            height: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT
-        });
+        beaconBlockRoot = trees.blockTree
+            .build({leaves: _getBeaconBlockLeaves(beaconStateRoot), height: BeaconChainProofs.BEACON_BLOCK_HEADER_TREE_HEIGHT});
 
         // Pre-generate proofs for EigenPod methods
         p.genStateRootProof(beaconStateRoot);
@@ -167,11 +159,9 @@ library LibProofGen {
         return beaconBlockRoot;
     }
 
-    /**
-     *
-     *              MERKLE TREE BUILDER
-     *
-     */
+    ///
+    ///              MERKLE TREE BUILDER
+    ///
 
     /// @dev Builds a merkle tree in storage using the given leaves and height
     /// -- if the leaves given are not complete (i.e. the depth should have more leaves),
@@ -236,11 +226,9 @@ library LibProofGen {
         return curNode;
     }
 
-    /**
-     *
-     *              PROOF GENERATION
-     *
-     */
+    ///
+    ///              PROOF GENERATION
+    ///
 
     /// @dev Generate global proof of beaconStateRoot -> beaconBlockRoot
     /// Used in verifyWithdrawalCredentials and verifyStaleBalance
@@ -374,11 +362,9 @@ library LibProofGen {
         }
     }
 
-    /**
-     *
-     *              MERKLE LEAVES GETTERS
-     *
-     */
+    ///
+    ///              MERKLE LEAVES GETTERS
+    ///
 
     /// @dev Get the leaves of the beacon block tree
     function _getBeaconBlockLeaves(bytes32 beaconStateRoot) internal view returns (bytes32[] memory) {

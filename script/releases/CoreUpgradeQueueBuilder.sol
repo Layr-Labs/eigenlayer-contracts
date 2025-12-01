@@ -5,32 +5,29 @@ import "./Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import {IPausable} from "src/contracts/interfaces/IPausable.sol";
 
-/**
- * @title CoreUpgradeQueueBuilder
- * @notice Provides reusable helpers for constructing multisig upgrade calls.
- * Usage:
- * ```solidity
- * MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
- * executorCalls.upgradeAVSDirectory();
- * ```
- */
+/// @title CoreUpgradeQueueBuilder
+/// @notice Provides reusable helpers for constructing multisig upgrade calls.
+/// Usage:
+/// ```solidity
+/// MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
+/// executorCalls.upgradeAVSDirectory();
+/// ```
 library CoreUpgradeQueueBuilder {
     using Env for *;
     using Encode for *;
     using CoreUpgradeQueueBuilder for MultisigCall[];
 
-    /**
-     * permissions/
-     */
+    /// permissions/
     function upgradePermissionController(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.permissionController()),
-                impl: address(Env.impl.permissionController())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({
+                    proxy: address(Env.proxy.permissionController()),
+                    impl: address(Env.impl.permissionController())
+                })
         });
     }
 
@@ -39,25 +36,19 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.keyRegistrar()),
-                impl: address(Env.impl.keyRegistrar())
-            })
+            data: Encode.proxyAdmin
+            .upgrade({proxy: address(Env.proxy.keyRegistrar()), impl: address(Env.impl.keyRegistrar())})
         });
     }
 
-    /**
-     * core/
-     */
+    /// core/
     function upgradeAllocationManager(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.allocationManager()),
-                impl: address(Env.impl.allocationManager())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.allocationManager()), impl: address(Env.impl.allocationManager())})
         });
     }
 
@@ -66,10 +57,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.avsDirectory()),
-                impl: address(Env.impl.avsDirectory())
-            })
+            data: Encode.proxyAdmin
+            .upgrade({proxy: address(Env.proxy.avsDirectory()), impl: address(Env.impl.avsDirectory())})
         });
     }
 
@@ -78,10 +67,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.delegationManager()),
-                impl: address(Env.impl.delegationManager())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.delegationManager()), impl: address(Env.impl.delegationManager())})
         });
     }
 
@@ -90,10 +77,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.protocolRegistry()),
-                impl: address(Env.impl.protocolRegistry())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.protocolRegistry()), impl: address(Env.impl.protocolRegistry())})
         });
     }
 
@@ -102,10 +87,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.releaseManager()),
-                impl: address(Env.impl.releaseManager())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.releaseManager()), impl: address(Env.impl.releaseManager())})
         });
     }
 
@@ -114,10 +97,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.rewardsCoordinator()),
-                impl: address(Env.impl.rewardsCoordinator())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.rewardsCoordinator()), impl: address(Env.impl.rewardsCoordinator())})
         });
     }
 
@@ -126,25 +107,19 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.strategyManager()),
-                impl: address(Env.impl.strategyManager())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.strategyManager()), impl: address(Env.impl.strategyManager())})
         });
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     function upgradeEigenPodManager(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.eigenPodManager()),
-                impl: address(Env.impl.eigenPodManager())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.eigenPodManager()), impl: address(Env.impl.eigenPodManager())})
         });
     }
 
@@ -157,18 +132,14 @@ library CoreUpgradeQueueBuilder {
         });
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function upgradeEigenStrategy(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.eigenStrategy()),
-                impl: address(Env.impl.eigenStrategy())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.eigenStrategy()), impl: address(Env.impl.eigenStrategy())})
         });
     }
 
@@ -200,25 +171,22 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.strategyFactory()),
-                impl: address(Env.impl.strategyFactory())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.strategyFactory()), impl: address(Env.impl.strategyFactory())})
         });
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function upgradeBN254CertificateVerifier(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.bn254CertificateVerifier()),
-                impl: address(Env.impl.bn254CertificateVerifier())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({
+                    proxy: address(Env.proxy.bn254CertificateVerifier()),
+                    impl: address(Env.impl.bn254CertificateVerifier())
+                })
         });
     }
 
@@ -227,10 +195,8 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.crossChainRegistry()),
-                impl: address(Env.impl.crossChainRegistry())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({proxy: address(Env.proxy.crossChainRegistry()), impl: address(Env.impl.crossChainRegistry())})
         });
     }
 
@@ -239,10 +205,11 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.ecdsaCertificateVerifier()),
-                impl: address(Env.impl.ecdsaCertificateVerifier())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({
+                    proxy: address(Env.proxy.ecdsaCertificateVerifier()),
+                    impl: address(Env.impl.ecdsaCertificateVerifier())
+                })
         });
     }
 
@@ -251,22 +218,22 @@ library CoreUpgradeQueueBuilder {
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({
-                proxy: address(Env.proxy.operatorTableUpdater()),
-                impl: address(Env.impl.operatorTableUpdater())
-            })
+            data: Encode.proxyAdmin
+                .upgrade({
+                    proxy: address(Env.proxy.operatorTableUpdater()),
+                    impl: address(Env.impl.operatorTableUpdater())
+                })
         });
     }
 
-    /**
-     * avs/
-     */
+    /// avs/
     function upgradeTaskMailbox(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
         return calls.append({
             to: Env.proxyAdmin(),
-            data: Encode.proxyAdmin.upgrade({proxy: address(Env.proxy.taskMailbox()), impl: address(Env.impl.taskMailbox())})
+            data: Encode.proxyAdmin
+            .upgrade({proxy: address(Env.proxy.taskMailbox()), impl: address(Env.impl.taskMailbox())})
         });
     }
 }

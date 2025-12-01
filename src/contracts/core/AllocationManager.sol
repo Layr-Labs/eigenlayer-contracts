@@ -28,15 +28,11 @@ contract AllocationManager is
     using EnumerableSet for *;
     using SafeCast for *;
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
 
-    /**
-     * @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
-     */
+    /// @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
     constructor(
         IAllocationManagerView _allocationManagerView,
         IDelegationManager _delegation,
@@ -240,7 +236,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
-    function setAllocationDelay(address operator, uint32 delay) external {
+    function setAllocationDelay(
+        address operator,
+        uint32 delay
+    ) external {
         /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
         bool newlyRegistered = (msg.sender == address(delegation));
@@ -255,7 +254,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
-    function setAVSRegistrar(address avs, IAVSRegistrar registrar) external checkCanCall(avs) {
+    function setAVSRegistrar(
+        address avs,
+        IAVSRegistrar registrar
+    ) external checkCanCall(avs) {
         // Check that the registrar is correctly configured to prevent an AVSRegistrar contract
         // from being used with the wrong AVS
         require(registrar.supportsAVS(avs), InvalidAVSRegistrar());
@@ -264,19 +266,28 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
-    function updateAVSMetadataURI(address avs, string calldata metadataURI) external checkCanCall(avs) {
+    function updateAVSMetadataURI(
+        address avs,
+        string calldata metadataURI
+    ) external checkCanCall(avs) {
         if (!_avsRegisteredMetadata[avs]) _avsRegisteredMetadata[avs] = true;
         emit AVSMetadataURIUpdated(avs, metadataURI);
     }
 
     /// @inheritdoc IAllocationManagerActions
     /// @notice This function will be deprecated in Early Q2 2026 in favor of `createOperatorSets` which takes in `CreateSetParamsV2`
-    function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParams[] calldata params
+    ) external checkCanCall(avs) {
         createOperatorSets(avs, _convertCreateSetParams(params, avs));
     }
 
     /// @inheritdoc IAllocationManagerActions
-    function createOperatorSets(address avs, CreateSetParamsV2[] memory params) public checkCanCall(avs) {
+    function createOperatorSets(
+        address avs,
+        CreateSetParamsV2[] memory params
+    ) public checkCanCall(avs) {
         require(_avsRegisteredMetadata[avs], NonexistentAVSMetadata());
         for (uint256 i = 0; i < params.length; i++) {
             _createOperatorSet(avs, params[i], DEFAULT_BURN_ADDRESS);
@@ -341,7 +352,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
-    function updateSlasher(OperatorSet memory operatorSet, address slasher) external checkCanCall(operatorSet.avs) {
+    function updateSlasher(
+        OperatorSet memory operatorSet,
+        address slasher
+    ) external checkCanCall(operatorSet.avs) {
         require(_operatorSets[operatorSet.avs].contains(operatorSet.id), InvalidOperatorSet());
         // Prevent updating a slasher if one is not already set
         // A slasher is set either on operatorSet creation or, for operatorSets created prior to v1.9.0, via `migrateSlashers`
@@ -382,19 +396,15 @@ contract AllocationManager is
         }
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @dev Slashes an operator.
-     * @param params The slashing parameters. See IAllocationManager.sol#slashOperator for specifics.
-     * @param operatorSet The operator set from which the operator is being slashed.
-     * @return slashId The operator set's unique identifier for the slash.
-     * @return shares The number of shares to be burned or redistributed for each strategy that was slashed.
-     */
+    /// @dev Slashes an operator.
+    /// @param params The slashing parameters. See IAllocationManager.sol#slashOperator for specifics.
+    /// @param operatorSet The operator set from which the operator is being slashed.
+    /// @return slashId The operator set's unique identifier for the slash.
+    /// @return shares The number of shares to be burned or redistributed for each strategy that was slashed.
     function _slashOperator(
         SlashingParams calldata params,
         OperatorSet memory operatorSet
@@ -463,7 +473,11 @@ contract AllocationManager is
 
             // Emit an event for the updated allocation
             emit AllocationUpdated(
-                params.operator, operatorSet, params.strategies[i], allocation.currentMagnitude, uint32(block.number)
+                params.operator,
+                operatorSet,
+                params.strategies[i],
+                allocation.currentMagnitude,
+                uint32(block.number)
             );
 
             _updateMaxMagnitude(params.operator, params.strategies[i], info.maxMagnitude);
@@ -482,12 +496,10 @@ contract AllocationManager is
         emit OperatorSlashed(params.operator, operatorSet, params.strategies, wadSlashed, params.description);
     }
 
-    /**
-     * @dev Adds a strategy to an operator set.
-     * @param operatorSet The operator set to add the strategy to.
-     * @param strategy The strategy to add to the operator set.
-     * @param isRedistributing Whether the operator set is redistributing.
-     */
+    /// @dev Adds a strategy to an operator set.
+    /// @param operatorSet The operator set to add the strategy to.
+    /// @param strategy The strategy to add to the operator set.
+    /// @param isRedistributing Whether the operator set is redistributing.
     function _addStrategyToOperatorSet(
         OperatorSet memory operatorSet,
         IStrategy strategy,
@@ -502,16 +514,14 @@ contract AllocationManager is
         emit StrategyAddedToOperatorSet(operatorSet, strategy);
     }
 
-    /**
-     * @notice Creates a new operator set for an AVS.
-     * @param avs The AVS address that owns the operator set.
-     * @param params The parameters for creating the operator set.
-     * @param redistributionRecipient Address to receive redistributed funds when operators are slashed.
-     * @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
-     * and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
-     * @dev Providing `BEACONCHAIN_ETH_STRAT` as a strategy will revert since it's not currently supported.
-     * @dev The address that can slash the operatorSet is the `avs` address.
-     */
+    /// @notice Creates a new operator set for an AVS.
+    /// @param avs The AVS address that owns the operator set.
+    /// @param params The parameters for creating the operator set.
+    /// @param redistributionRecipient Address to receive redistributed funds when operators are slashed.
+    /// @dev If `redistributionRecipient` is address(0), the operator set is considered non-redistributing
+    /// and slashed funds are sent to the `DEFAULT_BURN_ADDRESS`.
+    /// @dev Providing `BEACONCHAIN_ETH_STRAT` as a strategy will revert since it's not currently supported.
+    /// @dev The address that can slash the operatorSet is the `avs` address.
     function _createOperatorSet(
         address avs,
         CreateSetParamsV2 memory params,
@@ -538,13 +548,15 @@ contract AllocationManager is
         _updateSlasher({operatorSet: operatorSet, slasher: params.slasher, instantEffectBlock: true});
     }
 
-    /**
-     * @dev Clear one or more pending deallocations to a strategy's allocated magnitude
-     * @param operator the operator whose pending deallocations will be cleared
-     * @param strategy the strategy to update
-     * @param numToClear the number of pending deallocations to clear
-     */
-    function _clearDeallocationQueue(address operator, IStrategy strategy, uint16 numToClear) internal {
+    /// @dev Clear one or more pending deallocations to a strategy's allocated magnitude
+    /// @param operator the operator whose pending deallocations will be cleared
+    /// @param strategy the strategy to update
+    /// @param numToClear the number of pending deallocations to clear
+    function _clearDeallocationQueue(
+        address operator,
+        IStrategy strategy,
+        uint16 numToClear
+    ) internal {
         uint256 numCleared;
         uint256 length = deallocationQueue[operator][strategy].length();
 
@@ -570,14 +582,16 @@ contract AllocationManager is
         }
     }
 
-    /**
-     * @dev Sets the operator's allocation delay. This is the number of blocks between an operator
-     * allocating magnitude to an operator set, and the magnitude becoming slashable.
-     * @param operator The operator to set the delay on behalf of.
-     * @param delay The allocation delay in blocks.
-     * @param newlyRegistered Whether the operator is newly registered in the core protocol.
-     */
-    function _setAllocationDelay(address operator, uint32 delay, bool newlyRegistered) internal {
+    /// @dev Sets the operator's allocation delay. This is the number of blocks between an operator
+    /// allocating magnitude to an operator set, and the magnitude becoming slashable.
+    /// @param operator The operator to set the delay on behalf of.
+    /// @param delay The allocation delay in blocks.
+    /// @param newlyRegistered Whether the operator is newly registered in the core protocol.
+    function _setAllocationDelay(
+        address operator,
+        uint32 delay,
+        bool newlyRegistered
+    ) internal {
         AllocationDelayInfo memory info = _allocationDelayInfo[operator];
 
         // If there is a pending delay that can be applied now, set it
@@ -619,14 +633,12 @@ contract AllocationManager is
             allocation.currentMagnitude != 0;
     }
 
-    /**
-     * @dev For an operator set, get the operator's effective allocated magnitude.
-     * If the operator set has a pending deallocation that can be completed at the
-     * current block number, this method returns a view of the allocation as if the deallocation
-     * was completed.
-     * @return info the effective allocated and pending magnitude for the operator set, and
-     * the effective encumbered magnitude for all operator sets belonging to this strategy
-     */
+    /// @dev For an operator set, get the operator's effective allocated magnitude.
+    /// If the operator set has a pending deallocation that can be completed at the
+    /// current block number, this method returns a view of the allocation as if the deallocation
+    /// was completed.
+    /// @return info the effective allocated and pending magnitude for the operator set, and
+    /// the effective encumbered magnitude for all operator sets belonging to this strategy
     function _getUpdatedAllocation(
         address operator,
         bytes32 operatorSetKey,
@@ -695,28 +707,40 @@ contract AllocationManager is
         }
     }
 
-    function _updateMaxMagnitude(address operator, IStrategy strategy, uint64 newMaxMagnitude) internal {
+    function _updateMaxMagnitude(
+        address operator,
+        IStrategy strategy,
+        uint64 newMaxMagnitude
+    ) internal {
         _maxMagnitudeHistory[operator][strategy].push({key: uint32(block.number), value: newMaxMagnitude});
         emit MaxMagnitudeUpdated(operator, strategy, newMaxMagnitude);
     }
 
-    function _calcDelta(uint64 currentMagnitude, uint64 newMagnitude) internal pure returns (int128) {
+    function _calcDelta(
+        uint64 currentMagnitude,
+        uint64 newMagnitude
+    ) internal pure returns (int128) {
         return int128(uint128(newMagnitude)) - int128(uint128(currentMagnitude));
     }
 
     /// @dev Use safe casting when downcasting to uint64
-    function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
+    function _addInt128(
+        uint64 a,
+        int128 b
+    ) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
     }
 
-    /**
-     * @dev Helper function to update the slasher for an operator set
-     * @param operatorSet the operator set to update the slasher for
-     * @param slasher the new slasher
-     * @param instantEffectBlock Whether the new slasher will take effect immediately. Instant if on operatorSet creation or migration function.
-     *        The new slasher will take `ALLOCATION_CONFIGURATION_DELAY` blocks to take effect if called by the `updateSlasher` function.
-     */
-    function _updateSlasher(OperatorSet memory operatorSet, address slasher, bool instantEffectBlock) internal {
+    /// @dev Helper function to update the slasher for an operator set
+    /// @param operatorSet the operator set to update the slasher for
+    /// @param slasher the new slasher
+    /// @param instantEffectBlock Whether the new slasher will take effect immediately. Instant if on operatorSet creation or migration function.
+    ///        The new slasher will take `ALLOCATION_CONFIGURATION_DELAY` blocks to take effect if called by the `updateSlasher` function.
+    function _updateSlasher(
+        OperatorSet memory operatorSet,
+        address slasher,
+        bool instantEffectBlock
+    ) internal {
         // Ensure that the slasher address is not the 0 address, which is used to denote if the slasher is not set
         require(slasher != address(0), InputAddressZero());
 
@@ -739,13 +763,11 @@ contract AllocationManager is
         emit SlasherUpdated(operatorSet, slasher, params.effectBlock);
     }
 
-    /**
-     * @notice Helper function to convert CreateSetParams to CreateSetParamsV2
-     * @param params The parameters to convert
-     * @param avs The AVS address that owns the operator sets, which will be the slasher
-     * @return The converted parameters, into CreateSetParamsV2 format
-     * @dev The slasher will be set to the AVS address
-     */
+    /// @notice Helper function to convert CreateSetParams to CreateSetParamsV2
+    /// @param params The parameters to convert
+    /// @param avs The AVS address that owns the operator sets, which will be the slasher
+    /// @return The converted parameters, into CreateSetParamsV2 format
+    /// @dev The slasher will be set to the AVS address
     function _convertCreateSetParams(
         CreateSetParams[] calldata params,
         address avs
@@ -757,11 +779,9 @@ contract AllocationManager is
         return createSetParams;
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// Public View Functions
 
@@ -800,7 +820,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
         // slashableUntil returns the last block the operator is slashable in so we check for
@@ -892,31 +915,46 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getEncumberedMagnitude(address, IStrategy) external view returns (uint64 encumberedMagnitude) {
+    function getEncumberedMagnitude(
+        address,
+        IStrategy
+    ) external view returns (uint64 encumberedMagnitude) {
         _delegateView(viewImplementation);
         encumberedMagnitude;
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getAllocatableMagnitude(address, IStrategy) external view returns (uint64 allocatableMagnitude) {
+    function getAllocatableMagnitude(
+        address,
+        IStrategy
+    ) external view returns (uint64 allocatableMagnitude) {
         _delegateView(viewImplementation);
         allocatableMagnitude;
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getMaxMagnitude(address, IStrategy) external view returns (uint64 maxMagnitude) {
+    function getMaxMagnitude(
+        address,
+        IStrategy
+    ) external view returns (uint64 maxMagnitude) {
         _delegateView(viewImplementation);
         maxMagnitude;
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getMaxMagnitudes(address, IStrategy[] calldata) external view returns (uint64[] memory maxMagnitudes) {
+    function getMaxMagnitudes(
+        address,
+        IStrategy[] calldata
+    ) external view returns (uint64[] memory maxMagnitudes) {
         _delegateView(viewImplementation);
         maxMagnitudes;
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getMaxMagnitudes(address[] calldata, IStrategy) external view returns (uint64[] memory maxMagnitudes) {
+    function getMaxMagnitudes(
+        address[] calldata,
+        IStrategy
+    ) external view returns (uint64[] memory maxMagnitudes) {
         _delegateView(viewImplementation);
         maxMagnitudes;
     }
@@ -940,7 +978,10 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerView
-    function isMemberOfOperatorSet(address, OperatorSet memory) external view returns (bool result) {
+    function isMemberOfOperatorSet(
+        address,
+        OperatorSet memory
+    ) external view returns (bool result) {
         _delegateView(viewImplementation);
         result;
     }

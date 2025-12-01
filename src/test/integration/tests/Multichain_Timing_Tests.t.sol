@@ -3,11 +3,9 @@ pragma solidity ^0.8.27;
 
 import "../MultichainIntegrationChecks.t.sol";
 
-/**
- * @title Multichain_Timing_Tests
- * @notice Integration tests for multichain timing constraints and edge cases
- * @dev Tests the temporal behavior of global table root confirmations and operator table updates
- */
+/// @title Multichain_Timing_Tests
+/// @notice Integration tests for multichain timing constraints and edge cases
+/// @dev Tests the temporal behavior of global table root confirmations and operator table updates
 contract Integration_Multichain_Timing_Tests_Base is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
@@ -27,9 +25,7 @@ contract Integration_Multichain_Timing_Tests_Base is MultichainIntegrationCheckU
         operatorSet = OperatorSet({avs: address(this), id: 1});
     }
 
-    /**
-     * @notice Helper function to confirm global table root and update BN254 table with custom staleness period
-     */
+    /// @notice Helper function to confirm global table root and update BN254 table with custom staleness period
     function _confirmGlobalTableRootAndUpdateBN254WithStaleness(
         OperatorSet memory _operatorSet,
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory _operatorSetInfo,
@@ -60,9 +56,7 @@ contract Integration_Multichain_Timing_Tests_Base is MultichainIntegrationCheckU
         operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 
-    /**
-     * @notice Helper function to confirm global table root and update ECDSA table with custom staleness period
-     */
+    /// @notice Helper function to confirm global table root and update ECDSA table with custom staleness period
     function _confirmGlobalTableRootAndUpdateECDSAWithStaleness(
         OperatorSet memory _operatorSet,
         IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos,
@@ -93,9 +87,7 @@ contract Integration_Multichain_Timing_Tests_Base is MultichainIntegrationCheckU
         operatorTableUpdater.updateOperatorTable(referenceTimestamp, globalTableRoot, operatorSetIndex, proof, operatorTable);
     }
 
-    /**
-     * @notice Helper function to post a new global root
-     */
+    /// @notice Helper function to post a new global root
     function _postNewGlobalRoot(
         OperatorSet memory _operatorSet,
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory _operatorSetInfo,
@@ -117,9 +109,7 @@ contract Integration_Multichain_Timing_Tests_Base is MultichainIntegrationCheckU
         _updateGlobalTableRoot(globalTableRoot, timestamp);
     }
 
-    /**
-     * @notice Helper function to test stale table transport
-     */
+    /// @notice Helper function to test stale table transport
     function _testStaleTableTransport(
         OperatorSet memory _operatorSet,
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory _operatorSetInfo,
@@ -159,10 +149,8 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         _createGenerationReservation(operatorSet);
     }
 
-    /**
-     * @notice Test that posting a root with the same reference timestamp as the latest reverts
-     *
-     */
+    /// @notice Test that posting a root with the same reference timestamp as the latest reverts
+    ///
     function test_PostRoot_SameLatestReferenceTimestamp_Reverts() external {
         console.log("Testing post root with same latestReferenceTimestamp - should revert:");
 
@@ -212,10 +200,8 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         console.log("Successfully verified that posting root with same timestamp reverts");
     }
 
-    /**
-     * @notice Test that posting a root right after the latest reference timestamp succeeds
-     * @dev This tests the boundary condition where timestamp = latestReferenceTimestamp + 1
-     */
+    /// @notice Test that posting a root right after the latest reference timestamp succeeds
+    /// @dev This tests the boundary condition where timestamp = latestReferenceTimestamp + 1
     function test_PostRoot_RightAfterLatestReferenceTimestamp_Succeeds() external {
         console.log("Testing post root right after latestReferenceTimestamp - should succeed:");
 
@@ -267,10 +253,8 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         console.log("New latest reference timestamp:", newLatestReferenceTimestamp);
     }
 
-    /**
-     * @notice Test that transporting tables with a stale reference timestamp reverts
-     * @dev This tests that operator table updates must have timestamps > latest for that operator set
-     */
+    /// @notice Test that transporting tables with a stale reference timestamp reverts
+    /// @dev This tests that operator table updates must have timestamps > latest for that operator set
     function test_TransportTables_StaleReferenceTimestamp_Reverts() external {
         console.log("Testing transport tables with stale reference timestamp - should revert:");
 
@@ -306,10 +290,8 @@ contract Integration_Multichain_Timing_Tests_GlobalTableRoot is Integration_Mult
         console.log("Operator set timestamp remains:", finalTimestamp);
     }
 
-    /**
-     * @notice Test that transporting tables right after updating the latest reference timestamp succeeds
-     * @dev This tests that table transport works immediately after the global table root is updated
-     */
+    /// @notice Test that transporting tables right after updating the latest reference timestamp succeeds
+    /// @dev This tests that table transport works immediately after the global table root is updated
     function test_TransportTables_RightAfterLatestReferenceTimestamp_Succeeds() external {
         console.log("Testing transport tables right after latest reference timestamp - should succeed:");
 
@@ -363,10 +345,8 @@ contract Integration_Multichain_Timing_Tests_BN254 is Integration_Multichain_Tim
         _createGenerationReservation(operatorSet);
     }
 
-    /**
-     * @notice Test that verifying BN254 certificate after staleness period expires reverts
-     * @dev This tests that certificates become invalid after the maxStalenessPeriod
-     */
+    /// @notice Test that verifying BN254 certificate after staleness period expires reverts
+    /// @dev This tests that certificates become invalid after the maxStalenessPeriod
     function test_VerifyBN254Certificate_AfterStalenessPeriod_Reverts() external {
         console.log("Testing BN254 certificate verification after staleness period - should revert:");
 
@@ -394,10 +374,8 @@ contract Integration_Multichain_Timing_Tests_BN254 is Integration_Multichain_Tim
         console.log("Successfully verified that BN254 certificate verification reverts after staleness period");
     }
 
-    /**
-     * @notice Test that verifying BN254 certificate right at staleness period boundary succeeds
-     * @dev This tests the exact boundary condition where block.timestamp = referenceTimestamp + maxStalenessPeriod
-     */
+    /// @notice Test that verifying BN254 certificate right at staleness period boundary succeeds
+    /// @dev This tests the exact boundary condition where block.timestamp = referenceTimestamp + maxStalenessPeriod
     function test_VerifyBN254Certificate_RightOnStalenessPeriod_Succeeds() external {
         console.log("Testing BN254 certificate verification right on staleness period boundary - should succeed:");
 
@@ -421,10 +399,8 @@ contract Integration_Multichain_Timing_Tests_BN254 is Integration_Multichain_Tim
         console.log("Successfully verified that BN254 certificate verification succeeds right at staleness period boundary");
     }
 
-    /**
-     * @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (BN254)
-     * @dev This tests the complete staleness period update flow for BN254
-     */
+    /// @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (BN254)
+    /// @dev This tests the complete staleness period update flow for BN254
     function test_BN254Certificate_StalenessUpdate_ComplexFlow() external {
         console.log("Testing BN254 complex staleness update flow:");
 
@@ -483,10 +459,8 @@ contract Integration_Multichain_Timing_Tests_ECDSA is Integration_Multichain_Tim
         _createGenerationReservation(operatorSet);
     }
 
-    /**
-     * @notice Test that verifying ECDSA certificate after staleness period expires reverts
-     * @dev This tests that ECDSA certificates become invalid after the maxStalenessPeriod
-     */
+    /// @notice Test that verifying ECDSA certificate after staleness period expires reverts
+    /// @dev This tests that ECDSA certificates become invalid after the maxStalenessPeriod
     function test_VerifyECDSACertificate_AfterStalenessPeriod_Reverts() external {
         console.log("Testing ECDSA certificate verification after staleness period - should revert:");
         IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);
@@ -515,10 +489,8 @@ contract Integration_Multichain_Timing_Tests_ECDSA is Integration_Multichain_Tim
         console.log("Successfully verified that ECDSA certificate verification reverts after staleness period");
     }
 
-    /**
-     * @notice Test that verifying ECDSA certificate right at staleness period boundary succeeds
-     * @dev This tests the exact boundary condition for ECDSA certificates
-     */
+    /// @notice Test that verifying ECDSA certificate right at staleness period boundary succeeds
+    /// @dev This tests the exact boundary condition for ECDSA certificates
     function test_VerifyECDSACertificate_RightOnStalenessPeriod_Succeeds() external {
         console.log("Testing ECDSA certificate verification right on staleness period boundary - should succeed:");
         IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);
@@ -543,10 +515,8 @@ contract Integration_Multichain_Timing_Tests_ECDSA is Integration_Multichain_Tim
         console.log("Successfully verified that ECDSA certificate verification succeeds right at staleness period boundary");
     }
 
-    /**
-     * @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (ECDSA)
-     * @dev This tests the complete staleness period update flow for ECDSA
-     */
+    /// @notice Test complex scenario: verify after staleness -> revert -> update staleness period -> verify again -> pass (ECDSA)
+    /// @dev This tests the complete staleness period update flow for ECDSA
     function test_ECDSACertificate_StalenessUpdate_ComplexFlow() external {
         console.log("Testing ECDSA complex staleness update flow:");
         IOperatorTableCalculatorTypes.ECDSAOperatorInfo[] memory operatorInfos = _generateECDSAOperatorTable(operatorSet, operators);

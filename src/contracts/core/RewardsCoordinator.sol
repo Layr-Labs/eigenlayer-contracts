@@ -11,15 +11,13 @@ import "../permissions/Pausable.sol";
 import "./storage/RewardsCoordinatorStorage.sol";
 import "../mixins/PermissionControllerMixin.sol";
 
-/**
- * @title RewardsCoordinator
- * @author Eigen Labs Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice  This is the contract for rewards in EigenLayer. The main functionalities of this contract are
- * - enabling any ERC20 rewards from AVSs to their operators and stakers for a given time range
- * - allowing stakers and operators to claim their earnings including a split bips for operators
- * - allowing the protocol to provide ERC20 tokens to stakers over a specified time range
- */
+/// @title RewardsCoordinator
+/// @author Eigen Labs Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice  This is the contract for rewards in EigenLayer. The main functionalities of this contract are
+/// - enabling any ERC20 rewards from AVSs to their operators and stakers for a given time range
+/// - allowing stakers and operators to claim their earnings including a split bips for operators
+/// - allowing the protocol to provide ERC20 tokens to stakers over a specified time range
 contract RewardsCoordinator is
     Initializable,
     OwnableUpgradeable,
@@ -61,10 +59,8 @@ contract RewardsCoordinator is
         _disableInitializers();
     }
 
-    /**
-     * @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
-     * configures the initial paused status, activationDelay, and defaultOperatorSplitBips.
-     */
+    /// @dev Initializes the addresses of the initial owner, pauser registry, rewardsUpdater and
+    /// configures the initial paused status, activationDelay, and defaultOperatorSplitBips.
     /// @inheritdoc IRewardsCoordinator
     function initialize(
         address initialOwner,
@@ -80,11 +76,9 @@ contract RewardsCoordinator is
         _setDefaultOperatorSplit(_defaultSplitBips);
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
@@ -139,7 +133,10 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllEarnersCreated(
-                msg.sender, nonce, rewardsSubmissionForAllEarnersHash, rewardsSubmission
+                msg.sender,
+                nonce,
+                rewardsSubmissionForAllEarnersHash,
+                rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
@@ -163,7 +160,11 @@ contract RewardsCoordinator is
             submissionNonce[avs] = nonce + 1;
 
             emit OperatorDirectedAVSRewardsSubmissionCreated(
-                msg.sender, avs, operatorDirectedRewardsSubmissionHash, nonce, operatorDirectedRewardsSubmission
+                msg.sender,
+                avs,
+                operatorDirectedRewardsSubmissionHash,
+                nonce,
+                operatorDirectedRewardsSubmission
             );
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
@@ -194,7 +195,11 @@ contract RewardsCoordinator is
             submissionNonce[operatorSet.avs] = nonce + 1;
 
             emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-                msg.sender, operatorDirectedRewardsSubmissionHash, operatorSet, nonce, operatorDirectedRewardsSubmission
+                msg.sender,
+                operatorDirectedRewardsSubmissionHash,
+                operatorSet,
+                nonce,
+                operatorDirectedRewardsSubmission
             );
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
@@ -308,7 +313,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setClaimerFor(address earner, address claimer) external checkCanCall(earner) {
+    function setClaimerFor(
+        address earner,
+        address claimer
+    ) external checkCanCall(earner) {
         // Require that the earner is an operator or AVS
         require(
             delegationManager.isOperator(earner) || allocationManager.getOperatorSetCount(earner) > 0, InvalidEarner()
@@ -378,24 +386,26 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setRewardsForAllSubmitter(address _submitter, bool _newValue) external onlyOwner {
+    function setRewardsForAllSubmitter(
+        address _submitter,
+        bool _newValue
+    ) external onlyOwner {
         bool prevValue = isRewardsForAllSubmitter[_submitter];
         emit RewardsForAllSubmitterSet(_submitter, prevValue, _newValue);
         isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Internal helper to process reward claims.
-     * @param claim The RewardsMerkleClaims to be processed.
-     * @param recipient The address recipient that receives the ERC20 rewards
-     */
-    function _processClaim(RewardsMerkleClaim calldata claim, address recipient) internal {
+    /// @notice Internal helper to process reward claims.
+    /// @param claim The RewardsMerkleClaims to be processed.
+    /// @param recipient The address recipient that receives the ERC20 rewards
+    function _processClaim(
+        RewardsMerkleClaim calldata claim,
+        address recipient
+    ) internal {
         DistributionRoot memory root = _distributionRoots[claim.rootIndex];
         _checkClaim(claim, root);
         // If claimerFor earner is not set, claimer is by default the earner. Else set to claimerFor
@@ -441,19 +451,24 @@ contract RewardsCoordinator is
         rewardsUpdater = _rewardsUpdater;
     }
 
-    function _setClaimer(address earner, address claimer) internal {
+    function _setClaimer(
+        address earner,
+        address claimer
+    ) internal {
         address prevClaimer = claimerFor[earner];
         claimerFor[earner] = claimer;
         emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
-    /**
-     * @notice Internal helper to set the operator split.
-     * @param operatorSplit The split struct for an Operator
-     * @param split The split in basis points.
-     * @param activatedAt The timestamp when the split is activated.
-     */
-    function _setOperatorSplit(OperatorSplit storage operatorSplit, uint16 split, uint32 activatedAt) internal {
+    /// @notice Internal helper to set the operator split.
+    /// @param operatorSplit The split struct for an Operator
+    /// @param split The split in basis points.
+    /// @param activatedAt The timestamp when the split is activated.
+    function _setOperatorSplit(
+        OperatorSplit storage operatorSplit,
+        uint16 split,
+        uint32 activatedAt
+    ) internal {
         require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
 
         require(block.timestamp > operatorSplit.activatedAt, PreviousSplitPending());
@@ -469,9 +484,7 @@ contract RewardsCoordinator is
         operatorSplit.activatedAt = activatedAt;
     }
 
-    /**
-     * @notice Common checks for all RewardsSubmissions.
-     */
+    /// @notice Common checks for all RewardsSubmissions.
     function _validateCommonRewardsSubmission(
         StrategyAndMultiplier[] calldata strategiesAndMultipliers,
         uint32 startTimestamp,
@@ -500,9 +513,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
-     */
+    /// @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
     function _validateRewardsSubmission(
         RewardsSubmission calldata rewardsSubmission
     ) internal view {
@@ -514,12 +525,10 @@ contract RewardsCoordinator is
         require(rewardsSubmission.startTimestamp <= block.timestamp + MAX_FUTURE_LENGTH, StartTimestampTooFarInFuture());
     }
 
-    /**
-     * @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
-     * @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive).
-     * @param submission OperatorDirectedRewardsSubmission to validate.
-     * @return total amount to be transferred from the avs to the contract.
-     */
+    /// @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
+    /// @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive).
+    /// @param submission OperatorDirectedRewardsSubmission to validate.
+    /// @return total amount to be transferred from the avs to the contract.
     function _validateOperatorDirectedRewardsSubmission(
         OperatorDirectedRewardsSubmission calldata submission
     ) internal view returns (uint256) {
@@ -547,7 +556,10 @@ contract RewardsCoordinator is
         return totalAmount;
     }
 
-    function _checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root) internal view {
+    function _checkClaim(
+        RewardsMerkleClaim calldata claim,
+        DistributionRoot memory root
+    ) internal view {
         require(!root.disabled, RootDisabled());
         require(block.timestamp >= root.activatedAt, RootNotActivated());
         require(claim.tokenIndices.length == claim.tokenTreeProofs.length, InputArrayLengthMismatch());
@@ -571,14 +583,12 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     * @notice verify inclusion of the token claim proof in the earner token root hash (earnerTokenRoot).
-     * The token leaf comprises of the IERC20 token and cumulativeAmount of earnings.
-     * @param earnerTokenRoot root hash of the earner token subtree
-     * @param tokenLeafIndex index of the token leaf
-     * @param tokenProof proof of the token leaf in the earner token subtree
-     * @param tokenLeaf token leaf to be verified
-     */
+    /// @notice verify inclusion of the token claim proof in the earner token root hash (earnerTokenRoot).
+    /// The token leaf comprises of the IERC20 token and cumulativeAmount of earnings.
+    /// @param earnerTokenRoot root hash of the earner token subtree
+    /// @param tokenLeafIndex index of the token leaf
+    /// @param tokenProof proof of the token leaf in the earner token subtree
+    /// @param tokenLeaf token leaf to be verified
     function _verifyTokenClaimProof(
         bytes32 earnerTokenRoot,
         uint32 tokenLeafIndex,
@@ -602,15 +612,13 @@ contract RewardsCoordinator is
         );
     }
 
-    /**
-     * @notice verify inclusion of earner claim proof in the distribution root. This verifies
-     * the inclusion of the earner and earnerTokenRoot hash in the tree. The token claims are proven separately
-     * against the earnerTokenRoot hash (see _verifyTokenClaimProof). The earner leaf comprises of (earner, earnerTokenRoot)
-     * @param root distribution root that should be read from storage
-     * @param earnerLeafIndex index of the earner leaf
-     * @param earnerProof proof of the earners account root in the merkle tree
-     * @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
-     */
+    /// @notice verify inclusion of earner claim proof in the distribution root. This verifies
+    /// the inclusion of the earner and earnerTokenRoot hash in the tree. The token claims are proven separately
+    /// against the earnerTokenRoot hash (see _verifyTokenClaimProof). The earner leaf comprises of (earner, earnerTokenRoot)
+    /// @param root distribution root that should be read from storage
+    /// @param earnerLeafIndex index of the earner leaf
+    /// @param earnerProof proof of the earners account root in the merkle tree
+    /// @param earnerLeaf leaf of earner merkle tree containing the earner address and earner's token root hash
     function _verifyEarnerClaimProof(
         bytes32 root,
         uint32 earnerLeafIndex,
@@ -634,12 +642,10 @@ contract RewardsCoordinator is
         );
     }
 
-    /**
-     * @notice Internal helper to get the operator split in basis points.
-     * @dev It takes default split and activation delay into account while calculating the split.
-     * @param operatorSplit The split struct for an Operator
-     * @return The split in basis points.
-     */
+    /// @notice Internal helper to get the operator split in basis points.
+    /// @dev It takes default split and activation delay into account while calculating the split.
+    /// @param operatorSplit The split struct for an Operator
+    /// @return The split in basis points.
     function _getOperatorSplit(
         OperatorSplit memory operatorSplit
     ) internal view returns (uint16) {
@@ -657,11 +663,9 @@ contract RewardsCoordinator is
         }
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IRewardsCoordinator
     function calculateEarnerLeafHash(
@@ -686,7 +690,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorAVSSplit(address operator, address avs) external view returns (uint16) {
+    function getOperatorAVSSplit(
+        address operator,
+        address avs
+    ) external view returns (uint16) {
         return _getOperatorSplit(_operatorAVSSplitBips[operator][avs]);
     }
 
@@ -698,7 +705,10 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function getOperatorSetSplit(address operator, OperatorSet calldata operatorSet) external view returns (uint16) {
+    function getOperatorSetSplit(
+        address operator,
+        OperatorSet calldata operatorSet
+    ) external view returns (uint16) {
         return _getOperatorSplit(_operatorSetSplitBips[operator][operatorSet.key()]);
     }
 

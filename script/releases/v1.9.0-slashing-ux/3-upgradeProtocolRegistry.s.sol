@@ -9,9 +9,7 @@ import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/**
- * Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
- */
+/// Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
 contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     using Env for *;
 
@@ -29,10 +27,8 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     function testScript() public virtual override {
         if (
             !Env.isCoreProtocolDeployed()
-                || (
-                    _areProxiesDeployed()
-                        && Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()
-                )
+                || (_areProxiesDeployed()
+                    && Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin())
         ) {
             return;
         }

@@ -11,12 +11,10 @@ import "../../interfaces/IEigenPodManager.sol";
 import "../../interfaces/IStrategy.sol";
 import "../../interfaces/IStrategyManager.sol";
 
-/**
- * @title Storage variables for the `StrategyManager` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This storage contract is separate from the logic to simplify the upgrade process.
- */
+/// @title Storage variables for the `StrategyManager` contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice This storage contract is separate from the logic to simplify the upgrade process.
 abstract contract StrategyManagerStorage is IStrategyManager {
     // Constants
 
@@ -91,18 +89,17 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     // Construction
 
-    /**
-     * @param _delegation The delegation contract of EigenLayer.
-     */
-    constructor(IAllocationManager _allocationManager, IDelegationManager _delegation) {
+    /// @param _delegation The delegation contract of EigenLayer.
+    constructor(
+        IAllocationManager _allocationManager,
+        IDelegationManager _delegation
+    ) {
         allocationManager = _allocationManager;
         delegation = _delegation;
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[32] private __gap;
 }

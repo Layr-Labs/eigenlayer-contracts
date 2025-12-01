@@ -22,13 +22,11 @@ contract Integration_HighDSF_Multiple_Deposits is IntegrationCheckUtils {
 
     uint slashId;
 
-    /**
-     * Shared setup:
-     * 1. create a new staker, operator, and avs
-     * 2. create an operator set and register an operator, allocate all magnitude to the operator set
-     * 3. slash operator to 1 magnitude remaining
-     * 4. delegate to operator
-     */
+    /// Shared setup:
+    /// 1. create a new staker, operator, and avs
+    /// 2. create an operator set and register an operator, allocate all magnitude to the operator set
+    /// 3. slash operator to 1 magnitude remaining
+    /// 4. delegate to operator
     function _init() internal override {
         // 1. create a new staker, operator, and avs
         _configAssetTypes(HOLDS_LST);

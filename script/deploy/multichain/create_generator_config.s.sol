@@ -16,7 +16,11 @@ contract CreateGeneratorConfig is Script, Test {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    function run(string memory network, uint256 xCoord, uint256 yCoord) public {
+    function run(
+        string memory network,
+        uint256 xCoord,
+        uint256 yCoord
+    ) public {
         // Network must be preprod, testnet-sepolia, or mainnet
         require(
             _strEq(network, "preprod-hoodi") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
@@ -26,11 +30,9 @@ contract CreateGeneratorConfig is Script, Test {
         // Create G1Point from provided coordinates
         BN254.G1Point memory publicKeyG1 = BN254.G1Point({X: xCoord, Y: yCoord});
 
-        /**
-         *
-         *                     Create the `BN254OperatorSetInfo` struct
-         *
-         */
+        ///
+        ///                     Create the `BN254OperatorSetInfo` struct
+        ///
 
         // 1. Generate the `BN254OperatorSetInfo` struct
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo;
@@ -51,11 +53,9 @@ contract CreateGeneratorConfig is Script, Test {
         );
         operatorSetInfo.operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
 
-        /**
-         *
-         *                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
-         *
-         */
+        ///
+        ///                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
+        ///
 
         // Write operator set info to TOML file
         _writeOperatorSetToml(network, operatorSetInfo);
@@ -113,7 +113,10 @@ contract CreateGeneratorConfig is Script, Test {
         vm.writeToml(finalJson, outputPath);
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 

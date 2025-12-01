@@ -3,21 +3,17 @@ pragma solidity ^0.8.27;
 
 import "src/test/integration/tests/SlashingWithdrawals.t.sol";
 
-/**
- * @notice These tests check for specific withdrawal correctness around timing
- * @dev These tests assume the following:
- * - The staker has a positive balance in all given strategies
- * - The staker has no pending withdrawals
- * - The staker is delegated to the operator
- */
+/// @notice These tests check for specific withdrawal correctness around timing
+/// @dev These tests assume the following:
+/// - The staker has a positive balance in all given strategies
+/// - The staker has no pending withdrawals
+/// - The staker is delegated to the operator
 contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     ///////////////////////////////
     /// WITHDRAWAL TIMING TESTS ///
     ///////////////////////////////
 
-    /**
-     * @notice Test that a slash works correctly just before a _partial_ withdrawal is completed
-     */
+    /// @notice Test that a slash works correctly just before a _partial_ withdrawal is completed
     function testFuzz_queuePartialWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
@@ -82,9 +78,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
     }
 
-    /**
-     * @notice Test that a slash works correctly just before a _total_ withdrawal is completed
-     */
+    /// @notice Test that a slash works correctly just before a _total_ withdrawal is completed
     function testFuzz_queueTotalWithdrawal_slashBeforeWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
@@ -139,9 +133,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         assertEq(strats.length, 0, "all strategies should have no shares remaining");
     }
 
-    /**
-     * @notice Test that a staker can still complete a partial withdrawal even after a slash has been performed
-     */
+    /// @notice Test that a staker can still complete a partial withdrawal even after a slash has been performed
     function testFuzz_queuePartialWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
         uint[] memory depositSharesToWithdraw = new uint[](initDepositShares.length);
         /// 0. Calculate partial withdrawal amounts
@@ -195,9 +187,7 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
         assertEq(strats.length, strategies.length, "all strategies should have some shares remaining");
     }
 
-    /**
-     * @notice Test that a staker is unaffected by a slash after the withdrawal delay has passed
-     */
+    /// @notice Test that a staker is unaffected by a slash after the withdrawal delay has passed
     function testFuzz_queueTotalWithdrawal_slashAfterWithdrawalDelay_completeAsTokens(uint24 _r) public rand(_r) {
         /// 1. Queue withdrawal
         uint[] memory withdrawableShares = _calcWithdrawable(staker, strategies, initDepositShares);
@@ -240,11 +230,9 @@ contract Integration_WithdrawalTiming is Integration_ALMSlashBase {
     }
 }
 
-/**
- * @notice These tests check for specific deallocation correctness around timing
- * @dev These tests assume the following:
- * - The operator is registered and allocated to the operator set
- */
+/// @notice These tests check for specific deallocation correctness around timing
+/// @dev These tests assume the following:
+/// - The operator is registered and allocated to the operator set
 contract Integration_OperatorDeallocationTiming is Integration_ALMSlashBase {
     //////////////////////////////////////////
     /// OPERATOR DEALLOCATION TIMING TESTS ///
@@ -338,12 +326,10 @@ contract Integration_OperatorDeregistrationTiming is Integration_ALMSlashBase {
     }
 }
 
-/**
- * @notice These tests check for specific allocation correctness around timing
- * @dev These tests inherit from IntegrationCheckUtils instead of Integration_ALMSlashBase because they require a
- * different initialization -- specifically, the allocation must be performed within the tests. As such, there are no
- * assumptions and many state variables are declared below.
- */
+/// @notice These tests check for specific allocation correctness around timing
+/// @dev These tests inherit from IntegrationCheckUtils instead of Integration_ALMSlashBase because they require a
+/// different initialization -- specifically, the allocation must be performed within the tests. As such, there are no
+/// assumptions and many state variables are declared below.
 contract Integration_OperatorAllocationTiming is IntegrationCheckUtils {
     AVS avs;
     User operator;

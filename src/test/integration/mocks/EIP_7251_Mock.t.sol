@@ -30,11 +30,9 @@ contract EIP_7251_Mock {
         else revert("EIP_7251_Mock: unknown function");
     }
 
-    /**
-     *
-     *                            "PUBLIC" METHODS
-     *
-     */
+    ///
+    ///                            "PUBLIC" METHODS
+    ///
     function _doAddRequest() internal {
         uint fee = _getFee();
         require(msg.value >= fee, "EIP_7251_Mock: insufficient value for fee");
@@ -73,11 +71,9 @@ contract EIP_7251_Mock {
         }
     }
 
-    /**
-     *
-     *                            PRIVATE METHODS
-     *
-     */
+    ///
+    ///                            PRIVATE METHODS
+    ///
     function _dequeueConsolidationRequests() internal returns (ConsolidationReq[] memory reqs) {
         uint numInQueue = queueTail - queueHead;
         // The actual spec caps this to MAX_CONSOLIDATION_REQUESTS_PER_BLOCK, but that's not super useful for tests

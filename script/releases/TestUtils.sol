@@ -22,26 +22,20 @@ library TestUtils {
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     Vm internal constant vm = Vm(VM_ADDRESS);
 
-    /**
-     *
-     *                         PROXY ADMIN VALIDATION
-     *
-     */
+    ///
+    ///                         PROXY ADMIN VALIDATION
+    ///
 
     /// @dev This function is run on *all* deployed contracts to ensure that the proxyAdmin is correctly set.
     function validateProxyAdmins() internal view {
         address pa = Env.proxyAdmin();
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         assertTrue(
             _getProxyAdmin(address(Env.proxy.permissionController())) == pa, "permissionController proxyAdmin incorrect"
         );
         assertTrue(_getProxyAdmin(address(Env.proxy.keyRegistrar())) == pa, "keyRegistrar proxyAdmin incorrect");
 
-        /**
-         * core/
-         */
+        /// core/
         assertTrue(
             _getProxyAdmin(address(Env.proxy.allocationManager())) == pa, "allocationManager proxyAdmin incorrect"
         );
@@ -56,15 +50,11 @@ library TestUtils {
         );
         assertTrue(_getProxyAdmin(address(Env.proxy.strategyManager())) == pa, "strategyManager proxyAdmin incorrect");
 
-        /**
-         * pods/
-         */
+        /// pods/
         assertTrue(Env.beacon.eigenPod().owner() == Env.executorMultisig(), "eigenPod beacon owner incorrect");
         assertTrue(_getProxyAdmin(address(Env.proxy.eigenPodManager())) == pa, "eigenPodManager proxyAdmin incorrect");
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         assertTrue(_getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
         assertTrue(Env.beacon.strategyBase().owner() == Env.executorMultisig(), "strategyBase beacon owner incorrect");
 
@@ -78,9 +68,7 @@ library TestUtils {
 
         assertTrue(_getProxyAdmin(address(Env.proxy.strategyFactory())) == pa, "strategyFactory proxyAdmin incorrect");
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         assertTrue(
             _getProxyAdmin(address(Env.proxy.crossChainRegistry())) == pa, "crossChainRegistry proxyAdmin incorrect"
         );
@@ -90,14 +78,10 @@ library TestUtils {
 
     function validateDestinationProxyAdmins() internal view {
         address pa = Env.proxyAdmin();
-        /**
-         * core/
-         */
+        /// core/
         assertTrue(_getProxyAdmin(address(Env.proxy.protocolRegistry())) == pa, "protocolRegistry proxyAdmin incorrect");
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         assertTrue(
             _getProxyAdmin(address(Env.proxy.bn254CertificateVerifier())) == pa,
             "bn254CertificateVerifier proxyAdmin incorrect"
@@ -110,29 +94,21 @@ library TestUtils {
             _getProxyAdmin(address(Env.proxy.operatorTableUpdater())) == pa, "operatorTableUpdater proxyAdmin incorrect"
         );
 
-        /**
-         * avs/
-         */
+        /// avs/
         assertTrue(_getProxyAdmin(address(Env.proxy.taskMailbox())) == pa, "taskMailbox proxyAdmin incorrect");
     }
 
-    /**
-     *
-     *                         PROXY VALIDATION
-     *
-     */
+    ///
+    ///                         PROXY VALIDATION
+    ///
 
     /// @dev Validate that the proxy constructors are correctly set
     function validateProxyConstructors() internal view {
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         // PermissionController has no constructor
         validateKeyRegistrarImmutables(Env.proxy.keyRegistrar());
 
-        /**
-         * core/
-         */
+        /// core/
         validateAllocationManagerImmutables(Env.proxy.allocationManager());
         validateAVSDirectoryImmutables(Env.proxy.avsDirectory());
         validateDelegationManagerImmutables(Env.proxy.delegationManager());
@@ -141,15 +117,11 @@ library TestUtils {
         validateRewardsCoordinatorImmutables(Env.proxy.rewardsCoordinator());
         validateStrategyManagerImmutables(Env.proxy.strategyManager());
 
-        /**
-         * pods/
-         */
+        /// pods/
         // EigenPod beacon doesn't have immutable, only implementation does
         validateEigenPodManagerImmutables(Env.proxy.eigenPodManager());
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         validateEigenStrategyImmutables(Env.proxy.eigenStrategy());
         // StrategyBase beacon doesn't have immutables, only implementation does
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
@@ -158,38 +130,28 @@ library TestUtils {
         }
         validateStrategyFactoryImmutables(Env.proxy.strategyFactory());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateCrossChainRegistryImmutables(Env.proxy.crossChainRegistry());
 
         validateDestinationProxyConstructors();
     }
 
     function validateDestinationProxyConstructors() internal view {
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateBN254CertificateVerifierImmutables(Env.proxy.bn254CertificateVerifier());
         validateECDSACertificateVerifierImmutables(Env.proxy.ecdsaCertificateVerifier());
         validateOperatorTableUpdaterImmutables(Env.proxy.operatorTableUpdater());
 
-        /**
-         * avs/
-         */
+        /// avs/
         validateTaskMailboxImmutables(Env.proxy.taskMailbox());
     }
 
     /// @dev Validate that the proxies are already initialized.
     function validateProxiesAlreadyInitialized() internal {
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
 
-        /**
-         * core/
-         */
+        /// core/
         validateAllocationManagerInitialized(Env.proxy.allocationManager());
         validateAVSDirectoryInitialized(Env.proxy.avsDirectory());
         validateDelegationManagerInitialized(Env.proxy.delegationManager());
@@ -198,15 +160,11 @@ library TestUtils {
         validateRewardsCoordinatorInitialized(Env.proxy.rewardsCoordinator());
         validateStrategyManagerInitialized(Env.proxy.strategyManager());
 
-        /**
-         * pods/
-         */
+        /// pods/
         // EigenPod proxies are initialized by individual users
         validateEigenPodManagerInitialized(Env.proxy.eigenPodManager());
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         validateEigenStrategyInitialized(Env.proxy.eigenStrategy());
         // StrategyBase proxies are initialized when deployed by factory
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
@@ -215,46 +173,34 @@ library TestUtils {
         }
         validateStrategyFactoryInitialized(Env.proxy.strategyFactory());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateCrossChainRegistryInitialized(Env.proxy.crossChainRegistry());
 
         validateDestinationProxiesAlreadyInitialized();
     }
 
     function validateDestinationProxiesAlreadyInitialized() internal {
-        /**
-         * core/
-         */
+        /// core/
         validateProtocolRegistryInitialized(Env.proxy.protocolRegistry());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateOperatorTableUpdaterInitialized(Env.proxy.operatorTableUpdater());
         // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
-        /**
-         * avs/
-         */
+        /// avs/
         validateTaskMailboxInitialized(Env.proxy.taskMailbox());
     }
 
     function validateProxyStorage() internal view {
         {
-            /**
-             * permissions/
-             */
+        /// permissions/
 
-            // PauserRegistry is also deployed on destination chain and tested in the `validateDestinationProxyStorage` function
-            // PermissionController and KeyRegistrar have no initial storage
+        // PauserRegistry is also deployed on destination chain and tested in the `validateDestinationProxyStorage` function
+        // PermissionController and KeyRegistrar have no initial storage
         }
 
         {
-            /**
-             * core/
-             */
+            /// core/
             AllocationManager allocationManager = Env.proxy.allocationManager();
             assertTrue(allocationManager.paused() == 0, "alm.paused invalid");
 
@@ -285,9 +231,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * pods/
-             */
+            /// pods/
             // EigenPod proxies are initialized by individual users
 
             EigenPodManager eigenPodManager = Env.proxy.eigenPodManager();
@@ -298,9 +242,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * strategies/
-             */
+            /// strategies/
             EigenStrategy eigenStrategy = Env.proxy.eigenStrategy();
             assertTrue(eigenStrategy.paused() == 0, "eigenStrat.paused invalid");
             assertTrue(address(eigenStrategy.EIGEN()) == address(Env.proxy.eigen()), "eigenStrat.EIGEN invalid");
@@ -324,9 +266,7 @@ library TestUtils {
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
         }
         {
-            /**
-             * multichain/
-             */
+            /// multichain/
             // Operator table updater and certificate verifies do not have initial storage
             CrossChainRegistry crossChainRegistry = Env.proxy.crossChainRegistry();
             assertTrue(crossChainRegistry.owner() == Env.opsMultisig(), "crossChainRegistry owner invalid");
@@ -347,9 +287,7 @@ library TestUtils {
 
     function validateDestinationProxyStorage() internal view {
         {
-            /**
-             * permissions/
-             */
+            /// permissions/
             // PauserRegistry is also deployed on destination chain
             PauserRegistry registry = Env.impl.pauserRegistry();
             assertTrue(registry.isPauser(Env.pauserMultisig()), "pauser multisig should be pauser");
@@ -364,9 +302,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * core/
-             */
+            /// core/
             ProtocolRegistry protocolRegistry = Env.proxy.protocolRegistry();
             assertTrue(
                 protocolRegistry.hasRole(protocolRegistry.PAUSER_ROLE(), Env.pauserMultisig()),
@@ -379,9 +315,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * multichain/
-             */
+            /// multichain/
             OperatorTableUpdater operatorTableUpdater = Env.proxy.operatorTableUpdater();
             assertTrue(operatorTableUpdater.owner() == Env.opsMultisig(), "operatorTableUpdater owner invalid");
             assertTrue(
@@ -392,9 +326,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * avs/
-             */
+            /// avs/
             TaskMailbox taskMailbox = Env.proxy.taskMailbox();
             assertTrue(taskMailbox.owner() == Env.opsMultisig(), "taskMailbox owner invalid");
             assertTrue(taskMailbox.feeSplit() == 0, "taskMailbox feeSplit invalid");
@@ -402,23 +334,17 @@ library TestUtils {
         }
     }
 
-    /**
-     *
-     *                        IMPLEMENTATION VALIDATION
-     *
-     */
+    ///
+    ///                        IMPLEMENTATION VALIDATION
+    ///
 
     /// @dev Validate that the implementation constructors are correctly set
     function validateImplConstructors() internal view {
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         // PermissionController has no constructor
         validateKeyRegistrarImmutables(Env.impl.keyRegistrar());
 
-        /**
-         * core/
-         */
+        /// core/
         validateAllocationManagerViewImmutables(Env.impl.allocationManagerView());
         validateAllocationManagerImmutables(Env.impl.allocationManager());
         validateAVSDirectoryImmutables(Env.impl.avsDirectory());
@@ -428,53 +354,39 @@ library TestUtils {
         validateRewardsCoordinatorImmutables(Env.impl.rewardsCoordinator());
         validateStrategyManagerImmutables(Env.impl.strategyManager());
 
-        /**
-         * pods/
-         */
+        /// pods/
         validateEigenPodImmutables(Env.impl.eigenPod());
         validateEigenPodManagerImmutables(Env.impl.eigenPodManager());
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         validateEigenStrategyImmutables(Env.impl.eigenStrategy());
         validateStrategyBaseImmutables(Env.impl.strategyBase());
         validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryImmutables(Env.impl.strategyFactory());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
 
         validateDestinationImplConstructors();
     }
 
     function validateDestinationImplConstructors() internal view {
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateBN254CertificateVerifierImmutables(Env.impl.bn254CertificateVerifier());
         validateECDSACertificateVerifierImmutables(Env.impl.ecdsaCertificateVerifier());
         validateOperatorTableUpdaterImmutables(Env.impl.operatorTableUpdater());
 
-        /**
-         * avs/
-         */
+        /// avs/
         validateTaskMailboxImmutables(Env.impl.taskMailbox());
     }
 
     /// @dev Validate that the implementation contracts are not initializable.
     /// @dev Each function checks that initializing the contract will revert.
     function validateImplsNotInitializable() internal {
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
 
-        /**
-         * core/
-         */
+        /// core/
         // AllocationManagerView is initializable, but does not expose the `initialize` function.
         validateAllocationManagerInitialized(Env.impl.allocationManager());
         validateAVSDirectoryInitialized(Env.impl.avsDirectory());
@@ -484,53 +396,37 @@ library TestUtils {
         validateRewardsCoordinatorInitialized(Env.impl.rewardsCoordinator());
         validateStrategyManagerInitialized(Env.impl.strategyManager());
 
-        /**
-         * pods/
-         */
+        /// pods/
         // EigenPod implementations are initialized by individual users
         validateEigenPodManagerInitialized(Env.impl.eigenPodManager());
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         validateEigenStrategyInitialized(Env.impl.eigenStrategy());
         // StrategyBase implementations are initialized when deployed by factory
         validateStrategyBaseTVLLimitsInitialized(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryInitialized(Env.impl.strategyFactory());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateCrossChainRegistryInitialized(Env.impl.crossChainRegistry());
 
         validateDestinationImplsNotInitializable();
     }
 
     function validateDestinationImplsNotInitializable() internal {
-        /**
-         * core/
-         */
+        /// core/
         validateProtocolRegistryInitialized(Env.impl.protocolRegistry());
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         validateOperatorTableUpdaterInitialized(Env.impl.operatorTableUpdater());
         // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
-        /**
-         * avs/
-         */
+        /// avs/
         validateTaskMailboxInitialized(Env.impl.taskMailbox());
     }
 
-    /**
-     * @notice After the upgrade is complete, call to _validateNewImplAddresses to ensure the impl addresses match the proxy admin's reported implementation address.
-     */
+    /// @notice After the upgrade is complete, call to _validateNewImplAddresses to ensure the impl addresses match the proxy admin's reported implementation address.
     function validateImplAddressesMatchProxy() internal view {
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         assertTrue(
             _getProxyImpl(address(Env.proxy.permissionController())) == address(Env.impl.permissionController()),
             "permissionController impl address mismatch"
@@ -540,9 +436,7 @@ library TestUtils {
             "keyRegistrar impl address mismatch"
         );
 
-        /**
-         * core/
-         */
+        /// core/
         assertTrue(
             _getProxyImpl(address(Env.proxy.allocationManager())) == address(Env.impl.allocationManager()),
             "allocationManager impl address mismatch"
@@ -569,9 +463,7 @@ library TestUtils {
             "strategyManager impl address mismatch"
         );
 
-        /**
-         * pods/
-         */
+        /// pods/
         assertTrue(
             Env.beacon.eigenPod().implementation() == address(Env.impl.eigenPod()), "eigenPod impl address mismatch"
         );
@@ -580,9 +472,7 @@ library TestUtils {
             "eigenPodManager impl address mismatch"
         );
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         assertTrue(
             _getProxyImpl(address(Env.proxy.eigenStrategy())) == address(Env.impl.eigenStrategy()),
             "eigenStrategy impl address mismatch"
@@ -604,9 +494,7 @@ library TestUtils {
             "strategyFactory impl address mismatch"
         );
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         assertTrue(
             _getProxyImpl(address(Env.proxy.crossChainRegistry())) == address(Env.impl.crossChainRegistry()),
             "operatorTableUpdater impl address mismatch"
@@ -616,9 +504,7 @@ library TestUtils {
     }
 
     function validateDestinationImplAddressesMatchProxy() internal view {
-        /**
-         * core/
-         */
+        /// core/
         /// @dev Skip the protocol registry validation as it will be deployed while the upgrade is in progress.
         /// TODO: Uncomment this after v1.9.0 is live
         // assertTrue(
@@ -626,15 +512,15 @@ library TestUtils {
         //     "protocolRegistry impl address mismatch"
         // );
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         assertTrue(
-            _getProxyImpl(address(Env.proxy.bn254CertificateVerifier())) == address(Env.impl.bn254CertificateVerifier()),
+            _getProxyImpl(address(Env.proxy.bn254CertificateVerifier()))
+                == address(Env.impl.bn254CertificateVerifier()),
             "bn254CertificateVerifier impl address mismatch"
         );
         assertTrue(
-            _getProxyImpl(address(Env.proxy.ecdsaCertificateVerifier())) == address(Env.impl.ecdsaCertificateVerifier()),
+            _getProxyImpl(address(Env.proxy.ecdsaCertificateVerifier()))
+                == address(Env.impl.ecdsaCertificateVerifier()),
             "ecdsaCertificateVerifier impl address mismatch"
         );
         assertTrue(
@@ -642,20 +528,16 @@ library TestUtils {
             "crossChainRegistry impl address mismatch"
         );
 
-        /**
-         * avs/
-         */
+        /// avs/
         assertTrue(
             _getProxyImpl(address(Env.proxy.taskMailbox())) == address(Env.impl.taskMailbox()),
             "taskMailbox impl address mismatch"
         );
     }
 
-    /**
-     *
-     *                        VERSION VALIDATION FUNCTIONS
-     *
-     */
+    ///
+    ///                        VERSION VALIDATION FUNCTIONS
+    ///
     /// Validate versions of specific contracts
     /// @dev We need to validate versions of specific contracts because some contracts can have mismatched versions.
     function validateKeyRegistrarVersion() internal view {
@@ -683,16 +565,12 @@ library TestUtils {
         );
     }
 
-    /**
-     *
-     *                         VALIDATE IMMUTABLES
-     *
-     */
+    ///
+    ///                         VALIDATE IMMUTABLES
+    ///
     /// @dev These functions are used to validate the immutables of either proxy or implementation contracts.
 
-    /**
-     * pemissions/
-     */
+    /// pemissions/
     function validateKeyRegistrarImmutables(
         KeyRegistrar keyRegistrar
     ) internal view {
@@ -708,9 +586,7 @@ library TestUtils {
 
     // PermissionController has no immutables
 
-    /**
-     * core/
-     */
+    /// core/
     function validateAllocationManagerViewImmutables(
         AllocationManagerView allocationManagerView
     ) internal view {
@@ -865,9 +741,7 @@ library TestUtils {
         );
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     function validateEigenPodImmutables(
         EigenPod eigenPod
     ) internal view {
@@ -891,9 +765,7 @@ library TestUtils {
         );
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function validateEigenStrategyImmutables(
         EigenStrategy eigenStrategy
     ) internal view {
@@ -939,9 +811,7 @@ library TestUtils {
         );
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function validateBN254CertificateVerifierImmutables(
         BN254CertificateVerifier bn254CertificateVerifier
     ) internal view {
@@ -997,9 +867,7 @@ library TestUtils {
         );
     }
 
-    /**
-     * avs/
-     */
+    /// avs/
     function validateTaskMailboxImmutables(
         TaskMailbox taskMailbox
     ) internal view {
@@ -1014,22 +882,16 @@ library TestUtils {
         assertTrue(taskMailbox.MAX_TASK_SLA() == Env.MAX_TASK_SLA(), "taskMailbox MAX_TASK_SLA incorrect");
     }
 
-    /**
-     *
-     *                         VALIDATE INITIALIZED
-     *
-     */
+    ///
+    ///                         VALIDATE INITIALIZED
+    ///
 
     /// @dev These functions are used to validate the initialized state of either proxy or implementation contracts.
 
-    /**
-     * pemissions/
-     */
+    /// pemissions/
     // KeyRegistrar and PermissionController are initializable, but do not expose the `initialize` function.
 
-    /**
-     * core/
-     */
+    /// core/
     function validateAllocationManagerInitialized(
         AllocationManager allocationManager
     ) internal {
@@ -1074,9 +936,7 @@ library TestUtils {
         strategyManager.initialize(address(0), address(0), 0);
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     // EigenPod proxies are initialized by individual users
 
     function validateEigenPodManagerInitialized(
@@ -1086,9 +946,7 @@ library TestUtils {
         eigenPodManager.initialize(address(0), 0);
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function validateEigenStrategyInitialized(
         EigenStrategy eigenStrategy
     ) internal {
@@ -1112,9 +970,7 @@ library TestUtils {
         strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function validateCrossChainRegistryInitialized(
         CrossChainRegistry crossChainRegistry
     ) internal {
@@ -1133,9 +989,7 @@ library TestUtils {
 
     // BN254 and ECDSA certificate verifiers are initializable, but do not expose the `initialize` function.
 
-    /**
-     * avs/
-     */
+    /// avs/
     function validateTaskMailboxInitialized(
         TaskMailbox taskMailbox
     ) internal {
@@ -1143,11 +997,9 @@ library TestUtils {
         taskMailbox.initialize(address(0), 0, address(0));
     }
 
-    /**
-     *
-     *                         VALIDATE PROTOCOL REGISTRY
-     *
-     */
+    ///
+    ///                         VALIDATE PROTOCOL REGISTRY
+    ///
 
     /// @notice Validate the protocol registry by checking the version and all contracts
     /// @dev This should be called *after* an upgrade has been completed
@@ -1158,9 +1010,7 @@ library TestUtils {
         address addr;
         IProtocolRegistryTypes.DeploymentConfig memory config;
         {
-            /**
-             * permissions/
-             */
+            /// permissions/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(KeyRegistrar).name);
             assertTrue(addr == address(Env.proxy.keyRegistrar()), "keyRegistrar address incorrect");
             assertFalse(config.pausable, "keyRegistrar should not be pausable");
@@ -1173,9 +1023,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * core/
-             */
+            /// core/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(AllocationManager).name);
             assertTrue(addr == address(Env.proxy.allocationManager()), "allocationManager address incorrect");
             assertTrue(config.pausable, "allocationManager should be pausable");
@@ -1210,9 +1058,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * pods/
-             */
+            /// pods/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(EigenPodManager).name);
             assertTrue(addr == address(Env.proxy.eigenPodManager()), "eigenPodManager address incorrect");
             assertTrue(config.pausable, "eigenPodManager should be pausable");
@@ -1225,9 +1071,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * strategies/
-             */
+            /// strategies/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(EigenStrategy).name);
             assertTrue(addr == address(Env.proxy.eigenStrategy()), "eigenStrategy address incorrect");
             assertTrue(config.pausable, "eigenStrategy should be pausable");
@@ -1257,9 +1101,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * token/
-             */
+            /// token/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BackingEigen).name);
             assertTrue(addr == address(Env.proxy.beigen()), "bEIGEN address incorrect");
             assertFalse(config.pausable, "bEIGEN should not be pausable");
@@ -1272,9 +1114,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * multichain/
-             */
+            /// multichain/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(CrossChainRegistry).name);
             assertTrue(addr == address(Env.proxy.crossChainRegistry()), "crossChainRegistry address incorrect");
             assertTrue(config.pausable, "crossChainRegistry should be pausable");
@@ -1295,9 +1135,7 @@ library TestUtils {
         IProtocolRegistryTypes.DeploymentConfig memory config;
 
         {
-            /**
-             * permissions/
-             */
+            /// permissions/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(PauserRegistry).name);
             assertTrue(addr == address(Env.impl.pauserRegistry()), "pauserRegistry address incorrect");
             assertFalse(config.pausable, "pauserRegistry should not be pausable");
@@ -1305,9 +1143,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * core/
-             */
+            /// core/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(ProtocolRegistry).name);
             assertTrue(addr == address(Env.proxy.protocolRegistry()), "protocolRegistry address incorrect");
             assertFalse(config.pausable, "protocolRegistry should not be pausable");
@@ -1315,9 +1151,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * multichain/
-             */
+            /// multichain/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(BN254CertificateVerifier).name);
             assertTrue(
                 addr == address(Env.proxy.bn254CertificateVerifier()), "bn254CertificateVerifier address incorrect"
@@ -1339,9 +1173,7 @@ library TestUtils {
         }
 
         {
-            /**
-             * avs/
-             */
+            /// avs/
             (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(TaskMailbox).name);
             assertTrue(addr == address(Env.proxy.taskMailbox()), "taskMailbox address incorrect");
             assertFalse(config.pausable, "taskMailbox should not be pausable");
@@ -1367,15 +1199,24 @@ library TestUtils {
         return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(proxy));
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
-    function assertTrue(bool b, string memory err) private pure {
+    function assertTrue(
+        bool b,
+        string memory err
+    ) private pure {
         vm.assertTrue(b, err);
     }
 
-    function assertFalse(bool b, string memory err) private pure {
+    function assertFalse(
+        bool b,
+        string memory err
+    ) private pure {
         vm.assertFalse(b, err);
     }
 }

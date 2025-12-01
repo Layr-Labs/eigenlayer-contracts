@@ -32,7 +32,7 @@ var (
 // MerkleMetaData contains all meta data concerning the Merkle contract.
 var MerkleMetaData = &bind.MetaData{
 	ABI: "[{\"type\":\"error\",\"name\":\"EmptyRoot\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidIndex\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidProofLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"LeavesNotPowerOfTwo\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoLeaves\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotEnoughLeaves\",\"inputs\":[]}]",
-	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea2646970667358221220453d11e2175509f3c5f766202c58b4b2caeb7616e1ce5339991b2c20aca6575864736f6c634300081e0033",
+	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea2646970667358221220d59da8641ede146e3c844faefb393dcc8a753d97dc94bdb0fcfe9e5e7484e7ef64736f6c634300081e0033",
 }
 
 // MerkleABI is the input ABI used to generate the binding from.

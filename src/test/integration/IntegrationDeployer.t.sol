@@ -119,13 +119,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return "Integration Deployer";
     }
 
-    /**
-     * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
-     * override this function to set the correct paths for the deployment info files.
-     *
-     * This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
-     * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
-     */
+    /// @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
+    /// override this function to set the correct paths for the deployment info files.
+    ///
+    /// This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
+    /// Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
     function setUp() public virtual {
         bool forkMainnet = isForktest();
 
@@ -145,12 +143,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return;
     }
 
-    /**
-     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-     *
-     * Running foundry like this will trigger the fork test profile,
-     * lowering fuzz runs and using a remote RPC to test against mainnet state
-     */
+    /// env FOUNDRY_PROFILE=forktest forge t --mc Integration
+    ///
+    /// Running foundry like this will trigger the fork test profile,
+    /// lowering fuzz runs and using a remote RPC to test against mainnet state
     function isForktest() public view returns (bool) {
         return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
     }
@@ -526,11 +522,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
-    /**
-     * @dev Create a new User with a random config using the range defined in `_configRand`
-     *
-     * Assets are pulled from `strategies` based on a random staker/operator `assetType`
-     */
+    /// @dev Create a new User with a random config using the range defined in `_configRand`
+    ///
+    /// Assets are pulled from `strategies` based on a random staker/operator `assetType`
     function _randUser(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // Deploy new User contract
         uint userType = _randUserType();
@@ -756,10 +750,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /**
-     * @dev Converts a bitmap into an array of bytes
-     * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
-     */
+    /// @dev Converts a bitmap into an array of bytes
+    /// @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
     function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
         for (uint i = 0; i < 256; ++i) {
             // Mask for i-th bit

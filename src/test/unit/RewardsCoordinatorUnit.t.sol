@@ -11,11 +11,9 @@ import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/Reenterer.sol";
 import "src/test/mocks/ERC20Mock.sol";
 
-/**
- * @notice Unit testing of the RewardsCoordinator contract
- * Contracts tested: RewardsCoordinator
- * Contracts not mocked: StrategyBase, PauserRegistry
- */
+/// @notice Unit testing of the RewardsCoordinator contract
+/// Contracts tested: RewardsCoordinator
+/// Contracts not mocked: StrategyBase, PauserRegistry
 contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordinatorEvents, IRewardsCoordinatorErrors {
     // used for stack too deep
     struct FuzzAVSRewardsSubmission {
@@ -434,7 +432,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_AVS_SPLIT);
+        rewardsCoordinator.pause(2**PAUSED_OPERATOR_AVS_SPLIT);
 
         cheats.prank(operator);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -494,10 +492,7 @@ contract RewardsCoordinatorUnitTests_setOperatorAVSSplit is RewardsCoordinatorUn
     }
 
     // Testing that the split has been initialized for the first time.
-    function testFuzz_setOperatorAVSSplitFirstTime(address operator, address avs, uint16 split)
-        public
-        filterFuzzedAddressInputs(operator)
-    {
+    function testFuzz_setOperatorAVSSplitFirstTime(address operator, address avs, uint16 split) public filterFuzzedAddressInputs(operator) {
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         uint32 activatedAt = uint32(block.timestamp) + activationDelay;
@@ -587,7 +582,7 @@ contract RewardsCoordinatorUnitTests_setOperatorPISplit is RewardsCoordinatorUni
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_PI_SPLIT);
+        rewardsCoordinator.pause(2**PAUSED_OPERATOR_PI_SPLIT);
 
         cheats.prank(operator);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -741,7 +736,7 @@ contract RewardsCoordinatorUnitsTests_setOperatorSetSplit is RewardsCoordinatorU
         cheats.assume(operator != address(0));
         split = uint16(bound(split, 0, ONE_HUNDRED_IN_BIPS));
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_SET_SPLIT);
+        rewardsCoordinator.pause(2**PAUSED_OPERATOR_SET_SPLIT);
 
         cheats.prank(operator);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
@@ -883,7 +878,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_AVS_REWARDS_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_AVS_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         RewardsSubmission[] memory rewardsSubmissions;
@@ -1243,13 +1238,11 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
     }
 
-    /**
-     * @notice test a single rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice test a single rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createAVSRewardsSubmission_SingleSubmission(address avs, uint startTimestamp, uint duration, uint amount)
         public
         filterFuzzedAddressInputs(avs)
@@ -1304,13 +1297,11 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         );
     }
 
-    /**
-     * @notice test multiple rewards submissions asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balances before and after of avs and rewardsCoordinator
-     */
+    /// @notice test multiple rewards submissions asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balances before and after of avs and rewardsCoordinator
     function testFuzz_createAVSRewardsSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions)
         public
         filterFuzzedAddressInputs(param.avs)
@@ -1393,7 +1384,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_REWARDS_FOR_ALL_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_REWARDS_FOR_ALL_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         RewardsSubmission[] memory rewardsSubmissions;
@@ -1467,13 +1458,11 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         rewardsCoordinator.createRewardsForAllSubmission(rewardsSubmissions);
     }
 
-    /**
-     * @notice test a single rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
-     */
+    /// @notice test a single rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
     function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint startTimestamp, uint duration, uint amount) public {
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1531,16 +1520,12 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
         );
     }
 
-    /**
-     * @notice test multiple rewards submissions asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
-     */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions)
-        public
-    {
+    /// @notice test multiple rewards submissions asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions) public {
         numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1582,7 +1567,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllSubmission is RewardsCoo
             rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit RewardsSubmissionForAllCreated(
-                rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissionHashes[i], rewardsSubmissions[i]
+                rewardsForAllSubmitter,
+                startSubmissionNonce + i,
+                rewardsSubmissionHashes[i],
+                rewardsSubmissions[i]
             );
         }
 
@@ -1620,7 +1608,7 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS);
+        rewardsCoordinator.pause(2**PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         RewardsSubmission[] memory rewardsSubmissions;
@@ -1694,13 +1682,11 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
     }
 
-    /**
-     * @notice test a single rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
-     */
+    /// @notice test a single rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of RewardsForAllSubmitter and rewardsCoordinator
     function testFuzz_createRewardsForAllSubmission_SingleSubmission(uint startTimestamp, uint duration, uint amount) public {
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1738,7 +1724,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
 
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit RewardsSubmissionForAllEarnersCreated(
-            rewardsForAllSubmitter, currSubmissionNonce, rewardsSubmissionHash, rewardsSubmissions[0]
+            rewardsForAllSubmitter,
+            currSubmissionNonce,
+            rewardsSubmissionHash,
+            rewardsSubmissions[0]
         );
         rewardsCoordinator.createRewardsForAllEarners(rewardsSubmissions);
         cheats.stopPrank();
@@ -1760,16 +1749,12 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
         );
     }
 
-    /**
-     * @notice test multiple rewards submissions asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
-     */
-    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions)
-        public
-    {
+    /// @notice test multiple rewards submissions asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by numSubmissions, and rewards submission hashes being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balances before and after of createRewardsForAllSubmission submitter and rewardsCoordinator
+    function testFuzz_createRewardsForAllSubmission_MultipleSubmissions(FuzzAVSRewardsSubmission memory param, uint numSubmissions) public {
         numSubmissions = bound(numSubmissions, 2, 10);
         cheats.prank(rewardsCoordinator.owner());
 
@@ -1811,7 +1796,10 @@ contract RewardsCoordinatorUnitTests_createRewardsForAllEarners is RewardsCoordi
             rewardsSubmissionHashes[i] = keccak256(abi.encode(rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit RewardsSubmissionForAllEarnersCreated(
-                rewardsForAllSubmitter, startSubmissionNonce + i, rewardsSubmissionHashes[i], rewardsSubmissions[i]
+                rewardsForAllSubmitter,
+                startSubmissionNonce + i,
+                rewardsSubmissionHashes[i],
+                rewardsSubmissions[i]
             );
         }
 
@@ -1898,7 +1886,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
@@ -2059,10 +2047,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
     }
 
     // Revert when duplicate operators
-    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
         cheats.prank(rewardsCoordinator.owner());
 
@@ -2458,13 +2443,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
     }
 
-    /**
-     * @notice test a single rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice test a single rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedAVSRewardsSubmission_SingleSubmission(address avs, uint startTimestamp, uint duration)
         public
         filterFuzzedAddressInputs(avs)
@@ -2506,7 +2489,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedAVSRewardsSubmissionCreated(
-            avs, avs, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            avs,
+            avs,
+            rewardsSubmissionHash,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
@@ -2524,13 +2511,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         );
     }
 
-    /**
-     * @notice Same test as above, uses UAM
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice Same test as above, uses UAM
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedAVSRewardsSubmission_SingleSubmission_UAM(address avs, uint startTimestamp, uint duration)
         public
         filterFuzzedAddressInputs(avs)
@@ -2578,7 +2563,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedAVSRewardsSubmissionCreated(
-            defaultAppointee, avs, rewardsSubmissionHash, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            defaultAppointee,
+            avs,
+            rewardsSubmissionHash,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
@@ -2600,13 +2589,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         );
     }
 
-    /**
-     * @notice test a multiple rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice test a multiple rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedAVSRewardsSubmission_MultipleSubmissions(
         FuzzOperatorDirectedAVSRewardsSubmission memory param,
         uint numSubmissions
@@ -2663,7 +2650,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             rewardsSubmissionHashes[i] = keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit OperatorDirectedAVSRewardsSubmissionCreated(
-                param.avs, param.avs, rewardsSubmissionHashes[i], startSubmissionNonce + i, rewardsSubmissions[i]
+                param.avs,
+                param.avs,
+                rewardsSubmissionHashes[i],
+                startSubmissionNonce + i,
+                rewardsSubmissions[i]
             );
         }
 
@@ -2754,7 +2745,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions;
@@ -2938,10 +2929,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     }
 
     // Revert when duplicate operators
-    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration)
-        public
-        filterFuzzedAddressInputs(avs)
-    {
+    function testFuzz_Revert_WhenDuplicateOperators(address avs, uint startTimestamp, uint duration) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
 
         operatorSet = OperatorSet(avs, 1);
@@ -3381,13 +3369,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
     }
 
-    /**
-     * @notice test a single rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice test a single rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_SingleSubmission(address avs, uint startTimestamp, uint duration)
         public
         filterFuzzedAddressInputs(avs)
@@ -3433,7 +3419,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            avs, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            avs,
+            rewardsSubmissionHash,
+            operatorSet,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
@@ -3451,13 +3441,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         );
     }
 
-    /**
-     * @notice Same test as above, uses UAM
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice Same test as above, uses UAM
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_SingleSubmission_UAM(
         address avs,
         uint startTimestamp,
@@ -3512,7 +3500,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]));
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-            defaultAppointee, rewardsSubmissionHash, operatorSet, currSubmissionNonce, operatorDirectedRewardsSubmissions[0]
+            defaultAppointee,
+            rewardsSubmissionHash,
+            operatorSet,
+            currSubmissionNonce,
+            operatorDirectedRewardsSubmissions[0]
         );
         rewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission(operatorSet, operatorDirectedRewardsSubmissions);
         cheats.stopPrank();
@@ -3534,13 +3526,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         );
     }
 
-    /**
-     * @notice test a multiple rewards submission asserting for the following
-     * - correct event emitted
-     * - submission nonce incrementation by 1, and rewards submission hash being set in storage.
-     * - rewards submission hash being set in storage
-     * - token balance before and after of avs and rewardsCoordinator
-     */
+    /// @notice test a multiple rewards submission asserting for the following
+    /// - correct event emitted
+    /// - submission nonce incrementation by 1, and rewards submission hash being set in storage.
+    /// - rewards submission hash being set in storage
+    /// - token balance before and after of avs and rewardsCoordinator
     function testFuzz_createOperatorDirectedOperatorSetRewardsSubmission_MultipleSubmissions(
         FuzzOperatorDirectedAVSRewardsSubmission memory param,
         uint numSubmissions
@@ -3601,7 +3591,11 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
             rewardsSubmissionHashes[i] = keccak256(abi.encode(param.avs, startSubmissionNonce + i, rewardsSubmissions[i]));
             cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
             emit OperatorDirectedOperatorSetRewardsSubmissionCreated(
-                param.avs, rewardsSubmissionHashes[i], operatorSet, startSubmissionNonce + i, rewardsSubmissions[i]
+                param.avs,
+                rewardsSubmissionHashes[i],
+                operatorSet,
+                startSubmissionNonce + i,
+                rewardsSubmissions[i]
             );
         }
 
@@ -4908,7 +4902,7 @@ contract RewardsCoordinatorUnitTests_submitRoot is RewardsCoordinatorUnitTests {
 
     function test_Revert_WhenSubmitRootPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_SUBMIT_ROOTS);
+        rewardsCoordinator.pause(2**PAUSED_SUBMIT_ROOTS);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         rewardsCoordinator.submitRoot(bytes32(0), 0);
@@ -5395,6 +5389,9 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         public
         filterFuzzedAddressInputs(claimerFor)
     {
+        // Ensure invalidEarner is actually different from the real earner
+        cheats.assume(invalidEarner != earner);
+
         // if setClaimerFor is true, set the earners claimer to the fuzzed address
         address claimer;
         if (setClaimerFor) {
@@ -5455,9 +5452,8 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
         assertTrue(rewardsCoordinator.checkClaim(claim), "RewardsCoordinator.checkClaim: claim not valid");
 
         // Set cumulativeClaimed to be max uint256, should revert when attempting to claim
-        stdstore.target(address(rewardsCoordinator)).sig("cumulativeClaimed(address,address)").with_key(claim.earnerLeaf.earner).with_key(
-            address(claim.tokenLeaves[0].token)
-        ).checked_write(type(uint).max);
+        stdstore.target(address(rewardsCoordinator)).sig("cumulativeClaimed(address,address)").with_key(claim.earnerLeaf.earner)
+            .with_key(address(claim.tokenLeaves[0].token)).checked_write(type(uint).max);
         cheats.startPrank(claimer);
         cheats.expectRevert(EarningsNotGreaterThanClaimed.selector);
         rewardsCoordinator.processClaim(claim, claimer);

@@ -103,16 +103,17 @@ library BeaconChainProofs {
         bytes proof;
     }
 
-    /**
-     *
-     *              VALIDATOR FIELDS -> BEACON STATE ROOT -> BEACON BLOCK ROOT
-     *
-     */
+    ///
+    ///              VALIDATOR FIELDS -> BEACON STATE ROOT -> BEACON BLOCK ROOT
+    ///
 
     /// @notice Verify a merkle proof of the beacon state root against a beacon block root
     /// @param beaconBlockRoot merkle root of the beacon block
     /// @param proof the beacon state root and merkle proof of its inclusion under `beaconBlockRoot`
-    function verifyStateRoot(bytes32 beaconBlockRoot, StateRootProof calldata proof) internal view {
+    function verifyStateRoot(
+        bytes32 beaconBlockRoot,
+        StateRootProof calldata proof
+    ) internal view {
         require(proof.proof.length == 32 * (BEACON_BLOCK_HEADER_TREE_HEIGHT), InvalidProofLength());
 
         /// This merkle proof verifies the `beaconStateRoot` under the `beaconBlockRoot`
@@ -180,11 +181,9 @@ library BeaconChainProofs {
         );
     }
 
-    /**
-     *
-     *          VALIDATOR BALANCE -> BALANCE CONTAINER ROOT -> BEACON BLOCK ROOT
-     *
-     */
+    ///
+    ///          VALIDATOR BALANCE -> BALANCE CONTAINER ROOT -> BEACON BLOCK ROOT
+    ///
 
     /// @notice Verify a merkle proof of the beacon state's balances container against the beacon block root
     /// @dev This proof starts at the balance container root, proves through the beacon state root, and
@@ -260,16 +259,17 @@ library BeaconChainProofs {
         return getBalanceAtIndex(proof.balanceRoot, validatorIndex);
     }
 
-    /**
-     * @notice Parses a balanceRoot to get the uint64 balance of a validator.
-     * @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single
-     * leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to
-     * extract from the balanceRoot.
-     * @param balanceRoot is the combination of 4 validator balances being proven for
-     * @param validatorIndex is the index of the validator being proven for
-     * @return The validator's balance, in Gwei
-     */
-    function getBalanceAtIndex(bytes32 balanceRoot, uint40 validatorIndex) internal pure returns (uint64) {
+    /// @notice Parses a balanceRoot to get the uint64 balance of a validator.
+    /// @dev During merkleization of the beacon state balance tree, four uint64 values are treated as a single
+    /// leaf in the merkle tree. We use validatorIndex % 4 to determine which of the four uint64 values to
+    /// extract from the balanceRoot.
+    /// @param balanceRoot is the combination of 4 validator balances being proven for
+    /// @param validatorIndex is the index of the validator being proven for
+    /// @return The validator's balance, in Gwei
+    function getBalanceAtIndex(
+        bytes32 balanceRoot,
+        uint40 validatorIndex
+    ) internal pure returns (uint64) {
         uint256 bitShiftAmount = (validatorIndex % 4) * 64;
         return Endian.fromLittleEndianUint64(bytes32((uint256(balanceRoot) << bitShiftAmount)));
     }
