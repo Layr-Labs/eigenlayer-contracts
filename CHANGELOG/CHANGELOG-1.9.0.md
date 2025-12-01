@@ -44,6 +44,9 @@ The old `createOperatorSets` functions in the leftmost column will be deprecated
 
 # Changelog
 
+- feat: re-enable forge fmt + foundry v1.5.0 [PR #1669](https://github.com/layr-labs/eigenlayer-contracts/pull/1669)
+- feat: substitute calcSlashedAmount for scaleForBurning [PR #1502](https://github.com/layr-labs/eigenlayer-contracts/pull/1502)
+- fix: `v1.9.0` upgrade script [PR #1666](https://github.com/layr-labs/eigenlayer-contracts/pull/1666)
 - feat: `v1.9.0` upgrade scripts + reusable upgrade helpers [PR #1665](https://github.com/layr-labs/eigenlayer-contracts/pull/1665)
 - chore: update interface natspec for DM [PR #1664](https://github.com/layr-labs/eigenlayer-contracts/pull/1664)
 - feat: slashing commitments [PR #1645](https://github.com/layr-labs/eigenlayer-contracts/pull/1645)
