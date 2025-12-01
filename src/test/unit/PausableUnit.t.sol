@@ -107,7 +107,7 @@ contract PausableUnitTests is Test {
     }
 
     function testPauseSingleIndex(uint previousPausedStatus, uint8 indexToPause) public {
-        uint newPausedStatus = (2 ** indexToPause);
+        uint newPausedStatus = (2**indexToPause);
         testPause(previousPausedStatus, newPausedStatus);
         require(pausable.paused(indexToPause), "index is not paused");
     }

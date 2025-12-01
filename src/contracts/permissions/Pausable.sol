@@ -3,25 +3,22 @@ pragma solidity ^0.8.27;
 
 import "../interfaces/IPausable.sol";
 
-/**
- * @title Adds pausability to a contract, with pausing & unpausing controlled by the `pauser` and `unpauser` of a PauserRegistry contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice Contracts that inherit from this contract may define their own `pause` and `unpause` (and/or related) functions.
- * These functions should be permissioned as "onlyPauser" which defers to a `PauserRegistry` for determining access control.
- * @dev Pausability is implemented using a uint256, which allows up to 256 different single bit-flags; each bit can potentially pause different functionality.
- * Inspiration for this was taken from the NearBridge design here https://etherscan.io/address/0x3FEFc5A4B1c02f21cBc8D3613643ba0635b9a873#code.
- * For the `pause` and `unpause` functions we've implemented, if you pause, you can only flip (any number of) switches to on/1 (aka "paused"), and if you unpause,
- * you can only flip (any number of) switches to off/0 (aka "paused").
- * If you want a pauseXYZ function that just flips a single bit / "pausing flag", it will:
- * 1) 'bit-wise and' (aka `&`) a flag with the current paused state (as a uint256)
- * 2) update the paused state to this new value
- * @dev We note as well that we have chosen to identify flags by their *bit index* as opposed to their numerical value, so, e.g. defining `DEPOSITS_PAUSED = 3`
- * indicates specifically that if the *third bit* of `_paused` is flipped -- i.e. it is a '1' -- then deposits should be paused
- */
+/// @title Adds pausability to a contract, with pausing & unpausing controlled by the `pauser` and `unpauser` of a PauserRegistry contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice Contracts that inherit from this contract may define their own `pause` and `unpause` (and/or related) functions.
+/// These functions should be permissioned as "onlyPauser" which defers to a `PauserRegistry` for determining access control.
+/// @dev Pausability is implemented using a uint256, which allows up to 256 different single bit-flags; each bit can potentially pause different functionality.
+/// Inspiration for this was taken from the NearBridge design here https://etherscan.io/address/0x3FEFc5A4B1c02f21cBc8D3613643ba0635b9a873#code.
+/// For the `pause` and `unpause` functions we've implemented, if you pause, you can only flip (any number of) switches to on/1 (aka "paused"), and if you unpause,
+/// you can only flip (any number of) switches to off/0 (aka "paused").
+/// If you want a pauseXYZ function that just flips a single bit / "pausing flag", it will:
+/// 1) 'bit-wise and' (aka `&`) a flag with the current paused state (as a uint256)
+/// 2) update the paused state to this new value
+/// @dev We note as well that we have chosen to identify flags by their *bit index* as opposed to their numerical value, so, e.g. defining `DEPOSITS_PAUSED = 3`
+/// indicates specifically that if the *third bit* of `_paused` is flipped -- i.e. it is a '1' -- then deposits should be paused
 abstract contract Pausable is IPausable {
     /// Constants
-
     uint256 internal constant _UNPAUSE_ALL = 0;
 
     uint256 internal constant _PAUSE_ALL = type(uint256).max;
@@ -139,10 +136,8 @@ abstract contract Pausable is IPausable {
         emit Paused(msg.sender, pausedStatus);
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[48] private __gap;
 }

@@ -11,13 +11,11 @@ abstract contract SplitContractMixin {
         viewImplementation = _viewImplementation;
     }
 
-    /**
-     * @dev Delegates the current call to `implementation`.
-     *
-     * This function does not return to its internal call site, it will return directly to the external caller.
-     *
-     * Copied from OpenZeppelin Contracts v4.9.0 (proxy/Proxy.sol).
-     */
+    /// @dev Delegates the current call to `implementation`.
+    ///
+    /// This function does not return to its internal call site, it will return directly to the external caller.
+    ///
+    /// Copied from OpenZeppelin Contracts v4.9.0 (proxy/Proxy.sol).
     function _delegate(
         address implementation
     ) internal virtual {
@@ -41,18 +39,16 @@ abstract contract SplitContractMixin {
         }
     }
 
-    /**
-     * @dev Performs a delegate call to `implementation` in the context of a view function.
-     *
-     * This function typecasts the non-view `_delegate` function to a view function in order to
-     * allow its invocation from a view context. This is required because the EVM itself does not
-     * enforce view/pure mutability, and using inline assembly, it is possible to cast a function
-     * pointer to a view (read-only) signature. This pattern is sometimes used for readonly proxies,
-     * but it should be used cautiously since any state-modifying logic in the underlying delegate
-     * violates the spirit of a view call.
-     *
-     * @param implementation The address to which the call should be delegated.
-     */
+    /// @dev Performs a delegate call to `implementation` in the context of a view function.
+    ///
+    /// This function typecasts the non-view `_delegate` function to a view function in order to
+    /// allow its invocation from a view context. This is required because the EVM itself does not
+    /// enforce view/pure mutability, and using inline assembly, it is possible to cast a function
+    /// pointer to a view (read-only) signature. This pattern is sometimes used for readonly proxies,
+    /// but it should be used cautiously since any state-modifying logic in the underlying delegate
+    /// violates the spirit of a view call.
+    ///
+    /// @param implementation The address to which the call should be delegated.
     function _delegateView(
         address implementation
     ) internal view virtual {

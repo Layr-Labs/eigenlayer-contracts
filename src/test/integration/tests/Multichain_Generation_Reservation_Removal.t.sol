@@ -3,19 +3,15 @@ pragma solidity ^0.8.27;
 
 import "../MultichainIntegrationChecks.t.sol";
 
-/**
- * @title Multichain_Generation_Reservation_Removal
- * @notice Integration tests for generation reservation removal functionality
- * @dev Tests the behavior when generation reservations are removed and tables can no longer be transported
- */
+/// @title Multichain_Generation_Reservation_Removal
+/// @notice Integration tests for generation reservation removal functionality
+/// @dev Tests the behavior when generation reservations are removed and tables can no longer be transported
 contract Integration_Multichain_Generation_Reservation_Removal is MultichainIntegrationCheckUtils {
     using StdStyle for *;
     using BN254 for BN254.G1Point;
 
-    /**
-     * @notice Test that tables cannot be transported after removing generation reservation
-     * @dev Test case 2: Verify that after removing generation reservation, tables are not transported
-     */
+    /// @notice Test that tables cannot be transported after removing generation reservation
+    /// @dev Test case 2: Verify that after removing generation reservation, tables are not transported
     function test_RemoveGenerationReservation_TablesNotTransported() external {
         vm.warp(block.timestamp + 50_000);
         console.log("Testing generation reservation removal - tables not transported:");

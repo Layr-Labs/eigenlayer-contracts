@@ -10,26 +10,25 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
     using ShortStringsUpgradeable for *;
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
     constructor() ProtocolRegistryStorage() {
         _disableInitializers();
     }
 
     /// @inheritdoc IProtocolRegistry
-    function initialize(address initialAdmin, address pauserMultisig) external initializer {
+    function initialize(
+        address initialAdmin,
+        address pauserMultisig
+    ) external initializer {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _grantRole(PAUSER_ROLE, pauserMultisig);
     }
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
 
     /// @inheritdoc IProtocolRegistry
     function ship(
@@ -47,7 +46,10 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
     }
 
     /// @inheritdoc IProtocolRegistry
-    function configure(address addr, DeploymentConfig calldata config) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function configure(
+        address addr,
+        DeploymentConfig calldata config
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         // Update the config
         _deploymentConfigs[addr] = config;
         // Emit the event.
@@ -68,11 +70,9 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         }
     }
 
-    /**
-     *
-     *                             HELPER FUNCTIONS
-     *
-     */
+    ///
+    ///                             HELPER FUNCTIONS
+    ///
 
     /// @dev Updates the semantic version of the protocol.
     function _updateSemanticVersion(
@@ -84,7 +84,11 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
     }
 
     /// @dev Appends a deployment.
-    function _appendDeployment(address addr, DeploymentConfig calldata config, string calldata name) internal {
+    function _appendDeployment(
+        address addr,
+        DeploymentConfig calldata config,
+        string calldata name
+    ) internal {
         // Store name => address mapping
         _deployments.set({key: _unwrap(name.toShortString()), value: addr});
         // Store deployment config
@@ -100,11 +104,9 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         return uint256(ShortString.unwrap(shortString));
     }
 
-    /**
-     *
-     *                              VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                              VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IProtocolRegistry
     function version() external view virtual returns (string memory) {

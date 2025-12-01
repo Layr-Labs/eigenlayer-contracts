@@ -3,11 +3,9 @@ pragma solidity ^0.8.27;
 
 import {ITaskMailbox} from "../../interfaces/ITaskMailbox.sol";
 
-/**
- * @title TaskMailboxStorage
- * @author Layr Labs, Inc.
- * @notice Storage contract for the TaskMailbox contract.
- */
+/// @title TaskMailboxStorage
+/// @author Layr Labs, Inc.
+/// @notice Storage contract for the TaskMailbox contract.
 abstract contract TaskMailboxStorage is ITaskMailbox {
     /// @notice Equivalent to 100%, but in basis points.
     uint16 internal constant ONE_HUNDRED_IN_BIPS = 10_000;
@@ -40,22 +38,22 @@ abstract contract TaskMailboxStorage is ITaskMailbox {
     /// @notice The address that receives the fee split
     address public feeSplitCollector;
 
-    /**
-     * @notice Constructor for TaskMailboxStorage
-     * @param _bn254CertificateVerifier Address of the BN254 certificate verifier
-     * @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
-     * @param _maxTaskSLA Maximum task SLA in seconds
-     */
-    constructor(address _bn254CertificateVerifier, address _ecdsaCertificateVerifier, uint96 _maxTaskSLA) {
+    /// @notice Constructor for TaskMailboxStorage
+    /// @param _bn254CertificateVerifier Address of the BN254 certificate verifier
+    /// @param _ecdsaCertificateVerifier Address of the ECDSA certificate verifier
+    /// @param _maxTaskSLA Maximum task SLA in seconds
+    constructor(
+        address _bn254CertificateVerifier,
+        address _ecdsaCertificateVerifier,
+        uint96 _maxTaskSLA
+    ) {
         BN254_CERTIFICATE_VERIFIER = _bn254CertificateVerifier;
         ECDSA_CERTIFICATE_VERIFIER = _ecdsaCertificateVerifier;
         MAX_TASK_SLA = _maxTaskSLA;
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[45] private __gap;
 }

@@ -39,34 +39,34 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
     }
 
     // @notice Allows the contract owner to modify an entry in the `isMinter` mapping.
-    function setIsMinter(address minterAddress, bool newStatus) external onlyOwner {
+    function setIsMinter(
+        address minterAddress,
+        bool newStatus
+    ) external onlyOwner {
         emit IsMinterModified(minterAddress, newStatus);
         isMinter[minterAddress] = newStatus;
     }
 
-    /**
-     * @notice Allows any privileged address to mint `amount` new tokens to the address `to`.
-     * @dev Callable only by an address that has `isMinter` set to true.
-     */
-    function mint(address to, uint256 amount) external {
+    /// @notice Allows any privileged address to mint `amount` new tokens to the address `to`.
+    /// @dev Callable only by an address that has `isMinter` set to true.
+    function mint(
+        address to,
+        uint256 amount
+    ) external {
         require(isMinter[msg.sender], "BackingEigen.mint: caller is not a minter");
         _mint(to, amount);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from the caller.
-     *
-     * See {ERC20-_burn}.
-     */
+    /// @dev Destroys `amount` tokens from the caller.
+    ///
+    /// See {ERC20-_burn}.
     function burn(
         uint256 amount
     ) public virtual {
         _burn(_msgSender(), amount);
     }
 
-    /**
-     * @notice An initializer function that sets initial values for the contract's state variables.
-     */
+    /// @notice An initializer function that sets initial values for the contract's state variables.
     function initialize(
         address initialOwner
     ) public initializer {
@@ -91,27 +91,27 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
     /// EXTERNAL FUNCTIONS
 
-    /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     */
-    function setAllowedFrom(address from, bool isAllowedFrom) external onlyOwner {
+    /// @notice This function allows the owner to set the allowedFrom status of an address
+    /// @param from the address whose allowedFrom status is being set
+    /// @param isAllowedFrom the new allowedFrom status
+    function setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) external onlyOwner {
         _setAllowedFrom(from, isAllowedFrom);
     }
 
-    /**
-     * @notice This function allows the owner to set the allowedTo status of an address
-     * @param to the address whose allowedTo status is being set
-     * @param isAllowedTo the new allowedTo status
-     */
-    function setAllowedTo(address to, bool isAllowedTo) external onlyOwner {
+    /// @notice This function allows the owner to set the allowedTo status of an address
+    /// @param to the address whose allowedTo status is being set
+    /// @param isAllowedTo the new allowedTo status
+    function setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) external onlyOwner {
         _setAllowedTo(to, isAllowedTo);
     }
 
-    /**
-     * @notice Allows the owner to disable transfer restrictions
-     */
+    /// @notice Allows the owner to disable transfer restrictions
     function disableTransferRestrictions() external onlyOwner {
         require(
             transferRestrictionsDisabledAfter == type(uint256).max,
@@ -123,18 +123,14 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
     /// VIEW FUNCTIONS
 
-    /**
-     * @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
-     * checkpoints (and voting).
-     */
+    /// @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
+    /// checkpoints (and voting).
     function clock() public view override returns (uint48) {
         return SafeCastUpgradeable.toUint48(block.timestamp);
     }
 
-    /**
-     * @dev Machine-readable description of the clock as specified in EIP-6372.
-     * Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
-     */
+    /// @dev Machine-readable description of the clock as specified in EIP-6372.
+    /// Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
     // solhint-disable-next-line func-name-mixedcase
     function CLOCK_MODE() public pure override returns (string memory) {
         return "mode=timestamp";
@@ -142,23 +138,31 @@ contract BackingEigen is OwnableUpgradeable, ERC20VotesUpgradeable {
 
     /// INTERNAL FUNCTIONS
 
-    function _setAllowedFrom(address from, bool isAllowedFrom) internal {
+    function _setAllowedFrom(
+        address from,
+        bool isAllowedFrom
+    ) internal {
         allowedFrom[from] = isAllowedFrom;
         emit SetAllowedFrom(from, isAllowedFrom);
     }
 
-    function _setAllowedTo(address to, bool isAllowedTo) internal {
+    function _setAllowedTo(
+        address to,
+        bool isAllowedTo
+    ) internal {
         allowedTo[to] = isAllowedTo;
         emit SetAllowedTo(to, isAllowedTo);
     }
 
-    /**
-     * @notice Overrides the beforeTokenTransfer function to enforce transfer restrictions
-     * @param from the address tokens are being transferred from
-     * @param to the address tokens are being transferred to
-     * @param amount the amount of tokens being transferred
-     */
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+    /// @notice Overrides the beforeTokenTransfer function to enforce transfer restrictions
+    /// @param from the address tokens are being transferred from
+    /// @param to the address tokens are being transferred to
+    /// @param amount the amount of tokens being transferred
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
         // if transfer restrictions are enabled
         if (block.timestamp <= transferRestrictionsDisabledAfter) {
             // if both from and to are not whitelisted

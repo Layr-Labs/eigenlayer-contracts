@@ -128,13 +128,11 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
         });
     }
 
-    /**
-     * @notice Create a valid BN254 certificate for a given result
-     * @param taskHash The task hash
-     * @param result The result data to create certificate for
-     * @param referenceTimestamp The reference timestamp
-     * @return The BN254 certificate
-     */
+    /// @notice Create a valid BN254 certificate for a given result
+    /// @param taskHash The task hash
+    /// @param result The result data to create certificate for
+    /// @param referenceTimestamp The reference timestamp
+    /// @return The BN254 certificate
     function _createValidBN254CertificateForResult(bytes32 taskHash, bytes memory result, uint96 referenceTimestamp)
         internal
         view
@@ -143,23 +141,19 @@ contract TaskMailboxUnitTests is Test, ITaskMailboxTypes, ITaskMailboxErrors, IT
         return _createValidBN254Certificate(taskMailbox.getMessageHash(taskHash, result), referenceTimestamp);
     }
 
-    /**
-     * @notice Get the reference timestamp for a task (helper for tests)
-     * @param _taskHash The task hash
-     * @return The reference timestamp stored in the task
-     */
+    /// @notice Get the reference timestamp for a task (helper for tests)
+    /// @param _taskHash The task hash
+    /// @return The reference timestamp stored in the task
     function _getTaskReferenceTimestamp(bytes32 _taskHash) internal view returns (uint32) {
         Task memory task = taskMailbox.getTaskInfo(_taskHash);
         return task.operatorTableReferenceTimestamp;
     }
 
-    /**
-     * @notice Create a valid ECDSA certificate for a given result
-     * @param taskHash The task hash
-     * @param result The result data to create certificate for
-     * @param referenceTimestamp The reference timestamp
-     * @return The ECDSA certificate
-     */
+    /// @notice Create a valid ECDSA certificate for a given result
+    /// @param taskHash The task hash
+    /// @param result The result data to create certificate for
+    /// @param referenceTimestamp The reference timestamp
+    /// @return The ECDSA certificate
     function _createValidECDSACertificateForResult(bytes32 taskHash, bytes memory result, uint96 referenceTimestamp)
         internal
         view
@@ -316,7 +310,10 @@ contract TaskMailboxUnitTests_setExecutorOperatorSetTaskConfig is TaskMailboxUni
             feeToken: IERC20(fuzzFeeToken),
             curveType: IKeyRegistrarTypes.CurveType.BN254,
             feeCollector: fuzzFeeCollector,
-            consensus: Consensus({consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD, value: abi.encode(fuzzStakeProportionThreshold)}),
+            consensus: Consensus({
+                consensusType: ConsensusType.STAKE_PROPORTION_THRESHOLD,
+                value: abi.encode(fuzzStakeProportionThreshold)
+            }),
             taskMetadata: fuzzTaskMetadata
         });
 

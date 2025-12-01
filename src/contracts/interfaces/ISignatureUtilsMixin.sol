@@ -30,11 +30,9 @@ interface ISignatureUtilsMixinTypes {
     }
 }
 
-/**
- * @title The interface for common signature utilities.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title The interface for common signature utilities.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 interface ISignatureUtilsMixin is ISignatureUtilsMixinErrors, ISignatureUtilsMixinTypes {
     /// @notice Computes the EIP-712 domain separator used for signature validation.
     /// @dev The domain separator is computed according to EIP-712 specification, using:

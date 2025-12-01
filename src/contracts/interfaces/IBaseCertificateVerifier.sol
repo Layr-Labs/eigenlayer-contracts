@@ -79,81 +79,68 @@ interface IBaseCertificateVerifier is
     ///      a. An in-flight certificate for a past reference timestamp and an operator table update for a newer reference timestamp. The AVS should decide whether it
     ///         wants to only confirm tasks against the *latest* certificate
     ///      b. An in-flight certificate against a stake table with a majority-stake operator that has been slashed or removed from the operatorSet
-
-    /**
-     * @notice The address of the owner of the operatorSet
-     * @param operatorSet The operatorSet to get the owner of
-     * @return The owner
-     * @dev The owner of the OperatorSet is not used by this contract, but can be used by periphery contracts
-     *      to gate access control for on-chain operations
-     * @dev This value is set by the AVS in the `CrossChainRegistry` and transported by the multichain protocol when the operator table is updated
-     */
+    /// @notice The address of the owner of the operatorSet
+    /// @param operatorSet The operatorSet to get the owner of
+    /// @return The owner
+    /// @dev The owner of the OperatorSet is not used by this contract, but can be used by periphery contracts
+    ///      to gate access control for on-chain operations
+    /// @dev This value is set by the AVS in the `CrossChainRegistry` and transported by the multichain protocol when the operator table is updated
     function getOperatorSetOwner(
         OperatorSet memory operatorSet
     ) external view returns (address);
 
-    /**
-     * @notice The max staleness period of the operator table for a given operatorSet. This value is AVS-set and
-     *         transported by the multichain protocol
-     * @param operatorSet The operatorSet to get the max staleness period of
-     * @return The max staleness period
-     * @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
-     * @dev Staleness periods cannot be greater than 0 and less than the update cadence of the `OperatorTables`, since
-     *      certificates would be unable to be validated against. This value is set and bounds enforced in the `CrossChainRegistry`
-     * @dev This value is NOT checkpointed. A new staleness period applies to ALL certificates, regardless of a certificate's reference timestamp
-     * @dev This value is set by the AVS in the `CrossChainRegistry` and transported by the multichain protocol when the operator table is updated
-     */
+    /// @notice The max staleness period of the operator table for a given operatorSet. This value is AVS-set and
+    ///         transported by the multichain protocol
+    /// @param operatorSet The operatorSet to get the max staleness period of
+    /// @return The max staleness period
+    /// @dev A staleness period of 0 allows for certificates to be verified against any timestamp in the past
+    /// @dev Staleness periods cannot be greater than 0 and less than the update cadence of the `OperatorTables`, since
+    ///      certificates would be unable to be validated against. This value is set and bounds enforced in the `CrossChainRegistry`
+    /// @dev This value is NOT checkpointed. A new staleness period applies to ALL certificates, regardless of a certificate's reference timestamp
+    /// @dev This value is set by the AVS in the `CrossChainRegistry` and transported by the multichain protocol when the operator table is updated
     function maxOperatorTableStaleness(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
 
-    /**
-     * @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
-     *     updated each time an operator table is updated
-     * @param operatorSet The operatorSet to get the latest reference timestamp of
-     * @return The latest reference timestamp, 0 if the operatorSet has never been updated
-     * @dev The latest reference timestamp is set when the operator table is updated
-     * @dev The reference timestamp denotes the timestamp at which the operator table was calculated by the multichain protocol
-     */
+    /// @notice The latest reference timestamp of the operator table for a given operatorSet. This value is
+    ///     updated each time an operator table is updated
+    /// @param operatorSet The operatorSet to get the latest reference timestamp of
+    /// @return The latest reference timestamp, 0 if the operatorSet has never been updated
+    /// @dev The latest reference timestamp is set when the operator table is updated
+    /// @dev The reference timestamp denotes the timestamp at which the operator table was calculated by the multichain protocol
     function latestReferenceTimestamp(
         OperatorSet memory operatorSet
     ) external view returns (uint32);
 
-    /**
-     * @notice Whether the operator table has been updated for a given reference timestamp
-     * @param operatorSet The operatorSet to check
-     * @param referenceTimestamp The reference timestamp to check
-     * @return Whether the reference timestamp has been updated
-     * @dev The reference timestamp is set when the operator table is updated
-     */
+    /// @notice Whether the operator table has been updated for a given reference timestamp
+    /// @param operatorSet The operatorSet to check
+    /// @param referenceTimestamp The reference timestamp to check
+    /// @return Whether the reference timestamp has been updated
+    /// @dev The reference timestamp is set when the operator table is updated
     function isReferenceTimestampSet(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (bool);
 
-    /**
-     * @notice Get the total stake weights for all operators at a given reference timestamp
-     * @param operatorSet The operator set to calculate stakes for
-     * @param referenceTimestamp The reference timestamp
-     * @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
-     * @dev The stake weights are defined in the AVS's `OperatorTableCalculator` and transported by the multichain protocol. An example
-     *      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array.
-     *      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
-     * @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
-     * @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
-     */
+    /// @notice Get the total stake weights for all operators at a given reference timestamp
+    /// @param operatorSet The operator set to calculate stakes for
+    /// @param referenceTimestamp The reference timestamp
+    /// @return The sum of stake weights for each stake type, empty if the operatorSet has not been updated for the given reference timestamp
+    /// @dev The stake weights are defined in the AVS's `OperatorTableCalculator` and transported by the multichain protocol. An example
+    ///      of this can be [slashable_stake, delegated_stake, strategy_i_stake, ...], where each stake type is an element in the array.
+    ///      The stake weights are defined by the operatorSet's `OperatorTableCalculator` and transported by the multichain protocol
+    /// @dev For ECDSA, this function *reverts* if the reference timestamp is not set or the number of operators is 0
+    /// @dev For BN254, this function returns empty array if the reference timestamp is not set or the number of operators is 0
     function getTotalStakeWeights(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp
     ) external view returns (uint256[] memory);
 
-    /**
-     * @notice Get the number of operators at a given reference timestamp
-     * @param operatorSet The operator set to get the number of operators for
-     * @param referenceTimestamp The reference timestamp
-     * @return The number of operators
-     * @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
-     */
+    /// @notice Get the number of operators at a given reference timestamp
+    /// @param operatorSet The operator set to get the number of operators for
+    /// @param referenceTimestamp The reference timestamp
+    /// @return The number of operators
+    /// @dev Returns 0 if the reference timestamp is not set or the number of operators is 0
     function getOperatorCount(
         OperatorSet memory operatorSet,
         uint32 referenceTimestamp

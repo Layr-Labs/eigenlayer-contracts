@@ -28,12 +28,10 @@ interface IStrategyManagerErrors {
 }
 
 interface IStrategyManagerEvents {
-    /**
-     * @notice Emitted when a new deposit occurs on behalf of `staker`.
-     * @param staker Is the staker who is depositing funds into EigenLayer.
-     * @param strategy Is the strategy that `staker` has deposited into.
-     * @param shares Is the number of new shares `staker` has been granted in `strategy`.
-     */
+    /// @notice Emitted when a new deposit occurs on behalf of `staker`.
+    /// @param staker Is the staker who is depositing funds into EigenLayer.
+    /// @param strategy Is the strategy that `staker` has deposited into.
+    /// @param shares Is the number of new shares `staker` has been granted in `strategy`.
     event Deposit(address staker, IStrategy strategy, uint256 shares);
 
     /// @notice Emitted when the `strategyWhitelister` is changed
@@ -47,12 +45,18 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when an operator is slashed and shares to be burned or redistributed are increased
     event BurnOrRedistributableSharesIncreased(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+        OperatorSet operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint256 shares
     );
 
     /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the operator set's redistribution recipient
     event BurnOrRedistributableSharesDecreased(
-        OperatorSet operatorSet, uint256 slashId, IStrategy strategy, uint256 shares
+        OperatorSet operatorSet,
+        uint256 slashId,
+        IStrategy strategy,
+        uint256 shares
     );
 
     /// @notice Emitted when shares are burnt
@@ -60,61 +64,53 @@ interface IStrategyManagerEvents {
     event BurnableSharesDecreased(IStrategy strategy, uint256 shares);
 }
 
-/**
- * @title Interface for the primary entrypoint for funds into EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice See the `StrategyManager` contract itself for implementation details.
- */
+/// @title Interface for the primary entrypoint for funds into EigenLayer.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice See the `StrategyManager` contract itself for implementation details.
 interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IShareManager {
-    /**
-     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
-     * and transfers contract ownership to the specified `initialOwner`.
-     * @param initialOwner Ownership of this contract is transferred to this address.
-     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
-     * @param initialPausedStatus The initial value of `_paused` to set.
-     */
+    /// @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+    /// and transfers contract ownership to the specified `initialOwner`.
+    /// @param initialOwner Ownership of this contract is transferred to this address.
+    /// @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
+    /// @param initialPausedStatus The initial value of `_paused` to set.
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
         uint256 initialPausedStatus
     ) external;
 
-    /**
-     * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the caller
-     * @param strategy the strategy that handles `token`
-     * @param token the token from which the `amount` will be transferred
-     * @param amount the number of tokens to deposit
-     * @return depositShares the number of deposit shares credited to the caller
-     * @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     *
-     * WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
-     * Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
-     * that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
-     */
+    /// @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the caller
+    /// @param strategy the strategy that handles `token`
+    /// @param token the token from which the `amount` will be transferred
+    /// @param amount the number of tokens to deposit
+    /// @return depositShares the number of deposit shares credited to the caller
+    /// @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
+    ///
+    /// WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
+    /// Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
+    /// that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
     function depositIntoStrategy(
         IStrategy strategy,
         IERC20 token,
         uint256 amount
     ) external returns (uint256 depositShares);
 
-    /**
-     * @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the `staker`
-     * Note tokens are transferred from `msg.sender`, NOT from `staker`. This method allows the caller, using a
-     * signature, to deposit their tokens to another staker's balance.
-     * @param strategy the strategy that handles `token`
-     * @param token the token from which the `amount` will be transferred
-     * @param amount the number of tokens to transfer from the caller to the strategy
-     * @param staker the staker that the deposited assets will be credited to
-     * @param expiry the timestamp at which the signature expires
-     * @param signature a valid ECDSA or EIP-1271 signature from `staker`
-     * @return depositShares the number of deposit shares credited to `staker`
-     * @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
-     *
-     * WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
-     * Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
-     * that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
-     */
+    /// @notice Deposits `amount` of `token` into the specified `strategy` and credits shares to the `staker`
+    /// Note tokens are transferred from `msg.sender`, NOT from `staker`. This method allows the caller, using a
+    /// signature, to deposit their tokens to another staker's balance.
+    /// @param strategy the strategy that handles `token`
+    /// @param token the token from which the `amount` will be transferred
+    /// @param amount the number of tokens to transfer from the caller to the strategy
+    /// @param staker the staker that the deposited assets will be credited to
+    /// @param expiry the timestamp at which the signature expires
+    /// @param signature a valid ECDSA or EIP-1271 signature from `staker`
+    /// @return depositShares the number of deposit shares credited to `staker`
+    /// @dev The caller must have previously approved this contract to transfer at least `amount` of `token` on their behalf.
+    ///
+    /// WARNING: Be extremely cautious when depositing tokens that do not strictly adhere to ERC20 standards.
+    /// Tokens that diverge significantly from ERC20 norms can cause unexpected behavior in token balances for
+    /// that strategy, e.g. ERC-777 tokens allowing cross-contract reentrancy.
     function depositIntoStrategyWithSignature(
         IStrategy strategy,
         IERC20 token,
@@ -124,97 +120,79 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         bytes memory signature
     ) external returns (uint256 depositShares);
 
-    /**
-     * @notice Legacy burn strategy shares for the given strategy by calling into the strategy to transfer
-     * to the default burn address.
-     * @param strategy The strategy to burn shares in.
-     * @dev This function will be DEPRECATED in a release after redistribution
-     */
+    /// @notice Legacy burn strategy shares for the given strategy by calling into the strategy to transfer
+    /// to the default burn address.
+    /// @param strategy The strategy to burn shares in.
+    /// @dev This function will be DEPRECATED in a release after redistribution
     function burnShares(
         IStrategy strategy
     ) external;
 
-    /**
-     * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
-     * @dev Reentrancy is checked in the `clearBurnOrRedistributableSharesByStrategy` function.
-     * @param operatorSet The operator set to burn shares in.
-     * @param slashId The slash ID to burn shares in.
-     * @return The amounts of tokens transferred to the redistribution recipient for each strategy
-     */
+    /// @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
+    /// @dev Reentrancy is checked in the `clearBurnOrRedistributableSharesByStrategy` function.
+    /// @param operatorSet The operator set to burn shares in.
+    /// @param slashId The slash ID to burn shares in.
+    /// @return The amounts of tokens transferred to the redistribution recipient for each strategy
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external returns (uint256[] memory);
 
-    /**
-     * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
-     * @param operatorSet The operator set to burn shares in.
-     * @param slashId The slash ID to burn shares in.
-     * @param strategy The strategy to burn shares in.
-     * @return The amount of tokens transferred to the redistribution recipient for the strategy.
-     */
+    /// @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
+    /// @param operatorSet The operator set to burn shares in.
+    /// @param slashId The slash ID to burn shares in.
+    /// @param strategy The strategy to burn shares in.
+    /// @return The amount of tokens transferred to the redistribution recipient for the strategy.
     function clearBurnOrRedistributableSharesByStrategy(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
     ) external returns (uint256);
 
-    /**
-     * @notice Returns the strategies and shares that have NOT been sent to the redistribution recipient for a given slashId.
-     * @param operatorSet The operator set to burn or redistribute shares in.
-     * @param slashId The slash ID to burn or redistribute shares in.
-     * @return The strategies and shares for the given slashId.
-     */
+    /// @notice Returns the strategies and shares that have NOT been sent to the redistribution recipient for a given slashId.
+    /// @param operatorSet The operator set to burn or redistribute shares in.
+    /// @param slashId The slash ID to burn or redistribute shares in.
+    /// @return The strategies and shares for the given slashId.
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (IStrategy[] memory, uint256[] memory);
 
-    /**
-     * @notice Returns the shares for a given strategy for a given slashId.
-     * @param operatorSet The operator set to burn or redistribute shares in.
-     * @param slashId The slash ID to burn or redistribute shares in.
-     * @param strategy The strategy to get the shares for.
-     * @return The shares for the given strategy for the given slashId.
-     * @dev This function will return revert if the shares have already been sent to the redistribution recipient.
-     */
+    /// @notice Returns the shares for a given strategy for a given slashId.
+    /// @param operatorSet The operator set to burn or redistribute shares in.
+    /// @param slashId The slash ID to burn or redistribute shares in.
+    /// @param strategy The strategy to get the shares for.
+    /// @return The shares for the given strategy for the given slashId.
+    /// @dev This function will return revert if the shares have already been sent to the redistribution recipient.
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
     ) external view returns (uint256);
 
-    /**
-     * @notice Returns the number of strategies that have NOT been sent to the redistribution recipient for a given slashId.
-     * @param operatorSet The operator set to burn or redistribute shares in.
-     * @param slashId The slash ID to burn or redistribute shares in.
-     * @return The number of strategies for the given slashId.
-     */
+    /// @notice Returns the number of strategies that have NOT been sent to the redistribution recipient for a given slashId.
+    /// @param operatorSet The operator set to burn or redistribute shares in.
+    /// @param slashId The slash ID to burn or redistribute shares in.
+    /// @return The number of strategies for the given slashId.
     function getBurnOrRedistributableCount(
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint256);
 
-    /**
-     * @notice Owner-only function to change the `strategyWhitelister` address.
-     * @param newStrategyWhitelister new address for the `strategyWhitelister`.
-     */
+    /// @notice Owner-only function to change the `strategyWhitelister` address.
+    /// @param newStrategyWhitelister new address for the `strategyWhitelister`.
     function setStrategyWhitelister(
         address newStrategyWhitelister
     ) external;
 
-    /**
-     * @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
-     */
+    /// @notice Owner-only function that adds the provided Strategies to the 'whitelist' of strategies that stakers can deposit into
+    /// @param strategiesToWhitelist Strategies that will be added to the `strategyIsWhitelistedForDeposit` mapping (if they aren't in it already)
     function addStrategiesToDepositWhitelist(
         IStrategy[] calldata strategiesToWhitelist
     ) external;
 
-    /**
-     * @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
-     * @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
-     */
+    /// @notice Owner-only function that removes the provided Strategies from the 'whitelist' of strategies that stakers can deposit into
+    /// @param strategiesToRemoveFromWhitelist Strategies that will be removed to the `strategyIsWhitelistedForDeposit` mapping (if they are in it)
     function removeStrategiesFromDepositWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
@@ -224,10 +202,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy strategy
     ) external view returns (bool);
 
-    /**
-     * @notice Get all details on the staker's deposits and corresponding shares
-     * @return (staker's strategies, shares in these strategies)
-     */
+    /// @notice Get all details on the staker's deposits and corresponding shares
+    /// @return (staker's strategies, shares in these strategies)
     function getDeposits(
         address staker
     ) external view returns (IStrategy[] memory, uint256[] memory);
@@ -242,7 +218,10 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external view returns (uint256);
 
     /// @notice Returns the current shares of `user` in `strategy`
-    function stakerDepositShares(address user, IStrategy strategy) external view returns (uint256 shares);
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) external view returns (uint256 shares);
 
     /// @notice Returns the single, central Delegation contract of EigenLayer
     function delegation() external view returns (IDelegationManager);
@@ -256,26 +235,22 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy strategy
     ) external view returns (uint256);
 
-    /**
-     * @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
-     *
-     * @dev This function will be deprecated in a release after redistribution
-     * WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
-     * to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
-     * this function has an unbounded cost, and using it as part of a state-changing function may render the function
-     * uncallable if the map grows to a point where copying to memory consumes too much gas to fit in a block.
-     */
+    /// @notice Gets every strategy with burnable shares and the amount of burnable shares in each said strategy
+    ///
+    /// @dev This function will be deprecated in a release after redistribution
+    /// WARNING: This operation can copy the entire storage to memory, which can be quite expensive. This is designed
+    /// to mostly be used by view accessors that are queried without any gas fees. Users should keep in mind that
+    /// this function has an unbounded cost, and using it as part of a state-changing function may render the function
+    /// uncallable if the map grows to a point where copying to memory consumes too much gas to fit in a block.
     function getStrategiesWithBurnableShares() external view returns (address[] memory, uint256[] memory);
 
-    /**
-     * @param staker The address of the staker.
-     * @param strategy The strategy to deposit into.
-     * @param token The token to deposit.
-     * @param amount The amount of `token` to deposit.
-     * @param nonce The nonce of the staker.
-     * @param expiry The expiry of the signature.
-     * @return The EIP-712 signable digest hash.
-     */
+    /// @param staker The address of the staker.
+    /// @param strategy The strategy to deposit into.
+    /// @param token The token to deposit.
+    /// @param amount The amount of `token` to deposit.
+    /// @param nonce The nonce of the staker.
+    /// @param expiry The expiry of the signature.
+    /// @return The EIP-712 signable digest hash.
     function calculateStrategyDepositDigestHash(
         address staker,
         IStrategy strategy,
@@ -285,18 +260,14 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         uint256 expiry
     ) external view returns (bytes32);
 
-    /**
-     * @notice Returns the operator sets that have pending burn or redistributable shares.
-     * @return The operator sets that have pending burn or redistributable shares.
-     */
+    /// @notice Returns the operator sets that have pending burn or redistributable shares.
+    /// @return The operator sets that have pending burn or redistributable shares.
     function getPendingOperatorSets() external view returns (OperatorSet[] memory);
 
-    /**
-     * @notice Returns the slash IDs that are pending to be burned or redistributed.
-     * @dev This function will return revert if the operator set has no pending burn or redistributable shares.
-     * @param operatorSet The operator set to get the pending slash IDs for.
-     * @return The slash IDs that are pending to be burned or redistributed.
-     */
+    /// @notice Returns the slash IDs that are pending to be burned or redistributed.
+    /// @dev This function will return revert if the operator set has no pending burn or redistributable shares.
+    /// @param operatorSet The operator set to get the pending slash IDs for.
+    /// @return The slash IDs that are pending to be burned or redistributed.
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory);

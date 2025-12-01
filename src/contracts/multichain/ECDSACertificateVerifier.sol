@@ -8,28 +8,22 @@ import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 import "../mixins/SignatureUtilsMixin.sol";
 import "./ECDSACertificateVerifierStorage.sol";
 
-/**
- * @title ECDSACertificateVerifier
- * @notice Verifies ECDSA certificates across multiple operator sets
- * @dev Implements ECDSA signature verification with operator information caching
- */
+/// @title ECDSACertificateVerifier
+/// @notice Verifies ECDSA certificates across multiple operator sets
+/// @dev Implements ECDSA signature verification with operator information caching
 contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStorage, SignatureUtilsMixin {
     using ECDSA for bytes32;
 
-    /**
-     * @notice Restricts access to the operator table updater
-     */
+    /// @notice Restricts access to the operator table updater
     modifier onlyTableUpdater() {
         require(msg.sender == address(operatorTableUpdater), OnlyTableUpdater());
         _;
     }
 
-    /**
-     * @notice Constructor for the certificate verifier
-     * @dev Disables initializers to prevent implementation initialization
-     * @param _operatorTableUpdater Address authorized to update operator tables
-     * @param _version The version string for the SignatureUtilsMixin
-     */
+    /// @notice Constructor for the certificate verifier
+    /// @dev Disables initializers to prevent implementation initialization
+    /// @param _operatorTableUpdater Address authorized to update operator tables
+    /// @param _version The version string for the SignatureUtilsMixin
     constructor(
         IOperatorTableUpdater _operatorTableUpdater,
         string memory _version
@@ -37,11 +31,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         _disableInitializers();
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     ///@inheritdoc IECDSACertificateVerifier
     function updateOperatorTable(
@@ -71,18 +63,14 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         emit TableUpdated(operatorSet, referenceTimestamp, operatorInfos);
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Internal function to verify a certificate
-     * @param cert The certificate to verify
-     * @return totalSignedStakeWeights The total amount of stake that signed the certificate for each stake type
-     * @return signers The addresses that signed the certificate
-     */
+    /// @notice Internal function to verify a certificate
+    /// @param cert The certificate to verify
+    /// @return totalSignedStakeWeights The total amount of stake that signed the certificate for each stake type
+    /// @return signers The addresses that signed the certificate
     function _verifyECDSACertificate(
         OperatorSet calldata operatorSet,
         ECDSACertificate calldata cert
@@ -116,14 +104,12 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return (totalSignedStakeWeights, signers);
     }
 
-    /**
-     * @notice Parse signatures from the concatenated signature bytes
-     * @param signableDigest The signable digest that was signed
-     * @param signatures The concatenated signatures
-     * @return signers Array of addresses that signed the message
-     * @dev Signatures must be ordered by signer address (ascending)
-     * @dev This does not support smart contract based signatures for multichain
-     */
+    /// @notice Parse signatures from the concatenated signature bytes
+    /// @param signableDigest The signable digest that was signed
+    /// @param signatures The concatenated signatures
+    /// @return signers Array of addresses that signed the message
+    /// @dev Signatures must be ordered by signer address (ascending)
+    /// @dev This does not support smart contract based signatures for multichain
     function _parseSignatures(
         bytes32 signableDigest,
         bytes memory signatures
@@ -153,14 +139,12 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         return signers;
     }
 
-    /**
-     * @notice Process the signers and add their weights to the signed stakes
-     * @param operatorSetKey The key of the operator set
-     * @param referenceTimestamp The reference timestamp of the certificate
-     * @param signers The signers of the certificate
-     * @param numStakeTypes The number of stake types
-     * @return totalSignedStakeWeights The total stake weight that has been signed for each stake type
-     */
+    /// @notice Process the signers and add their weights to the signed stakes
+    /// @param operatorSetKey The key of the operator set
+    /// @param referenceTimestamp The reference timestamp of the certificate
+    /// @param signers The signers of the certificate
+    /// @param numStakeTypes The number of stake types
+    /// @return totalSignedStakeWeights The total stake weight that has been signed for each stake type
     function _processSigners(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
@@ -200,11 +184,9 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
         }
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     ///@inheritdoc IBaseCertificateVerifier
     function getOperatorSetOwner(
@@ -372,7 +354,10 @@ contract ECDSACertificateVerifier is Initializable, ECDSACertificateVerifierStor
     }
 
     /// @inheritdoc IECDSACertificateVerifier
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public view returns (bytes32) {
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) public view returns (bytes32) {
         return keccak256(calculateCertificateDigestBytes(referenceTimestamp, messageHash));
     }
 }

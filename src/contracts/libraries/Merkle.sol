@@ -3,15 +3,13 @@
 
 pragma solidity ^0.8.0;
 
-/**
- * @dev These functions deal with verification of Merkle Tree proofs.
- *
- * WARNING: You should avoid using leaf values that are 64 bytes long prior to
- * hashing, salt the leaves, or hash the leaves with a hash function other than
- * what is used for the Merkle tree's internal nodes. This is because the
- * concatenation of a sorted pair of internal nodes in the Merkle tree could
- * be reinterpreted as a leaf value.
- */
+/// @dev These functions deal with verification of Merkle Tree proofs.
+///
+/// WARNING: You should avoid using leaf values that are 64 bytes long prior to
+/// hashing, salt the leaves, or hash the leaves with a hash function other than
+/// what is used for the Merkle tree's internal nodes. This is because the
+/// concatenation of a sorted pair of internal nodes in the Merkle tree could
+/// be reinterpreted as a leaf value.
 library Merkle {
     /// @notice Thrown when the provided proof was not a multiple of 32, or was empty for SHA256.
     /// @dev Error code: 0x4dc5f6a4
@@ -39,18 +37,16 @@ library Merkle {
     /// @dev Empty roots should never be valid. We prevent them to avoid issues like the Nomad bridge attack: <https://medium.com/nomad-xyz-blog/nomad-bridge-hack-root-cause-analysis-875ad2e5aacd>
     error EmptyRoot();
 
-    /**
-     * @notice Verifies that a given leaf is included in a Merkle tree
-     * @param proof The proof of inclusion for the leaf
-     * @param root The root of the Merkle tree
-     * @param leaf The leaf to verify
-     * @param index The index of the leaf in the Merkle tree
-     * @return True if the leaf is included in the Merkle tree, false otherwise
-     * @dev A `proof` is valid if and only if the rebuilt hash matches the root of the tree.
-     * @dev Reverts for:
-     *      - InvalidProofLength: proof.length is not a multiple of 32.
-     *      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
-     */
+    /// @notice Verifies that a given leaf is included in a Merkle tree
+    /// @param proof The proof of inclusion for the leaf
+    /// @param root The root of the Merkle tree
+    /// @param leaf The leaf to verify
+    /// @param index The index of the leaf in the Merkle tree
+    /// @return True if the leaf is included in the Merkle tree, false otherwise
+    /// @dev A `proof` is valid if and only if the rebuilt hash matches the root of the tree.
+    /// @dev Reverts for:
+    ///      - InvalidProofLength: proof.length is not a multiple of 32.
+    ///      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
     function verifyInclusionKeccak(
         bytes memory proof,
         bytes32 root,
@@ -61,18 +57,16 @@ library Merkle {
         return processInclusionProofKeccak(proof, leaf, index) == root;
     }
 
-    /**
-     * @notice Returns the rebuilt hash obtained by traversing a Merkle tree up
-     * from `leaf` using `proof`.
-     * @param proof The proof of inclusion for the leaf
-     * @param leaf The leaf to verify
-     * @param index The index of the leaf in the Merkle tree
-     * @return The rebuilt hash
-     * @dev Reverts for:
-     *      - InvalidProofLength: proof.length is not a multiple of 32.
-     *      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
-     * @dev The tree is built assuming `leaf` is the 0 indexed `index`'th leaf from the bottom left of the tree.
-     */
+    /// @notice Returns the rebuilt hash obtained by traversing a Merkle tree up
+    /// from `leaf` using `proof`.
+    /// @param proof The proof of inclusion for the leaf
+    /// @param leaf The leaf to verify
+    /// @param index The index of the leaf in the Merkle tree
+    /// @return The rebuilt hash
+    /// @dev Reverts for:
+    ///      - InvalidProofLength: proof.length is not a multiple of 32.
+    ///      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
+    /// @dev The tree is built assuming `leaf` is the 0 indexed `index`'th leaf from the bottom left of the tree.
     function processInclusionProofKeccak(
         bytes memory proof,
         bytes32 leaf,
@@ -111,18 +105,16 @@ library Merkle {
         return computedHash;
     }
 
-    /**
-     * @notice Verifies that a given leaf is included in a Merkle tree
-     * @param proof The proof of inclusion for the leaf
-     * @param root The root of the Merkle tree
-     * @param leaf The leaf to verify
-     * @param index The index of the leaf in the Merkle tree
-     * @return True if the leaf is included in the Merkle tree, false otherwise
-     * @dev A `proof` is valid if and only if the rebuilt hash matches the root of the tree.
-     * @dev Reverts for:
-     *      - InvalidProofLength: proof.length is 0 or not a multiple of 32.
-     *      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
-     */
+    /// @notice Verifies that a given leaf is included in a Merkle tree
+    /// @param proof The proof of inclusion for the leaf
+    /// @param root The root of the Merkle tree
+    /// @param leaf The leaf to verify
+    /// @param index The index of the leaf in the Merkle tree
+    /// @return True if the leaf is included in the Merkle tree, false otherwise
+    /// @dev A `proof` is valid if and only if the rebuilt hash matches the root of the tree.
+    /// @dev Reverts for:
+    ///      - InvalidProofLength: proof.length is 0 or not a multiple of 32.
+    ///      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
     function verifyInclusionSha256(
         bytes memory proof,
         bytes32 root,
@@ -133,18 +125,16 @@ library Merkle {
         return processInclusionProofSha256(proof, leaf, index) == root;
     }
 
-    /**
-     * @notice Returns the rebuilt hash obtained by traversing a Merkle tree up
-     * from `leaf` using `proof`.
-     * @param proof The proof of inclusion for the leaf
-     * @param leaf The leaf to verify
-     * @param index The index of the leaf in the Merkle tree
-     * @return The rebuilt hash
-     * @dev Reverts for:
-     *      - InvalidProofLength: proof.length is 0 or not a multiple of 32.
-     *      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
-     * @dev The tree is built assuming `leaf` is the 0 indexed `index`'th leaf from the bottom left of the tree.
-     */
+    /// @notice Returns the rebuilt hash obtained by traversing a Merkle tree up
+    /// from `leaf` using `proof`.
+    /// @param proof The proof of inclusion for the leaf
+    /// @param leaf The leaf to verify
+    /// @param index The index of the leaf in the Merkle tree
+    /// @return The rebuilt hash
+    /// @dev Reverts for:
+    ///      - InvalidProofLength: proof.length is 0 or not a multiple of 32.
+    ///      - InvalidIndex: index is not 0 at conclusion of computation (implying outside the max index for the tree).
+    /// @dev The tree is built assuming `leaf` is the 0 indexed `index`'th leaf from the bottom left of the tree.
     function processInclusionProofSha256(
         bytes memory proof,
         bytes32 leaf,
@@ -158,7 +148,9 @@ library Merkle {
                 assembly {
                     mstore(0x00, mload(computedHash))
                     mstore(0x20, mload(add(proof, i)))
-                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) { revert(0, 0) }
+                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {
+                        revert(0, 0)
+                    }
                     index := div(index, 2)
                 }
             } else {
@@ -166,7 +158,9 @@ library Merkle {
                 assembly {
                     mstore(0x00, mload(add(proof, i)))
                     mstore(0x20, mload(computedHash))
-                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) { revert(0, 0) }
+                    if iszero(staticcall(sub(gas(), 2000), 2, 0x00, 0x40, computedHash, 0x20)) {
+                        revert(0, 0)
+                    }
                     index := div(index, 2)
                 }
             }
@@ -178,15 +172,13 @@ library Merkle {
         return computedHash[0];
     }
 
-    /**
-     * @notice Returns the Merkle root of a tree created from a set of leaves using SHA-256 as its hash function
-     * @param leaves the leaves of the Merkle tree
-     * @return The computed Merkle root of the tree.
-     * @dev Reverts for:
-     *      - NotEnoughLeaves: leaves.length is less than 2.
-     *      - LeavesNotPowerOfTwo: leaves.length is not a power of two.
-     * @dev Unlike the Keccak version, this function does not allow a single-leaf tree.
-     */
+    /// @notice Returns the Merkle root of a tree created from a set of leaves using SHA-256 as its hash function
+    /// @param leaves the leaves of the Merkle tree
+    /// @return The computed Merkle root of the tree.
+    /// @dev Reverts for:
+    ///      - NotEnoughLeaves: leaves.length is less than 2.
+    ///      - LeavesNotPowerOfTwo: leaves.length is not a power of two.
+    /// @dev Unlike the Keccak version, this function does not allow a single-leaf tree.
     function merkleizeSha256(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
@@ -215,13 +207,11 @@ library Merkle {
         return layer[0];
     }
 
-    /**
-     * @notice Returns the Merkle root of a tree created from a set of leaves using Keccak as its hash function
-     * @param leaves the leaves of the Merkle tree
-     * @return The computed Merkle root of the tree.
-     * @dev Reverts for:
-     *      - NoLeaves: leaves.length is 0.
-     */
+    /// @notice Returns the Merkle root of a tree created from a set of leaves using Keccak as its hash function
+    /// @param leaves the leaves of the Merkle tree
+    /// @return The computed Merkle root of the tree.
+    /// @dev Reverts for:
+    ///      - NoLeaves: leaves.length is 0.
     function merkleizeKeccak(
         bytes32[] memory leaves
     ) internal pure returns (bytes32) {
@@ -257,15 +247,16 @@ library Merkle {
         return layer[0];
     }
 
-    /**
-     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using Keccak as its hash function
-     * @param leaves the leaves of the Merkle tree
-     * @param index the index of the leaf to get the proof for
-     * @return proof The computed Merkle proof for the leaf at index.
-     * @dev Reverts for:
-     *      - InvalidIndex: index is outside the max index for the tree.
-     */
-    function getProofKeccak(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+    /// @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using Keccak as its hash function
+    /// @param leaves the leaves of the Merkle tree
+    /// @param index the index of the leaf to get the proof for
+    /// @return proof The computed Merkle proof for the leaf at index.
+    /// @dev Reverts for:
+    ///      - InvalidIndex: index is outside the max index for the tree.
+    function getProofKeccak(
+        bytes32[] memory leaves,
+        uint256 index
+    ) internal pure returns (bytes memory proof) {
         require(leaves.length > 0, NoLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
@@ -297,16 +288,17 @@ library Merkle {
         }
     }
 
-    /**
-     * @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using SHA-256 as its hash function
-     * @param leaves the leaves of the Merkle tree
-     * @param index the index of the leaf to get the proof for
-     * @return proof The computed Merkle proof for the leaf at index.
-     * @dev Reverts for:
-     *      - NotEnoughLeaves: leaves.length is less than 2.
-     * @dev Unlike the Keccak version, this function does not allow a single-leaf proof.
-     */
-    function getProofSha256(bytes32[] memory leaves, uint256 index) internal pure returns (bytes memory proof) {
+    /// @notice Returns the Merkle proof for a given index in a tree created from a set of leaves using SHA-256 as its hash function
+    /// @param leaves the leaves of the Merkle tree
+    /// @param index the index of the leaf to get the proof for
+    /// @return proof The computed Merkle proof for the leaf at index.
+    /// @dev Reverts for:
+    ///      - NotEnoughLeaves: leaves.length is less than 2.
+    /// @dev Unlike the Keccak version, this function does not allow a single-leaf proof.
+    function getProofSha256(
+        bytes32[] memory leaves,
+        uint256 index
+    ) internal pure returns (bytes memory proof) {
         require(leaves.length > 1, NotEnoughLeaves());
         // TODO: very inefficient, use ZERO_HASHES
         // pad to the next power of 2
@@ -338,11 +330,9 @@ library Merkle {
         }
     }
 
-    /**
-     * @notice Returns whether the input is a power of two
-     * @param value the value to check
-     * @return True if the input is a power of two, false otherwise
-     */
+    /// @notice Returns whether the input is a power of two
+    /// @param value the value to check
+    /// @return True if the input is a power of two, false otherwise
     function isPowerOfTwo(
         uint256 value
     ) internal pure returns (bool) {
