@@ -17,7 +17,6 @@ The below release notes cover Core Contracts.
 - The `AllocationManager` has been split into two contracts to address size limitations of the contract. The main contract handles state-mutating operations, while `AllocationManagerView` handles all read-only view functions. **This is not a breaking change for introspection as previous introspection calls fallback to `delegateCall` into the `AllocationManagerView` contract.**. For more information, see the [contract architecture](../docs/core/AllocationManager.md#contract-architecture). 
 - The `ProtocolRegistry` is a new contract that stores all proxy contract addresses, global semver, and has the ability to pause the entire protocol. This contract will be deployed on all chains.
 - Two new `createOperatorSets` functions (for redistributing and non redistributing operatorSets) have been added that take in a slasher address. This address is the *only* address that can slash an operatorSet. Changing the address is behind a `ALLOCATION_CONFIGURATION_DELAY` (17.5 days on mainnet). 
-- Support for operator key rotation in the `KeyRegistrar`. 
 
 ⛔ Breaking Changes
 
@@ -52,7 +51,6 @@ The old `createOperatorSets` functions in the leftmost column will be deprecated
 - feat: slashing commitments [PR #1645](https://github.com/layr-labs/eigenlayer-contracts/pull/1645)
 - feat: remove semver + minor optimizations [PR #1654](https://github.com/layr-labs/eigenlayer-contracts/pull/1654)
 - feat: split `AllocationManager` [PR #1643](https://github.com/layr-labs/eigenlayer-contracts/pull/1643)
-- feat: key rotation [PR #1651](https://github.com/layr-labs/eigenlayer-contracts/pull/1651)
 - feat: add protocol registry [PR #1655](https://github.com/layr-labs/eigenlayer-contracts/pull/1655)
 - feat: instant alloc delay from dm [PR #1646](https://github.com/layr-labs/eigenlayer-contracts/pull/1646)
 - chore: remove holesky [PR #1662](https://github.com/layr-labs/eigenlayer-contracts/pull/1662)
