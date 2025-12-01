@@ -67,7 +67,6 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function _completeProtocolRegistryUpgrade() internal {
-        // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
             DeployProtocolRegistryProxy._runAsMultisig();
@@ -81,8 +80,10 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeployProtocolRegistryImpl._runAsEOA();
 
-        // 3. Upgrade the Protocol Registry Proxy
-        UpgradeProtocolRegistry._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
+        // 3. Upgrade the Protocol Registry Proxy, only if the admin is not already the proxyAdmin
+        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) != Env.proxyAdmin()) {
+            UpgradeProtocolRegistry._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
+        }
     }
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	allocationmanager "github.com/Layr-Labs/eigenlayer-contracts/pkg/bindings/AllocationManager"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -124,6 +125,8 @@ func fetchOperatorSets(sidecarURL string) ([]SidecarOperatorSet, error) {
 	// Make HTTP request to sidecar API
 	url := fmt.Sprintf("%s/v1/operatorSets", strings.TrimRight(sidecarURL, "/"))
 
+	fmt.Printf("Fetching operator sets from %s\n", url)
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
@@ -157,11 +160,11 @@ func fetchOperatorSets(sidecarURL string) ([]SidecarOperatorSet, error) {
 	return response.OperatorSets, nil
 }
 
-func convertToContractFormat(sidecarSets []SidecarOperatorSet) []OperatorSet {
-	contractSets := make([]OperatorSet, len(sidecarSets))
+func convertToContractFormat(sidecarSets []SidecarOperatorSet) []allocationmanager.OperatorSet {
+	contractSets := make([]allocationmanager.OperatorSet, len(sidecarSets))
 
 	for i, set := range sidecarSets {
-		contractSets[i] = OperatorSet{
+		contractSets[i] = allocationmanager.OperatorSet{
 			Avs: common.HexToAddress(set.AVS),
 			Id:  set.ID,
 		}
@@ -170,7 +173,7 @@ func convertToContractFormat(sidecarSets []SidecarOperatorSet) []OperatorSet {
 	return contractSets
 }
 
-func callMigrateSlashers(args ScriptArgs, operatorSets []OperatorSet) error {
+func callMigrateSlashers(args ScriptArgs, operatorSets []allocationmanager.OperatorSet) error {
 	// Connect to Ethereum client
 	client, err := ethclient.Dial(args.RPCEndpoint)
 	if err != nil {
@@ -196,7 +199,7 @@ func callMigrateSlashers(args ScriptArgs, operatorSets []OperatorSet) error {
 	}
 
 	// Create AllocationManager instance
-	allocationManager, err := NewAllocationManager(common.HexToAddress(args.AllocationManagerAddr), client)
+	allocationManager, err := allocationmanager.NewAllocationManager(common.HexToAddress(args.AllocationManagerAddr), client)
 	if err != nil {
 		return fmt.Errorf("failed to create AllocationManager instance: %v", err)
 	}

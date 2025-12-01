@@ -619,10 +619,12 @@ library TestUtils {
         /**
          * core/
          */
-        assertTrue(
-            _getProxyImpl(address(Env.proxy.protocolRegistry())) == address(Env.impl.protocolRegistry()),
-            "protocolRegistry impl address mismatch"
-        );
+        /// @dev Skip the protocol registry validation as it will be deployed while the upgrade is in progress.
+        /// TODO: Uncomment this after v1.9.0 is live
+        // assertTrue(
+        //     _getProxyImpl(address(Env.proxy.protocolRegistry())) == address(Env.impl.protocolRegistry()),
+        //     "protocolRegistry impl address mismatch"
+        // );
 
         /**
          * multichain/
