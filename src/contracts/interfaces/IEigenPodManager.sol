@@ -54,7 +54,9 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when a staker's beaconChainSlashingFactor is updated
     event BeaconChainSlashingFactorDecreased(
-        address staker, uint64 prevBeaconChainSlashingFactor, uint64 newBeaconChainSlashingFactor
+        address staker,
+        uint64 prevBeaconChainSlashingFactor,
+        uint64 newBeaconChainSlashingFactor
     );
 
     /// @notice Emitted when an operator is slashed and shares to be burned are increased
@@ -68,26 +70,22 @@ interface IEigenPodManagerEvents {
 }
 
 interface IEigenPodManagerTypes {
-    /**
-     * @notice The amount of beacon chain slashing experienced by a pod owner as a proportion of WAD
-     * @param isSet whether the slashingFactor has ever been updated. Used to distinguish between
-     * a value of "0" and an uninitialized value.
-     * @param slashingFactor the proportion of the pod owner's balance that has been decreased due to
-     * slashing or other beacon chain balance decreases.
-     * @dev NOTE: if !isSet, `slashingFactor` should be treated as WAD. `slashingFactor` is monotonically
-     * decreasing and can hit 0 if fully slashed.
-     */
+    /// @notice The amount of beacon chain slashing experienced by a pod owner as a proportion of WAD
+    /// @param isSet whether the slashingFactor has ever been updated. Used to distinguish between
+    /// a value of "0" and an uninitialized value.
+    /// @param slashingFactor the proportion of the pod owner's balance that has been decreased due to
+    /// slashing or other beacon chain balance decreases.
+    /// @dev NOTE: if !isSet, `slashingFactor` should be treated as WAD. `slashingFactor` is monotonically
+    /// decreasing and can hit 0 if fully slashed.
     struct BeaconChainSlashingFactor {
         bool isSet;
         uint64 slashingFactor;
     }
 }
 
-/**
- * @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Interface for factory that creates and manages solo staking pods that have their withdrawal credentials pointed to EigenLayer.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 interface IEigenPodManager is
     IEigenPodManagerErrors,
     IEigenPodManagerEvents,
@@ -95,33 +93,31 @@ interface IEigenPodManager is
     IShareManager,
     IPausable
 {
-    /**
-     * @notice Creates an EigenPod for the sender.
-     * @dev Function will revert if the `msg.sender` already has an EigenPod.
-     * @dev Returns EigenPod address
-     */
+    /// @notice Creates an EigenPod for the sender.
+    /// @dev Function will revert if the `msg.sender` already has an EigenPod.
+    /// @dev Returns EigenPod address
     function createPod() external returns (address);
 
-    /**
-     * @notice Stakes for a new beacon chain validator on the sender's EigenPod.
-     * Also creates an EigenPod for the sender if they don't have one already.
-     * @param pubkey The 48 bytes public key of the beacon chain validator.
-     * @param signature The validator's signature of the deposit data.
-     * @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
-     */
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    /// @notice Stakes for a new beacon chain validator on the sender's EigenPod.
+    /// Also creates an EigenPod for the sender if they don't have one already.
+    /// @param pubkey The 48 bytes public key of the beacon chain validator.
+    /// @param signature The validator's signature of the deposit data.
+    /// @param depositDataRoot The root/hash of the deposit data for the validator's deposit.
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
 
-    /**
-     * @notice Adds any positive share delta to the pod owner's deposit shares, and delegates them to the pod
-     * owner's operator (if applicable). A negative share delta does NOT impact the pod owner's deposit shares,
-     * but will reduce their beacon chain slashing factor and delegated shares accordingly.
-     * @param podOwner is the pod owner whose balance is being updated.
-     * @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update, including
-     * any amount currently in the withdrawal queue.
-     * @param balanceDeltaWei is the amount the balance changed
-     * @dev Callable only by the podOwner's EigenPod contract.
-     * @dev Reverts if `sharesDelta` is not a whole Gwei amount
-     */
+    /// @notice Adds any positive share delta to the pod owner's deposit shares, and delegates them to the pod
+    /// owner's operator (if applicable). A negative share delta does NOT impact the pod owner's deposit shares,
+    /// but will reduce their beacon chain slashing factor and delegated shares accordingly.
+    /// @param podOwner is the pod owner whose balance is being updated.
+    /// @param prevRestakedBalanceWei is the total amount restaked through the pod before the balance update, including
+    /// any amount currently in the withdrawal queue.
+    /// @param balanceDeltaWei is the amount the balance changed
+    /// @dev Callable only by the podOwner's EigenPod contract.
+    /// @dev Reverts if `sharesDelta` is not a whole Gwei amount
     function recordBeaconChainETHBalanceUpdate(
         address podOwner,
         uint256 prevRestakedBalanceWei,
@@ -162,14 +158,12 @@ interface IEigenPodManager is
     /// @notice Returns the number of EigenPods that have been created
     function numPods() external view returns (uint256);
 
-    /**
-     * @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
-     * @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
-     * decrease between the pod owner queuing and completing a withdrawal.
-     * When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
-     * Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
-     * as the withdrawal "paying off the deficit".
-     */
+    /// @notice Mapping from Pod owner owner to the number of shares they have in the virtual beacon chain ETH strategy.
+    /// @dev The share amount can become negative. This is necessary to accommodate the fact that a pod owner's virtual beacon chain ETH shares can
+    /// decrease between the pod owner queuing and completing a withdrawal.
+    /// When the pod owner's shares would otherwise increase, this "deficit" is decreased first _instead_.
+    /// Likewise, when a withdrawal is completed, this "deficit" is decreased and the withdrawal amount is decreased; We can think of this
+    /// as the withdrawal "paying off the deficit".
     function podOwnerDepositShares(
         address podOwner
     ) external view returns (int256);
@@ -177,10 +171,8 @@ interface IEigenPodManager is
     /// @notice returns canonical, virtual beaconChainETH strategy
     function beaconChainETHStrategy() external view returns (IStrategy);
 
-    /**
-     * @notice Returns the historical sum of proportional balance decreases a pod owner has experienced when
-     * updating their pod's balance.
-     */
+    /// @notice Returns the historical sum of proportional balance decreases a pod owner has experienced when
+    /// updating their pod's balance.
     function beaconChainSlashingFactor(
         address staker
     ) external view returns (uint64);

@@ -64,12 +64,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         // revert();
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                             (TIMING VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                             (TIMING VARIANTS)
+    ///
 
     /// 1. Verify validators' withdrawal credentials
     /// 2. start a checkpoint
@@ -199,12 +197,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_State(staker);
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                          (EXIT TO POD VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                          (EXIT TO POD VARIANTS)
+    ///
 
     /// -- Fully exit validators before verifying withdrawal credentials
     /// 1. Verify validators' withdrawal credentials
@@ -288,12 +284,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithExits_State(staker, subset, exitedBalanceGwei);
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                          (SLASH TO POD VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                          (SLASH TO POD VARIANTS)
+    ///
 
     /// -- get slashed on beacon chain
     /// 1. Try to verify validators' withdrawal credentials
@@ -404,11 +398,9 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
-    /**
-     *
-     *                    VERIFY -> PROVE STALE BALANCE -> COMPLETE CHECKPOINT
-     *
-     */
+    ///
+    ///                    VERIFY -> PROVE STALE BALANCE -> COMPLETE CHECKPOINT
+    ///
 
     /// 1. Verify validators' withdrawal credentials
     /// -- get slashed on beacon chain; exit to pod
@@ -506,12 +498,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithSlashing_HandleRoundDown_State(staker, validators, slashedBalanceGwei);
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                          (EARN ON CL VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                          (EARN ON CL VARIANTS)
+    ///
 
     /// -- earn rewards on beacon chain (not withdrawn to pod)
     /// 1. Verify validators' withdrawal credentials
@@ -593,12 +583,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_EarnOnBeacon_State(staker, 0);
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                          (EARN TO POD VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                          (EARN TO POD VARIANTS)
+    ///
 
     /// -- earn rewards on beacon chain (withdrawn to pod)
     /// 1. Verify validators' withdrawal credentials
@@ -682,12 +670,10 @@ contract Integration_VerifyWC_StartCP_CompleteCP is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithPodBalance_State(staker, 0);
     }
 
-    /**
-     *
-     *                    VERIFY -> START -> COMPLETE CHECKPOINT
-     *                          (NATIVE ETH VARIANTS)
-     *
-     */
+    ///
+    ///                    VERIFY -> START -> COMPLETE CHECKPOINT
+    ///                          (NATIVE ETH VARIANTS)
+    ///
 
     /// -- Pod receives native ETH via fallback
     /// 1. start a checkpoint

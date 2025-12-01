@@ -9,9 +9,7 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-/**
- * core/
- */
+/// core/
 import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AllocationManager.sol";
 import "src/contracts/core/AllocationManagerView.sol";
@@ -23,46 +21,34 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/core/ProtocolRegistry.sol";
 
-/**
- * pemissions/
- */
+/// pemissions/
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
 
-/**
- * pods/
- */
+/// pods/
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 
-/**
- * strategies/
- */
+/// strategies/
 import "src/contracts/strategies/EigenStrategy.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 
-/**
- * token/
- */
+/// token/
 import "src/contracts/interfaces/IEigen.sol";
 import "src/contracts/interfaces/IBackingEigen.sol";
 import "src/contracts/token/Eigen.sol";
 import "src/contracts/token/BackingEigen.sol";
 
-/**
- * multichain/
- */
+/// multichain/
 import "src/contracts/multichain/CrossChainRegistry.sol";
 import "src/contracts/multichain/OperatorTableUpdater.sol";
 import "src/contracts/multichain/ECDSACertificateVerifier.sol";
 import "src/contracts/multichain/BN254CertificateVerifier.sol";
 
-/**
- * avs/
- */
+/// avs/
 import "src/contracts/avs/task/TaskMailbox.sol";
 
 // For destination chains
@@ -90,9 +76,7 @@ library Env {
     DeployedImpl internal constant impl = DeployedImpl.A;
     DeployedInstance internal constant instance = DeployedInstance.A;
 
-    /**
-     * env
-     */
+    /// env
     function env() internal view returns (string memory) {
         return _string("ZEUS_ENV");
     }
@@ -218,9 +202,7 @@ library Env {
         return _envBool("DESTINATION_CHAIN");
     }
 
-    /**
-     * core/
-     */
+    /// core/
     function allocationManager(
         DeployedProxy
     ) internal view returns (AllocationManager) {
@@ -311,9 +293,7 @@ library Env {
         return ProtocolRegistry(_deployedImpl(type(ProtocolRegistry).name));
     }
 
-    /**
-     * permissions/
-     */
+    /// permissions/
     function pauserRegistry(
         DeployedImpl
     ) internal view returns (PauserRegistry) {
@@ -344,9 +324,7 @@ library Env {
         return KeyRegistrar(_deployedImpl(type(KeyRegistrar).name));
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     function eigenPod(
         DeployedBeacon
     ) internal view returns (UpgradeableBeacon) {
@@ -371,9 +349,7 @@ library Env {
         return EigenPodManager(_deployedImpl(type(EigenPodManager).name));
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function eigenStrategy(
         DeployedProxy
     ) internal view returns (EigenStrategy) {
@@ -408,7 +384,10 @@ library Env {
     }
 
     // Returns the proxy instance at index `i`
-    function strategyBaseTVLLimits(DeployedInstance, uint256 i) internal view returns (StrategyBaseTVLLimits) {
+    function strategyBaseTVLLimits(
+        DeployedInstance,
+        uint256 i
+    ) internal view returns (StrategyBaseTVLLimits) {
         return StrategyBaseTVLLimits(_deployedInstance(type(StrategyBaseTVLLimits).name, i));
     }
 
@@ -430,9 +409,7 @@ library Env {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
     }
 
-    /**
-     * token/
-     */
+    /// token/
     function eigen(
         DeployedProxy
     ) internal view returns (Eigen) {
@@ -457,9 +434,7 @@ library Env {
         return IBackingEigen(_deployedImpl(type(BackingEigen).name));
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function emptyContract(
         DeployedImpl
     ) internal view returns (EmptyContract) {
@@ -526,10 +501,11 @@ library Env {
         return TaskMailbox(_deployedImpl(type(TaskMailbox).name));
     }
 
-    /**
-     * Helpers
-     */
-    function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
+    /// Helpers
+    function _deployedInstance(
+        string memory name,
+        uint256 idx
+    ) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }
 
@@ -602,7 +578,10 @@ library Env {
         return vm.envString(key);
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
@@ -617,11 +596,9 @@ library Env {
         return admin;
     }
 
-    /**
-     *
-     * Environment Type Helpers
-     *
-     */
+    ///
+    /// Environment Type Helpers
+    ///
 
     /// Types that help facilitate network type differentation
     /// @dev Mimics the deployment matrix in: https://github.com/Layr-Labs/eigenlayer-contracts?tab=readme-ov-file#deployments

@@ -10,11 +10,9 @@ contract IntegrationCheckUtils is IntegrationBase {
     using SlashingLib for *;
     using StdStyle for *;
 
-    /**
-     *
-     *                              EIGENPOD CHECKS
-     *
-     */
+    ///
+    ///                              EIGENPOD CHECKS
+    ///
     function check_VerifyWC_State(User staker, uint40[] memory validators, uint64 beaconBalanceGwei) internal {
         uint beaconBalanceWei = beaconBalanceGwei * GWEI_TO_WEI;
         assert_DepositShares_GTE_WithdrawableShares(
@@ -202,11 +200,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_DSF(staker, BEACONCHAIN_ETH_STRAT.toArray(), "staker DSF should not have changed");
     }
 
-    /**
-     *
-     *                           LST/DELEGATION CHECKS
-     *
-     */
+    ///
+    ///                           LST/DELEGATION CHECKS
+    ///
     function check_Deposit_State(User staker, IStrategy[] memory strategies, uint[] memory shares) internal {
         /// Deposit into strategies:
         // For each of the assets held by the staker (either StrategyManager or EigenPodManager),
@@ -461,16 +457,14 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_DSF_WAD(staker, strategies, "check_Redelegate_State: staker dsfs should be reset to wad");
     }
 
-    /**
-     * @notice Overloaded function to check the state after a withdrawal as tokens, accepting a non-user type for the operator.
-     * @param staker The staker who completed the withdrawal.
-     * @param operator The operator address, which can be a non-user type like address(0).
-     * @param withdrawal The details of the withdrawal that was completed.
-     * @param strategies The strategies from which the withdrawal was made.
-     * @param shares The number of shares involved in the withdrawal.
-     * @param tokens The tokens received after the withdrawal.
-     * @param expectedTokens The expected tokens to be received after the withdrawal.
-     */
+    /// @notice Overloaded function to check the state after a withdrawal as tokens, accepting a non-user type for the operator.
+    /// @param staker The staker who completed the withdrawal.
+    /// @param operator The operator address, which can be a non-user type like address(0).
+    /// @param withdrawal The details of the withdrawal that was completed.
+    /// @param strategies The strategies from which the withdrawal was made.
+    /// @param shares The number of shares involved in the withdrawal.
+    /// @param tokens The tokens received after the withdrawal.
+    /// @param expectedTokens The expected tokens to be received after the withdrawal.
     function check_Withdrawal_AsTokens_State(
         User staker,
         User operator,
@@ -591,11 +585,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_DSF_State_WithdrawalAsShares(staker, strategies, "staker's DSF not updated correctly");
     }
 
-    /**
-     *
-     *                             ALM - BASIC INVARIANTS
-     *
-     */
+    ///
+    ///                             ALM - BASIC INVARIANTS
+    ///
 
     /// @dev Run a method as if the user's allocation delay had passed
     /// When done, reset block number so other tests are not affected
@@ -653,11 +645,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_NoSlashableStake(operator, operatorSet, "operator should not have any slashable stake");
     }
 
-    /**
-     *
-     *                              ALM - REGISTRATION
-     *
-     */
+    ///
+    ///                              ALM - REGISTRATION
+    ///
 
     /// @dev Basic invariants that should hold after EVERY call to `registerForOperatorSets`
     /// NOTE: These are only slightly modified from check_Base_Deregistration_State
@@ -685,9 +675,7 @@ contract IntegrationCheckUtils is IntegrationBase {
     /// @dev Check invariants for registerForOperatorSets given a set of strategies
     /// for which NO allocation exists (currentMag/pendingDiff are 0)
     /// @param unallocated For the given operatorSet, a list of strategies for which NO allocation exists
-    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated)
-        internal
-    {
+    function check_Registration_State_NoAllocation(User operator, OperatorSet memory operatorSet, IStrategy[] memory unallocated) internal {
         check_Base_Registration_State(operator, operatorSet);
 
         /// The operator is NOT allocated, ensure their slashable stake and magnitudes are unchanged
@@ -741,11 +729,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_Snap_Unchanged_SlashableStake(operator, operatorSet, allStrats, "operator should not have increased slashable stake");
     }
 
-    /**
-     *
-     *                              ALM - DEREGISTRATION
-     *
-     */
+    ///
+    ///                              ALM - DEREGISTRATION
+    ///
 
     /// @dev Basic invariants that should hold after EVERY call to `deregisterFromOperatorSets`
     /// NOTE: These are only slightly modified from check_Base_Registration_State
@@ -802,11 +788,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    /**
-     *
-     *                             ALM - INCREASE ALLOCATION
-     *
-     */
+    ///
+    ///                             ALM - INCREASE ALLOCATION
+    ///
 
     /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
     /// where the input `params` represent an _increase_ in magnitude
@@ -955,11 +939,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         assert_HasSlashableStake(operator, params, "operator should have expected slashable stake for each strategy");
     }
 
-    /**
-     *
-     *                             ALM - DECREASE ALLOCATION
-     *
-     */
+    ///
+    ///                             ALM - DECREASE ALLOCATION
+    ///
 
     /// @dev Basic invariants that should hold after all calls to `modifyAllocations`
     /// where the input `params` represent a decrease in magnitude
@@ -1055,11 +1037,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         check_ActiveModification_State(operator, deallocateParams);
     }
 
-    /**
-     *
-     *                             ALM - SLASHING
-     *
-     */
+    ///
+    ///                             ALM - SLASHING
+    ///
     function check_Base_Slashing_State(User operator, AllocateParams memory allocateParams, SlashingParams memory slashParams, uint slashId)
         internal
     {
@@ -1108,11 +1088,9 @@ contract IntegrationCheckUtils is IntegrationBase {
         );
     }
 
-    /**
-     *
-     *                             DUAL SLASHING CHECKS
-     *
-     */
+    ///
+    ///                             DUAL SLASHING CHECKS
+    ///
     function check_CompleteCheckpoint_AfterAVSSlash_BCSlash(
         User staker,
         uint40[] memory slashedValidators,

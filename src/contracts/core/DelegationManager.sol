@@ -12,16 +12,14 @@ import "../libraries/SlashingLib.sol";
 import "../libraries/Snapshots.sol";
 import "./storage/DelegationManagerStorage.sol";
 
-/**
- * @title DelegationManager
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
- * - enabling anyone to register as an operator in EigenLayer
- * - allowing operators to specify parameters related to stakers who delegate to them
- * - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
- * - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
- */
+/// @title DelegationManager
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice  This is the contract for delegation in EigenLayer. The main functionalities of this contract are
+/// - enabling anyone to register as an operator in EigenLayer
+/// - allowing operators to specify parameters related to stakers who delegate to them
+/// - enabling any staker to delegate its stake to the operator of its choice (a given staker can only delegate to a single operator at a time)
+/// - enabling a staker to undelegate its assets from the operator it is delegated to (performed as part of the withdrawal process, initiated through the StrategyManager)
 contract DelegationManager is
     Initializable,
     Deprecated_OwnableUpgradeable,
@@ -54,15 +52,11 @@ contract DelegationManager is
         _;
     }
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
 
-    /**
-     * @dev Initializes the immutable addresses of the strategy manager, eigenpod manager, and allocation manager.
-     */
+    /// @dev Initializes the immutable addresses of the strategy manager, eigenpod manager, and allocation manager.
     constructor(
         IStrategyManager _strategyManager,
         IEigenPodManager _eigenPodManager,
@@ -86,11 +80,9 @@ contract DelegationManager is
         _setPausedStatus(initialPausedStatus);
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc IDelegationManager
     function registerAsOperator(
@@ -120,7 +112,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external checkCanCall(operator) {
+    function updateOperatorMetadataURI(
+        address operator,
+        string calldata metadataURI
+    ) external checkCanCall(operator) {
         require(isOperator(operator), OperatorNotRegistered());
         emit OperatorMetadataURIUpdated(operator, metadataURI);
     }
@@ -317,41 +312,40 @@ contract DelegationManager is
         // Emit event for operator shares being slashed
         emit OperatorSharesSlashed(operator, strategy, totalDepositSharesToSlash);
 
-        _getShareManager(strategy).increaseBurnOrRedistributableShares(
-            operatorSet, slashId, strategy, totalDepositSharesToSlash
-        );
+        _getShareManager(strategy)
+            .increaseBurnOrRedistributableShares(operatorSet, slashId, strategy, totalDepositSharesToSlash);
 
         return totalDepositSharesToSlash;
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Sets operator parameters in the `_operatorDetails` mapping.
-     * @param operator The account registered as an operator updating their operatorDetails
-     * @param newDelegationApprover The new parameters for the operator
-     */
-    function _setDelegationApprover(address operator, address newDelegationApprover) internal {
+    /// @notice Sets operator parameters in the `_operatorDetails` mapping.
+    /// @param operator The account registered as an operator updating their operatorDetails
+    /// @param newDelegationApprover The new parameters for the operator
+    function _setDelegationApprover(
+        address operator,
+        address newDelegationApprover
+    ) internal {
         _operatorDetails[operator].delegationApprover = newDelegationApprover;
         emit DelegationApproverUpdated(operator, newDelegationApprover);
     }
 
-    /**
-     * @notice Delegates *from* a `staker` *to* an `operator`.
-     * @param staker The address to delegate *from* -- this address is delegating control of its own assets.
-     * @param operator The address to delegate *to* -- this address is being given power to place the `staker`'s assets at risk on services
-     * @dev Assumes the following is checked before calling this function:
-     *          1) the `staker` is not already delegated to an operator
-     *          2) the `operator` has indeed registered as an operator in EigenLayer
-     *          3) if applicable, the `operator's` `delegationApprover` signed off on delegation
-     * Ensures that:
-     *          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
-     */
-    function _delegate(address staker, address operator) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
+    /// @notice Delegates *from* a `staker` *to* an `operator`.
+    /// @param staker The address to delegate *from* -- this address is delegating control of its own assets.
+    /// @param operator The address to delegate *to* -- this address is being given power to place the `staker`'s assets at risk on services
+    /// @dev Assumes the following is checked before calling this function:
+    ///          1) the `staker` is not already delegated to an operator
+    ///          2) the `operator` has indeed registered as an operator in EigenLayer
+    ///          3) if applicable, the `operator's` `delegationApprover` signed off on delegation
+    /// Ensures that:
+    ///          1) new delegations are not paused (PAUSED_NEW_DELEGATION)
+    function _delegate(
+        address staker,
+        address operator
+    ) internal onlyWhenNotPaused(PAUSED_NEW_DELEGATION) {
         // When a staker is not delegated to an operator, their deposit shares are equal to their
         // withdrawable shares -- except for the beaconChainETH strategy, which is handled below
         (IStrategy[] memory strategies, uint256[] memory withdrawableShares) = getDepositedShares(staker);
@@ -387,15 +381,13 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @dev Undelegates `staker` from their operator, queueing a withdrawal for all
-     * their deposited shares in the process.
-     * @dev Assumes the following is checked before calling this function:
-     *          1) the `staker` is currently delegated to an operator
-     *          2) the `staker` is not an operator themselves
-     * Ensures that:
-     *          1) the withdrawal queue is not paused (PAUSED_ENTER_WITHDRAWAL_QUEUE)
-     */
+    /// @dev Undelegates `staker` from their operator, queueing a withdrawal for all
+    /// their deposited shares in the process.
+    /// @dev Assumes the following is checked before calling this function:
+    ///          1) the `staker` is currently delegated to an operator
+    ///          2) the `staker` is not an operator themselves
+    /// Ensures that:
+    ///          1) the withdrawal queue is not paused (PAUSED_ENTER_WITHDRAWAL_QUEUE)
     function _undelegate(
         address staker
     ) internal onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE) returns (bytes32[] memory withdrawalRoots) {
@@ -439,28 +431,26 @@ contract DelegationManager is
         return withdrawalRoots;
     }
 
-    /**
-     * @notice Removes `sharesToWithdraw` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
-     * @param staker The staker queuing a withdrawal
-     * @param operator The operator the staker is delegated to
-     * @param strategies The strategies to queue a withdrawal for
-     * @param depositSharesToWithdraw The amount of deposit shares the staker wishes to withdraw, must be less than staker's depositShares in storage
-     * @param slashingFactors The corresponding slashing factor for the staker/operator for each strategy
-     *
-     * @dev The amount withdrawable by the staker may not actually be the same as the depositShares that are in storage in the StrategyManager/EigenPodManager.
-     * This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
-     * out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
-     * So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
-     * Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
-     * and my real withdrawable amount is 50 shares.
-     * Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
-     * get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.
-     * @dev depositSharesToWithdraw are converted to sharesToWithdraw using the `toShares` library function. sharesToWithdraw are then divided by the current maxMagnitude of the operator (at queue time)
-     * and this value is stored in the Withdrawal struct as `scaledShares.
-     * Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
-     * that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
-     * @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
-     */
+    /// @notice Removes `sharesToWithdraw` in `strategies` from `staker` who is currently delegated to `operator` and queues a withdrawal to the `withdrawer`.
+    /// @param staker The staker queuing a withdrawal
+    /// @param operator The operator the staker is delegated to
+    /// @param strategies The strategies to queue a withdrawal for
+    /// @param depositSharesToWithdraw The amount of deposit shares the staker wishes to withdraw, must be less than staker's depositShares in storage
+    /// @param slashingFactors The corresponding slashing factor for the staker/operator for each strategy
+    ///
+    /// @dev The amount withdrawable by the staker may not actually be the same as the depositShares that are in storage in the StrategyManager/EigenPodManager.
+    /// This is a result of any slashing that has occurred during the time the staker has been delegated to an operator. So the proportional amount that is withdrawn
+    /// out of the amount withdrawable for the staker has to also be decremented from the staker's deposit shares.
+    /// So the amount of depositShares withdrawn out has to be proportionally scaled down depending on the slashing that has occurred.
+    /// Ex. Suppose as a staker, I have 100 depositShares for a strategy thats sitting in the StrategyManager in the `stakerDepositShares` mapping but I actually have been slashed 50%
+    /// and my real withdrawable amount is 50 shares.
+    /// Now when I go to withdraw 40 depositShares, I'm proportionally withdrawing 40% of my withdrawable shares. We calculate below the actual shares withdrawn via the `toShares()` function to
+    /// get 20 shares to queue withdraw. The end state is that I have 60 depositShares and 30 withdrawable shares now, this still accurately reflects a 50% slashing that has occurred on my existing stake.
+    /// @dev depositSharesToWithdraw are converted to sharesToWithdraw using the `toShares` library function. sharesToWithdraw are then divided by the current maxMagnitude of the operator (at queue time)
+    /// and this value is stored in the Withdrawal struct as `scaledShares.
+    /// Upon completion the `scaledShares` are then multiplied by the maxMagnitude of the operator at completion time. This is how we factor in any slashing events
+    /// that occurred during the withdrawal delay period. Shares in a withdrawal are no longer slashable once the withdrawal is completable.
+    /// @dev If the `operator` is indeed an operator, then the operator's delegated shares in the `strategies` are also decreased appropriately.
     function _removeSharesAndQueueWithdrawal(
         address staker,
         address operator,
@@ -535,15 +525,13 @@ contract DelegationManager is
         return withdrawalRoot;
     }
 
-    /**
-     * @dev This function completes a queued withdrawal for a staker.
-     * This will apply any slashing that has occurred since the the withdrawal was queued by multiplying the withdrawal's
-     * scaledShares by the operator's maxMagnitude for each strategy. This ensures that any slashing that has occurred
-     * during the period the withdrawal was queued until its slashableUntil block is applied to the withdrawal amount.
-     * If receiveAsTokens is true, then these shares will be withdrawn as tokens.
-     * If receiveAsTokens is false, then they will be redeposited according to the current operator the staker is delegated to,
-     * and added back to the operator's delegatedShares.
-     */
+    /// @dev This function completes a queued withdrawal for a staker.
+    /// This will apply any slashing that has occurred since the the withdrawal was queued by multiplying the withdrawal's
+    /// scaledShares by the operator's maxMagnitude for each strategy. This ensures that any slashing that has occurred
+    /// during the period the withdrawal was queued until its slashableUntil block is applied to the withdrawal amount.
+    /// If receiveAsTokens is true, then these shares will be withdrawn as tokens.
+    /// If receiveAsTokens is false, then they will be redeposited according to the current operator the staker is delegated to,
+    /// and added back to the operator's delegatedShares.
     function _completeQueuedWithdrawal(
         Withdrawal memory withdrawal,
         IERC20[] calldata tokens,
@@ -628,16 +616,14 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @notice Increases `operator`s depositedShares in `strategy` based on staker's addedDepositShares
-     * and updates the staker's depositScalingFactor for the strategy.
-     * @param operator The operator to increase the delegated delegatedShares for
-     * @param staker The staker to increase the depositScalingFactor for
-     * @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
-     * @param prevDepositShares The number of delegated deposit shares the staker had in the strategy prior to the increase
-     * @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
-     * @param slashingFactor The current slashing factor for the staker/operator/strategy
-     */
+    /// @notice Increases `operator`s depositedShares in `strategy` based on staker's addedDepositShares
+    /// and updates the staker's depositScalingFactor for the strategy.
+    /// @param operator The operator to increase the delegated delegatedShares for
+    /// @param staker The staker to increase the depositScalingFactor for
+    /// @param strategy The strategy to increase the delegated delegatedShares and the depositScalingFactor for
+    /// @param prevDepositShares The number of delegated deposit shares the staker had in the strategy prior to the increase
+    /// @param addedShares The shares added to the staker in the StrategyManager/EigenPodManager
+    /// @param slashingFactor The current slashing factor for the staker/operator/strategy
     function _increaseDelegation(
         address operator,
         address staker,
@@ -669,13 +655,11 @@ contract DelegationManager is
         }
     }
 
-    /**
-     * @notice Decreases `operator`s shares in `strategy` based on staker's removed shares
-     * @param operator The operator to decrease the delegated delegated shares for
-     * @param staker The staker to decrease the delegated delegated shares for
-     * @param strategy The strategy to decrease the delegated delegated shares for
-     * @param sharesToDecrease The shares to remove from the operator's delegated shares
-     */
+    /// @notice Decreases `operator`s shares in `strategy` based on staker's removed shares
+    /// @param operator The operator to decrease the delegated delegated shares for
+    /// @param staker The staker to decrease the delegated delegated shares for
+    /// @param strategy The strategy to decrease the delegated delegated shares for
+    /// @param sharesToDecrease The shares to remove from the operator's delegated shares
     function _decreaseDelegation(
         address operator,
         address staker,
@@ -768,12 +752,10 @@ contract DelegationManager is
         return slashingFactors;
     }
 
-    /**
-     * @dev Calculate amount of slashable shares that would be slashed from the queued withdrawals from an operator for a strategy
-     * given the previous maxMagnitude and the new maxMagnitude.
-     * Note: To get the total amount of slashable shares in the queue withdrawable, set newMaxMagnitude to 0 and prevMaxMagnitude
-     * is the current maxMagnitude of the operator.
-     */
+    /// @dev Calculate amount of slashable shares that would be slashed from the queued withdrawals from an operator for a strategy
+    /// given the previous maxMagnitude and the new maxMagnitude.
+    /// Note: To get the total amount of slashable shares in the queue withdrawable, set newMaxMagnitude to 0 and prevMaxMagnitude
+    /// is the current maxMagnitude of the operator.
     function _getSlashableSharesInQueue(
         address operator,
         IStrategy strategy,
@@ -824,7 +806,11 @@ contract DelegationManager is
     }
 
     /// @dev Add to the cumulative withdrawn scaled shares from an operator for a given strategy
-    function _addQueuedSlashableShares(address operator, IStrategy strategy, uint256 scaledShares) internal {
+    function _addQueuedSlashableShares(
+        address operator,
+        IStrategy strategy,
+        uint256 scaledShares
+    ) internal {
         uint256 currCumulativeScaledShares = _cumulativeScaledSharesHistory[operator][strategy].latest();
         _cumulativeScaledSharesHistory[operator][strategy].push({
             key: uint32(block.number),
@@ -875,11 +861,9 @@ contract DelegationManager is
             : IShareManager(address(strategyManager));
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IDelegationManager
     function isDelegated(
@@ -903,7 +887,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function depositScalingFactor(address staker, IStrategy strategy) external view returns (uint256) {
+    function depositScalingFactor(
+        address staker,
+        IStrategy strategy
+    ) external view returns (uint256) {
         return _depositScalingFactor[staker][strategy].scalingFactor();
     }
 
@@ -932,7 +919,10 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
-    function getSlashableSharesInQueue(address operator, IStrategy strategy) public view returns (uint256) {
+    function getSlashableSharesInQueue(
+        address operator,
+        IStrategy strategy
+    ) public view returns (uint256) {
         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategy);
 
         // Return amount of slashable scaled shares remaining

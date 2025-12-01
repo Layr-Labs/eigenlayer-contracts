@@ -19,12 +19,13 @@ contract DeployGenerator is Script, Test {
     using Merkle for bytes32[];
     using BN254 for BN254.G1Point;
 
-    function run(string memory network, string memory salt) public {
-        /**
-         *
-         *                     WALLET CREATION
-         *
-         */
+    function run(
+        string memory network,
+        string memory salt
+    ) public {
+        ///
+        ///                     WALLET CREATION
+        ///
         require(
             _strEq(network, "preprod-hoodi") || _strEq(network, "testnet-sepolia") || _strEq(network, "mainnet"),
             "Invalid network"
@@ -33,11 +34,9 @@ contract DeployGenerator is Script, Test {
         // 1. Create a BN254 Wallet using random salt
         Operator memory operator = OperatorWalletLib.createOperator(salt);
 
-        /**
-         *
-         *                     Create the `BN254OperatorInfo` struct
-         *
-         */
+        ///
+        ///                     Create the `BN254OperatorInfo` struct
+        ///
 
         // 1. Generate the `BN254OperatorInfo` struct
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo;
@@ -65,26 +64,25 @@ contract DeployGenerator is Script, Test {
         );
         operatorSetInfo.operatorInfoTreeRoot = operatorInfoLeaves.merkleizeKeccak();
 
-        /**
-         *
-         *                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
-         *
-         */
+        ///
+        ///                     OUTPUT - OPERATOR SET INFO (TOML FORMAT)
+        ///
 
         // Write operator set info to TOML file
         _writeOperatorSetToml(network, operatorSetInfo);
 
-        /**
-         *
-         *                     OUTPUT - BLS WALLET
-         *
-         */
+        ///
+        ///                     OUTPUT - BLS WALLET
+        ///
 
         // Write operator data to a separate function to avoid stack too deep
         _writeOperatorData(operator, network);
     }
 
-    function _writeOperatorData(Operator memory operator, string memory network) internal {
+    function _writeOperatorData(
+        Operator memory operator,
+        string memory network
+    ) internal {
         string memory operator_object = "operator";
 
         // Serialize regular wallet info
@@ -162,7 +160,10 @@ contract DeployGenerator is Script, Test {
         vm.writeToml(finalJson, outputPath);
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 

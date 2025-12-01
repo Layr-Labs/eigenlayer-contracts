@@ -14,12 +14,7 @@ import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 
-contract KeyRegistrarUnitTests is
-    EigenLayerMultichainUnitTestSetup,
-    IKeyRegistrarErrors,
-    IKeyRegistrarEvents,
-    ISignatureUtilsMixinErrors
-{
+contract KeyRegistrarUnitTests is EigenLayerMultichainUnitTestSetup, IKeyRegistrarErrors, IKeyRegistrarEvents, ISignatureUtilsMixinErrors {
     using BN254 for BN254.G1Point;
 
     // Test accounts
@@ -111,10 +106,8 @@ contract KeyRegistrarUnitTests is
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_configureOperatorSet
- * @notice Unit tests for KeyRegistrar.configureOperatorSet
- */
+/// @title KeyRegistrarUnitTests_configureOperatorSet
+/// @notice Unit tests for KeyRegistrar.configureOperatorSet
 contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
     function test_revert_unauthorized() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -188,10 +181,8 @@ contract KeyRegistrarUnitTests_configureOperatorSet is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_registerKey_ECDSA
- * @notice Unit tests for KeyRegistrar.registerKey with ECDSA keys
- */
+/// @title KeyRegistrarUnitTests_registerKey_ECDSA
+/// @notice Unit tests for KeyRegistrar.registerKey with ECDSA keys
 contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
     function test_revert_invalidFormat() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -373,10 +364,8 @@ contract KeyRegistrarUnitTests_registerKey_ECDSA is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_registerKey_BN254
- * @notice Unit tests for KeyRegistrar.registerKey with BN254 keys
- */
+/// @title KeyRegistrarUnitTests_registerKey_BN254
+/// @notice Unit tests for KeyRegistrar.registerKey with BN254 keys
 contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
     function test_revert_zeroPubkey() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -606,10 +595,8 @@ contract KeyRegistrarUnitTests_registerKey_BN254 is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_deregisterKey
- * @notice Unit tests for KeyRegistrar.deregisterKey
- */
+/// @title KeyRegistrarUnitTests_deregisterKey
+/// @notice Unit tests for KeyRegistrar.deregisterKey
 contract KeyRegistrarUnitTests_deregisterKey is KeyRegistrarUnitTests {
     function test_revert_keyNotFound() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -705,10 +692,8 @@ contract KeyRegistrarUnitTests_deregisterKey is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_ViewFunctions
- * @notice Unit tests for KeyRegistrar view functions
- */
+/// @title KeyRegistrarUnitTests_ViewFunctions
+/// @notice Unit tests for KeyRegistrar view functions
 contract KeyRegistrarUnitTests_ViewFunctions is KeyRegistrarUnitTests {
     function test_getKeyHash_unregisteredOperator() public {
         OperatorSet memory operatorSet = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -983,10 +968,8 @@ contract KeyRegistrarUnitTests_ViewFunctions is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_MultipleOperatorSets
- * @notice Unit tests for KeyRegistrar with multiple operator sets
- */
+/// @title KeyRegistrarUnitTests_MultipleOperatorSets
+/// @notice Unit tests for KeyRegistrar with multiple operator sets
 contract KeyRegistrarUnitTests_MultipleOperatorSets is KeyRegistrarUnitTests {
     function test_multipleOperatorSets_differentKeyTypes() public {
         uint32 ecdsaSetId = 0;
@@ -1056,10 +1039,8 @@ contract KeyRegistrarUnitTests_MultipleOperatorSets is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_GlobalKeyPersistence
- * @notice Unit tests for global key persistence in KeyRegistrar
- */
+/// @title KeyRegistrarUnitTests_GlobalKeyPersistence
+/// @notice Unit tests for global key persistence in KeyRegistrar
 contract KeyRegistrarUnitTests_GlobalKeyPersistence is KeyRegistrarUnitTests {
     function test_globalKeyPersistence_ECDSA() public {
         OperatorSet memory operatorSet1 = _createOperatorSet(avs1, DEFAULT_OPERATOR_SET_ID);
@@ -1164,10 +1145,8 @@ contract KeyRegistrarUnitTests_CrossCurveInteraction is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_SignatureVerification
- * @notice Unit tests for signature verification in KeyRegistrar
- */
+/// @title KeyRegistrarUnitTests_SignatureVerification
+/// @notice Unit tests for signature verification in KeyRegistrar
 contract KeyRegistrarUnitTests_SignatureVerification is KeyRegistrarUnitTests {
     using BN254 for BN254.G1Point;
 

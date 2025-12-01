@@ -24,15 +24,13 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
 
     uint slashId;
 
-    /**
-     * Shared setup:
-     * 1. Update the EPM implementation to manually set the beaconChainSlashingFactor to 1
-     * Note: Slashing the EigenPod enough (in units of gwei) to reduce the beaconChainSlashingFactor to 1 without
-     * rounding down to 0 in a single slash even with increased MaxEB to 2048 is not possible and would require several
-     * iterations of slashing to do so. Using a harness to set the beaconChainSlashingFactor to 1 is the easiest way for this test.
-     * 2. create a new staker, operator, and avs
-     * 3. start validators and verify withdrawal credentials
-     */
+    /// Shared setup:
+    /// 1. Update the EPM implementation to manually set the beaconChainSlashingFactor to 1
+    /// Note: Slashing the EigenPod enough (in units of gwei) to reduce the beaconChainSlashingFactor to 1 without
+    /// rounding down to 0 in a single slash even with increased MaxEB to 2048 is not possible and would require several
+    /// iterations of slashing to do so. Using a harness to set the beaconChainSlashingFactor to 1 is the easiest way for this test.
+    /// 2. create a new staker, operator, and avs
+    /// 3. start validators and verify withdrawal credentials
     function _init() internal override {
         // 1. etch a new implementation to set staker's beaconChainSlashingFactor to 1
         EigenPodManagerWrapper eigenPodManagerWrapper =
@@ -113,15 +111,13 @@ contract Integration_SlashBC_OneBCSF is IntegrationCheckUtils {
         }
     }
 
-    /**
-     * @notice Test that a staker with 1 maxMagnitude and 1 BCSF has slashingFactor rounded down to 0
-     * and further deposits are not possible
-     * Test sequence following _init()
-     * 4. Create an operator set and register an operator
-     * 5. slash operator to 1 magnitude remaining
-     * 6. delegate to operator
-     * 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
-     */
+    /// @notice Test that a staker with 1 maxMagnitude and 1 BCSF has slashingFactor rounded down to 0
+    /// and further deposits are not possible
+    /// Test sequence following _init()
+    /// 4. Create an operator set and register an operator
+    /// 5. slash operator to 1 magnitude remaining
+    /// 6. delegate to operator
+    /// 7. deposit expecting revert (randomly pick to verifyWC, start/complete CP)
     function test_slashAVS_delegate_revert_startCompleteCP(uint24 _r) public rand(_r) {
         // 4. Create an operator set and register an operator
         operatorSet = avs.createOperatorSet(strategies);

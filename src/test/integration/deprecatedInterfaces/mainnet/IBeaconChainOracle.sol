@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-/**
- * @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
- * @title Interface for the BeaconStateOracle contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @notice DEPRECATED INTERFACE at commit hash https://github.com/Layr-Labs/eigenlayer-contracts/tree/0139d6213927c0a7812578899ddd3dda58051928
+/// @title Interface for the BeaconStateOracle contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 interface IBeaconChainOracle_DeprecatedM1 {
     /// @notice Largest blockNumber that has been confirmed by the oracle.
     function latestConfirmedOracleBlockNumber() external view returns (uint64);
@@ -26,39 +24,29 @@ interface IBeaconChainOracle_DeprecatedM1 {
     /// @notice Total number of members of the set of oracle signers.
     function totalOracleSigners() external view returns (uint);
 
-    /**
-     * @notice Number of oracle signers that must vote for a state root in order for the state root to be confirmed.
-     * Adjustable by this contract's owner through use of the `setThreshold` function.
-     * @dev We note that there is an edge case -- when the threshold is adjusted downward, if a state root already has enough votes to meet the *new* threshold,
-     * the state root must still receive one additional vote from an oracle signer to be confirmed. This behavior is intended, to minimize unexpected root confirmations.
-     */
+    /// @notice Number of oracle signers that must vote for a state root in order for the state root to be confirmed.
+    /// Adjustable by this contract's owner through use of the `setThreshold` function.
+    /// @dev We note that there is an edge case -- when the threshold is adjusted downward, if a state root already has enough votes to meet the *new* threshold,
+    /// the state root must still receive one additional vote from an oracle signer to be confirmed. This behavior is intended, to minimize unexpected root confirmations.
     function threshold() external view returns (uint);
 
-    /**
-     * @notice Owner-only function used to modify the value of the `threshold` variable.
-     * @param _threshold Desired new value for the `threshold` variable. Function will revert if this is set to zero.
-     */
+    /// @notice Owner-only function used to modify the value of the `threshold` variable.
+    /// @param _threshold Desired new value for the `threshold` variable. Function will revert if this is set to zero.
     function setThreshold(uint _threshold) external;
 
-    /**
-     * @notice Owner-only function used to add a signer to the set of oracle signers.
-     * @param _oracleSigners Array of address to be added to the set.
-     * @dev Function will have no effect on the i-th input address if `_oracleSigners[i]`is already in the set of oracle signers.
-     */
+    /// @notice Owner-only function used to add a signer to the set of oracle signers.
+    /// @param _oracleSigners Array of address to be added to the set.
+    /// @dev Function will have no effect on the i-th input address if `_oracleSigners[i]`is already in the set of oracle signers.
     function addOracleSigners(address[] memory _oracleSigners) external;
 
-    /**
-     * @notice Owner-only function used to remove a signer from the set of oracle signers.
-     * @param _oracleSigners Array of address to be removed from the set.
-     * @dev Function will have no effect on the i-th input address if `_oracleSigners[i]`is already not in the set of oracle signers.
-     */
+    /// @notice Owner-only function used to remove a signer from the set of oracle signers.
+    /// @param _oracleSigners Array of address to be removed from the set.
+    /// @dev Function will have no effect on the i-th input address if `_oracleSigners[i]`is already not in the set of oracle signers.
     function removeOracleSigners(address[] memory _oracleSigners) external;
 
-    /**
-     * @notice Called by a member of the set of oracle signers to assert that the Beacon Chain state root is `stateRoot` at `blockNumber`.
-     * @dev The state root will be finalized once the total number of votes *for this exact state root at this exact blockNumber* meets the `threshold` value.
-     * @param blockNumber The Beacon Chain blockNumber of interest.
-     * @param stateRoot The Beacon Chain state root that the caller asserts was the correct root, at the specified `blockNumber`.
-     */
+    /// @notice Called by a member of the set of oracle signers to assert that the Beacon Chain state root is `stateRoot` at `blockNumber`.
+    /// @dev The state root will be finalized once the total number of votes *for this exact state root at this exact blockNumber* meets the `threshold` value.
+    /// @param blockNumber The Beacon Chain blockNumber of interest.
+    /// @param stateRoot The Beacon Chain state root that the caller asserts was the correct root, at the specified `blockNumber`.
     function voteForBeaconChainStateRoot(uint64 blockNumber, bytes32 stateRoot) external;
 }

@@ -12,16 +12,14 @@ import "../permissions/Pausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodManagerStorage.sol";
 
-/**
- * @title The contract used for creating and managing EigenPods
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice The main functionalities are:
- * - creating EigenPods
- * - staking for new validators on EigenPods
- * - keeping track of the restaked balances of all EigenPod owners
- * - withdrawing eth when withdrawals are completed
- */
+/// @title The contract used for creating and managing EigenPods
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice The main functionalities are:
+/// - creating EigenPods
+/// - staking for new validators on EigenPods
+/// - keeping track of the restaked balances of all EigenPod owners
+/// - withdrawing eth when withdrawals are completed
 contract EigenPodManager is
     Initializable,
     OwnableUpgradeable,
@@ -60,7 +58,10 @@ contract EigenPodManager is
         _disableInitializers();
     }
 
-    function initialize(address initialOwner, uint256 _initPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 _initPausedStatus
+    ) external initializer {
         _transferOwnership(initialOwner);
         _setPausedStatus(_initPausedStatus);
     }
@@ -135,15 +136,13 @@ contract EigenPodManager is
         }
     }
 
-    /**
-     * @notice Used by the DelegationManager to remove a pod owner's deposit shares when they enter the withdrawal queue.
-     * Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
-     * @dev This function reverts if it would result in `podOwnerDepositShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
-     * result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
-     * shares from the operator to whom the staker is delegated.
-     * @dev The delegation manager validates that the podOwner is not address(0)
-     * @return updatedShares the staker's deposit shares after decrement
-     */
+    /// @notice Used by the DelegationManager to remove a pod owner's deposit shares when they enter the withdrawal queue.
+    /// Simply decreases the `podOwner`'s shares by `shares`, down to a minimum of zero.
+    /// @dev This function reverts if it would result in `podOwnerDepositShares[podOwner]` being less than zero, i.e. it is forbidden for this function to
+    /// result in the `podOwner` incurring a "share deficit". This behavior prevents a Staker from queuing a withdrawal which improperly removes excessive
+    /// shares from the operator to whom the staker is delegated.
+    /// @dev The delegation manager validates that the podOwner is not address(0)
+    /// @return updatedShares the staker's deposit shares after decrement
     function removeDepositShares(
         address staker,
         IStrategy strategy,
@@ -158,13 +157,11 @@ contract EigenPodManager is
         return uint256(updatedShares);
     }
 
-    /**
-     * @notice Increases the `podOwner`'s shares by `shares`, paying off negative shares if needed.
-     * Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
-     * @return existingDepositShares the pod owner's shares prior to any additions. Returns 0 if negative
-     * @return addedShares the number of shares added to the staker's balance above 0. This means that if,
-     * after shares are added, the staker's balance is non-positive, this will return 0.
-     */
+    /// @notice Increases the `podOwner`'s shares by `shares`, paying off negative shares if needed.
+    /// Used by the DelegationManager to award a pod owner shares on exiting the withdrawal queue
+    /// @return existingDepositShares the pod owner's shares prior to any additions. Returns 0 if negative
+    /// @return addedShares the number of shares added to the staker's balance above 0. This means that if,
+    /// after shares are added, the staker's balance is non-positive, this will return 0.
     function addShares(
         address staker,
         IStrategy strategy,
@@ -174,12 +171,10 @@ contract EigenPodManager is
         return _addShares(staker, shares);
     }
 
-    /**
-     * @notice Used by the DelegationManager to complete a withdrawal, sending tokens to the pod owner
-     * @dev Prioritizes decreasing the podOwner's share deficit, if they have one
-     * @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
-     *      we do not need to update the podOwnerDepositShares if `currentpodOwnerDepositShares` is positive
-     */
+    /// @notice Used by the DelegationManager to complete a withdrawal, sending tokens to the pod owner
+    /// @dev Prioritizes decreasing the podOwner's share deficit, if they have one
+    /// @dev This function assumes that `removeShares` has already been called by the delegationManager, hence why
+    ///      we do not need to update the podOwnerDepositShares if `currentpodOwnerDepositShares` is positive
     function withdrawSharesAsTokens(
         address staker,
         IStrategy strategy,
@@ -276,7 +271,10 @@ contract EigenPodManager is
     /// NOTE: if the staker ends with a non-positive balance, this returns (0, 0)
     /// @return prevDepositShares the shares the staker had before any were added
     /// @return addedShares the shares added to the staker's balance
-    function _addShares(address staker, uint256 shares) internal returns (uint256, uint256) {
+    function _addShares(
+        address staker,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         require(staker != address(0), InputAddressZero());
         require(int256(shares) >= 0, SharesNegative());
 
@@ -352,7 +350,10 @@ contract EigenPodManager is
     /// @notice Returns the current shares of `user` in `strategy`
     /// @dev strategy must be beaconChainETHStrategy
     /// @dev returns 0 if the user has negative shares
-    function stakerDepositShares(address user, IStrategy strategy) public view returns (uint256 depositShares) {
+    function stakerDepositShares(
+        address user,
+        IStrategy strategy
+    ) public view returns (uint256 depositShares) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
         return podOwnerDepositShares[user] < 0 ? 0 : uint256(podOwnerDepositShares[user]);
     }

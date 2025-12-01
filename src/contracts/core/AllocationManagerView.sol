@@ -16,7 +16,7 @@ import "./storage/AllocationManagerStorage.sol";
 ///      Since `AllocationManagerView` only needs access to the storage variables from
 ///      `AllocationManagerStorage` (without the other mixins), it uses `layout at 151` to
 ///      align its storage layout with the main `AllocationManager` contract.
-contract AllocationManagerView is IAllocationManagerView, AllocationManagerStorage layout at 151 {
+contract AllocationManagerView layout at 151 is IAllocationManagerView, AllocationManagerStorage {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
     using Snapshots for Snapshots.DefaultWadHistory;
     using OperatorSetLib for OperatorSet;
@@ -24,15 +24,11 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     using EnumerableSet for *;
     using SafeCast for *;
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
 
-    /**
-     * @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
-     */
+    /// @dev Initializes the DelegationManager address, the deallocation delay, and the allocation configuration delay.
     constructor(
         IDelegationManager _delegation,
         IStrategy _eigenStrategy,
@@ -40,20 +36,16 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
         uint32 _ALLOCATION_CONFIGURATION_DELAY
     ) AllocationManagerStorage(_delegation, _eigenStrategy, _DEALLOCATION_DELAY, _ALLOCATION_CONFIGURATION_DELAY) {}
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @dev For an operator set, get the operator's effective allocated magnitude.
-     * If the operator set has a pending deallocation that can be completed at the
-     * current block number, this method returns a view of the allocation as if the deallocation
-     * was completed.
-     * @return info the effective allocated and pending magnitude for the operator set, and
-     * the effective encumbered magnitude for all operator sets belonging to this strategy
-     */
+    /// @dev For an operator set, get the operator's effective allocated magnitude.
+    /// If the operator set has a pending deallocation that can be completed at the
+    /// current block number, this method returns a view of the allocation as if the deallocation
+    /// was completed.
+    /// @return info the effective allocated and pending magnitude for the operator set, and
+    /// the effective encumbered magnitude for all operator sets belonging to this strategy
     function _getUpdatedAllocation(
         address operator,
         bytes32 operatorSetKey,
@@ -85,13 +77,11 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
         return (info, allocation);
     }
 
-    /**
-     * @dev Returns the minimum allocated stake at the future block.
-     * @param operatorSet The operator set to get the minimum allocated stake for.
-     * @param operators The operators to get the minimum allocated stake for.
-     * @param strategies The strategies to get the minimum allocated stake for.
-     * @param futureBlock The future block to get the minimum allocated stake for.
-     */
+    /// @dev Returns the minimum allocated stake at the future block.
+    /// @param operatorSet The operator set to get the minimum allocated stake for.
+    /// @param operators The operators to get the minimum allocated stake for.
+    /// @param strategies The strategies to get the minimum allocated stake for.
+    /// @param futureBlock The future block to get the minimum allocated stake for.
     function _getMinimumAllocatedStake(
         OperatorSet memory operatorSet,
         address[] memory operators,
@@ -133,16 +123,17 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @dev Use safe casting when downcasting to uint64
-    function _addInt128(uint64 a, int128 b) internal pure returns (uint64) {
+    function _addInt128(
+        uint64 a,
+        int128 b
+    ) internal pure returns (uint64) {
         return uint256(int256(int128(uint128(a)) + b)).toUint64();
     }
 
-    /**
-     * @notice Helper function to check if an operator is redistributable from a list of operator sets
-     * @param operator The operator to check
-     * @param operatorSets The list of operator sets to check
-     * @return True if the operator is redistributable from any of the operator sets, false otherwise
-     */
+    /// @notice Helper function to check if an operator is redistributable from a list of operator sets
+    /// @param operator The operator to check
+    /// @param operatorSets The list of operator sets to check
+    /// @return True if the operator is redistributable from any of the operator sets, false otherwise
     function _isOperatorRedistributable(
         address operator,
         OperatorSet[] memory operatorSets
@@ -155,11 +146,9 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
         return false;
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IAllocationManagerView
     function getOperatorSetCount(
@@ -244,13 +233,19 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getEncumberedMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+    function getEncumberedMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
         (uint64 curEncumberedMagnitude,) = _getFreeAndUsedMagnitude(operator, strategy);
         return curEncumberedMagnitude;
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getAllocatableMagnitude(address operator, IStrategy strategy) external view returns (uint64) {
+    function getAllocatableMagnitude(
+        address operator,
+        IStrategy strategy
+    ) external view returns (uint64) {
         (, uint64 curAllocatableMagnitude) = _getFreeAndUsedMagnitude(operator, strategy);
         return curAllocatableMagnitude;
     }
@@ -292,7 +287,10 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getMaxMagnitude(address operator, IStrategy strategy) public view returns (uint64) {
+    function getMaxMagnitude(
+        address operator,
+        IStrategy strategy
+    ) public view returns (uint64) {
         return _maxMagnitudeHistory[operator][strategy].latest();
     }
 
@@ -311,7 +309,10 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @inheritdoc IAllocationManagerView
-    function getMaxMagnitudes(address[] memory operators, IStrategy strategy) external view returns (uint64[] memory) {
+    function getMaxMagnitudes(
+        address[] memory operators,
+        IStrategy strategy
+    ) external view returns (uint64[] memory) {
         uint64[] memory maxMagnitudes = new uint64[](operators.length);
 
         for (uint256 i = 0; i < operators.length; ++i) {
@@ -369,7 +370,10 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @inheritdoc IAllocationManagerView
-    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+    function isMemberOfOperatorSet(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
         return _operatorSetMembers[operatorSet.key()].contains(operator);
     }
 
@@ -448,7 +452,10 @@ contract AllocationManagerView is IAllocationManagerView, AllocationManagerStora
     }
 
     /// @inheritdoc IAllocationManagerView
-    function isOperatorSlashable(address operator, OperatorSet memory operatorSet) public view returns (bool) {
+    function isOperatorSlashable(
+        address operator,
+        OperatorSet memory operatorSet
+    ) public view returns (bool) {
         RegistrationStatus memory status = registrationStatus[operator][operatorSet.key()];
 
         // slashableUntil returns the last block the operator is slashable in so we check for

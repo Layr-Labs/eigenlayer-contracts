@@ -206,12 +206,10 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
         uint allocatable;
     }
 
-    /**
-     * Get expected post slash storage values
-     * Assumes that:
-     * 1. WAD is max before slash
-     * 2. encumbered is equal to magnitude before slash
-     */
+    /// Get expected post slash storage values
+    /// Assumes that:
+    /// 1. WAD is max before slash
+    /// 2. encumbered is equal to magnitude before slash
     function _getExpectedSlashVals(uint wadToSlash, uint64 magBeforeSlash)
         internal
         pure
@@ -219,11 +217,9 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
     {
         return _getExpectedSlashVals(wadToSlash, magBeforeSlash, magBeforeSlash);
     }
-    /**
-     * Get expected post slash storage values
-     * Assumes that:
-     * 1. WAD is max before slash
-     */
+    /// Get expected post slash storage values
+    /// Assumes that:
+    /// 1. WAD is max before slash
 
     function _getExpectedSlashVals(uint wadToSlash, uint64 magBeforeSlash, uint64 encumberedMagBeforeSlash)
         internal
@@ -472,10 +468,7 @@ contract AllocationManagerUnitTests is EigenLayerUnitTestSetup, IAllocationManag
 
     /// @dev Create allocate params for random magnitudes to the same default strategy across multiple operator sets
     /// NOTE: this variant allocates ALL magnitude (1 WAD)
-    function _randAllocateParams_SingleMockStrategy_AllocAll(OperatorSet[] memory operatorSets)
-        internal
-        returns (AllocateParams[] memory)
-    {
+    function _randAllocateParams_SingleMockStrategy_AllocAll(OperatorSet[] memory operatorSets) internal returns (AllocateParams[] memory) {
         // Give each set a minimum of 1 magnitude
         uint64[] memory magnitudes = new uint64[](operatorSets.length);
         uint64 usedMagnitude;
@@ -550,7 +543,6 @@ contract AllocationManagerUnitTests_Initialization_Setters is AllocationManagerU
     /// -----------------------------------------------------------------------
     /// initialize()
     /// -----------------------------------------------------------------------
-
     /// @dev Asserts the following:
     /// 1. The fn can only be called once, during deployment.
     /// 2. The fn initializes the contract state correctly (owner, pauserRegistry, and initialPausedStatus).
@@ -596,7 +588,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
     }
 
     function test_revert_paused() public {
-        allocationManager.pause(2 ** PAUSED_OPERATOR_SLASHING);
+        allocationManager.pause(2**PAUSED_OPERATOR_SLASHING);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.slashOperator(defaultAVS, _randSlashingParams(defaultOperator, 0));
     }
@@ -689,13 +681,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         );
     }
 
-    /**
-     * Attempts to slash an operator before the allocation is active
-     * Validates:
-     * 1. The events of the slash indicate nothing was slashed
-     * 2. Storage is not mutated post slash
-     * 3. The operator's allocation takes effect as normal post slash
-     */
+    /// Attempts to slash an operator before the allocation is active
+    /// Validates:
+    /// 1. The events of the slash indicate nothing was slashed
+    /// 2. Storage is not mutated post slash
+    /// 3. The operator's allocation takes effect as normal post slash
     function test_operatorAllocated_notActive() public {
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
 
@@ -749,13 +739,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates all magnitude to for a single strategy to an operatorSet. Slashes 25%
-     * Validates:
-     * 1. Events are emitted
-     * 2. Allocation & info introspection
-     * 3. Slashable stake introspection
-     */
+    /// Allocates all magnitude to for a single strategy to an operatorSet. Slashes 25%
+    /// Validates:
+    /// 1. Events are emitted
+    /// 2. Allocation & info introspection
+    /// 3. Slashable stake introspection
     function test_slashPostAllocation() public {
         // Generate allocation for this operator set, we allocate max
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
@@ -855,15 +843,13 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
-     * Asserts that:
-     * 1. Events are emitted
-     * 2. Encumbered mag is updated
-     * 3. Max mag is updated
-     * 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
-     * 5. The second allocation is not slashed from
-     */
+    /// Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
+    /// Asserts that:
+    /// 1. Events are emitted
+    /// 2. Encumbered mag is updated
+    /// 3. Max mag is updated
+    /// 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
+    /// 5. The second allocation is not slashed from
     function testFuzz_slash_oneCompletedAlloc_onePendingAlloc(Randomness r) public rand(r) {
         uint wadToSlash = r.Uint256(0.01 ether, WAD);
 
@@ -946,18 +932,16 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates 100% magnitude for a single strategy to an operatorSet.
-     * First slashes 99% from the operatorSet, slashes 99.99% a second time, and on the third slash, slashes
-     * 99.9999999999999% which should get rounded up to 100% or WAD wadSlashed leaving the operator with no magnitude
-     * in the operatorSet, 0 encumbered magnitude, and 0 max magnitude.
-     *
-     * Asserts that:
-     * 1. Events are emitted
-     * 2. Storage properly updated after each slash
-     * 3. Slashed amounts are rounded up to ensure magnitude is always slashed
-     * 4. SlashCount increments
-     */
+    /// Allocates 100% magnitude for a single strategy to an operatorSet.
+    /// First slashes 99% from the operatorSet, slashes 99.99% a second time, and on the third slash, slashes
+    /// 99.9999999999999% which should get rounded up to 100% or WAD wadSlashed leaving the operator with no magnitude
+    /// in the operatorSet, 0 encumbered magnitude, and 0 max magnitude.
+    ///
+    /// Asserts that:
+    /// 1. Events are emitted
+    /// 2. Storage properly updated after each slash
+    /// 3. Slashed amounts are rounded up to ensure magnitude is always slashed
+    /// 4. SlashCount increments
     function test_repeatUntilFullSlash() public {
         // Generate allocation for `strategyMock`, we allocate 100% to opSet 0
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
@@ -1097,16 +1081,14 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates all of magnitude to a single strategy to an operatorSet. Deallocate half. Finally, slash while deallocation is pending
-     * Asserts that:
-     * 1. Events are emitted, including for deallocation
-     * 2. Encumbered mag is updated
-     * 3. Max mag is updated
-     * 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
-     * 5. The deallocation is slashed from
-     * 6. Pending magnitude updates post deallocation are valid
-     */
+    /// Allocates all of magnitude to a single strategy to an operatorSet. Deallocate half. Finally, slash while deallocation is pending
+    /// Asserts that:
+    /// 1. Events are emitted, including for deallocation
+    /// 2. Encumbered mag is updated
+    /// 3. Max mag is updated
+    /// 4. Calculations for `getAllocatableMagnitude` and `getAllocation` are correct
+    /// 5. The deallocation is slashed from
+    /// 6. Pending magnitude updates post deallocation are valid
     function testFuzz_SlashWhileDeallocationPending(Randomness r) public rand(r) {
         // Initialize state
         AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
@@ -1163,7 +1145,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         emit MaxMagnitudeUpdated(defaultOperator, allocateParams[0].strategies[0], uint64(WAD - magnitudeSlashed));
         cheats.expectEmit(true, true, true, true, address(allocationManager));
         emit OperatorSlashed(
-            defaultOperator, allocateParams[0].operatorSet, allocateParams[0].strategies, magnitudeSlashed.toArrayU256(), ""
+            defaultOperator,
+            allocateParams[0].operatorSet,
+            allocateParams[0].strategies,
+            magnitudeSlashed.toArrayU256(),
+            ""
         );
 
         cheats.prank(defaultAVS);
@@ -1199,12 +1185,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates all magnitude to a single opSet. Then slashes the entire magnitude
-     * Validates:
-     * 1. Storage post slash
-     * 2. The operator cannot allocate again
-     */
+    /// Allocates all magnitude to a single opSet. Then slashes the entire magnitude
+    /// Validates:
+    /// 1. Storage post slash
+    /// 2. The operator cannot allocate again
     function testRevert_allocateAfterSlashedEntirely() public {
         // Allocate all magnitude
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
@@ -1254,12 +1238,10 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         allocationManager.modifyAllocations(defaultOperator, allocateParams2);
     }
 
-    /**
-     * Allocates all magnitude to a single opSet. Deallocates magnitude. Slashes all
-     * Asserts that:
-     * 1. The Allocation is 0 after slash
-     * 2. Them storage post slash for encumbered and maxMags is zero
-     */
+    /// Allocates all magnitude to a single opSet. Deallocates magnitude. Slashes all
+    /// Asserts that:
+    /// 1. The Allocation is 0 after slash
+    /// 2. Them storage post slash for encumbered and maxMags is zero
     function test_slash_allocateAll_deallocateAll() public {
         // Allocate all magnitude
         cheats.prank(defaultOperator);
@@ -1304,13 +1286,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         assertEq(0, allocationManager.getAllocatableMagnitude(defaultOperator, strategyMock), "Allocatable magnitude should be 0");
     }
 
-    /**
-     * Slashes the operator after deallocation, even if the deallocation has not been cleared.
-     * Validates that:
-     * 1. Even if we do not clear deallocation queue, the deallocation is NOT slashed from since we're passed the deallocationEffectBlock
-     * 2. Validates storage post slash & post clearing deallocation queue
-     * 3. Max magnitude only decreased proportionally by the magnitude set after deallocation
-     */
+    /// Slashes the operator after deallocation, even if the deallocation has not been cleared.
+    /// Validates that:
+    /// 1. Even if we do not clear deallocation queue, the deallocation is NOT slashed from since we're passed the deallocationEffectBlock
+    /// 2. Validates storage post slash & post clearing deallocation queue
+    /// 3. Max magnitude only decreased proportionally by the magnitude set after deallocation
     function test_allocate_deallocate_slashAfterDeallocation() public {
         // Allocate all magnitude
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
@@ -1373,13 +1353,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet.
-     * Validates:
-     * 1. The first operatorSet has less slashable shares post slash
-     * 2. The second operatorSet has the same number slashable shares post slash (within slippage)
-     * 3. The PROPORTION that is slashable for opSet 2 has increased
-     */
+    /// Allocates to multiple operatorSets for a strategy. Only slashes from one operatorSet.
+    /// Validates:
+    /// 1. The first operatorSet has less slashable shares post slash
+    /// 2. The second operatorSet has the same number slashable shares post slash (within slippage)
+    /// 3. The PROPORTION that is slashable for opSet 2 has increased
     function testFuzz_allocateMultipleOpsets_slashSingleOpset(Randomness r) public rand(r) {
         // Get magnitude to allocate
         uint64 magnitudeToAllocate = r.Uint64(1, 5e17);
@@ -1464,13 +1442,11 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         assertEq(opset2SlashableSharesBefore[0][0], minSlashableStake[0][0] + 1, "opSet2 slashable shares should be the same");
     }
 
-    /**
-     * Allocates to multiple strategies for the given operatorSetKey. Slashes from both strategies Validates a slash propagates to both strategies.
-     * Validates that
-     * 1. Proper events are emitted for each strategy slashed
-     * 2. Each strategy is slashed proportional to its allocation
-     * 3. Storage is updated for each strategy, opSet
-     */
+    /// Allocates to multiple strategies for the given operatorSetKey. Slashes from both strategies Validates a slash propagates to both strategies.
+    /// Validates that
+    /// 1. Proper events are emitted for each strategy slashed
+    /// 2. Each strategy is slashed proportional to its allocation
+    /// 3. Storage is updated for each strategy, opSet
     function testFuzz_allocateMultipleStrategies_slashMultiple(Randomness r) public rand(r) {
         // Initialize random params
         uint64 strategy1Magnitude = r.Uint64(1, 1e18);
@@ -1658,10 +1634,8 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         });
     }
 
-    /**
-     * Allocates magnitude to an operator, deallocates all, warps to deallocation effect block and attempts to slash
-     * Asserts that the operator is not slashed
-     */
+    /// Allocates magnitude to an operator, deallocates all, warps to deallocation effect block and attempts to slash
+    /// Asserts that the operator is not slashed
     function test_noFundsSlashedAfterDeallocationDelay() public {
         // Allocate all magnitude
         cheats.prank(defaultOperator);
@@ -1787,9 +1761,7 @@ contract AllocationManagerUnitTests_SlashOperator is AllocationManagerUnitTests 
         assertEq(0, allocationManager.getMaxMagnitude(defaultOperator, strategyMock), "Max magnitude should be 0");
     }
 
-    /**
-     * @notice Tests that an AVS can update the slasher, and it can slash once the slasher is active
-     */
+    /// @notice Tests that an AVS can update the slasher, and it can slash once the slasher is active
     function test_slash_updateSlasher_slashAgain() public {
         // Allocate all magnitude
         cheats.prank(defaultOperator);
@@ -1854,7 +1826,7 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
     error InvalidPermissions();
 
     function test_revert_paused() public {
-        allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
+        allocationManager.pause(2**PAUSED_MODIFY_ALLOCATIONS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.modifyAllocations(address(this), new AllocateParams[](0));
     }
@@ -1895,10 +1867,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
 
     function test_revert_invalidOperatorSet() public {
         AllocateParams[] memory allocateParams = AllocateParams({
-            operatorSet: OperatorSet(random().Address(), 0),
-            strategies: defaultStrategies,
-            newMagnitudes: uint64(0.5 ether).toArrayU64()
-        }).toArray();
+                operatorSet: OperatorSet(random().Address(), 0),
+                strategies: defaultStrategies,
+                newMagnitudes: uint64(0.5 ether).toArrayU64()
+            }).toArray();
 
         cheats.expectRevert(InvalidOperatorSet.selector);
         cheats.prank(defaultOperator);
@@ -1931,15 +1903,13 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
     }
 
-    /**
-     * @notice Regression tests for the bugfix where pending modifications were checked by
-     * require(allocation.pendingDiff == 0, ModificationAlreadyPending());
-     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
-     * of a deallocation was slashed to become 0.
-     *
-     * This test checks that the effectBlock, pendingDiff are not overwritten even if the pendingDiff is 0
-     * when attempting to modify allocations again
-     */
+    /// @notice Regression tests for the bugfix where pending modifications were checked by
+    /// require(allocation.pendingDiff == 0, ModificationAlreadyPending());
+    /// which would overwrite the effectBlock, pendingDiff if a pendingDiff
+    /// of a deallocation was slashed to become 0.
+    ///
+    /// This test checks that the effectBlock, pendingDiff are not overwritten even if the pendingDiff is 0
+    /// when attempting to modify allocations again
     function test_modifyAllocations_PendingDiffZero() public {
         // Step 1: Allocate to the operator set
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 501);
@@ -1990,14 +1960,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         assertEq(allocation.pendingDiff, 0, "Pending diff should still be 0");
     }
 
-    /**
-     * @notice Regression tests for the bugfix where pending modifications were checked by
-     * require(allocation.pendingDiff == 0, ModificationAlreadyPending());
-     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
-     * of a deallocation was slashed to become 0.
-     *
-     * This test checks that the deallocationQueue is ascending ordered by effectBlocks
-     */
+    /// @notice Regression tests for the bugfix where pending modifications were checked by
+    /// require(allocation.pendingDiff == 0, ModificationAlreadyPending());
+    /// which would overwrite the effectBlock, pendingDiff if a pendingDiff
+    /// of a deallocation was slashed to become 0.
+    ///
+    /// This test checks that the deallocationQueue is ascending ordered by effectBlocks
     function test_modifyAllocations_PendingDiffZero_CheckOrderedDeallocationQueue() public {
         // Step 1: Register the operator to multiple operator sets
         OperatorSet memory operatorSet1 = OperatorSet(defaultAVS, 1);
@@ -2053,17 +2021,15 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         _checkDeallocationQueueOrder(defaultOperator, defaultStrategies[0], 2);
     }
 
-    /**
-     * @notice Regression tests for the bugfix where pending modifications were checked by
-     * require(allocation.pendingDiff == 0, ModificationAlreadyPending());
-     * which would overwrite the effectBlock, pendingDiff if a pendingDiff
-     * of a deallocation was slashed to become 0.
-     *
-     * This test checks that the deallocationQueue is ascending ordered by effectBlocks
-     * In this case the new modifyAllocations call is an allocation
-     * where the effectBlock is increased and the deallocationQueue is unordered as well because the operator
-     * allocationDelay configured to be long enough.
-     */
+    /// @notice Regression tests for the bugfix where pending modifications were checked by
+    /// require(allocation.pendingDiff == 0, ModificationAlreadyPending());
+    /// which would overwrite the effectBlock, pendingDiff if a pendingDiff
+    /// of a deallocation was slashed to become 0.
+    ///
+    /// This test checks that the deallocationQueue is ascending ordered by effectBlocks
+    /// In this case the new modifyAllocations call is an allocation
+    /// where the effectBlock is increased and the deallocationQueue is unordered as well because the operator
+    /// allocationDelay configured to be long enough.
     function test_modifyAllocations_PendingDiffZero_Allocation() public {
         // Step 1: Register the operator to multiple operator sets
         OperatorSet memory operatorSet1 = OperatorSet(defaultAVS, 1);
@@ -2238,14 +2204,12 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         allocationManager.modifyAllocations(defaultOperator, allocateParams);
     }
 
-    /**
-     * @notice Tests edge cases around allocation delay:
-     * 1. Set allocation delay to a value greater than ALLOCATION_CONFIGURATION_DELAY
-     * 2. Allocate magnitude before the configured delay is hit
-     * 3. Set allocation delay to a value less than ALLOCATION_CONFIGURATION_DELAY
-     * 4. Allocate magnitude after allocation in step 2 takes effect, but before the new delay is hit
-     * Validates that you should be able to allocate in step 4 since there is no other pending modifications
-     */
+    /// @notice Tests edge cases around allocation delay:
+    /// 1. Set allocation delay to a value greater than ALLOCATION_CONFIGURATION_DELAY
+    /// 2. Allocate magnitude before the configured delay is hit
+    /// 3. Set allocation delay to a value less than ALLOCATION_CONFIGURATION_DELAY
+    /// 4. Allocate magnitude after allocation in step 2 takes effect, but before the new delay is hit
+    /// Validates that you should be able to allocate in step 4 since there is no other pending modifications
     function testFuzz_ShouldBeAbleToAllocateSoonerThanLastDelay(Randomness r) public rand(r) {
         uint32 firstDelay = r.Uint32(ALLOCATION_CONFIGURATION_DELAY, type(uint24).max);
         uint32 secondDelay = r.Uint32(1, ALLOCATION_CONFIGURATION_DELAY - 1);
@@ -2280,19 +2244,21 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operator: defaultOperator,
             operatorSet: defaultOperatorSet,
             strategy: strategyMock,
-            expectedAllocation: Allocation({currentMagnitude: half, pendingDiff: int64(1), effectBlock: uint32(block.number + secondDelay)}),
+            expectedAllocation: Allocation({
+                currentMagnitude: half,
+                pendingDiff: int64(1),
+                effectBlock: uint32(block.number + secondDelay)
+            }),
             expectedMagnitudes: Magnitudes({encumbered: half + 1, max: WAD, allocatable: WAD - (half + 1)})
         });
     }
 
-    /**
-     * @notice Allocates a random magnitude to the default operatorSet.
-     * Validates:
-     * 1. Storage is clear prior to allocation
-     * 2. Events are emitted
-     * 3. Allocation storage/introspection after allocation
-     * 4. Allocation storage/introspection after roll to allocation effect block
-     */
+    /// @notice Allocates a random magnitude to the default operatorSet.
+    /// Validates:
+    /// 1. Storage is clear prior to allocation
+    /// 2. Events are emitted
+    /// 3. Allocation storage/introspection after allocation
+    /// 4. Allocation storage/introspection after roll to allocation effect block
     function testFuzz_allocate_singleStrat_singleOperatorSet(Randomness r) public rand(r) {
         // Create allocation
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
@@ -2350,13 +2316,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * @notice Allocates magnitude for a single strategy to multiple operatorSets
-     * Validates:
-     * 1. Events
-     * 2. Allocation storage/introspection after allocation
-     * 3. Allocation storage/introspection after roll to allocation effect block
-     */
+    /// @notice Allocates magnitude for a single strategy to multiple operatorSets
+    /// Validates:
+    /// 1. Events
+    /// 2. Allocation storage/introspection after allocation
+    /// 3. Allocation storage/introspection after roll to allocation effect block
     function testFuzz_allocate_singleStrat_multipleSets(Randomness r) public rand(r) {
         uint8 numOpSets = uint8(r.Uint256(1, FUZZ_MAX_OP_SETS));
 
@@ -2439,12 +2403,10 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
     }
 
-    /**
-     * @notice Allocates once, warps to allocation effect block, then allocates again
-     * Validates:
-     * 1. Events for each allocation
-     * 2. Allocation storage/introspection immediately after each allocation
-     */
+    /// @notice Allocates once, warps to allocation effect block, then allocates again
+    /// Validates:
+    /// 1. Events for each allocation
+    /// 2. Allocation storage/introspection immediately after each allocation
     function testFuzz_allocateMultipleTimes(Randomness r) public rand(r) {
         uint64 firstAlloc = r.Uint64(1, WAD - 1);
         uint64 secondAlloc = r.Uint64(firstAlloc + 1, WAD);
@@ -2504,10 +2466,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates maximum magnitude to multiple strategies for the same operatorSet
-     * Validates that encumbered magnitude is max for each strategy
-     */
+    /// Allocates maximum magnitude to multiple strategies for the same operatorSet
+    /// Validates that encumbered magnitude is max for each strategy
     function testFuzz_allocateMaxToMultipleStrategies(Randomness r) public rand(r) {
         uint numStrats = r.Uint256(2, FUZZ_MAX_STRATS);
 
@@ -2539,15 +2499,13 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         }
     }
 
-    /**
-     * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
-     * Validates:
-     * 1. Events are valid for the allocation and deallocation
-     * 2. Storage after the allocation is made
-     * 3. Storage after the deallocation is made
-     * 4. Storage after the deallocation effect block is hit
-     * 5. Storage after the deallocation queue is cleared (specifically encumbered mag is decreased)
-     */
+    /// Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
+    /// Validates:
+    /// 1. Events are valid for the allocation and deallocation
+    /// 2. Storage after the allocation is made
+    /// 3. Storage after the deallocation is made
+    /// 4. Storage after the deallocation effect block is hit
+    /// 5. Storage after the deallocation queue is cleared (specifically encumbered mag is decreased)
     function testFuzz_allocate_deallocate_whenRegistered(Randomness r) public rand(r) {
         // Bound allocation and deallocation
         uint64 firstMod = r.Uint64(1, WAD);
@@ -2621,10 +2579,8 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates to an operatorSet, then fully deallocates after the strategy is removed from the set.
-     * Validates that the deallocation takes effect immediately after the strategy is removed
-     */
+    /// Allocates to an operatorSet, then fully deallocates after the strategy is removed from the set.
+    /// Validates that the deallocation takes effect immediately after the strategy is removed
     function test_allocate_removeStrategyFromSet_fullyDeallocate() public {
         // Allocate
         AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy(defaultOperatorSet.toArray());
@@ -2662,11 +2618,9 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates to an operatorSet, deallocates, then removes a strategy from the operatorSet
-     * Validates that:
-     * 1. The deallocation still completes at its expected time
-     */
+    /// Allocates to an operatorSet, deallocates, then removes a strategy from the operatorSet
+    /// Validates that:
+    /// 1. The deallocation still completes at its expected time
     function testFuzz_allocate_deallocate_removeStrategyFromSet(Randomness r) public {
         // Allocate
         AllocateParams[] memory allocateParams = _randAllocateParams_SingleMockStrategy(defaultOperatorSet.toArray());
@@ -2722,13 +2676,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates to an operator set, then fully deallocates when not registered to the set.
-     * Validates that:
-     * 1. Events are properly emitted post instantaneous deallocation
-     * 2. The deallocation is instant & can be reallocated immediately
-     * 3. Storage/introspection post combined deallocation/allocation
-     */
+    /// Allocates to an operator set, then fully deallocates when not registered to the set.
+    /// Validates that:
+    /// 1. Events are properly emitted post instantaneous deallocation
+    /// 2. The deallocation is instant & can be reallocated immediately
+    /// 3. Storage/introspection post combined deallocation/allocation
     function testFuzz_allocate_fullyDeallocate_reallocate_WhenNotRegistered(Randomness r) public rand(r) {
         // Bound allocation and deallocation
         uint64 firstMod = r.Uint64(1, WAD);
@@ -2796,13 +2748,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates all magnitude to a single strategy across multiple operatorSets. Deallocates fully, and then reallocates
-     * Validates:
-     * 1. Events are emitted for the allocation, deallocation, and reallocation (including the deallocation queue clear)
-     * 2. Stake is fully allocated & encumbered mag used up
-     * 3. Stake can be reallocated after the deallocation delay
-     */
+    /// Allocates all magnitude to a single strategy across multiple operatorSets. Deallocates fully, and then reallocates
+    /// Validates:
+    /// 1. Events are emitted for the allocation, deallocation, and reallocation (including the deallocation queue clear)
+    /// 2. Stake is fully allocated & encumbered mag used up
+    /// 3. Stake can be reallocated after the deallocation delay
     function testFuzz_allocate_fromClearedDeallocQueue(Randomness r) public rand(r) {
         uint numOpSets = r.Uint256(1, FUZZ_MAX_OP_SETS);
 
@@ -2894,18 +2844,20 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
             operator: defaultOperator,
             operatorSet: finalOpSet,
             strategy: strategyMock,
-            expectedAllocation: Allocation({currentMagnitude: 0, pendingDiff: int128(uint128(WAD)), effectBlock: _defaultAllocEffectBlock()}),
+            expectedAllocation: Allocation({
+                currentMagnitude: 0,
+                pendingDiff: int128(uint128(WAD)),
+                effectBlock: _defaultAllocEffectBlock()
+            }),
             expectedMagnitudes: Magnitudes({encumbered: WAD, max: WAD, allocatable: 0})
         });
     }
 
-    /**
-     * Allocates all mag and then deallocates all mag
-     * Validates
-     * 1. Events for the deallocation
-     * 2. Storage after deallocation
-     * 3. Storage after clearing the deallocation queue
-     */
+    /// Allocates all mag and then deallocates all mag
+    /// Validates
+    /// 1. Events for the deallocation
+    /// 2. Storage after deallocation
+    /// 3. Storage after clearing the deallocation queue
     function test_deallocate_all() public {
         // Allocate all
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, WAD);
@@ -2943,13 +2895,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates, deallocates, and then clears the deallocation queue. Multiple strategies & sets in a single operatorSet
-     * Validates:
-     * 1. Events for allocation, deallocation, and deallocation queue clear
-     * 2. Storage after allocation & after allocation effect block
-     * 3. Storage after deallocation & after deallocation effect block
-     */
+    /// Allocates, deallocates, and then clears the deallocation queue. Multiple strategies & sets in a single operatorSet
+    /// Validates:
+    /// 1. Events for allocation, deallocation, and deallocation queue clear
+    /// 2. Storage after allocation & after allocation effect block
+    /// 3. Storage after deallocation & after deallocation effect block
     function testFuzz_lifecycle_allocate_deallocate_MultipleSetsAndStrats(Randomness r) public rand(r) {
         uint numAllocations = r.Uint256(2, FUZZ_MAX_ALLOCATIONS);
         uint numStrats = r.Uint256(2, FUZZ_MAX_STRATS);
@@ -3069,7 +3019,11 @@ contract AllocationManagerUnitTests_ModifyAllocations is AllocationManagerUnitTe
                     operator: defaultOperator,
                     operatorSet: deallocateParams[i].operatorSet,
                     strategy: allocateParams[i].strategies[j],
-                    expectedAllocation: Allocation({currentMagnitude: deallocateParams[i].newMagnitudes[j], pendingDiff: 0, effectBlock: 0}),
+                    expectedAllocation: Allocation({
+                        currentMagnitude: deallocateParams[i].newMagnitudes[j],
+                        pendingDiff: 0,
+                        effectBlock: 0
+                    }),
                     expectedMagnitudes: Magnitudes({
                         encumbered: deallocateParams[i].newMagnitudes[j],
                         max: WAD,
@@ -3089,7 +3043,7 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
     /// -----------------------------------------------------------------------
 
     function test_revert_paused() public {
-        allocationManager.pause(2 ** PAUSED_MODIFY_ALLOCATIONS);
+        allocationManager.pause(2**PAUSED_MODIFY_ALLOCATIONS);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.clearDeallocationQueue(defaultOperator, new IStrategy[](0), new uint16[](0));
     }
@@ -3102,12 +3056,10 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         allocationManager.clearDeallocationQueue(defaultOperator, strategies, numToClear);
     }
 
-    /**
-     * @notice Allocates magnitude to an operator and then
-     * - Clears deallocation queue when only an allocation exists
-     * - Clears deallocation queue when the alloc can be completed - asserts emit has been emitted
-     * - Validates storage after the second clear
-     */
+    /// @notice Allocates magnitude to an operator and then
+    /// - Clears deallocation queue when only an allocation exists
+    /// - Clears deallocation queue when the alloc can be completed - asserts emit has been emitted
+    /// - Validates storage after the second clear
     function testFuzz_allocate(Randomness r) public rand(r) {
         AllocateParams[] memory allocateParams = _randAllocateParams_DefaultOpSet();
 
@@ -3142,13 +3094,11 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         });
     }
 
-    /**
-     * @notice Allocates magnitude to an operator registered for some operator sets, and then
-     * - Clears deallocation queue when nothing can be completed
-     * - After the first clear, asserts the allocation info takes into account the deallocation
-     * - Clears deallocation queue when the dealloc can be completed
-     * - Assert events & validates storage after the deallocateParams are completed
-     */
+    /// @notice Allocates magnitude to an operator registered for some operator sets, and then
+    /// - Clears deallocation queue when nothing can be completed
+    /// - After the first clear, asserts the allocation info takes into account the deallocation
+    /// - Clears deallocation queue when the dealloc can be completed
+    /// - Assert events & validates storage after the deallocateParams are completed
     function testFuzz_allocate_deallocate(Randomness r) public rand(r) {
         // Generate a random allocation and subsequent deallocation from the default operator set
         (AllocateParams[] memory allocateParams, AllocateParams[] memory deallocateParams) =
@@ -3217,11 +3167,9 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         });
     }
 
-    /**
-     * Allocates, deallocates, and then allocates again. Asserts that
-     * - The deallocation does not block state updates from the second allocation, even though the allocation has an earlier
-     *   effect block
-     */
+    /// Allocates, deallocates, and then allocates again. Asserts that
+    /// - The deallocation does not block state updates from the second allocation, even though the allocation has an earlier
+    ///   effect block
     function test_allocate_deallocate_allocate() public {
         // Allocate half of mag to default operator set
         AllocateParams[] memory firstAllocation = _newAllocateParams(defaultOperatorSet, 5e17);
@@ -3268,16 +3216,14 @@ contract AllocationManagerUnitTests_ClearDeallocationQueue is AllocationManagerU
         allocationManager.clearDeallocationQueue(defaultOperator, defaultStrategies, _maxNumToClear());
     }
 
-    /**
-     * Allocates to opset1, allocates to opset2, deallocates from opset1. Asserts that the allocation, which has a higher
-     * effect block is not blocking the deallocation.
-     * The allocs/deallocs looks like
-     * 1. (allocation, opSet2, mag: 5e17, effectBlock: 50th day)
-     * 2. (deallocation, opSet1, mag: 0, effectBlock: 42.5 day)
-     *
-     * The deallocation queue looks like
-     * 1. (deallocation, opSet1, mag: 0, effectBlock: 42.5 day)
-     */
+    /// Allocates to opset1, allocates to opset2, deallocates from opset1. Asserts that the allocation, which has a higher
+    /// effect block is not blocking the deallocation.
+    /// The allocs/deallocs looks like
+    /// 1. (allocation, opSet2, mag: 5e17, effectBlock: 50th day)
+    /// 2. (deallocation, opSet1, mag: 0, effectBlock: 42.5 day)
+    ///
+    /// The deallocation queue looks like
+    /// 1. (deallocation, opSet1, mag: 0, effectBlock: 42.5 day)
     function test_regression_deallocationNotBlocked() public {
         // Set allocation delay to be longer than the deallocation delay
         uint32 allocationDelay = DEALLOCATION_DELAY * 2;
@@ -3475,7 +3421,7 @@ contract AllocationManagerUnitTests_registerForOperatorSets is AllocationManager
     }
 
     function test_registerForOperatorSets_Paused() public {
-        allocationManager.pause(2 ** PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
+        allocationManager.pause(2**PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.registerForOperatorSets(defaultOperator, defaultRegisterParams);
     }
@@ -3593,7 +3539,7 @@ contract AllocationManagerUnitTests_deregisterFromOperatorSets is AllocationMana
     }
 
     function test_deregisterFromOperatorSets_Paused() public {
-        allocationManager.pause(2 ** PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
+        allocationManager.pause(2**PAUSED_OPERATOR_SET_REGISTRATION_AND_DEREGISTRATION);
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         allocationManager.deregisterFromOperatorSets(defaultDeregisterParams);
     }
@@ -4238,7 +4184,6 @@ contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests,
     /// -----------------------------------------------------------------------
     /// updateSlasher() + getSlasher() + getPendingSlasher()
     /// -----------------------------------------------------------------------
-
     /// @dev Thrown when the caller is not allowed to call a function on behalf of an account.
     error InvalidPermissions();
 
@@ -4648,10 +4593,8 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
     using SlashingLib for *;
     using ArrayLib for *;
 
-    /**
-     * Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
-     * of the first allocation. Validates slashable stake at each step.
-     */
+    /// Allocates half of magnitude for a single strategy to an operatorSet. Then allocates again. Slashes 50%
+    /// of the first allocation. Validates slashable stake at each step.
     function test_allocate_onePendingAllocation(Randomness r) public rand(r) {
         // Generate allocation for `strategyMock`, we allocate half
         {
@@ -4702,10 +4645,8 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
-     * Validates slashable stake at each step after allocation and deallocation
-     */
+    /// Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
+    /// Validates slashable stake at each step after allocation and deallocation
     function testFuzz_allocate_deallocate_validateSlashableStake(Randomness r) public rand(r) {
         // Bound allocation and deallocation
         uint64 firstMod = r.Uint64(1, WAD);
@@ -4771,10 +4712,8 @@ contract AllocationManagerUnitTests_getSlashableStake is AllocationManagerUnitTe
         });
     }
 
-    /**
-     * Allocates all of magnitude to a single strategy to an operatorSet.
-     * Deallocate some portion. Finally, slash while deallocation is pending
-     */
+    /// Allocates all of magnitude to a single strategy to an operatorSet.
+    /// Deallocate some portion. Finally, slash while deallocation is pending
     function testFuzz_SlashWhileDeallocationPending(Randomness r) public rand(r) {
         // Initialize state
         AllocateParams[] memory allocateParams = r.AllocateParams(defaultAVS, 1, 1);
@@ -4986,9 +4925,7 @@ contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTe
     using ArrayLib for *;
     using SlashingLib for *;
 
-    /**
-     * Allocates to `firstMod` magnitude and validates allocated stake is correct
-     */
+    /// Allocates to `firstMod` magnitude and validates allocated stake is correct
     function testFuzz_allocate(Randomness r) public rand(r) {
         // Generate allocation for `strategyMock`, we allocate half
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);
@@ -5002,10 +4939,8 @@ contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTe
         assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(5e17), "allocated stake not correct");
     }
 
-    /**
-     * Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
-     * Validates allocated stake is updated even after deallocation is cleared in storage
-     */
+    /// Allocates to `firstMod` magnitude and then deallocate to `secondMod` magnitude
+    /// Validates allocated stake is updated even after deallocation is cleared in storage
     function testFuzz_allocate_deallocate(Randomness r) public rand(r) {
         // Bound allocation and deallocation
         uint64 firstMod = r.Uint64(1, WAD);
@@ -5035,10 +4970,8 @@ contract AllocationManagerUnitTests_getAllocatedStake is AllocationManagerUnitTe
         assertEq(allocatedStake[0][0], DEFAULT_OPERATOR_SHARES.mulWad(secondMod), "allocated stake not correct");
     }
 
-    /**
-     * Allocates to `firstMod` magnitude and then deregisters the operator.
-     * Validates allocated stake is nonzero even after deregistration delay
-     */
+    /// Allocates to `firstMod` magnitude and then deregisters the operator.
+    /// Validates allocated stake is nonzero even after deregistration delay
     function testFuzz_allocate_deregister(Randomness r) public rand(r) {
         // 1. Generate allocation for `strategyMock`, we allocate half
         AllocateParams[] memory allocateParams = _newAllocateParams(defaultOperatorSet, 5e17);

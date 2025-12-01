@@ -10,12 +10,10 @@ import "../../interfaces/IAllocationManager.sol";
 
 import {Snapshots} from "../../libraries/Snapshots.sol";
 
-/**
- * @title Storage variables for the `DelegationManager` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This storage contract is separate from the logic to simplify the upgrade process.
- */
+/// @title Storage variables for the `DelegationManager` contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice This storage contract is separate from the logic to simplify the upgrade process.
 abstract contract DelegationManagerStorage is IDelegationManager {
     using Snapshots for Snapshots.DefaultZeroHistory;
 
@@ -57,15 +55,13 @@ abstract contract DelegationManagerStorage is IDelegationManager {
     /// @dev Do not remove, deprecated storage.
     bytes32 internal __deprecated_DOMAIN_SEPARATOR;
 
-    /**
-     * @notice Tracks the current balance of shares an `operator` is delegated according to each `strategy`.
-     * Updated by both the `StrategyManager` and `EigenPodManager` when a staker's delegatable balance changes,
-     * and by the `AllocationManager` when the `operator` is slashed.
-     *
-     * @dev The following invariant should hold for each `strategy`:
-     *
-     * operatorShares[operator] = sum(withdrawable shares of all stakers delegated to operator)
-     */
+    /// @notice Tracks the current balance of shares an `operator` is delegated according to each `strategy`.
+    /// Updated by both the `StrategyManager` and `EigenPodManager` when a staker's delegatable balance changes,
+    /// and by the `AllocationManager` when the `operator` is slashed.
+    ///
+    /// @dev The following invariant should hold for each `strategy`:
+    ///
+    /// operatorShares[operator] = sum(withdrawable shares of all stakers delegated to operator)
     mapping(address operator => mapping(IStrategy strategy => uint256 shares)) public operatorShares;
 
     /// @notice Returns the operator details for a given `operator`.
@@ -133,10 +129,8 @@ abstract contract DelegationManagerStorage is IDelegationManager {
         MIN_WITHDRAWAL_DELAY_BLOCKS = _MIN_WITHDRAWAL_DELAY_BLOCKS;
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[35] private __gap;
 }

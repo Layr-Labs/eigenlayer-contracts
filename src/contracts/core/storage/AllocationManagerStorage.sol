@@ -98,7 +98,8 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
 
     /// @dev For a strategy, keeps an ordered queue of operator sets that have pending deallocations
     /// These must be completed in order to free up magnitude for future allocation
-    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal deallocationQueue;
+    mapping(address operator => mapping(IStrategy strategy => DoubleEndedQueue.Bytes32Deque)) internal
+        deallocationQueue;
 
     /// @dev Lists the AVSs who has registered metadata and claimed itself as an AVS
     /// @notice bool is not used and is always true if the avs has registered metadata
@@ -132,10 +133,8 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
         ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[33] private __gap;
 }

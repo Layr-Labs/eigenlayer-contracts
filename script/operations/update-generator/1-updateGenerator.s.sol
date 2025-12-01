@@ -14,9 +14,7 @@ import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 // For TOML parsing
 import {stdToml} from "forge-std/StdToml.sol";
 
-/**
- * Purpose: Update the generator on a PREPROD/TESTNET environment
- */
+/// Purpose: Update the generator on a PREPROD/TESTNET environment
 contract QueueTransferProxyAdmin is MultisigBuilder {
     using TestUtils for *;
     using Env for *;
@@ -86,8 +84,10 @@ contract QueueTransferProxyAdmin is MultisigBuilder {
             "certificateVerifier.operatorSetOwner invalid"
         );
         // Get the operatorSetInfo
-        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo = certificateVerifier
-            .getOperatorSetInfo(generatorParams.generator, operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP());
+        IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory operatorSetInfo =
+            certificateVerifier.getOperatorSetInfo(
+                generatorParams.generator, operatorTableUpdater.GENERATOR_REFERENCE_TIMESTAMP()
+            );
         assertEq(
             operatorSetInfo.numOperators,
             generatorParams.generatorInfo.numOperators,

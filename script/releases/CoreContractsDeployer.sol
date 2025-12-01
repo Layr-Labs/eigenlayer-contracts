@@ -4,23 +4,19 @@ pragma solidity ^0.8.12;
 import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "./Env.sol";
 
-/**
- * @title CoreContractsDeployer
- * @notice Provides reusable helpers for deploying individual core contract implementations.
- * Usage:
- * ```solidity
- * vm.startBroadcast();
- * deployPermissionController();
- * deployKeyRegistrar();
- * vm.stopBroadcast();
- * ```
- */
+/// @title CoreContractsDeployer
+/// @notice Provides reusable helpers for deploying individual core contract implementations.
+/// Usage:
+/// ```solidity
+/// vm.startBroadcast();
+/// deployPermissionController();
+/// deployKeyRegistrar();
+/// vm.stopBroadcast();
+/// ```
 abstract contract CoreContractsDeployer is EOADeployer {
     using Env for *;
 
-    /**
-     * permissions/
-     */
+    /// permissions/
     function deployPermissionController() internal onlyEOA returns (PermissionController deployed) {
         deployed = new PermissionController();
         deployImpl({name: type(PermissionController).name, deployedTo: address(deployed)});
@@ -35,9 +31,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
         deployImpl({name: type(KeyRegistrar).name, deployedTo: address(deployed)});
     }
 
-    /**
-     * core/
-     */
+    /// core/
     function deployAllocationManagerView() internal onlyEOA returns (AllocationManagerView deployed) {
         deployed = new AllocationManagerView({
             _delegation: Env.proxy.delegationManager(),
@@ -121,9 +115,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
         deployImpl({name: type(StrategyManager).name, deployedTo: address(deployed)});
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     function deployEigenPodManager() internal onlyEOA returns (EigenPodManager deployed) {
         deployed = new EigenPodManager({
             _ethPOS: Env.ethPOS(),
@@ -139,9 +131,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
         deployImpl({name: type(EigenPod).name, deployedTo: address(deployed)});
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function deployEigenStrategy() internal onlyEOA returns (EigenStrategy deployed) {
         deployed = new EigenStrategy({
             _strategyManager: Env.proxy.strategyManager(),
@@ -174,9 +164,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
         deployImpl({name: type(StrategyFactory).name, deployedTo: address(deployed)});
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function deployBN254CertificateVerifier() internal onlyEOA returns (BN254CertificateVerifier deployed) {
         deployed = new BN254CertificateVerifier({_operatorTableUpdater: Env.proxy.operatorTableUpdater()});
         deployImpl({name: type(BN254CertificateVerifier).name, deployedTo: address(deployed)});
@@ -209,9 +197,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
         deployImpl({name: type(OperatorTableUpdater).name, deployedTo: address(deployed)});
     }
 
-    /**
-     * avs/
-     */
+    /// avs/
     function deployTaskMailbox() internal onlyEOA returns (TaskMailbox deployed) {
         deployed = new TaskMailbox({
             _bn254CertificateVerifier: address(Env.proxy.bn254CertificateVerifier()),

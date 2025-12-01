@@ -139,21 +139,22 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
         bytes calldata signature
     ) external;
 
-    /**
-     * @notice Deregisters a cryptographic key for an operator with a specific operator set
-     * @param operator Address of the operator to deregister key for
-     * @param operatorSet The operator set to deregister the key from
-     * @dev Can be called by the operator directly or by addresses they've authorized via the `PermissionController`
-     * @dev Keys remain in global key registry to prevent reuse
-     * @dev Reverts for:
-     *      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
-     *      - OperatorStillSlashable: The operator is still slashable for the AVS
-     *      - OperatorSetNotConfigured: The operator set is not configured
-     *      - KeyNotFound: The operator does not have a registered key for this operator set
-     * @dev Emits the following events:
-     *      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
-     */
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external;
+    /// @notice Deregisters a cryptographic key for an operator with a specific operator set
+    /// @param operator Address of the operator to deregister key for
+    /// @param operatorSet The operator set to deregister the key from
+    /// @dev Can be called by the operator directly or by addresses they've authorized via the `PermissionController`
+    /// @dev Keys remain in global key registry to prevent reuse
+    /// @dev Reverts for:
+    ///      - InvalidPermissions: Caller is not authorized for the operator (via the PermissionController)
+    ///      - OperatorStillSlashable: The operator is still slashable for the AVS
+    ///      - OperatorSetNotConfigured: The operator set is not configured
+    ///      - KeyNotFound: The operator does not have a registered key for this operator set
+    /// @dev Emits the following events:
+    ///      - KeyDeregistered: When the key is successfully deregistered for the operator and operatorSet
+    function deregisterKey(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external;
 
     /**
      * @notice Checks if a key is registered for an operator with a specific operator set
@@ -164,88 +165,84 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
      */
     function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
 
-    /**
-     * @notice Gets the curve type for an operator set
-     * @param operatorSet The operator set to get the curve type for
-     * @return The curve type, either ECDSA, BN254, or NONE
-     */
+    /// @notice Gets the curve type for an operator set
+    /// @param operatorSet The operator set to get the curve type for
+    /// @return The curve type, either ECDSA, BN254, or NONE
     function getOperatorSetCurveType(
         OperatorSet memory operatorSet
     ) external view returns (CurveType);
 
-    /**
-     * @notice Gets the BN254 public key for an operator with a specific operator set
-     * @param operatorSet The operator set to get the key for
-     * @param operator Address of the operator
-     * @return g1Point The BN254 G1 public key
-     * @return g2Point The BN254 G2 public key
-     * @dev Reverts for:
-     *      - InvalidCurveType: The operatorSet is not configured for BN254
-     * @dev Returns empty points if the operator has not registered a key for the operatorSet. We
-     *      recommend calling `isRegistered` first to check if the operator has a key registered
-     */
+    /// @notice Gets the BN254 public key for an operator with a specific operator set
+    /// @param operatorSet The operator set to get the key for
+    /// @param operator Address of the operator
+    /// @return g1Point The BN254 G1 public key
+    /// @return g2Point The BN254 G2 public key
+    /// @dev Reverts for:
+    ///      - InvalidCurveType: The operatorSet is not configured for BN254
+    /// @dev Returns empty points if the operator has not registered a key for the operatorSet. We
+    ///      recommend calling `isRegistered` first to check if the operator has a key registered
     function getBN254Key(
         OperatorSet memory operatorSet,
         address operator
     ) external view returns (BN254.G1Point memory g1Point, BN254.G2Point memory g2Point);
 
-    /**
-     * @notice Gets the ECDSA public key for an operator with a specific operator set as bytes
-     * @param operatorSet The operator set to get the key for
-     * @param operator Address of the operator
-     * @return pubkey The ECDSA public key in bytes format
-     * @dev Reverts for:
-     *      - InvalidCurveType: The operatorSet is not configured for ECDSA
-     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
-     *      recommend calling `isRegistered` first to check if the operator has a key registered
-     */
-    function getECDSAKey(OperatorSet memory operatorSet, address operator) external view returns (bytes memory);
+    /// @notice Gets the ECDSA public key for an operator with a specific operator set as bytes
+    /// @param operatorSet The operator set to get the key for
+    /// @param operator Address of the operator
+    /// @return pubkey The ECDSA public key in bytes format
+    /// @dev Reverts for:
+    ///      - InvalidCurveType: The operatorSet is not configured for ECDSA
+    /// @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
+    ///      recommend calling `isRegistered` first to check if the operator has a key registered
+    function getECDSAKey(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes memory);
 
-    /**
-     * @notice Gets the ECDSA public key for an operator with a specific operator set
-     * @param operatorSet The operator set to get the key for
-     * @param operator Address of the operator
-     * @return pubkey The ECDSA public key in address format
-     * @dev Reverts for:
-     *      - InvalidCurveType: The operatorSet is not configured for ECDSA
-     * @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
-     *      recommend calling `isRegistered` first to check if the operator has a key registered
-     */
-    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address);
+    /// @notice Gets the ECDSA public key for an operator with a specific operator set
+    /// @param operatorSet The operator set to get the key for
+    /// @param operator Address of the operator
+    /// @return pubkey The ECDSA public key in address format
+    /// @dev Reverts for:
+    ///      - InvalidCurveType: The operatorSet is not configured for ECDSA
+    /// @dev Returns 0x0 if the operator has not registered a key for the operatorSet. We
+    ///      recommend calling `isRegistered` first to check if the operator has a key registered
+    function getECDSAAddress(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (address);
 
-    /**
-     * @notice Checks if a key hash is globally registered
-     * @param keyHash Hash of the key
-     * @return True if the key is globally registered
-     */
+    /// @notice Checks if a key hash is globally registered
+    /// @param keyHash Hash of the key
+    /// @return True if the key is globally registered
     function isKeyGloballyRegistered(
         bytes32 keyHash
     ) external view returns (bool);
 
-    /**
-     * @notice Gets the key hash for an operator with a specific operator set
-     * @param operatorSet The operator set to get the key hash for
-     * @param operator Address of the operator
-     * @return keyHash The key hash
-     */
-    function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32);
+    /// @notice Gets the key hash for an operator with a specific operator set
+    /// @param operatorSet The operator set to get the key hash for
+    /// @param operator Address of the operator
+    /// @return keyHash The key hash
+    function getKeyHash(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes32);
 
-    /**
-     * @notice Gets the operator from signing key
-     * @param operatorSet The operator set to get the operator for
-     * @param keyData The key data. For ECDSA, this is the signing key address. For BN254, this can be either the G1 key or the G1 and G2 key combined.
-     * @return operator. Returns 0x0 if the key is not registered
-     * @return status registration status. Returns false if the key is not registered
-     * @dev This function decodes the key data based on the curve type of the operator set
-     * @dev This function will return the operator address even if the operator is not registered for the operator set
-     * @dev Reverts for:
-     *      - InvalidCurveType: The CurveType is not configured
-     */
+    /// @notice Gets the operator from signing key
+    /// @param operatorSet The operator set to get the operator for
+    /// @param keyData The key data. For ECDSA, this is the signing key address. For BN254, this can be either the G1 key or the G1 and G2 key combined.
+    /// @return operator. Returns 0x0 if the key is not registered
+    /// @return status registration status. Returns false if the key is not registered
+    /// @dev This function decodes the key data based on the curve type of the operator set
+    /// @dev This function will return the operator address even if the operator is not registered for the operator set
+    /// @dev Reverts for:
+    ///      - InvalidCurveType: The CurveType is not configured
     function getOperatorFromSigningKey(
         OperatorSet memory operatorSet,
         bytes memory keyData
     ) external view returns (address, bool);
 
+<<<<<<< HEAD
     /**
      * @notice Returns the message hash for ECDSA key registration, which must be signed by the operator when registering an ECDSA key
      * @param operator The operator address
@@ -253,12 +250,20 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
      * @param keyAddress The address of the key
      * @return The message hash for signing
      */
+=======
+    /// @notice Returns the message hash for ECDSA key registration, which must be signed by the key when registering an ECDSA key
+    /// @param operator The operator address
+    /// @param operatorSet The operator set
+    /// @param keyAddress The address of the key
+    /// @return The message hash for signing
+>>>>>>> f74e3c7b (feat: re-enable forge fmt + foundry v1.5.0 (#1669))
     function getECDSAKeyRegistrationMessageHash(
         address operator,
         OperatorSet memory operatorSet,
         address keyAddress
     ) external view returns (bytes32);
 
+<<<<<<< HEAD
     /**
      * @notice Returns the message hash for BN254 key registration, which must be signed by the operator when registering a BN254 key
      * @param operator The operator address
@@ -266,18 +271,23 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
      * @param keyData The BN254 key data
      * @return The message hash for signing
      */
+=======
+    /// @notice Returns the message hash for BN254 key registration, which must be signed by the key when registering a BN254 key
+    /// @param operator The operator address
+    /// @param operatorSet The operator set
+    /// @param keyData The BN254 key data
+    /// @return The message hash for signing
+>>>>>>> f74e3c7b (feat: re-enable forge fmt + foundry v1.5.0 (#1669))
     function getBN254KeyRegistrationMessageHash(
         address operator,
         OperatorSet memory operatorSet,
         bytes calldata keyData
     ) external view returns (bytes32);
 
-    /**
-     * @notice Encodes the BN254 key data into a bytes array
-     * @param g1Point The BN254 G1 public key
-     * @param g2Point The BN254 G2 public key
-     * @return The encoded key data
-     */
+    /// @notice Encodes the BN254 key data into a bytes array
+    /// @param g1Point The BN254 G1 public key
+    /// @param g2Point The BN254 G2 public key
+    /// @return The encoded key data
     function encodeBN254KeyData(
         BN254.G1Point memory g1Point,
         BN254.G2Point memory g2Point

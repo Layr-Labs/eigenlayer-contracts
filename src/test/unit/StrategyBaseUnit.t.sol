@@ -29,17 +29,13 @@ contract StrategyBaseUnitTests is Test {
     uint initialSupply = 1e36;
     address initialOwner = address(this);
 
-    /**
-     * @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
-     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
-     * incurring reasonably small losses to depositors
-     */
+    /// @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+    /// Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+    /// incurring reasonably small losses to depositors
     uint internal constant SHARES_OFFSET = 1e3;
-    /**
-     * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
-     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
-     * incurring reasonably small losses to depositors
-     */
+    /// @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+    /// Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+    /// incurring reasonably small losses to depositors
     uint internal constant BALANCE_OFFSET = 1e3;
 
     event ExchangeRateEmitted(uint rate);

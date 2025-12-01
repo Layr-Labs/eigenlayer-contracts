@@ -7,13 +7,11 @@ import "./StrategyFactoryStorage.sol";
 import "./StrategyBase.sol";
 import "../permissions/Pausable.sol";
 
-/**
- * @title Factory contract for deploying BeaconProxies of a Strategy contract implementation for arbitrary ERC20 tokens
- *        and automatically adding them to the StrategyWhitelist in EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
- */
+/// @title Factory contract for deploying BeaconProxies of a Strategy contract implementation for arbitrary ERC20 tokens
+///        and automatically adding them to the StrategyWhitelist in EigenLayer.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
 contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable {
     uint8 internal constant PAUSED_NEW_STRATEGIES = 0;
 
@@ -21,7 +19,10 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     IStrategyManager public immutable strategyManager;
 
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
-    constructor(IStrategyManager _strategyManager, IPauserRegistry _pauserRegistry) Pausable(_pauserRegistry) {
+    constructor(
+        IStrategyManager _strategyManager,
+        IPauserRegistry _pauserRegistry
+    ) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         _disableInitializers();
     }
@@ -36,12 +37,10 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         _setStrategyBeacon(_strategyBeacon);
     }
 
-    /**
-     * @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy
-     * @dev A strategy contract must not yet exist for the token.
-     * @dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
-     * like those that conform to ERC777.
-     */
+    /// @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy
+    /// @dev A strategy contract must not yet exist for the token.
+    /// @dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
+    /// like those that conform to ERC777.
     function deployNewStrategy(
         IERC20 token
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IStrategy newStrategy) {
@@ -61,10 +60,8 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         return strategy;
     }
 
-    /**
-     * @notice Owner-only function to prevent strategies from being created for given tokens.
-     * @param tokens An array of token addresses to blacklist.
-     */
+    /// @notice Owner-only function to prevent strategies from being created for given tokens.
+    /// @param tokens An array of token addresses to blacklist.
     function blacklistTokens(
         IERC20[] calldata tokens
     ) external onlyOwner {
@@ -96,25 +93,24 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         }
     }
 
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
-     */
+    /// @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
     function whitelistStrategies(
         IStrategy[] calldata strategiesToWhitelist
     ) external onlyOwner {
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
     }
 
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
-     */
+    /// @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
     function removeStrategiesFromWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external onlyOwner {
         strategyManager.removeStrategiesFromDepositWhitelist(strategiesToRemoveFromWhitelist);
     }
 
-    function _setStrategyForToken(IERC20 token, IStrategy strategy) internal {
+    function _setStrategyForToken(
+        IERC20 token,
+        IStrategy strategy
+    ) internal {
         deployedStrategies[token] = strategy;
         emit StrategySetForToken(token, strategy);
     }

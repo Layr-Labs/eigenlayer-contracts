@@ -12,12 +12,10 @@ contract EigenHarness is Eigen {
         _mint(to, amount);
     }
 
-    /**
-     * @notice This function allows the owner to set the allowedFrom status of an address
-     * @param from the address whose allowedFrom status is being set
-     * @param isAllowedFrom the new allowedFrom status
-     * @dev this function is callable by anoyone in the harness
-     */
+    /// @notice This function allows the owner to set the allowedFrom status of an address
+    /// @param from the address whose allowedFrom status is being set
+    /// @param isAllowedFrom the new allowedFrom status
+    /// @dev this function is callable by anoyone in the harness
     function setAllowedFromPermissionless(address from, bool isAllowedFrom) external {
         allowedFrom[from] = isAllowedFrom;
         emit SetAllowedFrom(from, isAllowedFrom);

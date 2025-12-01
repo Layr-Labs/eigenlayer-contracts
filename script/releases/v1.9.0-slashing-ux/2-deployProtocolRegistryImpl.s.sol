@@ -7,9 +7,7 @@ import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/**
- * Purpose: Deploy Protocol Registry implementation
- */
+/// Purpose: Deploy Protocol Registry implementation
 contract DeployProtocolRegistryImpl is DeployProtocolRegistryProxy, CoreContractsDeployer {
     using Env for *;
 

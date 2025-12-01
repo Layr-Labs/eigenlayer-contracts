@@ -187,10 +187,8 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
         }
 
-        /**
-         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
-         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
-         */
+        /// First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
+        /// not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
         emptyContract = new EmptyContract();
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
@@ -240,8 +238,9 @@ contract DeployFromScratch is Script, Test {
             SEMVER
         );
 
-        strategyManagerImplementation =
-            new StrategyManager(IAllocationManager(address(allocationManager)), delegation, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(
+            IAllocationManager(address(allocationManager)), delegation, eigenLayerPauserReg, SEMVER
+        );
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
             new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg);
@@ -513,15 +512,15 @@ contract DeployFromScratch is Script, Test {
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
-            ) == address(rewardsCoordinatorImplementation),
+                    ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+                ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
         );
 
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(allocationManager)))
-            ) == address(allocationManagerImplementation),
+                    ITransparentUpgradeableProxy(payable(address(allocationManager)))
+                ) == address(allocationManagerImplementation),
             "allocationManager: implementation set incorrectly"
         );
 
