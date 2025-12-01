@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import "src/contracts/strategies/StrategyFactory.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
+import "../../contracts/interfaces/IDurationVaultStrategy.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
@@ -19,7 +21,9 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     // Contract dependencies
     StrategyBase public strategyImplementation;
+    DurationVaultStrategy public durationVaultImplementation;
     UpgradeableBeacon public strategyBeacon;
+    UpgradeableBeacon public durationVaultBeacon;
     ERC20PresetFixedSupply public underlyingToken;
 
     uint initialSupply = 1e36;
@@ -51,6 +55,11 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
+        durationVaultImplementation =
+            new DurationVaultStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
+        durationVaultBeacon.transferOwnership(beaconProxyOwner);
+
         strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
 
         strategyFactory = StrategyFactory(
@@ -62,6 +71,8 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                 )
             )
         );
+
+        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
     }
 
     function test_initialization() public view {
@@ -112,6 +123,71 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         test_deployNewStrategy();
         cheats.expectRevert(IStrategyFactory.StrategyAlreadyExists.selector);
         strategyFactory.deployNewStrategy(underlyingToken);
+    }
+
+    function test_deployDurationVaultStrategy() public {
+        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            depositWindowStart: 0,
+            depositWindowEnd: 0,
+            duration: 30 days,
+            maxPerDeposit: 10 ether,
+            stakeCap: 100 ether,
+            metadataURI: "ipfs://duration"
+        });
+
+        DurationVaultStrategy vault = DurationVaultStrategy(
+            address(strategyFactory.deployDurationVaultStrategy(config))
+        );
+
+        IDurationVaultStrategy[] memory deployedVaults = strategyFactory.getDurationVaults(underlyingToken);
+        require(deployedVaults.length == 1, "vault not tracked");
+        require(address(deployedVaults[0]) == address(vault), "vault mismatch");
+        assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(vault), "duration vault not whitelisted");
+    }
+
+    function test_deployDurationVaultStrategy_revertBeaconNotSet() public {
+        strategyFactory.setDurationVaultBeacon(IBeacon(address(0)));
+
+        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            depositWindowStart: 0,
+            depositWindowEnd: 0,
+            duration: 30 days,
+            maxPerDeposit: 10 ether,
+            stakeCap: 100 ether,
+            metadataURI: "ipfs://duration"
+        });
+
+        cheats.expectRevert(IStrategyFactory.DurationVaultBeaconNotSet.selector);
+        strategyFactory.deployDurationVaultStrategy(config);
+    }
+
+    function test_deployDurationVaultStrategy_withExistingStrategy() public {
+        StrategyBase base = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
+        require(strategyFactory.deployedStrategies(underlyingToken) == base, "base strategy missing");
+
+        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            depositWindowStart: 0,
+            depositWindowEnd: 0,
+            duration: 7 days,
+            maxPerDeposit: 5 ether,
+            stakeCap: 50 ether,
+            metadataURI: "ipfs://duration"
+        });
+
+        strategyFactory.deployDurationVaultStrategy(config);
+
+        IDurationVaultStrategy[] memory deployedVaults = strategyFactory.getDurationVaults(underlyingToken);
+        require(deployedVaults.length == 1, "duration vault missing");
+        assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(IDurationVaultStrategy(address(deployedVaults[0]))), "vault not whitelisted");
+
+        // Base mapping should remain untouched.
+        require(strategyFactory.deployedStrategies(underlyingToken) == base, "base strategy overwritten");
     }
 
     function test_blacklistTokens(IERC20 token) public {

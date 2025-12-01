@@ -6,6 +6,8 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../mixins/SemVerMixin.sol";
 import "./StrategyFactoryStorage.sol";
 import "./StrategyBase.sol";
+import "./DurationVaultStrategy.sol";
+import "../interfaces/IDurationVaultStrategy.sol";
 import "../permissions/Pausable.sol";
 
 /**
@@ -111,6 +113,42 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     }
 
     /**
+     * @notice Deploys a new duration vault strategy backed by the configured beacon.
+     */
+    function deployDurationVaultStrategy(
+        IDurationVaultStrategy.VaultConfig calldata config
+    ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IDurationVaultStrategy newVault) {
+        IERC20 underlyingToken = config.underlyingToken;
+        require(!isBlacklisted[underlyingToken], BlacklistedToken());
+        require(address(durationVaultBeacon) != address(0), DurationVaultBeaconNotSet());
+
+        newVault = IDurationVaultStrategy(
+            address(
+                new BeaconProxy(
+                    address(durationVaultBeacon), abi.encodeWithSelector(DurationVaultStrategy.initialize.selector, config)
+                )
+            )
+        );
+
+        _registerDurationVault(underlyingToken, newVault);
+        IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
+        strategiesToWhitelist[0] = newVault;
+        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
+
+        emit DurationVaultDeployed(
+            newVault,
+            underlyingToken,
+            config.vaultAdmin,
+            config.depositWindowStart,
+            config.depositWindowEnd,
+            config.duration,
+            config.maxPerDeposit,
+            config.stakeCap,
+            config.metadataURI
+        );
+    }
+
+    /**
      * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
      */
     function removeStrategiesFromWhitelist(
@@ -129,5 +167,35 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     ) internal {
         emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
         strategyBeacon = _strategyBeacon;
+    }
+
+    /**
+     * @notice Owner-only function to update the duration vault beacon.
+     */
+    function setDurationVaultBeacon(
+        IBeacon newDurationVaultBeacon
+    ) external onlyOwner {
+        _setDurationVaultBeacon(newDurationVaultBeacon);
+    }
+
+    /// @inheritdoc IStrategyFactory
+    function getDurationVaults(
+        IERC20 token
+    ) external view returns (IDurationVaultStrategy[] memory) {
+        return durationVaultsByToken[token];
+    }
+
+    function _setDurationVaultBeacon(
+        IBeacon newDurationVaultBeacon
+    ) internal {
+        emit DurationVaultBeaconModified(durationVaultBeacon, newDurationVaultBeacon);
+        durationVaultBeacon = newDurationVaultBeacon;
+    }
+
+    function _registerDurationVault(
+        IERC20 token,
+        IDurationVaultStrategy vault
+    ) internal {
+        durationVaultsByToken[token].push(vault);
     }
 }

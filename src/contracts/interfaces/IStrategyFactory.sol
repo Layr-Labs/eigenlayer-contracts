@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
+import "./IDurationVaultStrategy.sol";
 import "./ISemVerMixin.sol";
 
 /**
@@ -19,11 +20,16 @@ interface IStrategyFactory is ISemVerMixin {
     error StrategyAlreadyExists();
     /// @dev Thrown when attempting to blacklist a token that is already blacklisted
     error AlreadyBlacklisted();
+    /// @dev Thrown when attempting to deploy a duration vault before its beacon has been configured.
+    error DurationVaultBeaconNotSet();
 
     event TokenBlacklisted(IERC20 token);
 
     /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
     function strategyBeacon() external view returns (IBeacon);
+
+    /// @notice Upgradeable beacon which duration vault strategies deployed by this contract point to
+    function durationVaultBeacon() external view returns (IBeacon);
 
     /// @notice Mapping token => Strategy contract for the token
     /// The strategies in this mapping are deployed by the StrategyFactory.
@@ -48,6 +54,21 @@ interface IStrategyFactory is ISemVerMixin {
     ) external returns (IStrategy newStrategy);
 
     /**
+     * @notice Deploys a new duration-bound vault strategy contract.
+     * @dev Enforces the same blacklist semantics as vanilla strategies.
+     */
+    function deployDurationVaultStrategy(
+        IDurationVaultStrategy.VaultConfig calldata config
+    ) external returns (IDurationVaultStrategy newVault);
+
+    /**
+     * @notice Returns all duration vaults that have ever been deployed for a given token.
+     */
+    function getDurationVaults(
+        IERC20 token
+    ) external view returns (IDurationVaultStrategy[] memory);
+
+    /**
      * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
      */
     function whitelistStrategies(
@@ -61,9 +82,32 @@ interface IStrategyFactory is ISemVerMixin {
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
 
+    /**
+     * @notice Owner-only function to update the beacon used for deploying duration vault strategies.
+     */
+    function setDurationVaultBeacon(
+        IBeacon newDurationVaultBeacon
+    ) external;
+
     /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
 
+    /// @notice Emitted when the `durationVaultBeacon` is changed
+    event DurationVaultBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
+
     /// @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
+
+    /// @notice Emitted whenever a duration vault is deployed.
+    event DurationVaultDeployed(
+        IDurationVaultStrategy vault,
+        IERC20 indexed underlyingToken,
+        address indexed vaultAdmin,
+        uint64 depositWindowStart,
+        uint64 depositWindowEnd,
+        uint64 duration,
+        uint256 maxPerDeposit,
+        uint256 stakeCap,
+        string metadataURI
+    );
 }

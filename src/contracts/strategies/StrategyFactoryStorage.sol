@@ -9,8 +9,11 @@ import "../interfaces/IStrategyFactory.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 abstract contract StrategyFactoryStorage is IStrategyFactory {
-    /// @notice Upgradeable beacon which new Strategies deployed by this contract point to
+    /// @notice Upgradeable beacon used for baseline strategies deployed by this contract.
     IBeacon public strategyBeacon;
+
+    /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
+    IBeacon public durationVaultBeacon;
 
     /// @notice Mapping token => Strategy contract for the token
     /// The strategies in this mapping are deployed by the StrategyFactory.
@@ -24,10 +27,13 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// @notice Mapping token => Whether or not a strategy can be deployed for the token
     mapping(IERC20 => bool) public isBlacklisted;
 
+    /// @notice Mapping token => all duration vault strategies deployed for the token.
+    mapping(IERC20 => IDurationVaultStrategy[]) internal durationVaultsByToken;
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 }
