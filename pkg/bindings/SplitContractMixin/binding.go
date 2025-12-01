@@ -31,7 +31,7 @@ var (
 
 // SplitContractMixinMetaData contains all meta data concerning the SplitContractMixin contract.
 var SplitContractMixinMetaData = &bind.MetaData{
-	ABI: "[]",
+	ABI: "[{\"type\":\"function\",\"name\":\"viewImplementation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"}]",
 }
 
 // SplitContractMixinABI is the input ABI used to generate the binding from.
@@ -178,4 +178,35 @@ func (_SplitContractMixin *SplitContractMixinTransactorRaw) Transfer(opts *bind.
 // Transact invokes the (paid) contract method with params as input values.
 func (_SplitContractMixin *SplitContractMixinTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
 	return _SplitContractMixin.Contract.contract.Transact(opts, method, params...)
+}
+
+// ViewImplementation is a free data retrieval call binding the contract method 0x0b156bb6.
+//
+// Solidity: function viewImplementation() view returns(address)
+func (_SplitContractMixin *SplitContractMixinCaller) ViewImplementation(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _SplitContractMixin.contract.Call(opts, &out, "viewImplementation")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// ViewImplementation is a free data retrieval call binding the contract method 0x0b156bb6.
+//
+// Solidity: function viewImplementation() view returns(address)
+func (_SplitContractMixin *SplitContractMixinSession) ViewImplementation() (common.Address, error) {
+	return _SplitContractMixin.Contract.ViewImplementation(&_SplitContractMixin.CallOpts)
+}
+
+// ViewImplementation is a free data retrieval call binding the contract method 0x0b156bb6.
+//
+// Solidity: function viewImplementation() view returns(address)
+func (_SplitContractMixin *SplitContractMixinCallerSession) ViewImplementation() (common.Address, error) {
+	return _SplitContractMixin.Contract.ViewImplementation(&_SplitContractMixin.CallOpts)
 }
