@@ -780,6 +780,12 @@ contract DelegationManager is
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) internal view returns (uint256) {
+        // A maxMagnitude of 0 means the operator has been fully slashed (100%).
+        // There's nothing left to slash, so slashable shares in the queue is 0.
+        if (prevMaxMagnitude == 0) {
+            return 0;
+        }
+
         // We want ALL shares added to the withdrawal queue in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
         //
         // To get this, we take the current shares in the withdrawal queue and subtract the number of shares

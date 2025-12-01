@@ -15,9 +15,9 @@ uint64 constant WAD = 1e18;
  * There are 2 types of shares:
  *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
- *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
+ *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens
  *              in the case of EigenPods)
- *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies
  *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
@@ -165,15 +165,17 @@ library SlashingLib {
             .divWad(slashingFactor);
     }
 
+    /// @notice Calculates the amount of shares that should be slashed given the previous and new magnitudes.
+    /// @param operatorShares The amount of shares to slash.
+    /// @param prevMaxMagnitude The previous magnitude of the operator.
+    /// @param newMaxMagnitude The new magnitude of the operator.
+    /// @return The amount of shares that should be slashed.
+    /// @dev This function will revert with a divide by zero error if the previous magnitude is 0.
     function calcSlashedAmount(
         uint256 operatorShares,
         uint256 prevMaxMagnitude,
         uint256 newMaxMagnitude
     ) internal pure returns (uint256) {
-        if (prevMaxMagnitude == 0) {
-            // TODO: consider throwing an error instead
-            return 0;
-        }
         // round up mulDiv so we don't overslash
         return operatorShares - operatorShares.mulDiv(newMaxMagnitude, prevMaxMagnitude, Math.Rounding.Up);
     }
