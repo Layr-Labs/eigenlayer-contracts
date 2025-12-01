@@ -428,6 +428,8 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure amount is too large
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        // Bound to prevent uint64 overflow when converting wei to gwei in withdrawRestakedBeaconChainETH
+        randAmountWei = bound(randAmountWei, 0, type(uint64).max * 1 gwei);
         randAmountWei = randAmountWei - (randAmountWei % 1 gwei);
         cheats.assume((randAmountWei / 1 gwei) > withdrawableRestakedExecutionLayerGwei);
         cheats.expectRevert(IEigenPodErrors.InsufficientWithdrawableBalance.selector);
@@ -447,6 +449,8 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure valid fuzzed wei amounts
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        // Bound to prevent uint64 overflow when converting wei to gwei in withdrawRestakedBeaconChainETH
+        randAmountWei = bound(randAmountWei, 0, type(uint64).max * 1 gwei);
         randAmountWei = randAmountWei - (randAmountWei % 1 gwei);
         cheats.assume((randAmountWei / 1 gwei) <= withdrawableRestakedExecutionLayerGwei);
 
@@ -482,6 +486,8 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure valid fuzzed wei amounts
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        // Bound to prevent uint64 overflow when converting wei to gwei in withdrawRestakedBeaconChainETH
+        randAmountWei = bound(randAmountWei, 0, type(uint64).max * 1 gwei);
         uint randAmountWeiAdjusted = randAmountWei - (randAmountWei % 1 gwei);
         cheats.assume((randAmountWei / 1 gwei) <= withdrawableRestakedExecutionLayerGwei);
 

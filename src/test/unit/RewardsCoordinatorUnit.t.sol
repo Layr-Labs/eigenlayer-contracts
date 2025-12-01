@@ -4123,7 +4123,7 @@ contract RewardsCoordinatorUnitTests_processClaim is RewardsCoordinatorUnitTests
     {
         // Ensure invalidEarner is actually different from the real earner
         cheats.assume(invalidEarner != earner);
-        
+
         // if setClaimerFor is true, set the earners claimer to the fuzzed address
         address claimer;
         if (setClaimerFor) {
