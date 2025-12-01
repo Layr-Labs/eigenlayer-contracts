@@ -295,7 +295,7 @@ contract DelegationManager is
             newMaxMagnitude: newMaxMagnitude
         });
 
-        uint256 scaledSharesSlashedFromQueue = _getSlashableSharesInQueue({
+        uint256 operatorSharesSlashedFromQueue = _getSlashableSharesInQueue({
             operator: operator,
             strategy: strategy,
             prevMaxMagnitude: prevMaxMagnitude,
@@ -304,7 +304,7 @@ contract DelegationManager is
 
         // Calculate the total deposit shares to slash (burn or redistribute) - slashed operator shares plus still-slashable
         // shares sitting in the withdrawal queue.
-        totalDepositSharesToSlash = operatorSharesSlashed + scaledSharesSlashedFromQueue;
+        totalDepositSharesToSlash = operatorSharesSlashed + operatorSharesSlashedFromQueue;
 
         // Remove shares from operator
         _decreaseDelegation({
@@ -377,8 +377,8 @@ contract DelegationManager is
 
             // forgefmt: disable-next-item
             _increaseDelegation({
-                operator: operator, 
-                staker: staker, 
+                operator: operator,
+                staker: staker,
                 strategy: strategies[i],
                 prevDepositShares: uint256(0),
                 addedShares: withdrawableShares[i],
@@ -780,6 +780,12 @@ contract DelegationManager is
         uint64 prevMaxMagnitude,
         uint64 newMaxMagnitude
     ) internal view returns (uint256) {
+        // A maxMagnitude of 0 means the operator has been fully slashed (100%).
+        // There's nothing left to slash, so slashable shares in the queue is 0.
+        if (prevMaxMagnitude == 0) {
+            return 0;
+        }
+
         // We want ALL shares added to the withdrawal queue in the window [block.number - MIN_WITHDRAWAL_DELAY_BLOCKS, block.number]
         //
         // To get this, we take the current shares in the withdrawal queue and subtract the number of shares
@@ -793,8 +799,25 @@ contract DelegationManager is
         // less than or equal to MIN_WITHDRAWAL_DELAY_BLOCKS ago. These shares are still slashable.
         uint256 scaledSharesAdded = curQueuedScaledShares - prevQueuedScaledShares;
 
-        return SlashingLib.scaleForBurning({
-            scaledShares: scaledSharesAdded,
+        // Convert scaled shares to slashed withdrawable shares.
+        //
+        // @dev Math derivation (where n is the pre-slash state):
+        //   - depositShares (s_n): shares stored in StrategyManager/EigenPodManager
+        //   - depositScalingFactor (k_n): staker's scaling factor, initialized to 1
+        //   - prevMaxMagnitude (m_n): operator's previous magnitude, starts at WAD, decreases on slash
+        //   - newMaxMagnitude (m_(n+1)): operator's new magnitude, <= prevMaxMagnitude
+        //   - operatorShares: s_n * k_n * m_n (withdrawable shares)
+        //   - scaledShares: s_n * k_n (stored when queueing withdrawal)
+        //
+        // We want: operatorShares slashed = s_n * k_n * m_n - s_n * k_n * m_(n+1)
+        //
+        // calcSlashedAmount computes: opShares - opShares * m_(n+1) / m_n
+        //   = s_n * k_n * m_n - s_n * k_n * m_n * m_(n+1) / m_n
+        //   = s_n * k_n * m_n - s_n * k_n * m_(n+1)  ✓
+        //
+        // So we pass: operatorShares = scaledShares * m_n = s_n * k_n * m_n
+        return SlashingLib.calcSlashedAmount({
+            operatorShares: scaledSharesAdded.mulWad(prevMaxMagnitude),
             prevMaxMagnitude: prevMaxMagnitude,
             newMaxMagnitude: newMaxMagnitude
         });
@@ -1053,11 +1076,11 @@ contract DelegationManager is
         return _calculateSignableDigest(
             keccak256(
                 abi.encode(
-                    DELEGATION_APPROVAL_TYPEHASH, 
-                    approver, 
-                    staker, 
-                    operator, 
-                    approverSalt, 
+                    DELEGATION_APPROVAL_TYPEHASH,
+                    approver,
+                    staker,
+                    operator,
+                    approverSalt,
                     expiry
                 )
             )

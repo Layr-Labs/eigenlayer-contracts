@@ -15,9 +15,9 @@ uint64 constant WAD = 1e18;
  * There are 2 types of shares:
  *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
- *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
+ *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens
  *              in the case of EigenPods)
- *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies
  *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
@@ -75,20 +75,6 @@ library SlashingLib {
 
     function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
         return scaledShares.mulWad(slashingFactor);
-    }
-
-    /**
-     * @notice Scales shares according to the difference in an operator's magnitude before and
-     * after being slashed. This is used to calculate the number of slashable shares in the
-     * withdrawal queue.
-     * NOTE: max magnitude is guaranteed to only ever decrease.
-     */
-    function scaleForBurning(
-        uint256 scaledShares,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
-    ) internal pure returns (uint256) {
-        return scaledShares.mulWad(prevMaxMagnitude - newMaxMagnitude);
     }
 
     function update(
@@ -179,6 +165,12 @@ library SlashingLib {
             .divWad(slashingFactor);
     }
 
+    /// @notice Calculates the amount of shares that should be slashed given the previous and new magnitudes.
+    /// @param operatorShares The amount of shares to slash.
+    /// @param prevMaxMagnitude The previous magnitude of the operator.
+    /// @param newMaxMagnitude The new magnitude of the operator.
+    /// @return The amount of shares that should be slashed.
+    /// @dev This function will revert with a divide by zero error if the previous magnitude is 0.
     function calcSlashedAmount(
         uint256 operatorShares,
         uint256 prevMaxMagnitude,
