@@ -5676,6 +5676,33 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertEq(slashableSharesInQueueAfter, 0, "slashable shares in queue should be 0 after burning");
     }
 
+    /// @notice Verifies getSlashableSharesInQueue returns 0 when operator is fully slashed (maxMagnitude = 0).
+    /// A fully slashed operator has no remaining slashable shares.
+    function test_getSlashableSharesInQueue_ReturnsZero_WhenFullySlashed() public {
+        // Register operator and set up deposits
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        uint256 depositAmount = 100e18;
+        strategyManagerMock.addDeposit(defaultStaker, strategyMock, depositAmount);
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        // Queue a withdrawal so there are shares in the queue
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+            _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategyMock, depositSharesToWithdraw: depositAmount});
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        // Fully slash the operator (maxMagnitude -> 0)
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.prank(address(allocationManagerMock));
+        delegationManager.slashOperatorShares(defaultOperator, defaultOperatorSet, defaultSlashId, strategyMock, WAD, uint64(0));
+
+        // After full slashing, there are no more slashable shares - should return 0
+        uint256 slashableShares = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        assertEq(slashableShares, 0, "fully slashed operator should have 0 slashable shares in queue");
+    }
+
     /// @notice Verifies that shares are NOT burnable for a withdrawal queued just before the MIN_WITHDRAWAL_DELAY_BLOCKS
     function test_sharesNotBurnableWhenWithdrawalCompletable() public {
         // Register operator
