@@ -3,25 +3,21 @@ pragma solidity ^0.8.27;
 
 import {BN254} from "./BN254.sol";
 
-/**
- * @title BN254SignatureVerifier
- * @notice Library for BN254 signature verification
- * @dev Provides unified signature verification with consistent gamma calculation and hash-to-G1 conversion
- */
+/// @title BN254SignatureVerifier
+/// @notice Library for BN254 signature verification
+/// @dev Provides unified signature verification with consistent gamma calculation and hash-to-G1 conversion
 library BN254SignatureVerifier {
     using BN254 for BN254.G1Point;
 
-    /**
-     * @notice Core BN254 signature verification function with optional gas limiting
-     * @param msgHash The message hash that was signed
-     * @param signature The BLS signature to verify (G1 point)
-     * @param pubkeyG1 The G1 component of the public key
-     * @param pubkeyG2 The G2 component of the public key
-     * @param useGasLimit Whether to use gas-limited safe pairing
-     * @param pairingGas Gas limit for pairing (ignored if useGasLimit is false)
-     * @return success True if verification succeeded (always true if useGasLimit=false due to revert)
-     * @return pairingSuccessful True if pairing operation completed (only relevant when useGasLimit=true)
-     */
+    /// @notice Core BN254 signature verification function with optional gas limiting
+    /// @param msgHash The message hash that was signed
+    /// @param signature The BLS signature to verify (G1 point)
+    /// @param pubkeyG1 The G1 component of the public key
+    /// @param pubkeyG2 The G2 component of the public key
+    /// @param useGasLimit Whether to use gas-limited safe pairing
+    /// @param pairingGas Gas limit for pairing (ignored if useGasLimit is false)
+    /// @return success True if verification succeeded (always true if useGasLimit=false due to revert)
+    /// @return pairingSuccessful True if pairing operation completed (only relevant when useGasLimit=true)
     function verifySignature(
         bytes32 msgHash,
         BN254.G1Point memory signature,
@@ -49,14 +45,12 @@ library BN254SignatureVerifier {
         }
     }
 
-    /**
-     * @notice Internal function to calculate gamma value for signature verification
-     * @param msgHash The message hash
-     * @param pubkeyG1 The G1 component of the public key
-     * @param pubkeyG2 The G2 component of the public key
-     * @param signature The signature point
-     * @return gamma The calculated gamma value
-     */
+    /// @notice Internal function to calculate gamma value for signature verification
+    /// @param msgHash The message hash
+    /// @param pubkeyG1 The G1 component of the public key
+    /// @param pubkeyG2 The G2 component of the public key
+    /// @param signature The signature point
+    /// @return gamma The calculated gamma value
     function _calculateGamma(
         bytes32 msgHash,
         BN254.G1Point memory pubkeyG1,

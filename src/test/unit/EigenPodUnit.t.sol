@@ -59,21 +59,19 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         beaconChain = new BeaconChainMock(EigenPodManager(address(eigenPodManagerMock)), GENESIS_TIME_LOCAL);
 
         // Deploy EigenPod
-        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+        podImplementation = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)));
 
         // Deploy Beacon
         eigenPodBeacon = new UpgradeableBeacon(address(podImplementation));
 
         // Deploy Proxy same way as EigenPodManager does
         eigenPod = EigenPod(
-            payable(
-                Create2.deploy(
+            payable(Create2.deploy(
                     0,
                     bytes32(uint(uint160(address(this)))),
                     // set the beacon address to the eigenPodBeacon
                     abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-                )
-            )
+                ))
         );
 
         // Store the eigenPodBeacon address in the eigenPod beacon proxy
@@ -87,11 +85,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         eigenPod.setProofSubmitter(defaultProofSubmitter);
     }
 
-    /**
-     *
-     *                     EIGENPOD Helpers
-     *
-     */
+    ///
+    ///                     EIGENPOD Helpers
+    ///
     modifier timewarp() {
         uint curState = timeMachine.travelToLast();
         _;
@@ -143,11 +139,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return sha256(abi.encodePacked(pubkey, bytes16(0)));
     }
 
-    /**
-     *
-     *                     verifyWithdrawalCredentials Assertions
-     *
-     */
+    ///
+    ///                     verifyWithdrawalCredentials Assertions
+    ///
     function assert_Snap_Added_ActiveValidatorCount(EigenPodUser staker, uint addedValidators, string memory err) internal {
         uint curActiveValidatorCount = _getActiveValidatorCount(staker);
         uint prevActiveValidatorCount = _getPrevActiveValidatorCount(staker);
@@ -225,11 +219,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return _getValidatorStatuses(staker, pubkeyHashes);
     }
 
-    /**
-     *
-     *                     startCheckpoint Assertions
-     *
-     */
+    ///
+    ///                     startCheckpoint Assertions
+    ///
     function check_StartCheckpoint_State(EigenPodUser staker) internal {
         assert_ProofsRemainingEqualsActive(staker, "checkpoint proofs remaining should equal active validator count");
         assert_Snap_Created_Checkpoint(staker, "staker should have created a new checkpoint");
@@ -257,11 +249,9 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
         return _getCheckpointTimestamp(staker);
     }
 
-    /**
-     *
-     *                     verifyCheckpointProofs
-     *
-     */
+    ///
+    ///                     verifyCheckpointProofs
+    ///
 
     /// @notice assumes positive rewards and that the checkpoint will be finalized
     function _expectEventsVerifyCheckpointProofs(
@@ -305,7 +295,7 @@ contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants,
 
 contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     function test_constructor() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)));
 
         assertTrue(pod.ethPOS() == ethPOSDepositMock, "should have set ethPOS correctly");
         assertTrue(address(pod.eigenPodManager()) == address(eigenPodManagerMock), "should have set eigenpodmanager correctly");
@@ -331,7 +321,7 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
     }
 
     function test_initialize_revert_emptyPodOwner() public {
-        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+        EigenPod pod = new EigenPod(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)));
 
         // un-initialize pod
         cheats.store(address(pod), 0, 0);
@@ -365,12 +355,9 @@ contract EigenPodUnitTests_Initialization is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
-    /**
-     *
-     *                         stake() tests
-     *
-     */
-
+    ///
+    ///                         stake() tests
+    ///
     // Beacon chain staking constnats
     bytes public constant pubkey = hex"88347ed1c492eedc97fc8c506a35d44d81f27a0c7a1c661b35913cfd15256c0cccbd34a83341f505c7de2983292f2cab";
     bytes public signature;
@@ -409,11 +396,9 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
         assertEq(address(ethPOSDepositMock).balance, 32 ether, "Incorrect amount transferred");
     }
 
-    /**
-     *
-     *                         withdrawRestakedBeaconChainETH() tests
-     *
-     */
+    ///
+    ///                         withdrawRestakedBeaconChainETH() tests
+    ///
     function testFuzz_withdrawRestakedBeaconChainETH_revert_notEigenPodManager(address invalidCaller, address recipient, uint randAmount)
         public
         filterFuzzedAddressInputs(invalidCaller)
@@ -443,8 +428,10 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure amount is too large
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
-        randAmountWei = randAmountWei - (randAmountWei % 1 gwei);
-        cheats.assume((randAmountWei / 1 gwei) > withdrawableRestakedExecutionLayerGwei);
+        // Bound gwei amount to fit in uint64, then convert to wei to prevent overflow
+        uint amountGwei = bound(randAmountWei / 1 gwei, 0, type(uint64).max);
+        randAmountWei = amountGwei * 1 gwei;
+        cheats.assume(amountGwei > withdrawableRestakedExecutionLayerGwei);
         cheats.expectRevert(IEigenPodErrors.InsufficientWithdrawableBalance.selector);
         cheats.prank(address(eigenPodManagerMock));
         pod.withdrawRestakedBeaconChainETH(recipient, randAmountWei);
@@ -462,8 +449,10 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure valid fuzzed wei amounts
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
-        randAmountWei = randAmountWei - (randAmountWei % 1 gwei);
-        cheats.assume((randAmountWei / 1 gwei) <= withdrawableRestakedExecutionLayerGwei);
+        // Bound gwei amount to fit in uint64, then convert to wei to prevent overflow
+        uint amountGwei = bound(randAmountWei / 1 gwei, 0, type(uint64).max);
+        randAmountWei = amountGwei * 1 gwei;
+        cheats.assume(amountGwei <= withdrawableRestakedExecutionLayerGwei);
 
         address recipient = cheats.addr(uint(123_456_789));
 
@@ -497,6 +486,8 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 
         // ensure valid fuzzed wei amounts
         uint64 withdrawableRestakedExecutionLayerGwei = pod.withdrawableRestakedExecutionLayerGwei();
+        // Bound to prevent overflow, but keep full wei precision to test rounding behavior
+        randAmountWei = bound(randAmountWei, 0, uint(type(uint64).max) * 1 gwei);
         uint randAmountWeiAdjusted = randAmountWei - (randAmountWei % 1 gwei);
         cheats.assume((randAmountWei / 1 gwei) <= withdrawableRestakedExecutionLayerGwei);
 
@@ -522,11 +513,9 @@ contract EigenPodUnitTests_EPMFunctions is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
-    /**
-     *
-     *                         recoverTokens() tests
-     *
-     */
+    ///
+    ///                         recoverTokens() tests
+    ///
     function testFuzz_recoverTokens_revert_notPodOwner(address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
         EigenPod pod = staker.pod();
@@ -604,12 +593,9 @@ contract EigenPodUnitTests_recoverTokens is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, ProofParsing {
-    /**
-     *
-     *                         verifyWithdrawalCredentials() tests
-     *
-     */
-
+    ///
+    ///                         verifyWithdrawalCredentials() tests
+    ///
     /// @notice revert when verify wc is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: 0});
@@ -639,7 +625,7 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
         (uint40[] memory validators,,) = staker.startValidators();
 
         cheats.prank(pauser);
-        eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
+        eigenPodManagerMock.pause(2**PAUSED_EIGENPODS_VERIFY_CREDENTIALS);
 
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         staker.verifyWithdrawalCredentials(validators);
@@ -944,7 +930,9 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
             emit ValidatorRestaked(beaconChain.pubkeyHash(validators[i]));
             cheats.expectEmit(true, true, true, true, address(pod));
             emit ValidatorBalanceUpdated(
-                beaconChain.pubkeyHash(validators[i]), pod.lastCheckpointTimestamp(), beaconChain.effectiveBalance(validators[i])
+                beaconChain.pubkeyHash(validators[i]),
+                pod.lastCheckpointTimestamp(),
+                beaconChain.effectiveBalance(validators[i])
             );
         }
         // staker.verifyWithdrawalCredentials(validators);
@@ -976,12 +964,9 @@ contract EigenPodUnitTests_verifyWithdrawalCredentials is EigenPodUnitTests, Pro
 }
 
 contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
-    /**
-     *
-     *                         startCheckpoint() tests
-     *
-     */
-
+    ///
+    ///                         startCheckpoint() tests
+    ///
     /// @notice revert when startCheckpoint is not called by pod owner
     function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(uint rand, address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
@@ -1005,7 +990,7 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
         staker.startValidators();
 
         cheats.prank(pauser);
-        eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
+        eigenPodManagerMock.pause(2**PAUSED_START_CHECKPOINT);
 
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         staker.startCheckpoint();
@@ -1086,12 +1071,9 @@ contract EigenPodUnitTests_startCheckpoint is EigenPodUnitTests {
 }
 
 contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
-    /**
-     *
-     *                         verifyCheckpointProofs() tests
-     *
-     */
-
+    ///
+    ///                         verifyCheckpointProofs() tests
+    ///
     /// @notice test verifyCheckpointProofs reverts when paused
     function testFuzz_revert_verifyCheckpointProofsPaused(uint rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker({rand: rand});
@@ -1100,7 +1082,7 @@ contract EigenPodUnitTests_verifyCheckpointProofs is EigenPodUnitTests {
         CheckpointProofs memory proofs = beaconChain.getCheckpointProofs(validators, pod.currentCheckpointTimestamp());
 
         cheats.prank(pauser);
-        eigenPodManagerMock.pause(2 ** PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS);
+        eigenPodManagerMock.pause(2**PAUSED_EIGENPODS_VERIFY_CHECKPOINT_PROOFS);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyCheckpointProofs({balanceContainerProof: proofs.balanceContainerProof, proofs: proofs.balanceProofs});
     }
@@ -1389,7 +1371,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validators[0]);
 
         cheats.prank(pauser);
-        eigenPodManagerMock.pause(2 ** PAUSED_VERIFY_STALE_BALANCE);
+        eigenPodManagerMock.pause(2**PAUSED_VERIFY_STALE_BALANCE);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
@@ -1406,7 +1388,7 @@ contract EigenPodUnitTests_verifyStaleBalance is EigenPodUnitTests {
         StaleBalanceProofs memory proofs = beaconChain.getStaleBalanceProofs(validators[0]);
 
         cheats.prank(pauser);
-        eigenPodManagerMock.pause(2 ** PAUSED_START_CHECKPOINT);
+        eigenPodManagerMock.pause(2**PAUSED_START_CHECKPOINT);
         cheats.expectRevert(IEigenPodErrors.CurrentlyPaused.selector);
         pod.verifyStaleBalance({
             beaconTimestamp: proofs.beaconTimestamp,
@@ -1752,7 +1734,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         address podOwner = pod.podOwner();
 
         cheats.startPrank(pauser);
-        uint pauseStatus = (2 ** PAUSED_CONSOLIDATIONS) + (2 ** PAUSED_WITHDRAWAL_REQUESTS);
+        uint pauseStatus = (2**PAUSED_CONSOLIDATIONS) + (2**PAUSED_WITHDRAWAL_REQUESTS);
         eigenPodManagerMock.pause(pauseStatus);
         cheats.stopPrank();
 
@@ -1973,7 +1955,7 @@ contract EigenPodHarnessSetup is EigenPodUnitTests {
         EigenPodUnitTests.setUp();
 
         // Deploy EP Harness
-        eigenPodHarnessImplementation = new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)), "v9.9.9");
+        eigenPodHarnessImplementation = new EigenPodHarness(ethPOSDepositMock, IEigenPodManager(address(eigenPodManagerMock)));
 
         // Upgrade eigenPod to harness
         UpgradeableBeacon(address(eigenPodBeacon)).upgradeTo(address(eigenPodHarnessImplementation));

@@ -8,10 +8,8 @@ import "src/contracts/strategies/StrategyFactory.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
-/**
- * @notice Unit testing of the StrategyFactory contract.
- * Contracts tested: StrategyFactory
- */
+/// @notice Unit testing of the StrategyFactory contract.
+/// Contracts tested: StrategyFactory
 contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     // Contract under test
     StrategyFactory public strategyFactory;
@@ -46,12 +44,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        strategyImplementation = new StrategyBase(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyFactory = StrategyFactory(
             address(
@@ -92,7 +90,11 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        strategyFactory.initialize({_initialOwner: initialOwner, _initialPausedStatus: initialPausedStatus, _strategyBeacon: strategyBeacon});
+        strategyFactory.initialize({
+            _initialOwner: initialOwner,
+            _initialPausedStatus: initialPausedStatus,
+            _strategyBeacon: strategyBeacon
+        });
     }
 
     function test_deployNewStrategy() public {

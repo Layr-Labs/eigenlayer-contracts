@@ -3,29 +3,23 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
-import "./ReleaseManagerStorage.sol";
+import "./storage/ReleaseManagerStorage.sol";
 
-contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin, SemVerMixin {
+contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionControllerMixin {
     using OperatorSetLib for OperatorSet;
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
     constructor(
-        IPermissionController _permissionController,
-        string memory _version
-    ) PermissionControllerMixin(_permissionController) SemVerMixin(_version) {
+        IPermissionController _permissionController
+    ) PermissionControllerMixin(_permissionController) {
         _disableInitializers();
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc IReleaseManager
     function publishRelease(
@@ -55,11 +49,9 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
         emit MetadataURIPublished(operatorSet, metadataURI);
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IReleaseManager
     function getTotalReleases(
@@ -69,7 +61,10 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function getRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (Release memory) {
+    function getRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (Release memory) {
         return _operatorSetReleases[operatorSet.key()][releaseId];
     }
 
@@ -96,7 +91,10 @@ contract ReleaseManager is Initializable, ReleaseManagerStorage, PermissionContr
     }
 
     /// @inheritdoc IReleaseManager
-    function isValidRelease(OperatorSet memory operatorSet, uint256 releaseId) external view returns (bool) {
+    function isValidRelease(
+        OperatorSet memory operatorSet,
+        uint256 releaseId
+    ) external view returns (bool) {
         uint256 totalReleases = getTotalReleases(operatorSet);
         require(totalReleases > 0, NoReleases());
         return releaseId == totalReleases - 1;

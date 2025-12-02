@@ -58,7 +58,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
-          version: v1.3.5
+          version: v1.5.0
 
       # Run Forge's formatting checker to ensure consistent code style.
       - name: "Forge Fmt"
@@ -123,7 +123,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
-          version: v1.3.5
+          version: v1.5.0
 
       # Run storage diff check to detect storage layout incompatibilities.
       - name: "Mainnet Storage Diff"
@@ -170,7 +170,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
-          version: v1.3.5
+          version: v1.5.0
 
       # Install LCOV for coverage report generation.
       - name: Install LCOV (Prebuilt)
@@ -193,7 +193,7 @@ jobs:
           FOUNDRY_PROFILE=coverage \
           FOUNDRY_CACHE=true \
           FOUNDRY_CACHE_PATH=cache \
-          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)
+          forge coverage --report lcov --report summary --no-match-coverage "script|test" -j $(nproc)  --no-match-test test_noCoverage
           genhtml -q -o report ./lcov.info
 
       # Upload coverage report as artifact before potential failure
@@ -256,7 +256,7 @@ jobs:
       - name: "Install Foundry"
         uses: foundry-rs/foundry-toolchain@82dee4ba654bd2146511f85f0d013af94670c4de
         with:
-          version: v1.3.5
+          version: v1.5.0
 
       - name: Build contracts on PR branch
         run: |

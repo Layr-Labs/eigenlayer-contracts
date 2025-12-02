@@ -40,14 +40,12 @@ contract EigenPodUser is Logger, TypeImporter {
         beaconChain = deployer.beaconChain();
         eigenPodBeacon = deployer.eigenPodBeacon();
         pod = EigenPod(
-            payable(
-                Create2.deploy(
+            payable(Create2.deploy(
                     0,
                     bytes32(uint(uint160(address(this)))),
                     // set the beacon address to the eigenPodBeacon
                     abi.encodePacked(beaconProxyBytecode, abi.encode(eigenPodBeacon, ""))
-                )
-            )
+                ))
         );
         pod.initialize(address(this));
 
@@ -65,11 +63,9 @@ contract EigenPodUser is Logger, TypeImporter {
         return _NAME;
     }
 
-    /**
-     *
-     *                             BEACON CHAIN METHODS
-     *
-     */
+    ///
+    ///                             BEACON CHAIN METHODS
+    ///
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @return A list of created validator indices
@@ -115,11 +111,9 @@ contract EigenPodUser is Logger, TypeImporter {
         return _exitValidators(_validators);
     }
 
-    /**
-     *
-     *                              EIGENPOD METHODS
-     *
-     */
+    ///
+    ///                              EIGENPOD METHODS
+    ///
     function verifyWithdrawalCredentials(uint40[] memory _validators) public virtual createSnapshot {
         print.method("verifyWithdrawalCredentials");
 
@@ -138,11 +132,9 @@ contract EigenPodUser is Logger, TypeImporter {
         _completeCheckpoint();
     }
 
-    /**
-     *
-     *                             INTERNAL METHODS
-     *
-     */
+    ///
+    ///                             INTERNAL METHODS
+    ///
 
     /// @dev Uses any ETH held by the User to start validators on the beacon chain
     /// @dev Creates validators between 32 and 2048 ETH

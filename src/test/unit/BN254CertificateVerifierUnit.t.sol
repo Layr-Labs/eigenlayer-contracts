@@ -14,10 +14,8 @@ import "src/contracts/interfaces/IBaseCertificateVerifier.sol";
 import "src/contracts/interfaces/IBN254CertificateVerifier.sol";
 import "src/contracts/interfaces/ICrossChainRegistry.sol";
 
-/**
- * @title BN254CertificateVerifierUnitTests
- * @notice Base contract for all BN254CertificateVerifier unit tests
- */
+/// @title BN254CertificateVerifierUnitTests
+/// @notice Base contract for all BN254CertificateVerifier unit tests
 contract BN254CertificateVerifierUnitTests is
     EigenLayerMultichainUnitTestSetup,
     IBaseCertificateVerifierErrors,
@@ -60,8 +58,7 @@ contract BN254CertificateVerifierUnitTests is
         defaultOperatorSetConfig = OperatorSetConfig({owner: operatorSetOwner, maxStalenessPeriod: defaultMaxStaleness});
 
         // Deploy Contracts
-        bn254CertificateVerifierImplementation =
-            new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdaterMock)), "1.0.0");
+        bn254CertificateVerifierImplementation = new BN254CertificateVerifier(IOperatorTableUpdater(address(operatorTableUpdaterMock)));
         verifier = BN254CertificateVerifier(
             address(new TransparentUpgradeableProxy(address(bn254CertificateVerifierImplementation), address(eigenLayerProxyAdmin), ""))
         );
@@ -259,10 +256,8 @@ contract BN254CertificateVerifierUnitTests is
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_updateOperatorTable
- * @notice Unit tests for BN254CertificateVerifier.updateOperatorTable
- */
+/// @title BN254CertificateVerifierUnitTests_updateOperatorTable
+/// @notice Unit tests for BN254CertificateVerifier.updateOperatorTable
 contract BN254CertificateVerifierUnitTests_updateOperatorTable is BN254CertificateVerifierUnitTests, IBN254CertificateVerifierEvents {
     function test_revert_notTableUpdater() public {
         uint32 referenceTimestamp = uint32(block.timestamp);
@@ -378,10 +373,8 @@ contract BN254CertificateVerifierUnitTests_updateOperatorTable is BN254Certifica
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_verifyCertificate
- * @notice Unit tests for BN254CertificateVerifier.verifyCertificate
- */
+/// @title BN254CertificateVerifierUnitTests_verifyCertificate
+/// @notice Unit tests for BN254CertificateVerifier.verifyCertificate
 contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254CertificateVerifierUnitTests {
     function test_revert_certificateStale() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
@@ -602,8 +595,12 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
         // Create operators
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint nonSigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, nonSigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, nonSigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -681,15 +678,17 @@ contract BN254CertificateVerifierUnitTests_verifyCertificate is BN254Certificate
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_verifyCertificateProportion
- * @notice Unit tests for BN254CertificateVerifier.verifyCertificateProportion
- */
+/// @title BN254CertificateVerifierUnitTests_verifyCertificateProportion
+/// @notice Unit tests for BN254CertificateVerifier.verifyCertificateProportion
 contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254CertificateVerifierUnitTests {
     function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
         // Update operator table
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numOperators, 0); // 0 nonsigners
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -704,8 +703,12 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -793,17 +796,19 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateProportion is BN254C
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_verifyCertificateNominal
- * @notice Unit tests for BN254CertificateVerifier.verifyCertificateNominal
- */
+/// @title BN254CertificateVerifierUnitTests_verifyCertificateNominal
+/// @notice Unit tests for BN254CertificateVerifier.verifyCertificateNominal
 contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254CertificateVerifierUnitTests {
     function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -818,8 +823,12 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -839,8 +848,12 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators - 1); // Ensure at least one non-signer
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -861,8 +874,12 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
         // Update operator table
         uint numSigners = r.Uint256(1, numOperators);
         uint numNonsigners = numOperators - numSigners;
-        (BN254OperatorInfo[] memory operators,, uint32 referenceTimestamp, uint32[] memory nonSignerIndices, BN254.G1Point memory signature)
-        = _updateOperatorTable(r, numSigners, numNonsigners);
+        (
+            BN254OperatorInfo[] memory operators,,
+            uint32 referenceTimestamp,
+            uint32[] memory nonSignerIndices,
+            BN254.G1Point memory signature
+        ) = _updateOperatorTable(r, numSigners, numNonsigners);
 
         BN254Certificate memory cert = _createCertificate(referenceTimestamp, defaultMsgHash, nonSignerIndices, operators);
 
@@ -886,10 +903,8 @@ contract BN254CertificateVerifierUnitTests_verifyCertificateNominal is BN254Cert
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_ViewFunctions
- * @notice Unit tests for BN254CertificateVerifier view functions
- */
+/// @title BN254CertificateVerifierUnitTests_ViewFunctions
+/// @notice Unit tests for BN254CertificateVerifier view functions
 contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVerifierUnitTests {
     uint32 referenceTimestamp;
     BN254OperatorSetInfo operatorSetInfo;
@@ -1037,10 +1052,8 @@ contract BN254CertificateVerifierUnitTests_ViewFunctions is BN254CertificateVeri
     }
 }
 
-/**
- * @title BN254CertificateVerifierUnitTests_trySignatureVerification
- * @notice Unit tests for BN254CertificateVerifier.trySignatureVerification
- */
+/// @title BN254CertificateVerifierUnitTests_trySignatureVerification
+/// @notice Unit tests for BN254CertificateVerifier.trySignatureVerification
 contract BN254CertificateVerifierUnitTests_trySignatureVerification is BN254CertificateVerifierUnitTests {
     function testFuzz_trySignatureVerification_validSignature(Randomness r) public rand(r) {
         // Create all operators as signers

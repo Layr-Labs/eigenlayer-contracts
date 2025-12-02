@@ -9,17 +9,15 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../mixins/SignatureUtilsMixin.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../permissions/Pausable.sol";
-import "./StrategyManagerStorage.sol";
+import "./storage/StrategyManagerStorage.sol";
 
-/**
- * @title The primary entry- and exit-point for funds into and out of EigenLayer.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This contract is for managing deposits in different strategies. The main
- * functionalities are:
- * - adding and removing strategies that any delegator can deposit into
- * - enabling deposit of assets into specified strategy(s)
- */
+/// @title The primary entry- and exit-point for funds into and out of EigenLayer.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice This contract is for managing deposits in different strategies. The main
+/// functionalities are:
+/// - adding and removing strategies that any delegator can deposit into
+/// - enabling deposit of assets into specified strategy(s)
 contract StrategyManager is
     Initializable,
     OwnableUpgradeable,
@@ -52,9 +50,7 @@ contract StrategyManager is
         _;
     }
 
-    /**
-     * @param _delegation The delegation contract of EigenLayer.
-     */
+    /// @param _delegation The delegation contract of EigenLayer.
     constructor(
         IAllocationManager _allocationManager,
         IDelegationManager _delegation,
@@ -66,12 +62,10 @@ contract StrategyManager is
 
     // EXTERNAL FUNCTIONS
 
-    /**
-     * @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
-     * and transfers contract ownership to the specified `initialOwner`.
-     * @param initialOwner Ownership of this contract is transferred to this address.
-     * @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
-     */
+    /// @notice Initializes the strategy manager contract. Sets the `pauserRegistry` (currently **not** modifiable after being set),
+    /// and transfers contract ownership to the specified `initialOwner`.
+    /// @param initialOwner Ownership of this contract is transferred to this address.
+    /// @param initialStrategyWhitelister The initial value of `strategyWhitelister` to set.
     function initialize(
         address initialOwner,
         address initialStrategyWhitelister,
@@ -257,16 +251,18 @@ contract StrategyManager is
 
     // INTERNAL FUNCTIONS
 
-    /**
-     * @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
-     * @param staker The address to add shares to
-     * @param strategy The Strategy in which the `staker` is receiving shares
-     * @param shares The amount of shares to grant to the `staker`
-     * @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
-     * delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
-     * to the `staker`'s list of strategies, if it is not in the list already.
-     */
-    function _addShares(address staker, IStrategy strategy, uint256 shares) internal returns (uint256, uint256) {
+    /// @notice This function adds `shares` for a given `strategy` to the `staker` and runs through the necessary update logic.
+    /// @param staker The address to add shares to
+    /// @param strategy The Strategy in which the `staker` is receiving shares
+    /// @param shares The amount of shares to grant to the `staker`
+    /// @dev In particular, this function calls `delegation.increaseDelegatedShares(staker, strategy, shares)` to ensure that all
+    /// delegated shares are tracked, increases the stored share amount in `stakerDepositShares[staker][strategy]`, and adds `strategy`
+    /// to the `staker`'s list of strategies, if it is not in the list already.
+    function _addShares(
+        address staker,
+        IStrategy strategy,
+        uint256 shares
+    ) internal returns (uint256, uint256) {
         // sanity checks on inputs
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
@@ -286,15 +282,13 @@ contract StrategyManager is
         return (prevDepositShares, shares);
     }
 
-    /**
-     * @notice Internal function in which `amount` of ERC20 `token` is transferred from `msg.sender` to the Strategy-type contract
-     * `strategy`, with the resulting shares credited to `staker`.
-     * @param staker The address that will be credited with the new shares.
-     * @param strategy The Strategy contract to deposit into.
-     * @param token The ERC20 token to deposit.
-     * @param amount The amount of `token` to deposit.
-     * @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
-     */
+    /// @notice Internal function in which `amount` of ERC20 `token` is transferred from `msg.sender` to the Strategy-type contract
+    /// `strategy`, with the resulting shares credited to `staker`.
+    /// @param staker The address that will be credited with the new shares.
+    /// @param strategy The Strategy contract to deposit into.
+    /// @param token The ERC20 token to deposit.
+    /// @param amount The amount of `token` to deposit.
+    /// @return shares The amount of *new* shares in `strategy` that have been credited to the `staker`.
     function _depositIntoStrategy(
         address staker,
         IStrategy strategy,
@@ -321,15 +315,13 @@ contract StrategyManager is
         return shares;
     }
 
-    /**
-     * @notice Decreases the shares that `staker` holds in `strategy` by `depositSharesToRemove`.
-     * @param staker The address to decrement shares from
-     * @param strategy The strategy for which the `staker`'s shares are being decremented
-     * @param depositSharesToRemove The amount of deposit shares to decrement
-     * @dev If the amount of shares represents all of the staker`s shares in said strategy,
-     * then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
-     * Also returns the user's updated deposit shares after decrement.
-     */
+    /// @notice Decreases the shares that `staker` holds in `strategy` by `depositSharesToRemove`.
+    /// @param staker The address to decrement shares from
+    /// @param strategy The strategy for which the `staker`'s shares are being decremented
+    /// @param depositSharesToRemove The amount of deposit shares to decrement
+    /// @dev If the amount of shares represents all of the staker`s shares in said strategy,
+    /// then the strategy is removed from stakerStrategyList[staker] and 'true' is returned. Otherwise 'false' is returned.
+    /// Also returns the user's updated deposit shares after decrement.
     function _removeDepositShares(
         address staker,
         IStrategy strategy,
@@ -357,12 +349,13 @@ contract StrategyManager is
         return userDepositShares;
     }
 
-    /**
-     * @notice Removes `strategy` from `staker`'s dynamic array of strategies, i.e. from `stakerStrategyList[staker]`
-     * @param staker The user whose array will have an entry removed
-     * @param strategy The Strategy to remove from `stakerStrategyList[staker]`
-     */
-    function _removeStrategyFromStakerStrategyList(address staker, IStrategy strategy) internal {
+    /// @notice Removes `strategy` from `staker`'s dynamic array of strategies, i.e. from `stakerStrategyList[staker]`
+    /// @param staker The user whose array will have an entry removed
+    /// @param strategy The Strategy to remove from `stakerStrategyList[staker]`
+    function _removeStrategyFromStakerStrategyList(
+        address staker,
+        IStrategy strategy
+    ) internal {
         //loop through all of the strategies, find the right one, then replace
         uint256 stratsLength = stakerStrategyList[staker].length;
         uint256 j = 0;
@@ -379,13 +372,11 @@ contract StrategyManager is
         stakerStrategyList[staker].pop();
     }
 
-    /**
-     * @notice Clears burn/redistributable shares and sends underlying tokens to recipient.
-     * @param operatorSet The operator set to clear the shares for.
-     * @param slashId The slash id to clear the shares for.
-     * @param strategy The strategy to clear the shares for.
-     * @param recipient The recipient to withdraw the shares to.
-     */
+    /// @notice Clears burn/redistributable shares and sends underlying tokens to recipient.
+    /// @param operatorSet The operator set to clear the shares for.
+    /// @param slashId The slash id to clear the shares for.
+    /// @param strategy The strategy to clear the shares for.
+    /// @param recipient The recipient to withdraw the shares to.
     function _clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
@@ -401,11 +392,12 @@ contract StrategyManager is
         uint256 amountOut;
         if (sharesToRemove != 0) {
             // Withdraw the shares to the burn address.
-            amountOut = IStrategy(strategy).withdraw({
-                recipient: recipient,
-                token: IStrategy(strategy).underlyingToken(),
-                amountShares: sharesToRemove
-            });
+            amountOut = IStrategy(strategy)
+                .withdraw({
+                    recipient: recipient,
+                    token: IStrategy(strategy).underlyingToken(),
+                    amountShares: sharesToRemove
+                });
 
             // Emit an event to notify the that burnable shares have been decreased.
             emit BurnOrRedistributableSharesDecreased(operatorSet, slashId, strategy, sharesToRemove);
@@ -427,10 +419,8 @@ contract StrategyManager is
         return amountOut;
     }
 
-    /**
-     * @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
-     * @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
-     */
+    /// @notice Internal function for modifying the `strategyWhitelister`. Used inside of the `setStrategyWhitelister` and `initialize` functions.
+    /// @param newStrategyWhitelister The new address for the `strategyWhitelister` to take.
     function _setStrategyWhitelister(
         address newStrategyWhitelister
     ) internal {

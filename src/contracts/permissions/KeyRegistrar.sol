@@ -12,14 +12,12 @@ import "../interfaces/IKeyRegistrar.sol";
 import "../libraries/OperatorSetLib.sol";
 import "./KeyRegistrarStorage.sol";
 
-/**
- * @title KeyRegistrar
- * @notice A core singleton contract that manages operator keys for different AVSs with global key uniqueness
- * @dev Provides registration and deregistration of keys with support for aggregate keys
- *      Keys must be unique globally across all AVSs and operator sets
- *      Operators call functions directly to manage their own keys
- *      Aggregate keys are updated via callback from AVSRegistrar on registration and deregistration
- */
+/// @title KeyRegistrar
+/// @notice A core singleton contract that manages operator keys for different AVSs with global key uniqueness
+/// @dev Provides registration and deregistration of keys with support for aggregate keys
+///      Keys must be unique globally across all AVSs and operator sets
+///      Operators call functions directly to manage their own keys
+///      Aggregate keys are updated via callback from AVSRegistrar on registration and deregistration
 contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, SignatureUtilsMixin {
     using BN254 for BN254.G1Point;
 
@@ -30,12 +28,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     bytes32 public constant BN254_KEY_REGISTRATION_TYPEHASH =
         keccak256("BN254KeyRegistration(address operator,address avs,uint32 operatorSetId,bytes keyData)");
 
-    /**
-     * @dev Constructor for the KeyRegistrar contract
-     * @param _permissionController The permission controller contract
-     * @param _allocationManager The allocation manager contract
-     * @param _version The version string for the contract
-     */
+    /// @dev Constructor for the KeyRegistrar contract
+    /// @param _permissionController The permission controller contract
+    /// @param _allocationManager The allocation manager contract
+    /// @param _version The version string for the contract
     constructor(
         IPermissionController _permissionController,
         IAllocationManager _allocationManager,
@@ -88,7 +84,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function deregisterKey(address operator, OperatorSet memory operatorSet) external checkCanCall(operator) {
+    function deregisterKey(
+        address operator,
+        OperatorSet memory operatorSet
+    ) external checkCanCall(operator) {
         // Operators can only deregister if they are not slashable for this operator set
         require(
             !allocationManager.isOperatorSlashable(operator, operatorSet), OperatorStillSlashable(operatorSet, operator)
@@ -107,20 +106,16 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         emit KeyDeregistered(operatorSet, operator, curveType);
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Validates and registers an ECDSA address with EIP-712 signature verification
-     * @param operatorSet The operator set to register the key for
-     * @param operator Address of the operator
-     * @param keyData The ECDSA address encoded as bytes (20 bytes)
-     * @param signature EIP-712 signature over the registration message
-     * @dev Validates address format, verifies signature ownership, and ensures global uniqueness
-     */
+    /// @notice Validates and registers an ECDSA address with EIP-712 signature verification
+    /// @param operatorSet The operator set to register the key for
+    /// @param operator Address of the operator
+    /// @param keyData The ECDSA address encoded as bytes (20 bytes)
+    /// @param signature EIP-712 signature over the registration message
+    /// @dev Validates address format, verifies signature ownership, and ensures global uniqueness
     function _registerECDSAKey(
         OperatorSet memory operatorSet,
         address operator,
@@ -149,14 +144,12 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
-    /**
-     * @notice Validates and registers a BN254 public key with proper signature verification
-     * @param operatorSet The operator set to register the key for
-     * @param operator Address of the operator
-     * @param keyData The BN254 public key bytes (G1 and G2 components)
-     * @param signature Signature proving key ownership
-     * @dev Validates keypair, verifies signature using hash-to-G1, and ensures global uniqueness
-     */
+    /// @notice Validates and registers a BN254 public key with proper signature verification
+    /// @param operatorSet The operator set to register the key for
+    /// @param operator Address of the operator
+    /// @param keyData The BN254 public key bytes (G1 and G2 components)
+    /// @param signature Signature proving key ownership
+    /// @dev Validates keypair, verifies signature using hash-to-G1, and ensures global uniqueness
     function _registerBN254Key(
         OperatorSet memory operatorSet,
         address operator,
@@ -202,13 +195,11 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
-    /**
-     * @notice Internal helper to store key data and update global registry
-     * @param operatorSet The operator set
-     * @param operator The operator address
-     * @param pubkey The public key data
-     * @param keyHash The key hash
-     */
+    /// @notice Internal helper to store key data and update global registry
+    /// @param operatorSet The operator set
+    /// @param operator The operator address
+    /// @param pubkey The public key data
+    /// @param keyHash The key hash
     function _storeKeyData(
         OperatorSet memory operatorSet,
         address operator,
@@ -225,13 +216,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         _keyHashToOperator[keyHash] = operator;
     }
 
-    /**
-     * @notice Internal helper to get key hash for pubkey data using consistent hashing
-     * @param pubkey The public key data
-     * @param curveType The curve type (ECDSA or BN254)
-     * @return keyHash The key hash
-     */
-    function _getKeyHashForKeyData(bytes memory pubkey, CurveType curveType) internal pure returns (bytes32) {
+    /// @notice Internal helper to get key hash for pubkey data using consistent hashing
+    /// @param pubkey The public key data
+    /// @param curveType The curve type (ECDSA or BN254)
+    /// @return keyHash The key hash
+    function _getKeyHashForKeyData(
+        bytes memory pubkey,
+        CurveType curveType
+    ) internal pure returns (bytes32) {
         if (curveType == CurveType.ECDSA) {
             return keccak256(pubkey);
         } else if (curveType == CurveType.BN254) {
@@ -242,14 +234,15 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         revert InvalidCurveType();
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IKeyRegistrar
-    function isRegistered(OperatorSet memory operatorSet, address operator) public view returns (bool) {
+    function isRegistered(
+        OperatorSet memory operatorSet,
+        address operator
+    ) public view returns (bool) {
         return _operatorKeyInfo[operatorSet.key()][operator].isRegistered;
     }
 
@@ -284,7 +277,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getECDSAKey(OperatorSet memory operatorSet, address operator) public view returns (bytes memory) {
+    function getECDSAKey(
+        OperatorSet memory operatorSet,
+        address operator
+    ) public view returns (bytes memory) {
         // Validate operator set curve type
         CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
         require(curveType == CurveType.ECDSA, InvalidCurveType());
@@ -294,7 +290,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getECDSAAddress(OperatorSet memory operatorSet, address operator) external view returns (address) {
+    function getECDSAAddress(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (address) {
         return address(bytes20(getECDSAKey(operatorSet, operator)));
     }
 
@@ -306,7 +305,10 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
     }
 
     /// @inheritdoc IKeyRegistrar
-    function getKeyHash(OperatorSet memory operatorSet, address operator) external view returns (bytes32) {
+    function getKeyHash(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bytes32) {
         KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
         CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
 

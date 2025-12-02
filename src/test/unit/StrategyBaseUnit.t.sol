@@ -29,17 +29,13 @@ contract StrategyBaseUnitTests is Test {
     uint initialSupply = 1e36;
     address initialOwner = address(this);
 
-    /**
-     * @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
-     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
-     * incurring reasonably small losses to depositors
-     */
+    /// @notice virtual shares used as part of the mitigation of the common 'share inflation' attack vector.
+    /// Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+    /// incurring reasonably small losses to depositors
     uint internal constant SHARES_OFFSET = 1e3;
-    /**
-     * @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
-     * Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
-     * incurring reasonably small losses to depositors
-     */
+    /// @notice virtual balance used as part of the mitigation of the common 'share inflation' attack vector
+    /// Constant value chosen to reasonably reduce attempted share inflation by the first depositor, while still
+    /// incurring reasonably small losses to depositors
     uint internal constant BALANCE_OFFSET = 1e3;
 
     event ExchangeRateEmitted(uint rate);
@@ -55,7 +51,7 @@ contract StrategyBaseUnitTests is Test {
 
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", initialSupply, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "9.9.9");
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
 
         strategy = StrategyBase(
             address(
@@ -160,7 +156,7 @@ contract StrategyBaseUnitTests is Test {
         // Deploy token with 1e39 total supply
         underlyingToken = new ERC20PresetFixedSupply("Test Token", "TEST", 1e39, initialOwner);
 
-        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry, "9.9.9");
+        strategyImplementation = new StrategyBase(strategyManager, pauserRegistry);
 
         strategy = StrategyBase(
             address(

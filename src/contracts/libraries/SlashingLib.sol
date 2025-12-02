@@ -15,9 +15,9 @@ uint64 constant WAD = 1e18;
  * There are 2 types of shares:
  *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
- *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
+ *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens
  *              in the case of EigenPods)
- *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies
  *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
@@ -41,20 +41,27 @@ library SlashingLib {
 
     // WAD MATH
 
-    function mulWad(uint256 x, uint256 y) internal pure returns (uint256) {
+    function mulWad(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(y, WAD);
     }
 
-    function divWad(uint256 x, uint256 y) internal pure returns (uint256) {
+    function divWad(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(WAD, y);
     }
 
-    /**
-     * @notice Used explicitly for calculating slashed magnitude, we want to ensure even in the
-     * situation where an operator is slashed several times and precision has been lost over time,
-     * an incoming slashing request isn't rounded down to 0 and an operator is able to avoid slashing penalties.
-     */
-    function mulWadRoundUp(uint256 x, uint256 y) internal pure returns (uint256) {
+    /// @notice Used explicitly for calculating slashed magnitude, we want to ensure even in the
+    /// situation where an operator is slashed several times and precision has been lost over time,
+    /// an incoming slashing request isn't rounded down to 0 and an operator is able to avoid slashing penalties.
+    function mulWadRoundUp(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256) {
         return x.mulDiv(y, WAD, Math.Rounding.Up);
     }
 
@@ -73,22 +80,11 @@ library SlashingLib {
         return depositSharesToWithdraw.mulWad(dsf.scalingFactor());
     }
 
-    function scaleForCompleteWithdrawal(uint256 scaledShares, uint256 slashingFactor) internal pure returns (uint256) {
-        return scaledShares.mulWad(slashingFactor);
-    }
-
-    /**
-     * @notice Scales shares according to the difference in an operator's magnitude before and
-     * after being slashed. This is used to calculate the number of slashable shares in the
-     * withdrawal queue.
-     * NOTE: max magnitude is guaranteed to only ever decrease.
-     */
-    function scaleForBurning(
+    function scaleForCompleteWithdrawal(
         uint256 scaledShares,
-        uint64 prevMaxMagnitude,
-        uint64 newMaxMagnitude
+        uint256 slashingFactor
     ) internal pure returns (uint256) {
-        return scaledShares.mulWad(prevMaxMagnitude - newMaxMagnitude);
+        return scaledShares.mulWad(slashingFactor);
     }
 
     function update(
@@ -105,25 +101,23 @@ library SlashingLib {
             return;
         }
 
-        /**
-         * Base Equations:
-         * (1) newShares = currentShares + addedShares
-         * (2) newDepositShares = prevDepositShares + addedShares
-         * (3) newShares = newDepositShares * newDepositScalingFactor * slashingFactor
-         *
-         * Plugging (1) into (3):
-         * (4) newDepositShares * newDepositScalingFactor * slashingFactor = currentShares + addedShares
-         *
-         * Solving for newDepositScalingFactor
-         * (5) newDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * slashingFactor)
-         *
-         * Plugging in (2) into (5):
-         * (7) newDepositScalingFactor = (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor)
-         * Note that magnitudes must be divided by WAD for precision. Thus,
-         *
-         * (8) newDepositScalingFactor = WAD * (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor / WAD)
-         * (9) newDepositScalingFactor = (currentShares + addedShares) * WAD / (prevDepositShares + addedShares) * WAD / slashingFactor
-         */
+        /// Base Equations:
+        /// (1) newShares = currentShares + addedShares
+        /// (2) newDepositShares = prevDepositShares + addedShares
+        /// (3) newShares = newDepositShares * newDepositScalingFactor * slashingFactor
+        ///
+        /// Plugging (1) into (3):
+        /// (4) newDepositShares * newDepositScalingFactor * slashingFactor = currentShares + addedShares
+        ///
+        /// Solving for newDepositScalingFactor
+        /// (5) newDepositScalingFactor = (currentShares + addedShares) / (newDepositShares * slashingFactor)
+        ///
+        /// Plugging in (2) into (5):
+        /// (7) newDepositScalingFactor = (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor)
+        /// Note that magnitudes must be divided by WAD for precision. Thus,
+        ///
+        /// (8) newDepositScalingFactor = WAD * (currentShares + addedShares) / ((prevDepositShares + addedShares) * slashingFactor / WAD)
+        /// (9) newDepositScalingFactor = (currentShares + addedShares) * WAD / (prevDepositShares + addedShares) * WAD / slashingFactor
 
         // Step 1: Calculate Numerator
         uint256 currentShares = dsf.calcWithdrawable(prevDepositShares, slashingFactor);
@@ -179,6 +173,12 @@ library SlashingLib {
             .divWad(slashingFactor);
     }
 
+    /// @notice Calculates the amount of shares that should be slashed given the previous and new magnitudes.
+    /// @param operatorShares The amount of shares to slash.
+    /// @param prevMaxMagnitude The previous magnitude of the operator.
+    /// @param newMaxMagnitude The new magnitude of the operator.
+    /// @return The amount of shares that should be slashed.
+    /// @dev This function will revert with a divide by zero error if the previous magnitude is 0.
     function calcSlashedAmount(
         uint256 operatorShares,
         uint256 prevMaxMagnitude,

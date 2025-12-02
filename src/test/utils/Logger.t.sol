@@ -51,25 +51,25 @@ abstract contract Logger is Test {
     bytes32 constant LOG_STATE_SLOT = bytes32(0);
 
     modifier noTracing() {
-        uint traceCounter = _getTraceCounter();
-        if (traceCounter == 0) cheats.pauseTracing();
+        // uint traceCounter = _getTraceCounter();
+        // if (traceCounter == 0) cheats.pauseTracing();
 
-        traceCounter++;
-        _setTraceCounter(traceCounter);
+        // traceCounter++;
+        // _setTraceCounter(traceCounter);
 
         _;
 
-        traceCounter = _getTraceCounter();
-        traceCounter--;
-        _setTraceCounter(traceCounter);
+        // traceCounter = _getTraceCounter();
+        // traceCounter--;
+        // _setTraceCounter(traceCounter);
 
-        if (traceCounter == 0) cheats.resumeTracing();
+        // if (traceCounter == 0) cheats.resumeTracing();
     }
 
     modifier noLogging() {
-        logging = false;
+        // logging = false;
         _;
-        logging = true;
+        // logging = true;
     }
 
     /// -----------------------------------------------------------------------
@@ -196,6 +196,17 @@ library print {
             for (uint j; j < p[i].strategies.length; ++j) {
                 console.log("       strategy%s: %s", cheats.toString(j), address(p[i].strategies[j]));
             }
+        }
+    }
+
+    function createOperatorSets(IAllocationManagerTypes.CreateSetParamsV2[] memory p) internal pure {
+        console.log("Creating operator sets:");
+        for (uint i; i < p.length; ++i) {
+            console.log("   operatorSet%d:".yellow(), p[i].operatorSetId);
+            for (uint j; j < p[i].strategies.length; ++j) {
+                console.log("       strategy%s: %s", cheats.toString(j), address(p[i].strategies[j]));
+            }
+            console.log("       slasher: %s", address(p[i].slasher));
         }
     }
 

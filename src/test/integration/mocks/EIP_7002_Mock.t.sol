@@ -30,11 +30,9 @@ contract EIP_7002_Mock {
         else revert("EIP_7002_Mock: unknown function");
     }
 
-    /**
-     *
-     *                            "PUBLIC" METHODS
-     *
-     */
+    ///
+    ///                            "PUBLIC" METHODS
+    ///
     function _doAddRequest() internal {
         uint fee = _getFee();
         require(msg.value >= fee, "EIP_7002_Mock: insufficient value for fee");
@@ -77,11 +75,9 @@ contract EIP_7002_Mock {
         }
     }
 
-    /**
-     *
-     *                            PRIVATE METHODS
-     *
-     */
+    ///
+    ///                            PRIVATE METHODS
+    ///
     function _dequeueWithdrawalRequests() internal returns (WithdrawalReq[] memory reqs) {
         uint numInQueue = queueTail - queueHead;
         // The actual spec caps this to MAX_WITHDRAWAL_REQUESTS_PER_BLOCK, but that's not super useful for tests

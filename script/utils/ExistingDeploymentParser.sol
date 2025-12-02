@@ -10,6 +10,7 @@ import "../../src/contracts/core/DelegationManager.sol";
 import "../../src/contracts/core/AVSDirectory.sol";
 import "../../src/contracts/core/RewardsCoordinator.sol";
 import "../../src/contracts/core/AllocationManager.sol";
+import "../../src/contracts/core/AllocationManagerView.sol";
 import "../../src/contracts/permissions/PermissionController.sol";
 
 import "../../src/contracts/strategies/StrategyFactory.sol";
@@ -104,8 +105,9 @@ contract ExistingDeploymentParser is Script, Logger {
     UpgradeableBeacon public strategyBeacon;
 
     /// @dev AllocationManager
-    AllocationManager public allocationManager;
-    AllocationManager public allocationManagerImplementation;
+    IAllocationManager public allocationManager;
+    IAllocationManager public allocationManagerImplementation;
+    IAllocationManagerView public allocationManagerView;
 
     /// @dev AVSDirectory
     AVSDirectory public avsDirectory;
@@ -220,7 +222,7 @@ contract ExistingDeploymentParser is Script, Logger {
         eigenLayerPauserReg = PauserRegistry(json.readAddress(".addresses.eigenLayerPauserReg"));
 
         // FIXME: hotfix - remove later...
-        permissionControllerImplementation = new PermissionController(SEMVER);
+        permissionControllerImplementation = new PermissionController();
         permissionController = PermissionController(
             address(
                 new TransparentUpgradeableProxy(
@@ -230,9 +232,16 @@ contract ExistingDeploymentParser is Script, Logger {
         );
 
         // AllocationManager
-        allocationManager = AllocationManager(json.readAddress(".addresses.allocationManager"));
+        allocationManager = IAllocationManager(json.readAddress(".addresses.allocationManager"));
         allocationManagerImplementation =
-            AllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+            IAllocationManager(json.readAddress(".addresses.allocationManagerImplementation"));
+
+        // allocationManagerView = IAllocationManagerView(json.readAddress(".addresses.allocationManagerView"));
+
+        // FIXME: hotfix - remove later...
+        allocationManagerView = new AllocationManagerView(
+            delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY
+        );
 
         // AVSDirectory
         avsDirectory = AVSDirectory(json.readAddress(".addresses.avsDirectory"));
@@ -466,12 +475,16 @@ contract ExistingDeploymentParser is Script, Logger {
             "delegationManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(strategyManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(strategyManager)))
+            ),
             address(strategyManagerImplementation),
             "strategyManager: implementation set incorrectly"
         );
         assertEq(
-            eigenLayerProxyAdmin.getProxyImplementation(ITransparentUpgradeableProxy(payable(address(eigenPodManager)))),
+            eigenLayerProxyAdmin.getProxyImplementation(
+                ITransparentUpgradeableProxy(payable(address(eigenPodManager)))
+            ),
             address(eigenPodManagerImplementation),
             "eigenPodManager: implementation set incorrectly"
         );
@@ -493,11 +506,9 @@ contract ExistingDeploymentParser is Script, Logger {
         );
     }
 
-    /**
-     * @notice Verify initialization of Transparent Upgradeable Proxies. Also check
-     * initialization params if this is the first deployment.
-     * @dev isInitialDeployment True if this is the first deployment of contracts from scratch
-     */
+    /// @notice Verify initialization of Transparent Upgradeable Proxies. Also check
+    /// initialization params if this is the first deployment.
+    /// @dev isInitialDeployment True if this is the first deployment of contracts from scratch
     function _verifyContractsInitialized(
         bool /* isInitialDeployment */
     ) internal virtual {
@@ -694,9 +705,7 @@ contract ExistingDeploymentParser is Script, Logger {
         }
     }
 
-    /**
-     * @notice Log contract addresses and write to output json file
-     */
+    /// @notice Log contract addresses and write to output json file
     function logAndOutputContractAddresses(
         string memory outputPath
     ) public {

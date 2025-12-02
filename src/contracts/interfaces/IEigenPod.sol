@@ -4,7 +4,6 @@ pragma solidity >=0.5.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
-import "./ISemVerMixin.sol";
 import "./IEigenPodManager.sol";
 
 interface IEigenPodErrors {
@@ -87,15 +86,12 @@ interface IEigenPodTypes {
         INACTIVE, // doesnt exist
         ACTIVE, // staked on ethpos and withdrawal credentials are pointed to the EigenPod
         WITHDRAWN // withdrawn from the Beacon Chain
-
     }
 
-    /**
-     * @param validatorIndex index of the validator on the beacon chain
-     * @param restakedBalanceGwei amount of beacon chain ETH restaked on EigenLayer in gwei
-     * @param lastCheckpointedAt timestamp of the validator's most recent balance update
-     * @param status last recorded status of the validator
-     */
+    /// @param validatorIndex index of the validator on the beacon chain
+    /// @param restakedBalanceGwei amount of beacon chain ETH restaked on EigenLayer in gwei
+    /// @param lastCheckpointedAt timestamp of the validator's most recent balance update
+    /// @param status last recorded status of the validator
     struct ValidatorInfo {
         uint64 validatorIndex;
         uint64 restakedBalanceGwei;
@@ -111,25 +107,21 @@ interface IEigenPodTypes {
         uint64 prevBeaconBalanceGwei;
     }
 
-    /**
-     * @param srcPubkey the pubkey of the source validator for the consolidation
-     * @param targetPubkey the pubkey of the target validator for the consolidation
-     * @dev Note that if srcPubkey == targetPubkey, this is a "switch request," and will
-     * change the validator's withdrawal credential type from 0x01 to 0x02.
-     * For more notes on usage, see `requestConsolidation`
-     */
+    /// @param srcPubkey the pubkey of the source validator for the consolidation
+    /// @param targetPubkey the pubkey of the target validator for the consolidation
+    /// @dev Note that if srcPubkey == targetPubkey, this is a "switch request," and will
+    /// change the validator's withdrawal credential type from 0x01 to 0x02.
+    /// For more notes on usage, see `requestConsolidation`
     struct ConsolidationRequest {
         bytes srcPubkey;
         bytes targetPubkey;
     }
 
-    /**
-     * @param pubkey the pubkey of the validator to withdraw from
-     * @param amountGwei the amount (in gwei) to withdraw from the beacon chain to the pod
-     * @dev Note that if amountGwei == 0, this is a "full exit request," and will fully exit
-     * the validator to the pod.
-     * For more notes on usage, see `requestWithdrawal`
-     */
+    /// @param pubkey the pubkey of the validator to withdraw from
+    /// @param amountGwei the amount (in gwei) to withdraw from the beacon chain to the pod
+    /// @dev Note that if amountGwei == 0, this is a "full exit request," and will fully exit
+    /// the validator to the pod.
+    /// For more notes on usage, see `requestWithdrawal`
     struct WithdrawalRequest {
         bytes pubkey;
         uint64 amountGwei;
@@ -158,7 +150,9 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a checkpoint is created
     event CheckpointCreated(
-        uint64 indexed checkpointTimestamp, bytes32 indexed beaconBlockRoot, uint256 validatorCount
+        uint64 indexed checkpointTimestamp,
+        bytes32 indexed beaconBlockRoot,
+        uint256 validatorCount
     );
 
     /// @notice Emitted when a checkpoint is finalized
@@ -183,14 +177,12 @@ interface IEigenPodEvents is IEigenPodTypes {
     event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
 }
 
-/**
- * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
- *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
- */
-interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
+/// @title The implementation contract used for restaking beacon chain ETH on EigenLayer
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
+///   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
+interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
     function initialize(
         address owner
@@ -198,60 +190,59 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     /// @dev This function only supports staking to a 0x01 validator. For compounding validators, please interact directly with the deposit contract.
-    function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable;
+    function stake(
+        bytes calldata pubkey,
+        bytes calldata signature,
+        bytes32 depositDataRoot
+    ) external payable;
 
-    /**
-     * @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
-     * of the DelegationManager's withdrawal flow.
-     * @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
-     */
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amount) external;
+    /// @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
+    /// of the DelegationManager's withdrawal flow.
+    /// @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amount
+    ) external;
 
-    /**
-     * @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
-     * by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total
-     * change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
-     * @dev Once finalized, the pod owner is awarded shares corresponding to:
-     * - the total change in their ACTIVE validator balances
-     * - any ETH in the pod not already awarded shares
-     * @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
-     * this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
-     * @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
-     * to prevent accidentally starting a checkpoint that will not increase their shares
-     */
+    /// @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
+    /// by submitting one checkpoint proof per ACTIVE validator. During the checkpoint process, the total
+    /// change in ACTIVE validator balance is tracked, and any validators with 0 balance are marked `WITHDRAWN`.
+    /// @dev Once finalized, the pod owner is awarded shares corresponding to:
+    /// - the total change in their ACTIVE validator balances
+    /// - any ETH in the pod not already awarded shares
+    /// @dev A checkpoint cannot be created if the pod already has an outstanding checkpoint. If
+    /// this is the case, the pod owner MUST complete the existing checkpoint before starting a new one.
+    /// @param revertIfNoBalance Forces a revert if the pod ETH balance is 0. This allows the pod owner
+    /// to prevent accidentally starting a checkpoint that will not increase their shares
     function startCheckpoint(
         bool revertIfNoBalance
     ) external;
 
-    /**
-     * @dev Progress the current checkpoint towards completion by submitting one or more validator
-     * checkpoint proofs. Anyone can call this method to submit proofs towards the current checkpoint.
-     * For each validator proven, the current checkpoint's `proofsRemaining` decreases.
-     * @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
-     * (see `_updateCheckpoint` for more details)
-     * @dev This method can only be called when there is a currently-active checkpoint.
-     * @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
-     * @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
-     */
+    /// @dev Progress the current checkpoint towards completion by submitting one or more validator
+    /// checkpoint proofs. Anyone can call this method to submit proofs towards the current checkpoint.
+    /// For each validator proven, the current checkpoint's `proofsRemaining` decreases.
+    /// @dev If the checkpoint's `proofsRemaining` reaches 0, the checkpoint is finalized.
+    /// (see `_updateCheckpoint` for more details)
+    /// @dev This method can only be called when there is a currently-active checkpoint.
+    /// @param balanceContainerProof proves the beacon's current balance container root against a checkpoint's `beaconBlockRoot`
+    /// @param proofs Proofs for one or more validator current balances against the `balanceContainerRoot`
     function verifyCheckpointProofs(
         BeaconChainProofs.BalanceContainerProof calldata balanceContainerProof,
         BeaconChainProofs.BalanceProof[] calldata proofs
     ) external;
 
-    /**
-     * @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
-     * shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
-     * future checkpoint proofs will need to include them.
-     * @dev Withdrawal credential proofs MUST NOT be older than `currentCheckpointTimestamp`.
-     * @dev Validators proven via this method MUST NOT have an exit epoch set already.
-     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
-     * to the parent beacon block root against which the proof is verified.
-     * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param validatorIndices a list of validator indices being proven
-     * @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
-     * @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
-     * details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     */
+    /// @dev Verify one or more validators have their withdrawal credentials pointed at this EigenPod, and award
+    /// shares based on their effective balance. Proven validators are marked `ACTIVE` within the EigenPod, and
+    /// future checkpoint proofs will need to include them.
+    /// @dev Withdrawal credential proofs MUST NOT be older than `currentCheckpointTimestamp`.
+    /// @dev Validators proven via this method MUST NOT have an exit epoch set already.
+    /// @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
+    /// to the parent beacon block root against which the proof is verified.
+    /// @param stateRootProof proves a beacon state root against a beacon block root
+    /// @param validatorIndices a list of validator indices being proven
+    /// @param validatorFieldsProofs proofs of each validator's `validatorFields` against the beacon state root
+    /// @param validatorFields the fields of the beacon chain "Validator" container. See consensus specs for
+    /// details: https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
     function verifyWithdrawalCredentials(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
@@ -260,36 +251,34 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         bytes32[][] calldata validatorFields
     ) external;
 
-    /**
-     * @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
-     * staleness proof allows the caller to start a checkpoint.
-     *
-     * @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
-     * (See `_startCheckpoint` for details)
-     *
-     * @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
-     * chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
-     *
-     * @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
-     * and the validator's final exit back to the execution layer. During this time, the validator's balance may or
-     * may not drop further due to a correlation penalty. This method allows proof of a slashed validator
-     * to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
-     * has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
-     * "stale" via this method.
-     * See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
-     *
-     * @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
-     * to the parent beacon block root against which the proof is verified.
-     * @param stateRootProof proves a beacon state root against a beacon block root
-     * @param proof the fields of the beacon chain "Validator" container, along with a merkle proof against
-     * the beacon state root. See the consensus specs for more details:
-     * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
-     *
-     * @dev Staleness conditions:
-     * - Validator's last checkpoint is older than `beaconTimestamp`
-     * - Validator MUST be in `ACTIVE` status in the pod
-     * - Validator MUST be slashed on the beacon chain
-     */
+    /// @dev Prove that one of this pod's active validators was slashed on the beacon chain. A successful
+    /// staleness proof allows the caller to start a checkpoint.
+    ///
+    /// @dev Note that in order to start a checkpoint, any existing checkpoint must already be completed!
+    /// (See `_startCheckpoint` for details)
+    ///
+    /// @dev Note that this method allows anyone to start a checkpoint as soon as a slashing occurs on the beacon
+    /// chain. This is intended to make it easier to external watchers to keep a pod's balance up to date.
+    ///
+    /// @dev Note too that beacon chain slashings are not instant. There is a delay between the initial slashing event
+    /// and the validator's final exit back to the execution layer. During this time, the validator's balance may or
+    /// may not drop further due to a correlation penalty. This method allows proof of a slashed validator
+    /// to initiate a checkpoint for as long as the validator remains on the beacon chain. Once the validator
+    /// has exited and been checkpointed at 0 balance, they are no longer "checkpoint-able" and cannot be proven
+    /// "stale" via this method.
+    /// See https://eth2book.info/capella/part3/transition/epoch/#slashings for more info.
+    ///
+    /// @param beaconTimestamp the beacon chain timestamp sent to the 4788 oracle contract. Corresponds
+    /// to the parent beacon block root against which the proof is verified.
+    /// @param stateRootProof proves a beacon state root against a beacon block root
+    /// @param proof the fields of the beacon chain "Validator" container, along with a merkle proof against
+    /// the beacon state root. See the consensus specs for more details:
+    /// https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md#validator
+    ///
+    /// @dev Staleness conditions:
+    /// - Validator's last checkpoint is older than `beaconTimestamp`
+    /// - Validator MUST be in `ACTIVE` status in the pod
+    /// - Validator MUST be slashed on the beacon chain
     function verifyStaleBalance(
         uint64 beaconTimestamp,
         BeaconChainProofs.StateRootProof calldata stateRootProof,
@@ -390,7 +379,11 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
     ) external payable;
 
     /// @notice called by owner of a pod to remove any ERC20s deposited in the pod
-    function recoverTokens(IERC20[] memory tokenList, uint256[] memory amountsToWithdraw, address recipient) external;
+    function recoverTokens(
+        IERC20[] memory tokenList,
+        uint256[] memory amountsToWithdraw,
+        address recipient
+    ) external;
 
     /// @notice Allows the owner of a pod to update the proof submitter, a permissioned
     /// address that can call various EigenPod methods, but cannot trigger asset withdrawals
@@ -404,11 +397,9 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents, ISemVerMixin {
         address newProofSubmitter
     ) external;
 
-    /**
-     *
-     *                                VIEW METHODS
-     *
-     */
+    ///
+    ///                                VIEW METHODS
+    ///
 
     /// @notice An address with permissions to call `startCheckpoint` and `verifyWithdrawalCredentials`, set
     /// by the podOwner. This role exists to allow a podOwner to designate a hot wallet that can call

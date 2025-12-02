@@ -13,6 +13,7 @@ import "../../../src/contracts/core/DelegationManager.sol";
 import "../../../src/contracts/core/AVSDirectory.sol";
 import "../../../src/contracts/core/RewardsCoordinator.sol";
 import "../../../src/contracts/core/AllocationManager.sol";
+import "../../../src/contracts/core/AllocationManagerView.sol";
 import "../../../src/contracts/permissions/PermissionController.sol";
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
@@ -60,6 +61,7 @@ contract DeployFromScratch is Script, Test {
     StrategyBase public baseStrategyImplementation;
     AllocationManager public allocationManagerImplementation;
     AllocationManager public allocationManager;
+    AllocationManagerView public allocationManagerView;
     PermissionController public permissionController;
     PermissionController public permissionControllerImplementation;
 
@@ -185,10 +187,8 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg = new PauserRegistry(pausers, executorMultisig);
         }
 
-        /**
-         * First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
-         * not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
-         */
+        /// First, deploy upgradeable proxy contracts that **will point** to the implementations. Since the implementation contracts are
+        /// not yet deployed, we give these proxies an empty contract as the initial implementation, to act as if they have no code.
         emptyContract = new EmptyContract();
         delegation = DelegationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
@@ -211,6 +211,9 @@ contract DeployFromScratch is Script, Test {
         strategyFactory = StrategyFactory(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
+        allocationManagerView = AllocationManagerView(
+            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
+        );
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -219,7 +222,7 @@ contract DeployFromScratch is Script, Test {
         if (chainId == 1) ethPOSDeposit = IETHPOSDeposit(0x00000000219ab540356cBB839Cbe05303d7705Fa);
         // if not on mainnet, deploy a mock
         else ethPOSDeposit = IETHPOSDeposit(stdJson.readAddress(config_data, ".ethPOSDepositAddress"));
-        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager, SEMVER);
+        eigenPodImplementation = new EigenPod(ethPOSDeposit, eigenPodManager);
 
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
@@ -228,43 +231,45 @@ contract DeployFromScratch is Script, Test {
         delegationImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
-            allocationManager,
+            IAllocationManager(address(allocationManager)),
             eigenLayerPauserReg,
             permissionController,
             MIN_WITHDRAWAL_DELAY,
             SEMVER
         );
 
-        strategyManagerImplementation = new StrategyManager(allocationManager, delegation, eigenLayerPauserReg, SEMVER);
+        strategyManagerImplementation = new StrategyManager(
+            IAllocationManager(address(allocationManager)), delegation, eigenLayerPauserReg, SEMVER
+        );
         avsDirectoryImplementation = new AVSDirectory(delegation, eigenLayerPauserReg, SEMVER);
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg, SEMVER);
+            new EigenPodManager(ethPOSDeposit, eigenPodBeacon, delegation, eigenLayerPauserReg);
         rewardsCoordinatorImplementation = new RewardsCoordinator(
             IRewardsCoordinatorTypes.RewardsCoordinatorConstructorParams(
                 delegation,
                 strategyManager,
-                allocationManager,
+                IAllocationManager(address(allocationManager)),
                 eigenLayerPauserReg,
                 permissionController,
                 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
                 REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
                 REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                SEMVER
+                REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
             )
         );
         allocationManagerImplementation = new AllocationManager(
+            allocationManagerView,
             delegation,
             eigenStrategy,
             eigenLayerPauserReg,
             permissionController,
             DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            SEMVER
+            ALLOCATION_CONFIGURATION_DELAY
         );
-        permissionControllerImplementation = new PermissionController(SEMVER);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, SEMVER);
+
+        permissionControllerImplementation = new PermissionController();
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -326,7 +331,7 @@ contract DeployFromScratch is Script, Test {
 
         // Deploy strategyFactory & base
         // Create base strategy implementation
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, SEMVER);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
@@ -480,7 +485,7 @@ contract DeployFromScratch is Script, Test {
             "rewardsCoordinator: strategyManager address not set correctly"
         );
         require(
-            delegationContract.allocationManager() == allocationManager,
+            delegationContract.allocationManager() == IAllocationManager(address(allocationManager)),
             "delegationManager: allocationManager address not set correctly"
         );
         require(
@@ -507,15 +512,15 @@ contract DeployFromScratch is Script, Test {
         );
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
-            ) == address(rewardsCoordinatorImplementation),
+                    ITransparentUpgradeableProxy(payable(address(rewardsCoordinator)))
+                ) == address(rewardsCoordinatorImplementation),
             "rewardsCoordinator: implementation set incorrectly"
         );
 
         require(
             eigenLayerProxyAdmin.getProxyImplementation(
-                ITransparentUpgradeableProxy(payable(address(allocationManager)))
-            ) == address(allocationManagerImplementation),
+                    ITransparentUpgradeableProxy(payable(address(allocationManager)))
+                ) == address(allocationManagerImplementation),
             "allocationManager: implementation set incorrectly"
         );
 

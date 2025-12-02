@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../libraries/BeaconChainProofs.sol";
 
-import "../mixins/SemVerMixin.sol";
-
 import "../interfaces/IETHPOSDeposit.sol";
 import "../interfaces/IEigenPodManager.sol";
 import "../interfaces/IPausable.sol";
@@ -16,29 +14,19 @@ import "../interfaces/IPausable.sol";
 import "./EigenPodPausingConstants.sol";
 import "./EigenPodStorage.sol";
 
-/**
- * @title The implementation contract used for restaking beacon chain ETH on EigenLayer
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @notice This EigenPod Beacon Proxy implementation adheres to the current Deneb consensus specs
- * @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
- *   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
- */
-contract EigenPod is
-    Initializable,
-    ReentrancyGuardUpgradeable,
-    EigenPodPausingConstants,
-    EigenPodStorage,
-    SemVerMixin
-{
+/// @title The implementation contract used for restaking beacon chain ETH on EigenLayer
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @notice This EigenPod Beacon Proxy implementation adheres to the current Deneb consensus specs
+/// @dev Note that all beacon chain balances are stored as gwei within the beacon chain datastructures. We choose
+///   to account balances in terms of gwei in the EigenPod contract and convert to wei when making calls to other contracts
+contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingConstants, EigenPodStorage {
     using SafeERC20 for IERC20;
     using BeaconChainProofs for *;
 
-    /**
-     *
-     *                            CONSTANTS / IMMUTABLES
-     *
-     */
+    ///
+    ///                            CONSTANTS / IMMUTABLES
+    ///
 
     /// @notice The beacon chain stores balances in Gwei, rather than wei. This value is used to convert between the two
     uint256 internal constant GWEI_TO_WEI = 1e9;
@@ -64,11 +52,9 @@ contract EigenPod is
     /// @notice The single EigenPodManager for EigenLayer
     IEigenPodManager public immutable eigenPodManager;
 
-    /**
-     *
-     *                                  MODIFIERS
-     *
-     */
+    ///
+    ///                                  MODIFIERS
+    ///
 
     /// @notice Callable only by the EigenPodManager
     modifier onlyEigenPodManager() {
@@ -88,11 +74,9 @@ contract EigenPod is
         _;
     }
 
-    /**
-     * @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
-     * is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
-     * Modifier throws if the `indexed`th bit of `_paused` in the EigenPodManager is 1, i.e. if the `index`th pause switch is flipped.
-     */
+    /// @notice Based on 'Pausable' code, but uses the storage of the EigenPodManager instead of this contract. This construction
+    /// is necessary for enabling pausing all EigenPods at the same time (due to EigenPods being Beacon Proxies).
+    /// Modifier throws if the `indexed`th bit of `_paused` in the EigenPodManager is 1, i.e. if the `index`th pause switch is flipped.
     modifier onlyWhenNotPaused(
         uint8 index
     ) {
@@ -100,16 +84,13 @@ contract EigenPod is
         _;
     }
 
-    /**
-     *
-     *                               CONSTRUCTOR / INIT
-     *
-     */
+    ///
+    ///                               CONSTRUCTOR / INIT
+    ///
     constructor(
         IETHPOSDeposit _ethPOS,
-        IEigenPodManager _eigenPodManager,
-        string memory _version
-    ) SemVerMixin(_version) {
+        IEigenPodManager _eigenPodManager
+    ) {
         ethPOS = _ethPOS;
         eigenPodManager = _eigenPodManager;
         _disableInitializers();
@@ -123,11 +104,9 @@ contract EigenPod is
         podOwner = _podOwner;
     }
 
-    /**
-     *
-     *                                 EXTERNAL METHODS
-     *
-     */
+    ///
+    ///                                 EXTERNAL METHODS
+    ///
 
     /// @notice payable fallback function used to receive ETH sent directly to the pod
     receive() external payable {
@@ -408,7 +387,10 @@ contract EigenPod is
     }
 
     /// @inheritdoc IEigenPod
-    function withdrawRestakedBeaconChainETH(address recipient, uint256 amountWei) external onlyEigenPodManager {
+    function withdrawRestakedBeaconChainETH(
+        address recipient,
+        uint256 amountWei
+    ) external onlyEigenPodManager {
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         amountWei = amountGwei * GWEI_TO_WEI;
         require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
@@ -418,18 +400,14 @@ contract EigenPod is
         Address.sendValue(payable(recipient), amountWei);
     }
 
-    /**
-     *
-     *                             INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                             INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice internal function that proves an individual validator's withdrawal credentials
-     * @param validatorIndex is the index of the validator being proven
-     * @param validatorFieldsProof is the bytes that prove the ETH validator's  withdrawal credentials against a beacon chain state root
-     * @param validatorFields are the fields of the "Validator Container", refer to consensus specs
-     */
+    /// @notice internal function that proves an individual validator's withdrawal credentials
+    /// @param validatorIndex is the index of the validator being proven
+    /// @param validatorFieldsProof is the bytes that prove the ETH validator's  withdrawal credentials against a beacon chain state root
+    /// @param validatorFields are the fields of the "Validator Container", refer to consensus specs
     function _verifyWithdrawalCredentials(
         uint64 beaconTimestamp,
         bytes32 beaconStateRoot,
@@ -568,19 +546,17 @@ contract EigenPod is
         return (prevBalanceGwei, balanceDeltaGwei, exitedBalanceGwei);
     }
 
-    /**
-     * @dev Initiate a checkpoint proof by snapshotting both the pod's ETH balance and the
-     * current block's parent block root. After providing a checkpoint proof for each of the
-     * pod's ACTIVE validators, the pod's ETH balance is awarded shares and can be withdrawn.
-     * @dev ACTIVE validators are validators with verified withdrawal credentials (See
-     * `verifyWithdrawalCredentials` for details)
-     * @dev If the pod does not have any ACTIVE validators, the checkpoint is automatically
-     * finalized.
-     * @dev Once started, a checkpoint MUST be completed! It is not possible to start a
-     * checkpoint if the existing one is incomplete.
-     * @param revertIfNoBalance If the available ETH balance for checkpointing is 0 and this is
-     * true, this method will revert
-     */
+    /// @dev Initiate a checkpoint proof by snapshotting both the pod's ETH balance and the
+    /// current block's parent block root. After providing a checkpoint proof for each of the
+    /// pod's ACTIVE validators, the pod's ETH balance is awarded shares and can be withdrawn.
+    /// @dev ACTIVE validators are validators with verified withdrawal credentials (See
+    /// `verifyWithdrawalCredentials` for details)
+    /// @dev If the pod does not have any ACTIVE validators, the checkpoint is automatically
+    /// finalized.
+    /// @dev Once started, a checkpoint MUST be completed! It is not possible to start a
+    /// checkpoint if the existing one is incomplete.
+    /// @param revertIfNoBalance If the available ETH balance for checkpointing is 0 and this is
+    /// true, this method will revert
     function _startCheckpoint(
         bool revertIfNoBalance
     ) internal {
@@ -628,14 +604,12 @@ contract EigenPod is
         emit CheckpointCreated(uint64(block.timestamp), checkpoint.beaconBlockRoot, checkpoint.proofsRemaining);
     }
 
-    /**
-     * @dev Finish progress on a checkpoint and store it in state.
-     * @dev If the checkpoint has no proofs remaining, it is finalized:
-     * - a share delta is calculated and sent to the `EigenPodManager`
-     * - the checkpointed `podBalanceGwei` is added to `restakedExecutionLayerGwei`
-     * - `lastCheckpointTimestamp` is updated
-     * - `currentCheckpointTimestamp` is set to zero
-     */
+    /// @dev Finish progress on a checkpoint and store it in state.
+    /// @dev If the checkpoint has no proofs remaining, it is finalized:
+    /// - a share delta is calculated and sent to the `EigenPodManager`
+    /// - the checkpointed `podBalanceGwei` is added to `restakedExecutionLayerGwei`
+    /// - `lastCheckpointTimestamp` is updated
+    /// - `currentCheckpointTimestamp` is set to zero
     function _updateCheckpoint(
         Checkpoint memory checkpoint
     ) internal {
@@ -709,16 +683,15 @@ contract EigenPod is
 
         /// We check if the proofTimestamp is <= pectraForkTimestamp because a `proofTimestamp` at the `pectraForkTimestamp`
         /// is considered to be Pre-Pectra given the EIP-4788 oracle returns the parent block.
-        return proofTimestamp <= forkTimestamp
-            ? BeaconChainProofs.ProofVersion.DENEB
-            : BeaconChainProofs.ProofVersion.PECTRA;
+        return
+            proofTimestamp <= forkTimestamp
+                ? BeaconChainProofs.ProofVersion.DENEB
+                : BeaconChainProofs.ProofVersion.PECTRA;
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IEigenPod
     function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {

@@ -7,7 +7,7 @@ import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol
 
 import "../mixins/SignatureUtilsMixin.sol";
 import "../permissions/Pausable.sol";
-import "./AVSDirectoryStorage.sol";
+import "./storage/AVSDirectoryStorage.sol";
 
 contract AVSDirectory is
     Initializable,
@@ -17,16 +17,11 @@ contract AVSDirectory is
     ReentrancyGuardUpgradeable,
     SignatureUtilsMixin
 {
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
-
-    /**
-     * @dev Initializes the immutable addresses of the strategy manager, delegationManager,
-     * and eigenpodManager contracts
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
+    /// @dev Initializes the immutable addresses of the strategy manager, delegationManager,
+    /// and eigenpodManager contracts
     constructor(
         IDelegationManager _delegation,
         IPauserRegistry _pauserRegistry,
@@ -36,16 +31,17 @@ contract AVSDirectory is
     }
 
     /// @inheritdoc IAVSDirectory
-    function initialize(address initialOwner, uint256 initialPausedStatus) external initializer {
+    function initialize(
+        address initialOwner,
+        uint256 initialPausedStatus
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
     }
 
-    /**
-     *
-     *                    EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                    EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc IAVSDirectory
     function updateAVSMetadataURI(
@@ -62,11 +58,9 @@ contract AVSDirectory is
         operatorSaltIsSpent[msg.sender][salt] = true;
     }
 
-    /**
-     *
-     *        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED IN FUTURE RELEASE AFTER SLASHING RELEASE
-     *
-     */
+    ///
+    ///        LEGACY EXTERNAL FUNCTIONS - SUPPORT DEPRECATED IN FUTURE RELEASE AFTER SLASHING RELEASE
+    ///
 
     /// @inheritdoc IAVSDirectory
     function registerOperatorToAVS(
@@ -123,11 +117,9 @@ contract AVSDirectory is
         emit OperatorAVSRegistrationStatusUpdated(operator, msg.sender, OperatorAVSRegistrationStatus.UNREGISTERED);
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IAVSDirectory
     function calculateOperatorAVSRegistrationDigestHash(

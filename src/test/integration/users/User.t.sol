@@ -21,7 +21,7 @@ import "src/test/utils/Logger.t.sol";
 import "src/test/utils/ArrayLib.sol";
 
 interface IUserDeployer {
-    function allocationManager() external view returns (AllocationManager);
+    function allocationManager() external view returns (IAllocationManager);
     function delegationManager() external view returns (DelegationManager);
     function permissionController() external view returns (PermissionController);
     function strategyManager() external view returns (StrategyManager);
@@ -104,7 +104,7 @@ contract User is Logger, TypeImporter {
             )
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.modifyAllocations.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.modifyAllocations.selector);
         allocationManager().modifyAllocations(address(this), params.toArray());
         print.gasUsed();
     }
@@ -132,10 +132,11 @@ contract User is Logger, TypeImporter {
             string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.registerForOperatorSets.selector);
-        allocationManager().registerForOperatorSets(
-            address(this), RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
-        );
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.registerForOperatorSets.selector);
+        allocationManager()
+            .registerForOperatorSets(
+                address(this), RegisterParams({avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32(), data: ""})
+            );
         print.gasUsed();
     }
 
@@ -145,10 +146,11 @@ contract User is Logger, TypeImporter {
             string.concat("{avs: ", Logger(operatorSet.avs).NAME_COLORED(), ", operatorSetId: ", cheats.toString(operatorSet.id), "}")
         );
 
-        _tryPrankAppointee_AllocationManager(IAllocationManager.deregisterFromOperatorSets.selector);
-        allocationManager().deregisterFromOperatorSets(
-            DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
-        );
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.deregisterFromOperatorSets.selector);
+        allocationManager()
+            .deregisterFromOperatorSets(
+                DeregisterParams({operator: address(this), avs: operatorSet.avs, operatorSetIds: operatorSet.id.toArrayU32()})
+            );
         print.gasUsed();
     }
 
@@ -193,7 +195,7 @@ contract User is Logger, TypeImporter {
 
     function setAllocationDelay(uint32 delay) public virtual createSnapshot {
         print.method("setAllocationDelay");
-        _tryPrankAppointee_AllocationManager(IAllocationManager.setAllocationDelay.selector);
+        _tryPrankAppointee_AllocationManager(IAllocationManagerActions.setAllocationDelay.selector);
         allocationManager().setAllocationDelay(address(this), delay);
         print.gasUsed();
 
@@ -323,12 +325,7 @@ contract User is Logger, TypeImporter {
         return (withdrawals);
     }
 
-    function completeWithdrawalsAsTokens(Withdrawal[] memory withdrawals)
-        public
-        virtual
-        createSnapshot
-        returns (IERC20[][] memory tokens)
-    {
+    function completeWithdrawalsAsTokens(Withdrawal[] memory withdrawals) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalsAsTokens");
         tokens = new IERC20[][](withdrawals.length);
         for (uint i = 0; i < withdrawals.length; i++) {
@@ -341,12 +338,7 @@ contract User is Logger, TypeImporter {
         return _completeQueuedWithdrawal(withdrawal, true);
     }
 
-    function completeWithdrawalsAsShares(Withdrawal[] memory withdrawals)
-        public
-        virtual
-        createSnapshot
-        returns (IERC20[][] memory tokens)
-    {
+    function completeWithdrawalsAsShares(Withdrawal[] memory withdrawals) public virtual createSnapshot returns (IERC20[][] memory tokens) {
         print.method("completeWithdrawalsAsShares");
         tokens = new IERC20[][](withdrawals.length);
         for (uint i = 0; i < withdrawals.length; i++) {
@@ -558,7 +550,8 @@ contract User is Logger, TypeImporter {
             beaconTimestamp: proof.beaconTimestamp,
             stateRootProof: proof.stateRootProof,
             proof: proof.validatorProof
-        }) {} catch (bytes memory err) {
+        }) {}
+        catch (bytes memory err) {
             _revert(err);
         }
     }
@@ -613,8 +606,8 @@ contract User is Logger, TypeImporter {
     /// View Methods
     /// -----------------------------------------------------------------------
 
-    function allocationManager() public view returns (AllocationManager) {
-        return AllocationManager(address(delegationManager.allocationManager()));
+    function allocationManager() public view returns (IAllocationManager) {
+        return IAllocationManager(address(delegationManager.allocationManager()));
     }
 
     function permissionController() public view returns (PermissionController) {
@@ -826,7 +819,8 @@ contract User is Logger, TypeImporter {
             validatorIndices: _validators,
             validatorFieldsProofs: proofs.validatorFieldsProofs,
             validatorFields: proofs.validatorFields
-        }) {} catch (bytes memory err) {
+        }) {}
+        catch (bytes memory err) {
             _revert(err);
         }
         cheats.resumeTracing();

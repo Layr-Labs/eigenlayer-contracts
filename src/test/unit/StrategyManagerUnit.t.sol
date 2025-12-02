@@ -12,12 +12,10 @@ import "src/test/mocks/Reenterer.sol";
 import "src/test/mocks/MockDecimals.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
-/**
- * @notice Unit testing of the StrategyManager contract, entire withdrawal tests related to the
- * DelegationManager are not tested here but callable functions by the DelegationManager are mocked and tested here.
- * Contracts tested: StrategyManager.sol
- * Contracts not mocked: StrategyBase, PauserRegistry
- */
+/// @notice Unit testing of the StrategyManager contract, entire withdrawal tests related to the
+/// DelegationManager are not tested here but callable functions by the DelegationManager are mocked and tested here.
+/// Contracts tested: StrategyManager.sol
+/// Contracts not mocked: StrategyBase, PauserRegistry
 contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
     address constant DEFAULT_BURN_ADDRESS = address(0x00000000000000000000000000000000000E16E4);
 
@@ -50,7 +48,12 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
                 new TransparentUpgradeableProxy(
                     address(strategyManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyManager.initialize.selector, initialOwner, initialOwner, 0 /*initialPausedStatus*/ )
+                    abi.encodeWithSelector(
+                        StrategyManager.initialize.selector,
+                        initialOwner,
+                        initialOwner,
+                        0 /*initialPausedStatus*/
+                    )
                 )
             )
         );
@@ -81,7 +84,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         public
         returns (StrategyBase)
     {
-        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry, "9.9.9");
+        StrategyBase newStrategyImplementation = new StrategyBase(_strategyManager, _pauserRegistry);
         StrategyBase newStrategy =
             StrategyBase(address(new TransparentUpgradeableProxy(address(newStrategyImplementation), address(admin), "")));
         newStrategy.initialize(_token);
@@ -183,10 +186,8 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         return signature;
     }
 
-    /**
-     * @notice internal function to help check if a strategy is part of list of deposited strategies for a staker
-     * Used to check if removed correctly after withdrawing all shares for a given strategy
-     */
+    /// @notice internal function to help check if a strategy is part of list of deposited strategies for a staker
+    /// Used to check if removed correctly after withdrawing all shares for a given strategy
     function _isDepositedStrategy(address staker, IStrategy strategy) internal view returns (bool) {
         uint stakerStrategyListLength = strategyManager.stakerStrategyListLength(staker);
         for (uint i = 0; i < stakerStrategyListLength; ++i) {
@@ -195,9 +196,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         return false;
     }
 
-    /**
-     * @notice Deploys numberOfStrategiesToAdd new strategies and adds them to the whitelist
-     */
+    /// @notice Deploys numberOfStrategiesToAdd new strategies and adds them to the whitelist
     function _addStrategiesToWhitelist(uint8 numberOfStrategiesToAdd) internal returns (IStrategy[] memory) {
         IStrategy[] memory strategyArray = new IStrategy[](numberOfStrategiesToAdd);
         // loop that deploys a new strategy and adds it to the array
@@ -645,12 +644,10 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
         _depositIntoStrategyWithSignature(staker, 1e18, type(uint).max, IPausable.CurrentlyPaused.selector);
     }
 
-    /**
-     * @notice reenterer contract which is configured as the strategy contract
-     * is configured to call depositIntoStrategy after reenterer.deposit() is called from the
-     * depositIntoStrategyWithSignature() is called from the StrategyManager. Situation is not likely to occur given
-     * the strategy has to be whitelisted but it at least protects from reentrant attacks
-     */
+    /// @notice reenterer contract which is configured as the strategy contract
+    /// is configured to call depositIntoStrategy after reenterer.deposit() is called from the
+    /// depositIntoStrategyWithSignature() is called from the StrategyManager. Situation is not likely to occur given
+    /// the strategy has to be whitelisted but it at least protects from reentrant attacks
     function test_Revert_WhenReentering() public {
         reenterer = new Reenterer();
 
@@ -745,18 +742,14 @@ contract StrategyManagerUnitTests_depositIntoStrategyWithSignature is StrategyMa
 }
 
 contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTests {
-    /**
-     * @notice Should revert if not called by DelegationManager
-     */
+    /// @notice Should revert if not called by DelegationManager
     function test_Revert_DelegationManagerModifier() external {
         DelegationManagerMock invalidDelegationManager = new DelegationManagerMock();
         cheats.expectRevert(IStrategyManagerErrors.OnlyDelegationManager.selector);
         invalidDelegationManager.removeDepositShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    /**
-     * @notice deposits a single strategy and tests removeDepositShares() function reverts when sharesAmount is 0
-     */
+    /// @notice deposits a single strategy and tests removeDepositShares() function reverts when sharesAmount is 0
     function testFuzz_Revert_ZeroShares(address staker, uint depositAmount) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0));
         cheats.assume(depositAmount > 0 && depositAmount < dummyToken.totalSupply());
@@ -766,10 +759,8 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
         delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, 0);
     }
 
-    /**
-     * @notice deposits a single strategy and tests removeDepositShares() function reverts when sharesAmount is
-     * higher than depositAmount
-     */
+    /// @notice deposits a single strategy and tests removeDepositShares() function reverts when sharesAmount is
+    /// higher than depositAmount
     function testFuzz_Revert_ShareAmountTooHigh(address staker, uint depositAmount, uint removeSharesAmount)
         external
         filterFuzzedAddressInputs(staker)
@@ -783,10 +774,8 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
         delegationManagerMock.removeDepositShares(strategyManager, staker, strategy, removeSharesAmount);
     }
 
-    /**
-     * @notice deposit single strategy and removeDepositShares() for less than the deposited amount
-     * Shares should be updated correctly with stakerStrategyListLength unchanged
-     */
+    /// @notice deposit single strategy and removeDepositShares() for less than the deposited amount
+    /// Shares should be updated correctly with stakerStrategyListLength unchanged
     function testFuzz_RemoveSharesLessThanDeposit(address staker, uint depositAmount, uint removeSharesAmount)
         external
         filterFuzzedAddressInputs(staker)
@@ -805,10 +794,8 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
         assertEq(stakerStrategyListLengthBefore, stakerStrategyListLengthAfter, "stakerStrategyListLength shouldn't have changed");
     }
 
-    /**
-     * @notice testing removeDepositShares()
-     * deposits 1 strategy and tests it is removed from staker strategy list after removing all shares
-     */
+    /// @notice testing removeDepositShares()
+    /// deposits 1 strategy and tests it is removed from staker strategy list after removing all shares
     function testFuzz_RemovesStakerStrategyListSingleStrat(address staker, uint sharesAmount) external filterFuzzedAddressInputs(staker) {
         cheats.assume(staker != address(0));
         cheats.assume(sharesAmount > 0 && sharesAmount < dummyToken.totalSupply());
@@ -831,11 +818,9 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
         assertFalse(_isDepositedStrategy(staker, strategy), "strategy should not be part of staker strategy list");
     }
 
-    /**
-     * @notice testing removeDepositShares() function with 3 strategies deposited.
-     * Randomly selects one of the 3 strategies to be fully removed from staker strategy list.
-     * Only callable by DelegationManager
-     */
+    /// @notice testing removeDepositShares() function with 3 strategies deposited.
+    /// Randomly selects one of the 3 strategies to be fully removed from staker strategy list.
+    /// Only callable by DelegationManager
     function testFuzz_RemovesStakerStrategyListMultipleStrat(address staker, uint[3] memory amounts, uint8 randStrategy)
         external
         filterFuzzedAddressInputs(staker)
@@ -872,11 +857,9 @@ contract StrategyManagerUnitTests_removeDepositShares is StrategyManagerUnitTest
         assertFalse(_isDepositedStrategy(staker, removeStrategy), "strategy should not be part of staker strategy list");
     }
 
-    /**
-     * @notice testing removeDepositShares() function with 3 strategies deposited.
-     * Removing Shares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
-     * Only callable by DelegationManager
-     */
+    /// @notice testing removeDepositShares() function with 3 strategies deposited.
+    /// Removing Shares could result in removing from staker strategy list if depositAmounts[i] == sharesAmounts[i].
+    /// Only callable by DelegationManager
     function testFuzz_RemoveShares(uint[3] memory depositAmounts, uint[3] memory sharesAmounts) external {
         address staker = address(this);
         IStrategy[] memory strategies = new IStrategy[](3);
@@ -980,10 +963,8 @@ contract StrategyManagerUnitTests_addShares is StrategyManagerUnitTests {
         assertTrue(_isDepositedStrategy(staker, strategy), "strategy should be deposited");
     }
 
-    /**
-     * @notice When _addShares() called either by depositIntoStrategy or addShares() results in appending to
-     * stakerStrategyListLength when the staker has MAX_STAKER_STRATEGY_LIST_LENGTH strategies, it should revert
-     */
+    /// @notice When _addShares() called either by depositIntoStrategy or addShares() results in appending to
+    /// stakerStrategyListLength when the staker has MAX_STAKER_STRATEGY_LIST_LENGTH strategies, it should revert
     function test_Revert_WhenMaxStrategyListLength() external {
         address staker = address(this);
         IERC20 token = dummyToken;
@@ -1030,10 +1011,8 @@ contract StrategyManagerUnitTests_withdrawSharesAsTokens is StrategyManagerUnitT
         invalidDelegationManager.removeDepositShares(strategyManager, address(this), dummyStrat, 1);
     }
 
-    /**
-     * @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
-     * higher than depositAmount
-     */
+    /// @notice deposits a single strategy and withdrawSharesAsTokens() function reverts when sharesAmount is
+    /// higher than depositAmount
     function testFuzz_Revert_ShareAmountTooHigh(address staker, uint depositAmount, uint sharesAmount)
         external
         filterFuzzedAddressInputs(staker)
@@ -1563,9 +1542,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         strategyManager.removeStrategiesFromDepositWhitelist(strategyArray);
     }
 
-    /**
-     * @notice testing that mapping is still false and no event emitted
-     */
+    /// @notice testing that mapping is still false and no event emitted
     function test_RemoveNonWhitelistedStrategy() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);
@@ -1580,9 +1557,7 @@ contract StrategyManagerUnitTests_removeStrategiesFromDepositWhitelist is Strate
         assertFalse(strategyManager.strategyIsWhitelistedForDeposit(strategy), "strategy still should not be whitelisted");
     }
 
-    /**
-     * @notice testing that strategy is removed from whitelist and event is emitted
-     */
+    /// @notice testing that strategy is removed from whitelist and event is emitted
     function test_RemoveWhitelistedStrategy() external {
         IStrategy[] memory strategyArray = new IStrategy[](1);
         IStrategy strategy = _deployNewStrategy(dummyToken, strategyManager, pauserRegistry, dummyAdmin);

@@ -32,7 +32,7 @@ var (
 // BeaconChainProofsMetaData contains all meta data concerning the BeaconChainProofs contract.
 var BeaconChainProofsMetaData = &bind.MetaData{
 	ABI: "[{\"type\":\"error\",\"name\":\"InvalidProof\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidProofLength\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidValidatorFieldsLength\",\"inputs\":[]}]",
-	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea2646970667358221220cfd005b54745fb0d52f5e3c6372cc0e327e7723423384b9d650e2e00dfe5f5cc64736f6c634300081b0033",
+	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea26469706673582212202ed6c0259a8a2116b71d180dd3fa1bbeee51af433dc586314be978e5fbc4094064736f6c634300081e0033",
 }
 
 // BeaconChainProofsABI is the input ABI used to generate the binding from.

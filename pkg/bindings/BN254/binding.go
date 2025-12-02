@@ -32,7 +32,7 @@ var (
 // BN254MetaData contains all meta data concerning the BN254 contract.
 var BN254MetaData = &bind.MetaData{
 	ABI: "[{\"type\":\"error\",\"name\":\"ECAddFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ECMulFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ECPairingFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ExpModFailed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ScalarTooLarge\",\"inputs\":[]}]",
-	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea2646970667358221220d084bedd451fadde14a6590fa5fb3e40f2250b7f49f9228d15f27cae51d34f7464736f6c634300081b0033",
+	Bin: "0x60556032600b8282823980515f1a607314602657634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040525f5ffdfea26469706673582212201d0d337e635f73102ddcee593e2237a05a00197e17c35efd8bdeae60b88c423764736f6c634300081e0033",
 }
 
 // BN254ABI is the input ABI used to generate the binding from.

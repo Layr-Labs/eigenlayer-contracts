@@ -6,11 +6,9 @@ import {IOperatorTableCalculatorTypes} from "src/contracts/interfaces/IOperatorT
 import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 import {BN254} from "src/contracts/libraries/BN254.sol";
 
-/**
- * @title MockBN254CertificateVerifierFailure
- * @notice Mock BN254 certificate verifier that always fails verification
- * @dev Used for testing certificate verification failure scenarios
- */
+/// @title MockBN254CertificateVerifierFailure
+/// @notice Mock BN254 certificate verifier that always fails verification
+/// @dev Used for testing certificate verification failure scenarios
 contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
     // Mapping to store operator set owners for testing
     mapping(bytes32 => address) public operatorSetOwners;
@@ -26,7 +24,11 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         OperatorSetConfig calldata /*operatorSetConfig*/
     ) external pure {}
 
-    function verifyCertificate(OperatorSet memory, /*operatorSet*/ BN254Certificate memory /*cert*/ )
+    function verifyCertificate(
+        OperatorSet memory,
+        /*operatorSet*/
+        BN254Certificate memory /*cert*/
+    )
         external
         pure
         returns (uint[] memory signedStakes)
@@ -38,7 +40,11 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         OperatorSet memory, /*operatorSet*/
         BN254Certificate memory, /*cert*/
         uint16[] memory /*totalStakeProportionThresholds*/
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return false; // Always fail
     }
 
@@ -46,16 +52,32 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         OperatorSet memory, /*operatorSet*/
         BN254Certificate memory, /*cert*/
         uint[] memory /*totalStakeNominalThresholds*/
-    ) external pure returns (bool) {
+    )
+        external
+        pure
+        returns (bool)
+    {
         return false; // Always fail
     }
 
     // Implement IBaseCertificateVerifier required functions
-    function operatorTableUpdater(OperatorSet memory /*operatorSet*/ ) external pure returns (address) {
+    function operatorTableUpdater(
+        OperatorSet memory /*operatorSet*/
+    )
+        external
+        pure
+        returns (address)
+    {
         return address(0);
     }
 
-    function getLatestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
+    function getLatestReferenceTimestamp(
+        OperatorSet memory /*operatorSet*/
+    )
+        external
+        pure
+        returns (uint32)
+    {
         return 0;
     }
 
@@ -65,11 +87,23 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return owner != address(0) ? owner : operatorSet.avs;
     }
 
-    function latestReferenceTimestamp(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
+    function latestReferenceTimestamp(
+        OperatorSet memory /*operatorSet*/
+    )
+        external
+        pure
+        returns (uint32)
+    {
         return 0;
     }
 
-    function maxOperatorTableStaleness(OperatorSet memory /*operatorSet*/ ) external pure returns (uint32) {
+    function maxOperatorTableStaleness(
+        OperatorSet memory /*operatorSet*/
+    )
+        external
+        pure
+        returns (uint32)
+    {
         return 86_400;
     }
 
@@ -78,11 +112,21 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         BN254.G1Point memory, /*aggPubkey*/
         BN254.G2Point memory, /*apkG2*/
         BN254.G1Point memory /*signature*/
-    ) external pure returns (bool pairingSuccessful, bool signatureValid) {
+    )
+        external
+        pure
+        returns (bool pairingSuccessful, bool signatureValid)
+    {
         return (true, false); // Pairing succeeds but signature is invalid
     }
 
-    function getNonsignerOperatorInfo(OperatorSet memory, /*operatorSet*/ uint32, /*referenceTimestamp*/ uint /*operatorIndex*/ )
+    function getNonsignerOperatorInfo(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32,
+        /*referenceTimestamp*/
+        uint /*operatorIndex*/
+    )
         external
         pure
         returns (IOperatorTableCalculatorTypes.BN254OperatorInfo memory)
@@ -91,7 +135,13 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return IOperatorTableCalculatorTypes.BN254OperatorInfo({pubkey: BN254.G1Point(0, 0), weights: weights});
     }
 
-    function isNonsignerCached(OperatorSet memory, /*operatorSet*/ uint32, /*referenceTimestamp*/ uint /*operatorIndex*/ )
+    function isNonsignerCached(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32,
+        /*referenceTimestamp*/
+        uint /*operatorIndex*/
+    )
         external
         pure
         returns (bool)
@@ -99,7 +149,11 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return false;
     }
 
-    function getOperatorSetInfo(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ )
+    function getOperatorSetInfo(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
         external
         pure
         returns (IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory)
@@ -117,7 +171,11 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return true;
     }
 
-    function getTotalStakeWeights(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ )
+    function getTotalStakeWeights(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
         external
         pure
         returns (uint[] memory)
@@ -125,7 +183,15 @@ contract MockBN254CertificateVerifierFailure is IBN254CertificateVerifier {
         return new uint[](0);
     }
 
-    function getOperatorCount(OperatorSet memory, /*operatorSet*/ uint32 /*referenceTimestamp*/ ) external pure returns (uint) {
+    function getOperatorCount(
+        OperatorSet memory,
+        /*operatorSet*/
+        uint32 /*referenceTimestamp*/
+    )
+        external
+        pure
+        returns (uint)
+    {
         return 0;
     }
 
