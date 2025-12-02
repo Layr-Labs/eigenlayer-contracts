@@ -23,7 +23,7 @@ contract DelegationManagerMock is Test {
     }
 
     RegisterAsOperatorCall internal _lastRegisterAsOperatorCall;
-    uint256 public registerAsOperatorCallCount;
+    uint public registerAsOperatorCallCount;
 
     function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint[] memory) {}
 

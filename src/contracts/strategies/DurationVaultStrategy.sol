@@ -15,6 +15,7 @@ import "../libraries/OperatorSetLib.sol";
 contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy {
     using OperatorSetLib for OperatorSet;
     /// @notice Address empowered to configure and lock the vault.
+
     address public vaultAdmin;
 
     /// @notice The enforced lock duration once `lock` is called.
@@ -81,12 +82,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         _configureOperatorIntegration(config);
 
         emit VaultInitialized(
-            vaultAdmin,
-            config.underlyingToken,
-            duration,
-            config.maxPerDeposit,
-            config.stakeCap,
-            metadataURI
+            vaultAdmin, config.underlyingToken, duration, config.maxPerDeposit, config.stakeCap, metadataURI
         );
     }
 

@@ -54,9 +54,9 @@ contract AllocationManagerMock is Test {
     AllocateCall internal _lastAllocateCall;
     DeregisterCall internal _lastDeregisterCall;
 
-    uint256 public registerForOperatorSetsCallCount;
-    uint256 public modifyAllocationsCallCount;
-    uint256 public deregisterFromOperatorSetsCallCount;
+    uint public registerForOperatorSetsCallCount;
+    uint public modifyAllocationsCallCount;
+    uint public deregisterFromOperatorSetsCallCount;
 
     function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
         return _getSlashCount[operatorSet.key()];
@@ -194,7 +194,7 @@ contract AllocationManagerMock is Test {
         _lastRegisterCall.operator = operator;
         _lastRegisterCall.avs = params.avs;
         delete _lastRegisterCall.operatorSetIds;
-        for (uint256 i = 0; i < params.operatorSetIds.length; ++i) {
+        for (uint i = 0; i < params.operatorSetIds.length; ++i) {
             _lastRegisterCall.operatorSetIds.push(params.operatorSetIds[i]);
         }
         _lastRegisterCall.data = params.data;
@@ -213,12 +213,8 @@ contract AllocationManagerMock is Test {
             IAllocationManager.AllocateParams calldata first = params[0];
             _lastAllocateCall.avs = first.operatorSet.avs;
             _lastAllocateCall.operatorSetId = first.operatorSet.id;
-            if (first.strategies.length > 0) {
-                _lastAllocateCall.strategy = first.strategies[0];
-            }
-            if (first.newMagnitudes.length > 0) {
-                _lastAllocateCall.magnitude = first.newMagnitudes[0];
-            }
+            if (first.strategies.length > 0) _lastAllocateCall.strategy = first.strategies[0];
+            if (first.newMagnitudes.length > 0) _lastAllocateCall.magnitude = first.newMagnitudes[0];
         }
     }
 
@@ -231,7 +227,7 @@ contract AllocationManagerMock is Test {
         _lastDeregisterCall.operator = params.operator;
         _lastDeregisterCall.avs = params.avs;
         delete _lastDeregisterCall.operatorSetIds;
-        for (uint256 i = 0; i < params.operatorSetIds.length; ++i) {
+        for (uint i = 0; i < params.operatorSetIds.length; ++i) {
             _lastDeregisterCall.operatorSetIds.push(params.operatorSetIds[i]);
         }
     }

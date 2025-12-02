@@ -192,11 +192,9 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         IERC20 underlyingToken,
         IDurationVaultStrategy.VaultConfig calldata config
     ) internal {
-        bool operatorIntegrationEnabled =
-            address(config.delegationManager) != address(0) &&
-            address(config.allocationManager) != address(0) &&
-            config.operatorSetAVS != address(0) &&
-            config.operatorSetId != 0;
+        bool operatorIntegrationEnabled = address(config.delegationManager) != address(0)
+            && address(config.allocationManager) != address(0) && config.operatorSetAVS != address(0)
+            && config.operatorSetId != 0;
 
         emit DurationVaultDeployed(
             vault,
