@@ -15,7 +15,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
     DelegationManagerMock internal delegationManagerMock;
     AllocationManagerMock internal allocationManagerMock;
 
-    uint64 internal defaultDuration = 30 days;
+    uint32 internal defaultDuration = uint32(30 days);
     address internal constant OPERATOR_SET_AVS = address(0xA11CE);
     uint32 internal constant OPERATOR_SET_ID = 42;
     address internal constant DELEGATION_APPROVER = address(0xB0B);
@@ -30,7 +30,13 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         delegationManagerMock = new DelegationManagerMock();
         allocationManagerMock = new AllocationManagerMock();
 
-        durationVaultImplementation = new DurationVaultStrategy(strategyManager, pauserRegistry, "9.9.9");
+        durationVaultImplementation = new DurationVaultStrategy(
+            strategyManager,
+            pauserRegistry,
+            "9.9.9",
+            IDelegationManager(address(delegationManagerMock)),
+            IAllocationManager(address(allocationManagerMock))
+        );
 
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
@@ -39,8 +45,6 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
             maxPerDeposit: maxPerDeposit,
             stakeCap: maxTotalDeposits,
             metadataURI: "ipfs://duration-vault",
-            delegationManager: IDelegationManager(address(delegationManagerMock)),
-            allocationManager: IAllocationManager(address(allocationManagerMock)),
             operatorSetAVS: OPERATOR_SET_AVS,
             operatorSetId: OPERATOR_SET_ID,
             operatorSetRegistrationData: REGISTRATION_DATA,
@@ -153,6 +157,8 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         cheats.stopPrank();
 
         cheats.warp(block.timestamp + defaultDuration + 1);
+        durationVault.markMatured();
+        assertTrue(durationVault.withdrawalsOpen(), "withdrawals should open after maturity");
 
         cheats.startPrank(address(strategyManager));
         durationVault.withdraw(address(this), underlyingToken, durationVault.totalShares());

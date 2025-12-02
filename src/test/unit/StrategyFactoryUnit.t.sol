@@ -63,7 +63,13 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
-        durationVaultImplementation = new DurationVaultStrategy(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        durationVaultImplementation = new DurationVaultStrategy(
+            IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
+            "9.9.9",
+            IDelegationManager(address(delegationManagerMock)),
+            IAllocationManager(address(allocationManagerMock))
+        );
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
@@ -136,12 +142,10 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            duration: 30 days,
+            duration: uint32(30 days),
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
             metadataURI: "ipfs://duration",
-            delegationManager: IDelegationManager(address(delegationManagerMock)),
-            allocationManager: IAllocationManager(address(allocationManagerMock)),
             operatorSetAVS: OPERATOR_SET_AVS,
             operatorSetId: OPERATOR_SET_ID,
             operatorSetRegistrationData: REGISTRATION_DATA,
@@ -164,12 +168,10 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            duration: 30 days,
+            duration: uint32(30 days),
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
             metadataURI: "ipfs://duration",
-            delegationManager: IDelegationManager(address(delegationManagerMock)),
-            allocationManager: IAllocationManager(address(allocationManagerMock)),
             operatorSetAVS: OPERATOR_SET_AVS,
             operatorSetId: OPERATOR_SET_ID,
             operatorSetRegistrationData: REGISTRATION_DATA,
@@ -189,12 +191,10 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            duration: 7 days,
+            duration: uint32(7 days),
             maxPerDeposit: 5 ether,
             stakeCap: 50 ether,
             metadataURI: "ipfs://duration",
-            delegationManager: IDelegationManager(address(delegationManagerMock)),
-            allocationManager: IAllocationManager(address(allocationManagerMock)),
             operatorSetAVS: OPERATOR_SET_AVS,
             operatorSetId: OPERATOR_SET_ID,
             operatorSetRegistrationData: REGISTRATION_DATA,

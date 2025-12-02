@@ -13,15 +13,19 @@ import "./IAllocationManager.sol";
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
 interface IDurationVaultStrategy is IStrategy {
+    enum VaultState {
+        Deposits,
+        Allocations,
+        Withdrawals
+    }
+
     struct VaultConfig {
         IERC20 underlyingToken;
         address vaultAdmin;
-        uint64 duration;
+        uint32 duration;
         uint256 maxPerDeposit;
         uint256 stakeCap;
         string metadataURI;
-        IDelegationManager delegationManager;
-        IAllocationManager allocationManager;
         address operatorSetAVS;
         uint32 operatorSetId;
         bytes operatorSetRegistrationData;
@@ -46,19 +50,21 @@ interface IDurationVaultStrategy is IStrategy {
     error WithdrawalsLocked();
     /// @dev Thrown when attempting to mark the vault as matured before duration elapses.
     error DurationNotElapsed();
+    /// @dev Thrown when attempting to convert a timestamp that exceeds uint32 bounds.
+    error TimestampOverflow();
 
     event VaultInitialized(
         address indexed vaultAdmin,
         IERC20 indexed underlyingToken,
-        uint64 duration,
+        uint32 duration,
         uint256 maxPerDeposit,
         uint256 stakeCap,
         string metadataURI
     );
 
-    event VaultLocked(uint64 lockedAt, uint64 unlockAt);
+    event VaultLocked(uint32 lockedAt, uint32 unlockAt);
 
-    event VaultMatured(uint64 maturedAt);
+    event VaultMatured(uint32 maturedAt);
 
     event VaultAdminUpdated(address indexed previousAdmin, address indexed newAdmin);
 
@@ -90,11 +96,12 @@ interface IDurationVaultStrategy is IStrategy {
     ) external;
 
     function vaultAdmin() external view returns (address);
-    function duration() external view returns (uint64);
-    function lockedAt() external view returns (uint64);
-    function unlockTimestamp() external view returns (uint64);
+    function duration() external view returns (uint32);
+    function lockedAt() external view returns (uint32);
+    function unlockTimestamp() external view returns (uint32);
     function isLocked() external view returns (bool);
     function isMatured() external view returns (bool);
+    function state() external view returns (VaultState);
     function metadataURI() external view returns (string memory);
     function stakeCap() external view returns (uint256);
     function depositsOpen() external view returns (bool);

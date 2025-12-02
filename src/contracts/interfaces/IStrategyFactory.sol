@@ -98,17 +98,16 @@ interface IStrategyFactory is ISemVerMixin {
     /// @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
 
-    /// @notice Emitted whenever a duration vault is deployed.
+    /// @notice Emitted whenever a duration vault is deployed. The vault address uniquely identifies the deployment.
     event DurationVaultDeployed(
-        IDurationVaultStrategy vault,
+        IDurationVaultStrategy indexed vault,
         IERC20 indexed underlyingToken,
         address indexed vaultAdmin,
-        uint64 duration,
+        uint32 duration,
         uint256 maxPerDeposit,
         uint256 stakeCap,
         string metadataURI,
         address operatorSetAVS,
-        uint32 operatorSetId,
-        bool operatorIntegrationEnabled
+        uint32 operatorSetId
     );
 }

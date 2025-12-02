@@ -50,17 +50,21 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         underlyingToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", INITIAL_SUPPLY, address(this));
 
-        durationVaultImplementation = new DurationVaultStrategy(IStrategyManager(address(strategyManager)), pauserRegistry, "9.9.9");
+        durationVaultImplementation = new DurationVaultStrategy(
+            IStrategyManager(address(strategyManager)),
+            pauserRegistry,
+            "9.9.9",
+            IDelegationManager(address(delegationManagerMock)),
+            IAllocationManager(address(allocationManagerMock))
+        );
 
         IDurationVaultStrategy.VaultConfig memory cfg = IDurationVaultStrategy.VaultConfig({
             underlyingToken: IERC20(address(underlyingToken)),
             vaultAdmin: address(this),
-            duration: 30 days,
+            duration: uint32(30 days),
             maxPerDeposit: 1_000_000 ether,
             stakeCap: 10_000_000 ether,
             metadataURI: "ipfs://duration-vault-test",
-            delegationManager: IDelegationManager(address(delegationManagerMock)),
-            allocationManager: IAllocationManager(address(allocationManagerMock)),
             operatorSetAVS: OPERATOR_SET_AVS,
             operatorSetId: OPERATOR_SET_ID,
             operatorSetRegistrationData: REGISTRATION_DATA,
@@ -140,6 +144,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         durationVault.lock();
 
         cheats.warp(block.timestamp + durationVault.duration() + 1);
+        durationVault.markMatured();
 
         uint shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
 

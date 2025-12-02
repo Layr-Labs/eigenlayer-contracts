@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "./StrategyBaseTVLLimits.sol";
-import "../interfaces/IDurationVaultStrategy.sol";
+import "./DurationVaultStrategyStorage.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
@@ -12,44 +12,20 @@ import "../libraries/OperatorSetLib.sol";
  * @author Layr Labs, Inc.
  * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
  */
-contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy {
+contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLLimits {
     using OperatorSetLib for OperatorSet;
-    /// @notice Address empowered to configure and lock the vault.
-
-    address public vaultAdmin;
-
-    /// @notice The enforced lock duration once `lock` is called.
-    uint64 public duration;
-
-    /// @notice Timestamp when the vault was locked. Zero indicates the vault is not yet locked.
-    uint64 public lockedAt;
-
-    /// @notice Timestamp when the vault unlocks (set at lock time).
-    uint64 public unlockAt;
-
-    /// @notice Timestamp when the vault was marked as matured (purely informational).
-    uint64 public maturedAt;
-
-    /// @notice Optional metadata URI describing the vault configuration.
-    string public metadataURI;
-
-    /// @notice Delegation manager reference used to register the vault as an operator.
-    IDelegationManager public delegationManager;
-
-    /// @notice Allocation manager reference used to register/allocate operator sets.
-    IAllocationManager public allocationManager;
-
-    /// @notice Stored operator set metadata for integration with the allocation manager.
-    OperatorSet internal _operatorSet;
-
-    /// @notice True when allocations are currently active (i.e. slashable) for the configured operator set.
-    bool public allocationsActive;
-
-    /// @notice True when the vault remains registered for the operator set.
-    bool public operatorSetRegistered;
 
     /// @notice Constant representing the full allocation magnitude (1 WAD) for allocation manager calls.
     uint64 internal constant FULL_ALLOCATION = 1e18;
+
+    /// @notice Maximum allowable duration (approximately 2 years).
+    uint32 internal constant MAX_DURATION = uint32(2 * 365 days);
+
+    /// @notice Delegation manager reference used to register the vault as an operator.
+    IDelegationManager public immutable override delegationManager;
+
+    /// @notice Allocation manager reference used to register/allocate operator sets.
+    IAllocationManager public immutable override allocationManager;
 
     error OperatorIntegrationInvalid();
 
@@ -61,8 +37,16 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
-        string memory _version
-    ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry, _version) {}
+        string memory _version,
+        IDelegationManager _delegationManager,
+        IAllocationManager _allocationManager
+    ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry, _version) {
+        if (address(_delegationManager) == address(0) || address(_allocationManager) == address(0)) {
+            revert OperatorIntegrationInvalid();
+        }
+        delegationManager = _delegationManager;
+        allocationManager = _allocationManager;
+    }
 
     /**
      * @notice Initializes the vault configuration.
@@ -71,7 +55,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         VaultConfig memory config
     ) public initializer {
         if (config.vaultAdmin == address(0)) revert InvalidVaultAdmin();
-        if (config.duration == 0) revert InvalidDuration();
+        if (config.duration == 0 || config.duration > MAX_DURATION) revert InvalidDuration();
         _setTVLLimits(config.maxPerDeposit, config.stakeCap);
         _initializeStrategyBase(config.underlyingToken);
 
@@ -80,6 +64,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         metadataURI = config.metadataURI;
 
         _configureOperatorIntegration(config);
+        _state = VaultState.Deposits;
 
         emit VaultInitialized(
             vaultAdmin, config.underlyingToken, duration, config.maxPerDeposit, config.stakeCap, metadataURI
@@ -90,39 +75,37 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
      * @notice Locks the vault, preventing new deposits and withdrawals until maturity.
      */
     function lock() external override onlyVaultAdmin {
-        if (lockedAt != 0) revert VaultAlreadyLocked();
+        if (_state != VaultState.Deposits) revert VaultAlreadyLocked();
 
-        lockedAt = uint64(block.timestamp);
-        uint256 rawUnlockTimestamp = uint256(lockedAt) + uint256(duration);
-        require(rawUnlockTimestamp <= type(uint64).max, InvalidDuration());
-        unlockAt = uint64(rawUnlockTimestamp);
+        uint32 currentTimestamp = _currentTimestamp();
+        lockedAt = currentTimestamp;
+        uint32 newUnlockAt = currentTimestamp + duration;
+        if (newUnlockAt < currentTimestamp) revert InvalidDuration();
+        unlockAt = newUnlockAt;
+
+        _state = VaultState.Allocations;
 
         emit VaultLocked(lockedAt, unlockAt);
 
-        if (!allocationsActive) {
-            _allocateFullMagnitude();
-        }
+        _allocateFullMagnitude();
     }
 
     /**
      * @notice Marks the vault as matured once the configured duration elapses. Callable by anyone.
      */
     function markMatured() external override {
-        if (!isMatured()) revert DurationNotElapsed();
-        if (maturedAt != 0) {
+        if (_state == VaultState.Withdrawals) {
             // already recorded; noop
             return;
         }
-        maturedAt = uint64(block.timestamp);
+        if (_state != VaultState.Allocations || block.timestamp < unlockAt) revert DurationNotElapsed();
+
+        _state = VaultState.Withdrawals;
+        maturedAt = _currentTimestamp();
         emit VaultMatured(maturedAt);
 
-        if (allocationsActive) {
-            _deallocateAll();
-            allocationsActive = false;
-        }
-        if (operatorSetRegistered) {
-            _deregisterFromOperatorSet();
-        }
+        _deallocateAll();
+        _deregisterFromOperatorSet();
     }
 
     /**
@@ -147,22 +130,23 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
     }
 
     /// @inheritdoc IDurationVaultStrategy
-    function unlockTimestamp() public view override returns (uint64) {
+    function unlockTimestamp() public view override returns (uint32) {
         return unlockAt;
     }
 
     /// @inheritdoc IDurationVaultStrategy
     function isLocked() public view override returns (bool) {
-        return lockedAt != 0;
+        return _state != VaultState.Deposits;
     }
 
     /// @inheritdoc IDurationVaultStrategy
     function isMatured() public view override returns (bool) {
-        uint64 lockTimestamp = lockedAt;
-        if (lockTimestamp == 0) {
-            return false;
-        }
-        return block.timestamp >= unlockAt && unlockAt != 0;
+        return _state == VaultState.Withdrawals;
+    }
+
+    /// @inheritdoc IDurationVaultStrategy
+    function state() public view override returns (VaultState) {
+        return _state;
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -172,15 +156,12 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
 
     /// @inheritdoc IDurationVaultStrategy
     function depositsOpen() public view override returns (bool) {
-        return !isLocked();
+        return _state == VaultState.Deposits;
     }
 
     /// @inheritdoc IDurationVaultStrategy
     function withdrawalsOpen() public view override returns (bool) {
-        if (!isLocked()) {
-            return true;
-        }
-        return isMatured();
+        return _state != VaultState.Allocations;
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -194,14 +175,14 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
     }
 
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        if (isLocked()) {
+        if (!depositsOpen()) {
             revert DepositsLocked();
         }
         super._beforeDeposit(token, amount);
     }
 
     function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual override {
-        if (isLocked() && !isMatured()) {
+        if (!withdrawalsOpen()) {
             revert WithdrawalsLocked();
         }
         super._beforeWithdrawal(recipient, token, amountShares);
@@ -210,17 +191,9 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
     function _configureOperatorIntegration(
         VaultConfig memory config
     ) internal {
-        bool hasDelegation = address(config.delegationManager) != address(0);
-        bool hasAllocation = address(config.allocationManager) != address(0);
-        bool hasAVS = config.operatorSetAVS != address(0);
-        bool hasOperatorSetId = config.operatorSetId != 0;
-
-        if (!(hasDelegation && hasAllocation && hasAVS && hasOperatorSetId)) {
+        if (config.operatorSetAVS == address(0) || config.operatorSetId == 0) {
             revert OperatorIntegrationInvalid();
         }
-
-        delegationManager = config.delegationManager;
-        allocationManager = config.allocationManager;
         _operatorSet = OperatorSet({avs: config.operatorSetAVS, id: config.operatorSetId});
 
         delegationManager.registerAsOperator(
@@ -233,7 +206,6 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         params.operatorSetIds[0] = config.operatorSetId;
         params.data = config.operatorSetRegistrationData;
         allocationManager.registerForOperatorSets(address(this), params);
-
         operatorSetRegistered = true;
     }
 
@@ -256,6 +228,7 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
         params[0].newMagnitudes = new uint64[](1);
         params[0].newMagnitudes[0] = 0;
         allocationManager.modifyAllocations(address(this), params);
+        allocationsActive = false;
     }
 
     function _deregisterFromOperatorSet() internal {
@@ -272,5 +245,9 @@ contract DurationVaultStrategy is StrategyBaseTVLLimits, IDurationVaultStrategy 
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      */
-    uint256[36] private __gap;
+    function _currentTimestamp() internal view returns (uint32) {
+        uint256 ts = block.timestamp;
+        if (ts > type(uint32).max) revert TimestampOverflow();
+        return uint32(ts);
+    }
 }
