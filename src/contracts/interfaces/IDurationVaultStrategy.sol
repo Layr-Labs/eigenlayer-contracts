@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 import "./IDelegationManager.sol";
 import "./IAllocationManager.sol";
+import "../libraries/OperatorSetLib.sol";
 
 /**
  * @title Interface for time-bound EigenLayer vault strategies.
@@ -26,8 +27,7 @@ interface IDurationVaultStrategy is IStrategy {
         uint256 maxPerDeposit;
         uint256 stakeCap;
         string metadataURI;
-        address operatorSetAVS;
-        uint32 operatorSetId;
+        OperatorSet operatorSet;
         bytes operatorSetRegistrationData;
         address delegationApprover;
         uint32 operatorAllocationDelay;

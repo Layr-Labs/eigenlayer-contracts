@@ -9,6 +9,7 @@ import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 import "../../contracts/interfaces/IAllocationManager.sol";
+import "../../contracts/libraries/OperatorSetLib.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
@@ -146,8 +147,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
             metadataURI: "ipfs://duration",
-            operatorSetAVS: OPERATOR_SET_AVS,
-            operatorSetId: OPERATOR_SET_ID,
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
             operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
@@ -172,8 +172,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
             metadataURI: "ipfs://duration",
-            operatorSetAVS: OPERATOR_SET_AVS,
-            operatorSetId: OPERATOR_SET_ID,
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
             operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
@@ -195,8 +194,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             maxPerDeposit: 5 ether,
             stakeCap: 50 ether,
             metadataURI: "ipfs://duration",
-            operatorSetAVS: OPERATOR_SET_AVS,
-            operatorSetId: OPERATOR_SET_ID,
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
             operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,

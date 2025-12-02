@@ -6,6 +6,7 @@ import "../../contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 import "../../contracts/interfaces/IAllocationManager.sol";
+import "../../contracts/libraries/OperatorSetLib.sol";
 import "../mocks/DelegationManagerMock.sol";
 import "../mocks/AllocationManagerMock.sol";
 
@@ -45,8 +46,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
             maxPerDeposit: maxPerDeposit,
             stakeCap: maxTotalDeposits,
             metadataURI: "ipfs://duration-vault",
-            operatorSetAVS: OPERATOR_SET_AVS,
-            operatorSetId: OPERATOR_SET_ID,
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
             operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,

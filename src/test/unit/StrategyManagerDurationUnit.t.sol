@@ -11,6 +11,7 @@ import "src/contracts/interfaces/IDurationVaultStrategy.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
 import "src/contracts/interfaces/IAllocationManager.sol";
+import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
@@ -65,8 +66,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
             maxPerDeposit: 1_000_000 ether,
             stakeCap: 10_000_000 ether,
             metadataURI: "ipfs://duration-vault-test",
-            operatorSetAVS: OPERATOR_SET_AVS,
-            operatorSetId: OPERATOR_SET_ID,
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
             operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,

@@ -200,8 +200,8 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
             config.maxPerDeposit,
             config.stakeCap,
             config.metadataURI,
-            config.operatorSetAVS,
-            config.operatorSetId
+            config.operatorSet.avs,
+            config.operatorSet.id
         );
     }
 }

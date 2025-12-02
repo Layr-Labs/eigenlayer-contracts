@@ -191,19 +191,19 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     function _configureOperatorIntegration(
         VaultConfig memory config
     ) internal {
-        if (config.operatorSetAVS == address(0) || config.operatorSetId == 0) {
+        if (config.operatorSet.avs == address(0) || config.operatorSet.id == 0) {
             revert OperatorIntegrationInvalid();
         }
-        _operatorSet = OperatorSet({avs: config.operatorSetAVS, id: config.operatorSetId});
+        _operatorSet = config.operatorSet;
 
         delegationManager.registerAsOperator(
             config.delegationApprover, config.operatorAllocationDelay, config.operatorMetadataURI
         );
 
         IAllocationManager.RegisterParams memory params;
-        params.avs = config.operatorSetAVS;
+        params.avs = config.operatorSet.avs;
         params.operatorSetIds = new uint32[](1);
-        params.operatorSetIds[0] = config.operatorSetId;
+        params.operatorSetIds[0] = config.operatorSet.id;
         params.data = config.operatorSetRegistrationData;
         allocationManager.registerForOperatorSets(address(this), params);
         operatorSetRegistered = true;
