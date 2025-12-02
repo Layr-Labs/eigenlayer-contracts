@@ -28,5 +28,5 @@ abstract contract ProtocolRegistryStorage is IProtocolRegistry {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[47] private __gap;
+    uint256[45] private __gap;
 }
