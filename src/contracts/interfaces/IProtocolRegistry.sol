@@ -45,7 +45,9 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
     /// @param configs The configurations of the deployments to ship.
     /// @param contractNames The names of the contracts to ship.
     /// @param semanticVersion The semantic version to ship.
-    /// @dev Contract names must be in ALL CAPS and contain NO SPACES (e.g., "ALLOCATIONMANAGER").
+    /// @dev Contract names can be passed in as type(contract).name, e.g. `type(AllocationManager).name`
+    /// @dev Contract names must be <= 31 bytes
+    /// @dev Contract names can be overridden any number of times.
     function ship(
         address[] calldata addresses,
         DeploymentConfig[] calldata configs,
@@ -64,7 +66,6 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
 
     /// @notice Pauses all deployments that support pausing.
     /// @dev Loops over all deployments and attempts to invoke `pauseAll()` on each contract that is marked as pausable.
-    ///      Silently ignores errors during calls for rapid pausing in emergencies. Pauser role only.
     function pauseAll() external;
 
     /// @notice Returns the full semantic version string of the protocol (e.g. "1.2.3").
