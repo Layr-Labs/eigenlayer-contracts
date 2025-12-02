@@ -1114,7 +1114,7 @@ Migrates a slasher from the `PermissionController` to the `AllocationManager`. *
 
 Only 1 slasher can be slash an operatorSet on behalf of an AVS; however, multiple addresses may have had the ability to slash an operatorSet via the previous `PermissionController`-based access control. Because of this mismatch, slashers are migrated based on the following criteria:
 1. If there are no slashers set in the `PermissionController` OR the slasher set is the 0 address, set the slasher to the AVS
-2. If there are *multiple* slashers set, migrate
+2. If there are *multiple* slashers set, the first address will be set as the slasher
 
 **The slasher can only be migrated once**. After, an operatorSet must use [`updateSlasher`](#updateslasher) to set a new address. 
 

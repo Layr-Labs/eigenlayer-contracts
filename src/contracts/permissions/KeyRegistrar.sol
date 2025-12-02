@@ -119,123 +119,17 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         emit KeyDeregistered(operatorSet, operator, curveType);
     }
 
-    /// @inheritdoc IKeyRegistrar
-    function rotateKey(
-        address operator,
-        OperatorSet memory operatorSet,
-        bytes calldata newPubkey,
-        bytes calldata signature
-    ) external checkCanCall(operator) {
-        CurveType curveType = _operatorSetCurveTypes[operatorSet.key()];
-        require(curveType != CurveType.NONE, OperatorSetNotConfigured());
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-        // Finalize any past-due scheduled rotation so we can schedule a new one
-        _finalizeRotationIfActive(operatorSet, operator);
-
-        KeyInfo storage info = _operatorKeyInfo[operatorSet.key()][operator];
-        require(info.isRegistered, KeyNotFound(operatorSet, operator));
-
-        // Ensure no pending rotation exists
-        require(info.pendingActivateAt == 0, PendingRotationExists());
-
-        // Calculate activation time based on AVS-configured minimum delay
-        uint64 minDelay = _minRotationDelayByOperatorSet[operatorSet.key()];
-        // If minDelay is max, rotation is disabled for this operator set
-        require(minDelay != type(uint64).max, RotationDisabled());
-        uint64 activateAt = uint64(block.timestamp) + minDelay;
-
-        // Validate new key and reserve it globally
-        _validateAndReserveKey(operatorSet, operator, newPubkey, signature, curveType);
-
-        // Store scheduled rotation in-place
-        info.pendingKey = newPubkey;
-        info.pendingActivateAt = activateAt;
-
-        emit KeyRotationScheduled(operatorSet, operator, curveType, info.currentKey, newPubkey, activateAt);
-    }
-
-    /// @inheritdoc IKeyRegistrar
-    function finalizeScheduledRotation(
-        address operator,
-        OperatorSet memory operatorSet
-    ) external returns (bool success) {
-        return _finalizeRotationIfActive(operatorSet, operator);
-    }
-
-    /// @inheritdoc IKeyRegistrar
-    function setMinKeyRotationDelay(
-        OperatorSet memory operatorSet,
-        uint64 minDelaySeconds
-    ) external checkCanCall(operatorSet.avs) {
-        _setMinRotationDelay(operatorSet, minDelaySeconds);
-    }
-
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
-
-    /**
-     * @notice Validate a key + signature and atomically reserve the canonical key hash.
-     * @dev For ECDSA, enforces 20-byte address format and verifies an EIP-712 signature
-     *      from the key address. For BN254, enforces the 192-byte encoding and verifies a
-     *      pairing-based signature over the EIP-712 digest. Then enforces global uniqueness
-     *      by marking the key hash as used and mapping it to the operator.
-     * @param operatorSet Operator set context bound into the signed message
-     * @param operator Operator address bound into the signed message
-     * @param keyData Raw key bytes (20 bytes for ECDSA or 192 bytes for BN254)
-     * @param signature Signature proving control of the key
-     * @param curveType The curve to use for validation
-     * @return keyHash Canonical key hash that is now reserved globally
-     */
-    function _validateAndReserveKey(
-        OperatorSet memory operatorSet,
-        address operator,
-        bytes calldata keyData,
-        bytes calldata signature,
-        CurveType curveType
-    ) internal returns (bytes32) {
-        bytes32 keyHash;
-        if (curveType == CurveType.ECDSA) {
-            keyHash = _validateECDSAKey(operatorSet, operator, keyData, signature);
-        } else if (curveType == CurveType.BN254) {
-            keyHash = _validateBN254Key(operatorSet, operator, keyData, signature);
-        } else {
-            revert InvalidCurveType();
-        }
-
-        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
-        _globalKeyRegistry[keyHash] = true;
-        _keyHashToOperator[keyHash] = operator;
-        return keyHash;
-    }
-
-    /// @notice If a scheduled rotation has passed activation, collapse storage to the new current key
-    function _finalizeRotationIfActive(OperatorSet memory operatorSet, address operator) internal returns (bool) {
-        KeyInfo storage keyInfoStorage = _operatorKeyInfo[operatorSet.key()][operator];
-        if (!keyInfoStorage.isRegistered) return false;
-        if (keyInfoStorage.pendingActivateAt != 0 && block.timestamp >= keyInfoStorage.pendingActivateAt) {
-            keyInfoStorage.currentKey = keyInfoStorage.pendingKey;
-            keyInfoStorage.pendingKey = bytes("");
-            keyInfoStorage.pendingActivateAt = 0;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * @notice Validate an ECDSA key and signature and return its key hash.
-     * @dev Ensures `keyData` is a 20-byte non-zero address, derives the EIP-712
-     *      digest with `operatorSet` and `operator`, and verifies the signature
-     *      from the key address. View-only; does not mutate state.
-     * @param operatorSet Operator set context bound into the signed message
-     * @param operator Operator address bound into the signed message
-     * @param keyData Raw ECDSA key bytes (20-byte address encoded as bytes)
-     * @param signature Signature produced by the key address over the EIP-712 digest
-     * @return keyHash Key hash for global uniqueness tracking
-     */
-    function _validateECDSAKey(
+    /// @notice Validates and registers an ECDSA address with EIP-712 signature verification
+    /// @param operatorSet The operator set to register the key for
+    /// @param operator Address of the operator
+    /// @param keyData The ECDSA address encoded as bytes (20 bytes)
+    /// @param signature EIP-712 signature over the registration message
+    /// @dev Validates address format, verifies signature ownership, and ensures global uniqueness
+    function _registerECDSAKey(
         OperatorSet memory operatorSet,
         address operator,
         bytes calldata keyData,
@@ -253,19 +147,13 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return keyHash;
     }
 
-    /**
-     * @notice Validate a BN254 key and signature and return its key hash.
-     * @dev Ensures `keyData` encodes (g1X,g1Y,g2X[2],g2Y[2]) totaling 192 bytes and
-     *      `signature` is 64 bytes encoding a G1 point, checks non-zero G1, computes
-     *      the EIP-712 digest with `operatorSet` and `operator`, and verifies the
-     *      pairing. View-only; does not mutate state.
-     * @param operatorSet Operator set context bound into the signed message
-     * @param operator Operator address bound into the signed message
-     * @param keyData Raw BN254 key bytes (G1 and G2 components)
-     * @param signature BN254 signature over the EIP-712 digest (G1 point: (sigX, sigY))
-     * @return keyHash Key hash for global uniqueness tracking
-     */
-    function _validateBN254Key(
+    /// @notice Validates and registers a BN254 public key with proper signature verification
+    /// @param operatorSet The operator set to register the key for
+    /// @param operator Address of the operator
+    /// @param keyData The BN254 public key bytes (G1 and G2 components)
+    /// @param signature Signature proving key ownership
+    /// @dev Validates keypair, verifies signature using hash-to-G1, and ensures global uniqueness
+    function _registerBN254Key(
         OperatorSet memory operatorSet,
         address operator,
         bytes calldata keyData,
@@ -295,13 +183,35 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         return _getKeyHashForKeyData(keyData, CurveType.BN254);
     }
 
-    /**
-     * @notice Gets the key hash for pubkey data using consistent hashing
-     * @param pubkey The public key data
-     * @param curveType The curve type (ECDSA or BN254)
-     * @return keyHash The key hash
-     */
-    function _getKeyHashForKeyData(bytes memory pubkey, CurveType curveType) internal pure returns (bytes32) {
+    /// @notice Internal helper to store key data and update global registry
+    /// @param operatorSet The operator set
+    /// @param operator The operator address
+    /// @param pubkey The public key data
+    /// @param keyHash The key hash
+    function _storeKeyData(
+        OperatorSet memory operatorSet,
+        address operator,
+        bytes memory pubkey,
+        bytes32 keyHash
+    ) internal {
+        // Store key data
+        _operatorKeyInfo[operatorSet.key()][operator] = KeyInfo({isRegistered: true, keyData: pubkey});
+
+        // Mark the key hash as spent
+        _globalKeyRegistry[keyHash] = true;
+
+        // Store the operator for the key hash
+        _keyHashToOperator[keyHash] = operator;
+    }
+
+    /// @notice Internal helper to get key hash for pubkey data using consistent hashing
+    /// @param pubkey The public key data
+    /// @param curveType The curve type (ECDSA or BN254)
+    /// @return keyHash The key hash
+    function _getKeyHashForKeyData(
+        bytes memory pubkey,
+        CurveType curveType
+    ) internal pure returns (bytes32) {
         if (curveType == CurveType.ECDSA) {
             return keccak256(pubkey);
         } else if (curveType == CurveType.BN254) {
@@ -312,19 +222,9 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         revert InvalidCurveType();
     }
 
-    /// @dev Internal helper to set and emit the minimum key rotation delay for an operator set
-    /// @param operatorSet The operator set being configured
-    /// @param minDelaySeconds The minimum rotation delay in seconds
-    function _setMinRotationDelay(OperatorSet memory operatorSet, uint64 minDelaySeconds) internal {
-        _minRotationDelayByOperatorSet[operatorSet.key()] = minDelaySeconds;
-        emit MinKeyRotationDelaySet(operatorSet, minDelaySeconds);
-    }
-
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IKeyRegistrar
     function isRegistered(
