@@ -1130,10 +1130,8 @@ contract KeyRegistrarUnitTests_GlobalKeyPersistence is KeyRegistrarUnitTests {
     }
 }
 
-/**
- * @title KeyRegistrarUnitTests_CrossCurveInteraction
- * @notice Unit tests for cross-curve type interactions in KeyRegistrar
- */
+/// @title KeyRegistrarUnitTests_CrossCurveInteraction
+/// @notice Unit tests for cross-curve type interactions in KeyRegistrar
 contract KeyRegistrarUnitTests_CrossCurveInteraction is KeyRegistrarUnitTests {
     function test_crossCurveGlobalUniqueness() public {
         // Configure ECDSA and BN254 operator sets

@@ -92,46 +92,45 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
 /// @dev For the multichain protocol, the key type of the operatorSet must be set in the `KeyRegistrar`, but the
 ///      AVS is not required to use the KeyRegistrar for operator key management and can implement its own registry
 interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
-    /**
-     * @notice Configures an operator set with curve type
-     * @param operatorSet The operator set to configure
-     * @param curveType Type of curve (ECDSA, BN254)
-     * @dev Only authorized callers for the AVS can configure operator sets
-     * @dev Reverts for:
-     *      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
-     *      - InvalidCurveType: The curve type is not ECDSA or BN254
-     *      - ConfigurationAlreadySet: The operator set is already configured
-     * @dev Emits the following events:
-     *      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
-     */
-    function configureOperatorSet(OperatorSet memory operatorSet, CurveType curveType) external;
+    /// @notice Configures an operator set with curve type
+    /// @param operatorSet The operator set to configure
+    /// @param curveType Type of curve (ECDSA, BN254)
+    /// @dev Only authorized callers for the AVS can configure operator sets
+    /// @dev Reverts for:
+    ///      - InvalidPermissions: Caller is not authorized for the AVS (via the PermissionController)
+    ///      - InvalidCurveType: The curve type is not ECDSA or BN254
+    ///      - ConfigurationAlreadySet: The operator set is already configured
+    /// @dev Emits the following events:
+    ///      - OperatorSetConfigured: When the operator set is successfully configured with a curve type
+    function configureOperatorSet(
+        OperatorSet memory operatorSet,
+        CurveType curveType
+    ) external;
 
-    /**
-     * @notice Registers a cryptographic key for an operator with a specific operator set
-     * @param operator Address of the operator to register key for
-     * @param operatorSet The operator set to register the key for
-     * @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
-     * @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
-     * @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
-     * @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
-     *      does not have to be registered for the operator in the `AllocationManager` to register a key for it
-     * @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
-     * @dev Reverts for:
-     *      - InvalidPermissions: Caller is not the operator or authorized via the PermissionController
-     *      - OperatorSetNotConfigured: The operator set is not configured
-     *      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
-     *      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
-     *      - ZeroAddress: For ECDSA: The key is the zero address
-     *      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
-     *      - InvalidSignature: For ECDSA: The signature is not valid
-     *      - InvalidKeyFormat: For BN254: The key data is not exactly 192 bytes
-     *      - InvalidSignature: For BN254: The signature is not exactly 64 bytes
-     *      - ZeroPubkey: For BN254: The G1 point is the zero point
-     *      - InvalidSignature: For BN254: The signature is not valid
-     *      - KeyAlreadyRegistered: For BN254: The key is already registered globally by hash
-     * @dev Emits the following events:
-     *      - KeyRegistered: When the key is successfully registered for the operator and operatorSet
-     */
+    /// @notice Registers a cryptographic key for an operator with a specific operator set
+    /// @param operator Address of the operator to register key for
+    /// @param operatorSet The operator set to register the key for
+    /// @param pubkey Public key bytes. For ECDSA, this is the address of the key. For BN254, this is the G1 and G2 key combined (see `encodeBN254KeyData`)
+    /// @param signature Signature proving ownership. For ECDSA this is a signature of the `getECDSAKeyRegistrationMessageHash`. For BN254 this is a signature of the `getBN254KeyRegistrationMessageHash`.
+    /// @dev Can be called by operator directly or by addresses they've authorized via the `PermissionController`
+    /// @dev There exist no restriction on the state of the operator with respect to the operatorSet. That is, an operator
+    ///      does not have to be registered for the operator in the `AllocationManager` to register a key for it
+    /// @dev For ECDSA, we allow a smart contract to be the pubkey (via ERC1271 signatures), but note that the multichain protocol DOES NOT support smart contract signatures
+    /// @dev Reverts for:
+    ///      - InvalidPermissions: Caller is not the operator or authorized via the PermissionController
+    ///      - OperatorSetNotConfigured: The operator set is not configured
+    ///      - OperatorAlreadyRegistered: The operator is already registered for the operatorSet in the KeyRegistrar
+    ///      - InvalidKeyFormat: For ECDSA: The key is not exactly 20 bytes
+    ///      - ZeroAddress: For ECDSA: The key is the zero address
+    ///      - KeyAlreadyRegistered: For ECDSA: The key is already registered globally by hash
+    ///      - InvalidSignature: For ECDSA: The signature is not valid
+    ///      - InvalidKeyFormat: For BN254: The key data is not exactly 192 bytes
+    ///      - InvalidSignature: For BN254: The signature is not exactly 64 bytes
+    ///      - ZeroPubkey: For BN254: The G1 point is the zero point
+    ///      - InvalidSignature: For BN254: The signature is not valid
+    ///      - KeyAlreadyRegistered: For BN254: The key is already registered globally by hash
+    /// @dev Emits the following events:
+    ///      - KeyRegistered: When the key is successfully registered for the operator and operatorSet
     function registerKey(
         address operator,
         OperatorSet memory operatorSet,
@@ -155,14 +154,15 @@ interface IKeyRegistrar is IKeyRegistrarErrors, IKeyRegistrarEvents {
      */
     function deregisterKey(address operator, OperatorSet memory operatorSet) external;
 
-    /**
-     * @notice Checks if a key is registered for an operator with a specific operator set
-     * @param operatorSet The operator set to check
-     * @param operator Address of the operator
-     * @return True if the key is registered, false otherwise
-     * @dev If the operatorSet is not configured, this function will return false
-     */
-    function isRegistered(OperatorSet memory operatorSet, address operator) external view returns (bool);
+    /// @notice Checks if a key is registered for an operator with a specific operator set
+    /// @param operatorSet The operator set to check
+    /// @param operator Address of the operator
+    /// @return True if the key is registered, false otherwise
+    /// @dev If the operatorSet is not configured, this function will return false
+    function isRegistered(
+        OperatorSet memory operatorSet,
+        address operator
+    ) external view returns (bool);
 
     /**
      * @notice Gets the curve type for an operator set
