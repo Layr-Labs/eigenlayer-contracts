@@ -4,28 +4,49 @@ pragma solidity ^0.8.27;
 import "./StrategyBaseTVLLimitsUnit.sol";
 import "../../contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
+import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IAllocationManager.sol";
+import "../mocks/DelegationManagerMock.sol";
+import "../mocks/AllocationManagerMock.sol";
 
 contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
     DurationVaultStrategy public durationVaultImplementation;
     DurationVaultStrategy public durationVault;
+    DelegationManagerMock internal delegationManagerMock;
+    AllocationManagerMock internal allocationManagerMock;
 
     uint64 internal defaultDuration = 30 days;
-    uint64 internal defaultDepositWindowLength = 7 days;
+    address internal constant OPERATOR_SET_AVS = address(0xA11CE);
+    uint32 internal constant OPERATOR_SET_ID = 42;
+    address internal constant DELEGATION_APPROVER = address(0xB0B);
+    uint32 internal constant OPERATOR_ALLOCATION_DELAY = 5;
+    string internal constant OPERATOR_METADATA_URI = "ipfs://operator-metadata";
+    bytes internal constant REGISTRATION_DATA = hex"1234";
+    uint64 internal constant FULL_ALLOCATION = 1e18;
 
     function setUp() public virtual override {
         StrategyBaseUnitTests.setUp();
+
+        delegationManagerMock = new DelegationManagerMock();
+        allocationManagerMock = new AllocationManagerMock();
 
         durationVaultImplementation = new DurationVaultStrategy(strategyManager, pauserRegistry, "9.9.9");
 
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            depositWindowStart: 0,
-            depositWindowEnd: uint64(block.timestamp + defaultDepositWindowLength),
             duration: defaultDuration,
             maxPerDeposit: maxPerDeposit,
             stakeCap: maxTotalDeposits,
-            metadataURI: "ipfs://duration-vault"
+            metadataURI: "ipfs://duration-vault",
+            delegationManager: IDelegationManager(address(delegationManagerMock)),
+            allocationManager: IAllocationManager(address(allocationManagerMock)),
+            operatorSetAVS: OPERATOR_SET_AVS,
+            operatorSetId: OPERATOR_SET_ID,
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
+            operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
         durationVault = DurationVaultStrategy(
@@ -42,37 +63,72 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         strategyWithTVLLimits = StrategyBaseTVLLimits(address(durationVault));
     }
 
-    function testDepositWindowNotStarted() public {
-        // reconfigure deposit window to start in future
-        durationVault.updateDepositWindow(uint64(block.timestamp + 1 hours), uint64(block.timestamp + 2 hours));
+    function testInitializeConfiguresOperatorIntegration() public {
+        DelegationManagerMock.RegisterAsOperatorCall memory delegationCall = delegationManagerMock.lastRegisterAsOperatorCall();
+        assertEq(delegationCall.operator, address(durationVault), "delegation operator mismatch");
+        assertEq(delegationCall.delegationApprover, DELEGATION_APPROVER, "delegation approver mismatch");
+        assertEq(delegationCall.allocationDelay, OPERATOR_ALLOCATION_DELAY, "allocation delay mismatch");
+        assertEq(delegationCall.metadataURI, OPERATOR_METADATA_URI, "metadata mismatch");
 
-        uint depositAmount = 1e18;
-        underlyingToken.transfer(address(durationVault), depositAmount);
+        AllocationManagerMock.RegisterCall memory registerCall = allocationManagerMock.lastRegisterForOperatorSetsCall();
+        assertEq(registerCall.operator, address(durationVault), "register operator mismatch");
+        assertEq(registerCall.avs, OPERATOR_SET_AVS, "register AVS mismatch");
+        assertEq(registerCall.operatorSetIds.length, 1, "unexpected operatorSetIds length");
+        assertEq(registerCall.operatorSetIds[0], OPERATOR_SET_ID, "operatorSetId mismatch");
+        assertEq(registerCall.data, REGISTRATION_DATA, "registration data mismatch");
 
-        cheats.prank(address(strategyManager));
-        cheats.expectRevert(IDurationVaultStrategy.DepositWindowNotStarted.selector);
-        durationVault.deposit(underlyingToken, depositAmount);
+        (address avs, uint32 operatorSetId) = durationVault.operatorSetInfo();
+        assertEq(avs, OPERATOR_SET_AVS, "stored AVS mismatch");
+        assertEq(operatorSetId, OPERATOR_SET_ID, "stored operatorSetId mismatch");
+        assertEq(address(durationVault.delegationManager()), address(delegationManagerMock), "delegation manager mismatch");
+        assertEq(address(durationVault.allocationManager()), address(allocationManagerMock), "allocation manager mismatch");
+        assertTrue(durationVault.operatorSetRegistered(), "operator set should be registered");
     }
 
-    function testDepositWindowClosedAfterEnd() public {
-        cheats.warp(block.timestamp + defaultDepositWindowLength + 1);
+    function testLockAllocatesFullMagnitude() public {
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), 0, "precondition failed");
 
-        uint depositAmount = 1e18;
-        underlyingToken.transfer(address(durationVault), depositAmount);
+        durationVault.lock();
 
-        cheats.prank(address(strategyManager));
-        cheats.expectRevert(IDurationVaultStrategy.DepositWindowClosed.selector);
-        durationVault.deposit(underlyingToken, depositAmount);
+        assertTrue(durationVault.allocationsActive(), "allocations should be active after lock");
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), 1, "modifyAllocations not called");
+
+        AllocationManagerMock.AllocateCall memory allocateCall = allocationManagerMock.lastModifyAllocationsCall();
+        assertEq(allocateCall.operator, address(durationVault), "allocate operator mismatch");
+        assertEq(allocateCall.avs, OPERATOR_SET_AVS, "allocate AVS mismatch");
+        assertEq(allocateCall.operatorSetId, OPERATOR_SET_ID, "allocate operatorSetId mismatch");
+        assertEq(address(allocateCall.strategy), address(durationVault), "allocate strategy mismatch");
+        assertEq(allocateCall.magnitude, FULL_ALLOCATION, "allocate magnitude mismatch");
     }
 
-    function testDepositsBlockedAfterManualLock() public {
+    function testMarkMaturedDeallocatesAndDeregisters() public {
+        durationVault.lock();
+        cheats.warp(block.timestamp + defaultDuration + 1);
+
+        durationVault.markMatured();
+
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), 2, "deallocation not invoked");
+        AllocationManagerMock.AllocateCall memory allocateCall = allocationManagerMock.lastModifyAllocationsCall();
+        assertEq(allocateCall.magnitude, 0, "expected zero magnitude");
+
+        AllocationManagerMock.DeregisterCall memory deregisterCall = allocationManagerMock.lastDeregisterFromOperatorSetsCall();
+        assertEq(deregisterCall.operator, address(durationVault), "deregister operator mismatch");
+        assertEq(deregisterCall.avs, OPERATOR_SET_AVS, "deregister AVS mismatch");
+        assertEq(deregisterCall.operatorSetIds.length, 1, "unexpected deregister length");
+        assertEq(deregisterCall.operatorSetIds[0], OPERATOR_SET_ID, "deregister operatorSetId mismatch");
+
+        assertFalse(durationVault.allocationsActive(), "allocations should be inactive");
+        assertFalse(durationVault.operatorSetRegistered(), "operator set should be deregistered");
+    }
+
+    function testDepositsBlockedAfterLock() public {
         durationVault.lock();
 
         uint depositAmount = 1e18;
 
         underlyingToken.transfer(address(durationVault), depositAmount);
         cheats.prank(address(strategyManager));
-        cheats.expectRevert(IDurationVaultStrategy.DepositWindowClosed.selector);
+        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
         durationVault.deposit(underlyingToken, depositAmount);
     }
 

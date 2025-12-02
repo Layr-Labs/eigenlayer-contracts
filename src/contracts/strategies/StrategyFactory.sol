@@ -136,17 +136,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategiesToWhitelist[0] = newVault;
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
 
-        emit DurationVaultDeployed(
-            newVault,
-            underlyingToken,
-            config.vaultAdmin,
-            config.depositWindowStart,
-            config.depositWindowEnd,
-            config.duration,
-            config.maxPerDeposit,
-            config.stakeCap,
-            config.metadataURI
-        );
+        _emitDurationVaultDeployed(newVault, underlyingToken, config);
     }
 
     /**
@@ -195,5 +185,30 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
 
     function _registerDurationVault(IERC20 token, IDurationVaultStrategy vault) internal {
         durationVaultsByToken[token].push(vault);
+    }
+
+    function _emitDurationVaultDeployed(
+        IDurationVaultStrategy vault,
+        IERC20 underlyingToken,
+        IDurationVaultStrategy.VaultConfig calldata config
+    ) internal {
+        bool operatorIntegrationEnabled =
+            address(config.delegationManager) != address(0) &&
+            address(config.allocationManager) != address(0) &&
+            config.operatorSetAVS != address(0) &&
+            config.operatorSetId != 0;
+
+        emit DurationVaultDeployed(
+            vault,
+            underlyingToken,
+            config.vaultAdmin,
+            config.duration,
+            config.maxPerDeposit,
+            config.stakeCap,
+            config.metadataURI,
+            config.operatorSetAVS,
+            config.operatorSetId,
+            operatorIntegrationEnabled
+        );
     }
 }

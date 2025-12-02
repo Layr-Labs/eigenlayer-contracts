@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/libraries/Snapshots.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
@@ -27,6 +28,35 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => mapping(address operator => mapping(IStrategy strategy => uint minimumSlashableStake))) internal
         _minimumSlashableStake;
     mapping(bytes32 operatorSetKey => mapping(address operator => bool)) internal _isOperatorSlashable;
+
+    struct RegisterCall {
+        address operator;
+        address avs;
+        uint32[] operatorSetIds;
+        bytes data;
+    }
+
+    struct AllocateCall {
+        address operator;
+        address avs;
+        uint32 operatorSetId;
+        IStrategy strategy;
+        uint64 magnitude;
+    }
+
+    struct DeregisterCall {
+        address operator;
+        address avs;
+        uint32[] operatorSetIds;
+    }
+
+    RegisterCall internal _lastRegisterCall;
+    AllocateCall internal _lastAllocateCall;
+    DeregisterCall internal _lastDeregisterCall;
+
+    uint256 public registerForOperatorSetsCallCount;
+    uint256 public modifyAllocationsCallCount;
+    uint256 public deregisterFromOperatorSetsCallCount;
 
     function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
         return _getSlashCount[operatorSet.key()];
@@ -157,5 +187,56 @@ contract AllocationManagerMock is Test {
 
     function setIsOperatorSlashable(address operator, OperatorSet memory operatorSet, bool isSlashable) external {
         _isOperatorSlashable[operatorSet.key()][operator] = isSlashable;
+    }
+
+    function registerForOperatorSets(address operator, IAllocationManager.RegisterParams calldata params) external {
+        registerForOperatorSetsCallCount++;
+        _lastRegisterCall.operator = operator;
+        _lastRegisterCall.avs = params.avs;
+        delete _lastRegisterCall.operatorSetIds;
+        for (uint256 i = 0; i < params.operatorSetIds.length; ++i) {
+            _lastRegisterCall.operatorSetIds.push(params.operatorSetIds[i]);
+        }
+        _lastRegisterCall.data = params.data;
+    }
+
+    function lastRegisterForOperatorSetsCall() external view returns (RegisterCall memory) {
+        return _lastRegisterCall;
+    }
+
+    function modifyAllocations(address operator, IAllocationManager.AllocateParams[] calldata params) external {
+        modifyAllocationsCallCount++;
+        delete _lastAllocateCall;
+        _lastAllocateCall.operator = operator;
+
+        if (params.length > 0) {
+            IAllocationManager.AllocateParams calldata first = params[0];
+            _lastAllocateCall.avs = first.operatorSet.avs;
+            _lastAllocateCall.operatorSetId = first.operatorSet.id;
+            if (first.strategies.length > 0) {
+                _lastAllocateCall.strategy = first.strategies[0];
+            }
+            if (first.newMagnitudes.length > 0) {
+                _lastAllocateCall.magnitude = first.newMagnitudes[0];
+            }
+        }
+    }
+
+    function lastModifyAllocationsCall() external view returns (AllocateCall memory) {
+        return _lastAllocateCall;
+    }
+
+    function deregisterFromOperatorSets(IAllocationManager.DeregisterParams calldata params) external {
+        deregisterFromOperatorSetsCallCount++;
+        _lastDeregisterCall.operator = params.operator;
+        _lastDeregisterCall.avs = params.avs;
+        delete _lastDeregisterCall.operatorSetIds;
+        for (uint256 i = 0; i < params.operatorSetIds.length; ++i) {
+            _lastDeregisterCall.operatorSetIds.push(params.operatorSetIds[i]);
+        }
+    }
+
+    function lastDeregisterFromOperatorSetsCall() external view returns (DeregisterCall memory) {
+        return _lastDeregisterCall;
     }
 }

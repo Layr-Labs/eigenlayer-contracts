@@ -9,6 +9,8 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "src/contracts/interfaces/IDurationVaultStrategy.sol";
 import "src/contracts/interfaces/IStrategy.sol";
+import "src/contracts/interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 
 contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
@@ -22,6 +24,12 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
     address internal constant STAKER = address(0xBEEF);
     uint internal constant INITIAL_SUPPLY = 1e36;
+    address internal constant OPERATOR_SET_AVS = address(0xF00D);
+    uint32 internal constant OPERATOR_SET_ID = 7;
+    address internal constant DELEGATION_APPROVER = address(0xCAFE);
+    uint32 internal constant OPERATOR_ALLOCATION_DELAY = 3;
+    string internal constant OPERATOR_METADATA_URI = "ipfs://strategy-manager-vault";
+    bytes internal constant REGISTRATION_DATA = hex"DEADBEEF";
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
@@ -47,12 +55,18 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         IDurationVaultStrategy.VaultConfig memory cfg = IDurationVaultStrategy.VaultConfig({
             underlyingToken: IERC20(address(underlyingToken)),
             vaultAdmin: address(this),
-            depositWindowStart: 0,
-            depositWindowEnd: 0,
             duration: 30 days,
             maxPerDeposit: 1_000_000 ether,
             stakeCap: 10_000_000 ether,
-            metadataURI: "ipfs://duration-vault-test"
+            metadataURI: "ipfs://duration-vault-test",
+            delegationManager: IDelegationManager(address(delegationManagerMock)),
+            allocationManager: IAllocationManager(address(allocationManagerMock)),
+            operatorSetAVS: OPERATOR_SET_AVS,
+            operatorSetId: OPERATOR_SET_ID,
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
+            operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
         durationVault = IDurationVaultStrategy(
@@ -95,7 +109,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         cheats.startPrank(STAKER);
         underlyingToken.approve(address(strategyManager), amount);
-        cheats.expectRevert(IDurationVaultStrategy.DepositWindowClosed.selector);
+        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
         strategyManager.depositIntoStrategy(IStrategy(address(durationVault)), IERC20(address(underlyingToken)), amount);
         cheats.stopPrank();
     }

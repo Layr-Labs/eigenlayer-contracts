@@ -103,11 +103,12 @@ interface IStrategyFactory is ISemVerMixin {
         IDurationVaultStrategy vault,
         IERC20 indexed underlyingToken,
         address indexed vaultAdmin,
-        uint64 depositWindowStart,
-        uint64 depositWindowEnd,
         uint64 duration,
         uint256 maxPerDeposit,
         uint256 stakeCap,
-        string metadataURI
+        string metadataURI,
+        address operatorSetAVS,
+        uint32 operatorSetId,
+        bool operatorIntegrationEnabled
     );
 }

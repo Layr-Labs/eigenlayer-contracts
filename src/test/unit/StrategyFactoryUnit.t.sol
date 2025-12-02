@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
+import "../../contracts/interfaces/IDelegationManager.sol";
+import "../../contracts/interfaces/IAllocationManager.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
 
@@ -32,6 +34,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     address notOwner = address(7_777_777);
 
     uint initialPausedStatus = 0;
+    address internal constant OPERATOR_SET_AVS = address(0xABCD);
+    uint32 internal constant OPERATOR_SET_ID = 9;
+    address internal constant DELEGATION_APPROVER = address(0x5151);
+    uint32 internal constant OPERATOR_ALLOCATION_DELAY = 4;
+    string internal constant OPERATOR_METADATA_URI = "ipfs://factory-duration-vault";
+    bytes internal constant REGISTRATION_DATA = hex"F00D";
 
     /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
@@ -128,12 +136,18 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            depositWindowStart: 0,
-            depositWindowEnd: 0,
             duration: 30 days,
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
-            metadataURI: "ipfs://duration"
+            metadataURI: "ipfs://duration",
+            delegationManager: IDelegationManager(address(delegationManagerMock)),
+            allocationManager: IAllocationManager(address(allocationManagerMock)),
+            operatorSetAVS: OPERATOR_SET_AVS,
+            operatorSetId: OPERATOR_SET_ID,
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
+            operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
         DurationVaultStrategy vault = DurationVaultStrategy(address(strategyFactory.deployDurationVaultStrategy(config)));
@@ -150,12 +164,18 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            depositWindowStart: 0,
-            depositWindowEnd: 0,
             duration: 30 days,
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
-            metadataURI: "ipfs://duration"
+            metadataURI: "ipfs://duration",
+            delegationManager: IDelegationManager(address(delegationManagerMock)),
+            allocationManager: IAllocationManager(address(allocationManagerMock)),
+            operatorSetAVS: OPERATOR_SET_AVS,
+            operatorSetId: OPERATOR_SET_ID,
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
+            operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
         cheats.expectRevert(IStrategyFactory.DurationVaultBeaconNotSet.selector);
@@ -169,12 +189,18 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
-            depositWindowStart: 0,
-            depositWindowEnd: 0,
             duration: 7 days,
             maxPerDeposit: 5 ether,
             stakeCap: 50 ether,
-            metadataURI: "ipfs://duration"
+            metadataURI: "ipfs://duration",
+            delegationManager: IDelegationManager(address(delegationManagerMock)),
+            allocationManager: IAllocationManager(address(allocationManagerMock)),
+            operatorSetAVS: OPERATOR_SET_AVS,
+            operatorSetId: OPERATOR_SET_ID,
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
+            operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
         strategyFactory.deployDurationVaultStrategy(config);
