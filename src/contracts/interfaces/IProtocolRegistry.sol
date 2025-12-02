@@ -45,7 +45,9 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
     /// @param configs The configurations of the deployments to ship.
     /// @param contractNames The names of the contracts to ship.
     /// @param semanticVersion The semantic version to ship.
-    /// @dev Contract names can be passed in as type(AllocationManager).name
+    /// @dev Contract names can be passed in as type(contract).name, e.g. `type(AllocationManager).name`
+    /// @dev Contract names must be <= 31 bytes
+    /// @dev Contract names can be overridden any number of times.
     function ship(
         address[] calldata addresses,
         DeploymentConfig[] calldata configs,

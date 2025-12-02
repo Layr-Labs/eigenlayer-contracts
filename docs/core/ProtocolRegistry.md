@@ -18,7 +18,7 @@ Libraries and Mixins:
 
 ## Overview
 
-`ProtocolRegistry` is the canonical catalog of EigenLayer protocol deployments. It maps human-readable deployment names to contract addresses, tracks per-contract configuration flags, emits semantic-version updates every time a new protocol shipment occurs, and exposes functionality to pause the the entire core protocol. This contract is deployed on all EigenLayer source and destination chains. 
+`ProtocolRegistry` is the canonical catalog of EigenLayer protocol deployments. It maps human-readable deployment names to contract addresses, tracks per-contract configuration flags, emits semantic-version updates every time a new protocol shipment occurs, and exposes functionality to pause the the entire core protocol. This contract is deployed on all EigenLayer source and destination chains.
 
 ### Roles and Permissions
 
@@ -52,7 +52,7 @@ Initializes the proxy once by granting:
 * `DEFAULT_ADMIN_ROLE` to `initialAdmin`.
 * `PAUSER_ROLE` to `pauserMultisig`.
 
-The constructor disables further initializers; therefore `initialize` must be called exactly once after deployment. Upon deployment the `executorMultisig` will be the default admin and the `pauserMultisig` will hold the `PAUSER_ROLE`. 
+The constructor disables further initializers; therefore `initialize` must be called exactly once after deployment. Upon deployment the `executorMultisig` will be the default admin and the `pauserMultisig` will hold the `PAUSER_ROLE`.
 
 ### `ship`
 
@@ -75,7 +75,9 @@ Ships a new semantic version and batch-registers deployments:
 *Requirements*:
 * Caller must hold `DEFAULT_ADMIN_ROLE`.
 
-In practice, for upgrades that do not deploy net new contracts, only the `semanticVersion` parameter be populated, with the rest left empty. 
+In practice, for upgrades that do not deploy net new contracts, only the `semanticVersion` parameter will be populated, with the rest left empty.
+
+A contract name may be passed to this function repeatedly; each time, the previous address mapping for that name is overwritten with the new one. In general, this should be uncommon, as changing a core contract's address is an exceptional event.
 
 ### `configure`
 
@@ -132,7 +134,7 @@ Returns both the address and `DeploymentConfig` for a given name. Preferred by o
 
 ### `getAllDeployments`
 
-Materializes the entire registry into parallel arrays of names, addresses, and configs. Primarily intended for off-chain introspection. 
+Materializes the entire registry into parallel arrays of names, addresses, and configs. Primarily intended for off-chain introspection.
 
 ### `totalDeployments`
 
