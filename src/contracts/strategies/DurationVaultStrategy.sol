@@ -8,19 +8,11 @@ import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
 
-/**
- * @title Duration-bound EigenLayer vault strategy with configurable deposit caps and windows.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Duration-bound EigenLayer vault strategy with configurable deposit caps and windows.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLLimits {
     using OperatorSetLib for OperatorSet;
-
-    /// @notice Constant representing the full allocation magnitude (1 WAD) for allocation manager calls.
-    uint64 internal constant FULL_ALLOCATION = 1e18;
-
-    /// @notice Maximum allowable duration (approximately 2 years).
-    uint32 internal constant MAX_DURATION = uint32(2 * 365 days);
 
     /// @notice Delegation manager reference used to register the vault as an operator.
     IDelegationManager public immutable override delegationManager;
@@ -36,10 +28,9 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
-        string memory _version,
         IDelegationManager _delegationManager,
         IAllocationManager _allocationManager
-    ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry, _version) {
+    ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry) {
         require(
             address(_delegationManager) != address(0) && address(_allocationManager) != address(0),
             OperatorIntegrationInvalid()
@@ -48,9 +39,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         allocationManager = _allocationManager;
     }
 
-    /**
-     * @notice Initializes the vault configuration.
-     */
+    /// @notice Initializes the vault configuration.
     function initialize(
         VaultConfig memory config
     ) public initializer {
@@ -64,70 +53,57 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         metadataURI = config.metadataURI;
 
         _configureOperatorIntegration(config);
-        _state = VaultState.Deposits;
+        _state = VaultState.DEPOSITS;
 
         emit VaultInitialized(
-            vaultAdmin, config.underlyingToken, duration, config.maxPerDeposit, config.stakeCap, metadataURI
+            vaultAdmin,
+            config.underlyingToken,
+            duration,
+            config.maxPerDeposit,
+            config.stakeCap,
+            metadataURI
         );
     }
 
-    /**
-     * @notice Locks the vault, preventing new deposits and withdrawals until maturity.
-     */
+    /// @notice Locks the vault, preventing new deposits and withdrawals until maturity.
     function lock() external override onlyVaultAdmin {
-        require(_state == VaultState.Deposits, VaultAlreadyLocked());
+        require(_state == VaultState.DEPOSITS, VaultAlreadyLocked());
 
-        uint32 currentTimestamp = _currentTimestamp();
+        uint32 currentTimestamp = uint32(block.timestamp);
         lockedAt = currentTimestamp;
         uint32 newUnlockAt = currentTimestamp + duration;
         require(newUnlockAt >= currentTimestamp, InvalidDuration());
         unlockAt = newUnlockAt;
 
-        _state = VaultState.Allocations;
+        _state = VaultState.ALLOCATIONS;
 
         emit VaultLocked(lockedAt, unlockAt);
 
         _allocateFullMagnitude();
     }
 
-    /**
-     * @notice Marks the vault as matured once the configured duration elapses. Callable by anyone.
-     */
+    /// @notice Marks the vault as matured once the configured duration elapses. Callable by anyone.
     function markMatured() external override {
-        if (_state == VaultState.Withdrawals) {
+        if (_state == VaultState.WITHDRAWALS) {
             // already recorded; noop
             return;
         }
-        require(_state == VaultState.Allocations, DurationNotElapsed());
+        require(_state == VaultState.ALLOCATIONS, DurationNotElapsed());
         require(block.timestamp >= unlockAt, DurationNotElapsed());
-
-        _state = VaultState.Withdrawals;
-        maturedAt = _currentTimestamp();
+        _state = VaultState.WITHDRAWALS;
+        maturedAt = uint32(block.timestamp);
         emit VaultMatured(maturedAt);
 
         _deallocateAll();
         _deregisterFromOperatorSet();
     }
 
-    /**
-     * @notice Updates the metadata URI describing the vault.
-     */
+    /// @notice Updates the metadata URI describing the vault.
     function updateMetadataURI(
         string calldata newMetadataURI
     ) external override onlyVaultAdmin {
         metadataURI = newMetadataURI;
         emit MetadataURIUpdated(newMetadataURI);
-    }
-
-    /**
-     * @notice Transfers admin privileges to a new address.
-     */
-    function transferVaultAdmin(
-        address newVaultAdmin
-    ) external override onlyVaultAdmin {
-        require(newVaultAdmin != address(0), InvalidVaultAdmin());
-        emit VaultAdminUpdated(vaultAdmin, newVaultAdmin);
-        vaultAdmin = newVaultAdmin;
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -137,12 +113,12 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
 
     /// @inheritdoc IDurationVaultStrategy
     function isLocked() public view override returns (bool) {
-        return _state != VaultState.Deposits;
+        return _state != VaultState.DEPOSITS;
     }
 
     /// @inheritdoc IDurationVaultStrategy
     function isMatured() public view override returns (bool) {
-        return _state == VaultState.Withdrawals;
+        return _state == VaultState.WITHDRAWALS;
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -157,12 +133,12 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
 
     /// @inheritdoc IDurationVaultStrategy
     function depositsOpen() public view override returns (bool) {
-        return _state == VaultState.Deposits;
+        return _state == VaultState.DEPOSITS;
     }
 
     /// @inheritdoc IDurationVaultStrategy
     function withdrawalsOpen() public view override returns (bool) {
-        return _state != VaultState.Allocations;
+        return _state != VaultState.ALLOCATIONS;
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -175,12 +151,27 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         return (_operatorSet.avs, _operatorSet.id);
     }
 
-    function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
+    function operatorSetRegistered() public view override returns (bool) {
+        return _state == VaultState.DEPOSITS || _state == VaultState.ALLOCATIONS;
+    }
+
+    function allocationsActive() public view override returns (bool) {
+        return _state == VaultState.ALLOCATIONS;
+    }
+
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 amount
+    ) internal virtual override {
         require(depositsOpen(), DepositsLocked());
         super._beforeDeposit(token, amount);
     }
 
-    function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual override {
+    function _beforeWithdrawal(
+        address recipient,
+        IERC20 token,
+        uint256 amountShares
+    ) internal virtual override {
         require(withdrawalsOpen(), WithdrawalsLocked());
         super._beforeWithdrawal(recipient, token, amountShares);
     }
@@ -201,7 +192,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         params.operatorSetIds[0] = config.operatorSet.id;
         params.data = config.operatorSetRegistrationData;
         allocationManager.registerForOperatorSets(address(this), params);
-        operatorSetRegistered = true;
     }
 
     function _allocateFullMagnitude() internal {
@@ -212,7 +202,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         params[0].newMagnitudes = new uint64[](1);
         params[0].newMagnitudes[0] = FULL_ALLOCATION;
         allocationManager.modifyAllocations(address(this), params);
-        allocationsActive = true;
     }
 
     function _deallocateAll() internal {
@@ -223,7 +212,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         params[0].newMagnitudes = new uint64[](1);
         params[0].newMagnitudes[0] = 0;
         allocationManager.modifyAllocations(address(this), params);
-        allocationsActive = false;
     }
 
     function _deregisterFromOperatorSet() internal {
@@ -233,16 +221,5 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         params.operatorSetIds = new uint32[](1);
         params.operatorSetIds[0] = _operatorSet.id;
         allocationManager.deregisterFromOperatorSets(params);
-        operatorSetRegistered = false;
-    }
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     */
-    function _currentTimestamp() internal view returns (uint32) {
-        uint256 ts = block.timestamp;
-        require(ts <= type(uint32).max, TimestampOverflow());
-        return uint32(ts);
     }
 }

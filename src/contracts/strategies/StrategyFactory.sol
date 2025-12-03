@@ -102,9 +102,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
     }
 
-    /**
-     * @notice Deploys a new duration vault strategy backed by the configured beacon.
-     */
+    /// @notice Deploys a new duration vault strategy backed by the configured beacon.
     function deployDurationVaultStrategy(
         IDurationVaultStrategy.VaultConfig calldata config
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IDurationVaultStrategy newVault) {
@@ -129,9 +127,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         _emitDurationVaultDeployed(newVault, underlyingToken, config);
     }
 
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
-     */
+    /// @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
     function removeStrategiesFromWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external onlyOwner {
@@ -153,9 +149,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyBeacon = _strategyBeacon;
     }
 
-    /**
-     * @notice Owner-only function to update the duration vault beacon.
-     */
+    /// @notice Owner-only function to update the duration vault beacon.
     function setDurationVaultBeacon(
         IBeacon newDurationVaultBeacon
     ) external onlyOwner {
@@ -176,7 +170,10 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         durationVaultBeacon = newDurationVaultBeacon;
     }
 
-    function _registerDurationVault(IERC20 token, IDurationVaultStrategy vault) internal {
+    function _registerDurationVault(
+        IERC20 token,
+        IDurationVaultStrategy vault
+    ) internal {
         durationVaultsByToken[token].push(vault);
     }
 

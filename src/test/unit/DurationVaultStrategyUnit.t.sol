@@ -34,7 +34,6 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         durationVaultImplementation = new DurationVaultStrategy(
             strategyManager,
             pauserRegistry,
-            "9.9.9",
             IDelegationManager(address(delegationManagerMock)),
             IAllocationManager(address(allocationManagerMock))
         );

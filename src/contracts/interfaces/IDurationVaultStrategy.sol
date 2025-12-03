@@ -8,16 +8,15 @@ import "./IDelegationManager.sol";
 import "./IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
 
-/**
- * @title Interface for time-bound EigenLayer vault strategies.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Interface for time-bound EigenLayer vault strategies.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 interface IDurationVaultStrategy is IStrategy {
     enum VaultState {
-        Deposits,
-        Allocations,
-        Withdrawals
+        UNINITIALIZED,
+        DEPOSITS,
+        ALLOCATIONS,
+        WITHDRAWALS
     }
 
     struct VaultConfig {
@@ -68,33 +67,18 @@ interface IDurationVaultStrategy is IStrategy {
 
     event VaultMatured(uint32 maturedAt);
 
-    event VaultAdminUpdated(address indexed previousAdmin, address indexed newAdmin);
-
     event MetadataURIUpdated(string newMetadataURI);
 
-    /**
-     * @notice Locks the vault, preventing further deposits / withdrawals until maturity.
-     */
+    /// @notice Locks the vault, preventing further deposits / withdrawals until maturity.
     function lock() external;
 
-    /**
-     * @notice Marks the vault as matured once the configured duration has elapsed.
-     * @dev After maturation, withdrawals are permitted while deposits remain disabled.
-     */
+    /// @notice Marks the vault as matured once the configured duration has elapsed.
+    /// @dev After maturation, withdrawals are permitted while deposits remain disabled.
     function markMatured() external;
 
-    /**
-     * @notice Updates the vault metadata URI.
-     */
+    /// @notice Updates the vault metadata URI.
     function updateMetadataURI(
         string calldata newMetadataURI
-    ) external;
-
-    /**
-     * @notice Transfers vault admin privileges to a new address.
-     */
-    function transferVaultAdmin(
-        address newVaultAdmin
     ) external;
 
     function vaultAdmin() external view returns (address);

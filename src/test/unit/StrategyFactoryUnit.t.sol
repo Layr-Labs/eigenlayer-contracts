@@ -65,14 +65,13 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         durationVaultImplementation = new DurationVaultStrategy(
             IStrategyManager(address(strategyManagerMock)),
             pauserRegistry,
-            "9.9.9",
             IDelegationManager(address(delegationManagerMock)),
             IAllocationManager(address(allocationManagerMock))
         );
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, "9.9.9");
+        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
 
         strategyFactory = StrategyFactory(
             address(

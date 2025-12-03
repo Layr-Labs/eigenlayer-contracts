@@ -49,24 +49,18 @@ interface IStrategyFactory {
         IERC20 token
     ) external returns (IStrategy newStrategy);
 
-    /**
-     * @notice Deploys a new duration-bound vault strategy contract.
-     * @dev Enforces the same blacklist semantics as vanilla strategies.
-     */
+    /// @notice Deploys a new duration-bound vault strategy contract.
+    /// @dev Enforces the same blacklist semantics as vanilla strategies.
     function deployDurationVaultStrategy(
         IDurationVaultStrategy.VaultConfig calldata config
     ) external returns (IDurationVaultStrategy newVault);
 
-    /**
-     * @notice Returns all duration vaults that have ever been deployed for a given token.
-     */
+    /// @notice Returns all duration vaults that have ever been deployed for a given token.
     function getDurationVaults(
         IERC20 token
     ) external view returns (IDurationVaultStrategy[] memory);
 
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
-     */
+    /// @notice Owner-only function to pass through a call to `StrategyManager.addStrategiesToDepositWhitelist`
     function whitelistStrategies(
         IStrategy[] calldata strategiesToWhitelist
     ) external;
@@ -76,9 +70,7 @@ interface IStrategyFactory {
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
 
-    /**
-     * @notice Owner-only function to update the beacon used for deploying duration vault strategies.
-     */
+    /// @notice Owner-only function to update the beacon used for deploying duration vault strategies.
     function setDurationVaultBeacon(
         IBeacon newDurationVaultBeacon
     ) external;

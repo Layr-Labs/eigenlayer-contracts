@@ -4,12 +4,16 @@ pragma solidity ^0.8.27;
 import "../interfaces/IDurationVaultStrategy.sol";
 import "../libraries/OperatorSetLib.sol";
 
-/**
- * @title Storage layout for DurationVaultStrategy.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Storage layout for DurationVaultStrategy.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
+    /// @notice Constant representing the full allocation magnitude (1 WAD) for allocation manager calls.
+    uint64 internal constant FULL_ALLOCATION = 1e18;
+
+    /// @notice Maximum allowable duration (approximately 2 years).
+    uint32 internal constant MAX_DURATION = uint32(2 * 365 days);
+
     /// @notice Address empowered to configure and lock the vault.
     address public vaultAdmin;
 
@@ -34,17 +38,7 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @notice Tracks the lifecycle of the vault (deposits -> allocations -> withdrawals).
     VaultState internal _state;
 
-    /// @notice True when allocations are currently active (i.e. slashable) for the configured operator set.
-    bool public allocationsActive;
-
-    /// @notice True when the vault remains registered for the operator set.
-    bool public operatorSetRegistered;
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     */
-    uint256[41] private __gap;
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    uint256[43] private __gap;
 }
-
-
