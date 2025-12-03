@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "./StrategyBaseTVLLimits.sol";
 import "./DurationVaultStrategyStorage.sol";
+import "../interfaces/IDurationVaultStrategy.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../libraries/OperatorSetLib.sol";
@@ -27,10 +28,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     /// @notice Allocation manager reference used to register/allocate operator sets.
     IAllocationManager public immutable override allocationManager;
 
-    error OperatorIntegrationInvalid();
-
     modifier onlyVaultAdmin() {
-        if (msg.sender != vaultAdmin) revert OnlyVaultAdmin();
+        require(msg.sender == vaultAdmin, OnlyVaultAdmin());
         _;
     }
 
@@ -41,9 +40,10 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         IDelegationManager _delegationManager,
         IAllocationManager _allocationManager
     ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry, _version) {
-        if (address(_delegationManager) == address(0) || address(_allocationManager) == address(0)) {
-            revert OperatorIntegrationInvalid();
-        }
+        require(
+            address(_delegationManager) != address(0) && address(_allocationManager) != address(0),
+            OperatorIntegrationInvalid()
+        );
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
     }
@@ -54,8 +54,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     function initialize(
         VaultConfig memory config
     ) public initializer {
-        if (config.vaultAdmin == address(0)) revert InvalidVaultAdmin();
-        if (config.duration == 0 || config.duration > MAX_DURATION) revert InvalidDuration();
+        require(config.vaultAdmin != address(0), InvalidVaultAdmin());
+        require(config.duration != 0 && config.duration <= MAX_DURATION, InvalidDuration());
         _setTVLLimits(config.maxPerDeposit, config.stakeCap);
         _initializeStrategyBase(config.underlyingToken);
 
@@ -75,12 +75,12 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
      * @notice Locks the vault, preventing new deposits and withdrawals until maturity.
      */
     function lock() external override onlyVaultAdmin {
-        if (_state != VaultState.Deposits) revert VaultAlreadyLocked();
+        require(_state == VaultState.Deposits, VaultAlreadyLocked());
 
         uint32 currentTimestamp = _currentTimestamp();
         lockedAt = currentTimestamp;
         uint32 newUnlockAt = currentTimestamp + duration;
-        if (newUnlockAt < currentTimestamp) revert InvalidDuration();
+        require(newUnlockAt >= currentTimestamp, InvalidDuration());
         unlockAt = newUnlockAt;
 
         _state = VaultState.Allocations;
@@ -98,7 +98,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
             // already recorded; noop
             return;
         }
-        if (_state != VaultState.Allocations || block.timestamp < unlockAt) revert DurationNotElapsed();
+        require(_state == VaultState.Allocations, DurationNotElapsed());
+        require(block.timestamp >= unlockAt, DurationNotElapsed());
 
         _state = VaultState.Withdrawals;
         maturedAt = _currentTimestamp();
@@ -124,7 +125,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     function transferVaultAdmin(
         address newVaultAdmin
     ) external override onlyVaultAdmin {
-        if (newVaultAdmin == address(0)) revert InvalidVaultAdmin();
+        require(newVaultAdmin != address(0), InvalidVaultAdmin());
         emit VaultAdminUpdated(vaultAdmin, newVaultAdmin);
         vaultAdmin = newVaultAdmin;
     }
@@ -175,25 +176,19 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     }
 
     function _beforeDeposit(IERC20 token, uint256 amount) internal virtual override {
-        if (!depositsOpen()) {
-            revert DepositsLocked();
-        }
+        require(depositsOpen(), DepositsLocked());
         super._beforeDeposit(token, amount);
     }
 
     function _beforeWithdrawal(address recipient, IERC20 token, uint256 amountShares) internal virtual override {
-        if (!withdrawalsOpen()) {
-            revert WithdrawalsLocked();
-        }
+        require(withdrawalsOpen(), WithdrawalsLocked());
         super._beforeWithdrawal(recipient, token, amountShares);
     }
 
     function _configureOperatorIntegration(
         VaultConfig memory config
     ) internal {
-        if (config.operatorSet.avs == address(0) || config.operatorSet.id == 0) {
-            revert OperatorIntegrationInvalid();
-        }
+        require(config.operatorSet.avs != address(0) && config.operatorSet.id != 0, OperatorIntegrationInvalid());
         _operatorSet = config.operatorSet;
 
         delegationManager.registerAsOperator(
@@ -247,7 +242,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
      */
     function _currentTimestamp() internal view returns (uint32) {
         uint256 ts = block.timestamp;
-        if (ts > type(uint32).max) revert TimestampOverflow();
+        require(ts <= type(uint32).max, TimestampOverflow());
         return uint32(ts);
     }
 }

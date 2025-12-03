@@ -31,7 +31,6 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     uint32 internal constant OPERATOR_ALLOCATION_DELAY = 3;
     string internal constant OPERATOR_METADATA_URI = "ipfs://strategy-manager-vault";
     bytes internal constant REGISTRATION_DATA = hex"DEADBEEF";
-
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
 

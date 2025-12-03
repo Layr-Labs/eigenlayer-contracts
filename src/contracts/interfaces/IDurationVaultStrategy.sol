@@ -52,6 +52,8 @@ interface IDurationVaultStrategy is IStrategy {
     error DurationNotElapsed();
     /// @dev Thrown when attempting to convert a timestamp that exceeds uint32 bounds.
     error TimestampOverflow();
+    /// @dev Thrown when operator integration inputs are missing or invalid.
+    error OperatorIntegrationInvalid();
 
     event VaultInitialized(
         address indexed vaultAdmin,
