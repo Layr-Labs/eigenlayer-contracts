@@ -36,7 +36,8 @@ abstract contract ECDSACertificateVerifierStorage is IECDSACertificateVerifier {
     mapping(bytes32 => uint32) internal _latestReferenceTimestamps;
 
     /// @dev Mapping from referenceTimestamp to the number of operators
-    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => uint256 numOperators)) internal _numOperators;
+    mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => uint256 numOperators)) internal
+        _numOperators;
 
     /// @dev Mapping from operatorSetKey to referenceTimestamp to operatorInfos
     mapping(bytes32 operatorSetKey => mapping(uint32 referenceTimestamp => mapping(uint256 => ECDSAOperatorInfo)))
@@ -53,10 +54,8 @@ abstract contract ECDSACertificateVerifierStorage is IECDSACertificateVerifier {
         operatorTableUpdater = _operatorTableUpdater;
     }
 
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     uint256[44] private __gap;
 }

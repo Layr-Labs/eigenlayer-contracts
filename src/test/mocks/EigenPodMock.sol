@@ -17,12 +17,10 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable {}
 
-    /**
-     * @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
-     * @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
-     * @dev Called during withdrawal or slashing.
-     * @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
-     */
+    /// @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
+    /// @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
+    /// @dev Called during withdrawal or slashing.
+    /// @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
     function withdrawRestakedBeaconChainETH(address recipient, uint amount) external {}
 
     /// @notice The single EigenPodManager for EigenLayer

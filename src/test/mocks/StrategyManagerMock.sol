@@ -28,31 +28,25 @@ contract StrategyManagerMock is Test {
         delegation = _delegation;
     }
 
-    /**
-     * @notice mocks the return value of getDeposits
-     * @param staker staker whose deposits are being mocked
-     * @param _strategiesToReturn strategies to return in getDeposits
-     * @param _sharesToReturn shares to return in getDeposits
-     */
+    /// @notice mocks the return value of getDeposits
+    /// @param staker staker whose deposits are being mocked
+    /// @param _strategiesToReturn strategies to return in getDeposits
+    /// @param _sharesToReturn shares to return in getDeposits
     function setDeposits(address staker, IStrategy[] calldata _strategiesToReturn, uint[] calldata _sharesToReturn) external {
         require(_strategiesToReturn.length == _sharesToReturn.length, "StrategyManagerMock: length mismatch");
         strategiesToReturn[staker] = _strategiesToReturn;
         sharesToReturn[staker] = _sharesToReturn;
     }
 
-    /**
-     * @notice Adds deposit to the staker's deposits. Note that this function does not check if the staker
-     * has already deposited for the strategy.
-     */
+    /// @notice Adds deposit to the staker's deposits. Note that this function does not check if the staker
+    /// has already deposited for the strategy.
     function addDeposit(address staker, IStrategy strategy, uint shares) external {
         strategiesToReturn[staker].push(strategy);
         sharesToReturn[staker].push(shares);
     }
 
-    /**
-     * @notice Get all details on the staker's deposits and corresponding shares
-     * @return (staker's strategies, shares in these strategies)
-     */
+    /// @notice Get all details on the staker's deposits and corresponding shares
+    /// @return (staker's strategies, shares in these strategies)
     function getDeposits(address staker) external view returns (IStrategy[] memory, uint[] memory) {
         return (strategiesToReturn[staker], sharesToReturn[staker]);
     }
@@ -65,7 +59,13 @@ contract StrategyManagerMock is Test {
     uint public stakerStrategyListLengthReturnValue;
 
     /// @notice Simple getter function that returns `stakerStrategyList[staker].length`.
-    function stakerStrategyListLength(address /*staker*/ ) external view returns (uint) {
+    function stakerStrategyListLength(
+        address /*staker*/
+    )
+        external
+        view
+        returns (uint)
+    {
         return stakerStrategyListLengthReturnValue;
     }
 
@@ -90,14 +90,20 @@ contract StrategyManagerMock is Test {
         return updatedShares;
     }
 
-    function removeStrategiesFromDepositWhitelist(IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/ ) external pure {}
+    function removeStrategiesFromDepositWhitelist(
+        IStrategy[] calldata /*strategiesToRemoveFromWhitelist*/
+    )
+        external
+        pure {}
 
     function withdrawSharesAsTokens(
         address staker,
         IStrategy strategy,
         address, // token
         uint shares
-    ) external {
+    )
+        external
+    {
         strategySharesWithdrawn[staker][strategy] += shares;
     }
 

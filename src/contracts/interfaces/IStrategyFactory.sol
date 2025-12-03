@@ -7,13 +7,11 @@ import "./IStrategy.sol";
 import "./IDurationVaultStrategy.sol";
 import "./ISemVerMixin.sol";
 
-/**
- * @title Interface for the `StrategyFactory` contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- * @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
- */
-interface IStrategyFactory is ISemVerMixin {
+/// @title Interface for the `StrategyFactory` contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
+/// @dev This may not be compatible with non-standard ERC20 tokens. Caution is warranted.
+interface IStrategyFactory {
     /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
     error BlacklistedToken();
     /// @dev Thrown when attempting to deploy a strategy that already exists.
@@ -42,13 +40,11 @@ interface IStrategyFactory is ISemVerMixin {
         IERC20 token
     ) external view returns (IStrategy);
 
-    /**
-     * @notice Deploy a new strategyBeacon contract for the ERC20 token.
-     * @param token the token to deploy a strategy for
-     * @dev A strategy contract must not yet exist for the token.
-     * $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
-     * like those that conform to ERC777.
-     */
+    /// @notice Deploy a new strategyBeacon contract for the ERC20 token.
+    /// @param token the token to deploy a strategy for
+    /// @dev A strategy contract must not yet exist for the token.
+    /// $dev Immense caution is warranted for non-standard ERC20 tokens, particularly "reentrant" tokens
+    /// like those that conform to ERC777.
     function deployNewStrategy(
         IERC20 token
     ) external returns (IStrategy newStrategy);
@@ -75,9 +71,7 @@ interface IStrategyFactory is ISemVerMixin {
         IStrategy[] calldata strategiesToWhitelist
     ) external;
 
-    /**
-     * @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
-     */
+    /// @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
     function removeStrategiesFromWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;

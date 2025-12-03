@@ -15,23 +15,17 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
         DelayedWithdrawal[] delayedWithdrawals;
     }
 
-    /**
-     * @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.
-     * @dev Only callable by the `podOwner`'s EigenPod contract.
-     */
+    /// @notice Creates an delayed withdrawal for `msg.value` to the `recipient`.
+    /// @dev Only callable by the `podOwner`'s EigenPod contract.
     function createDelayedWithdrawal(address podOwner, address recipient) external payable;
 
-    /**
-     * @notice Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.
-     * @param recipient The address to claim delayedWithdrawals for.
-     * @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
-     */
+    /// @notice Called in order to withdraw delayed withdrawals made to the `recipient` that have passed the `withdrawalDelayBlocks` period.
+    /// @param recipient The address to claim delayedWithdrawals for.
+    /// @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
     function claimDelayedWithdrawals(address recipient, uint maxNumberOfWithdrawalsToClaim) external;
 
-    /**
-     * @notice Called in order to withdraw delayed withdrawals made to the caller that have passed the `withdrawalDelayBlocks` period.
-     * @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
-     */
+    /// @notice Called in order to withdraw delayed withdrawals made to the caller that have passed the `withdrawalDelayBlocks` period.
+    /// @param maxNumberOfWithdrawalsToClaim Used to limit the maximum number of withdrawals to loop through claiming.
     function claimDelayedWithdrawals(uint maxNumberOfWithdrawalsToClaim) external;
 
     /// @notice Owner-only function for modifying the value of the `withdrawalDelayBlocks` variable.
@@ -55,9 +49,7 @@ interface IDelayedWithdrawalRouter_DeprecatedM1 {
     /// @notice Convenience function for checking whether or not the delayedWithdrawal at the `index`th entry from the `_userWithdrawals[user].delayedWithdrawals` array is currently claimable
     function canClaimDelayedWithdrawal(address user, uint index) external view returns (bool);
 
-    /**
-     * @notice Delay enforced by this contract for completing any delayedWithdrawal. Measured in blocks, and adjustable by this contract's owner,
-     * up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
-     */
+    /// @notice Delay enforced by this contract for completing any delayedWithdrawal. Measured in blocks, and adjustable by this contract's owner,
+    /// up to a maximum of `MAX_WITHDRAWAL_DELAY_BLOCKS`. Minimum value is 0 (i.e. no delay enforced).
     function withdrawalDelayBlocks() external view returns (uint);
 }

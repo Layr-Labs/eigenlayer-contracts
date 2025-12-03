@@ -12,10 +12,8 @@ import "src/contracts/interfaces/ICrossChainRegistry.sol";
 import "src/test/utils/EigenLayerMultichainUnitTestSetup.sol";
 import "src/test/utils/Random.sol";
 
-/**
- * @title ECDSACertificateVerifierUnitTests
- * @notice Base contract for all ECDSACertificateVerifier unit tests
- */
+/// @title ECDSACertificateVerifierUnitTests
+/// @notice Base contract for all ECDSACertificateVerifier unit tests
 contract ECDSACertificateVerifierUnitTests is
     EigenLayerMultichainUnitTestSetup,
     IECDSACertificateVerifierErrors,
@@ -60,14 +58,12 @@ contract ECDSACertificateVerifierUnitTests is
 
     // Helper functions
 
-    /**
-     * @notice Generate signer and non-signer private keys
-     * @param pseudoRandomNumber Pseudo random number for generating keys
-     * @param numSigners Number of signers to generate
-     * @param numNonSigners Number of non-signers to generate
-     * @return signerPrivKeys Array of signer private keys
-     * @return nonSignerPrivKeys Array of non-signer private keys
-     */
+    /// @notice Generate signer and non-signer private keys
+    /// @param pseudoRandomNumber Pseudo random number for generating keys
+    /// @param numSigners Number of signers to generate
+    /// @param numNonSigners Number of non-signers to generate
+    /// @return signerPrivKeys Array of signer private keys
+    /// @return nonSignerPrivKeys Array of non-signer private keys
     function _generateSignerAndNonSignerPrivateKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
         internal
         pure
@@ -89,15 +85,13 @@ contract ECDSACertificateVerifierUnitTests is
         }
     }
 
-    /**
-     * @notice Create operators with split keys
-     * @param pseudoRandomNumber Pseudo random number for generating operator data
-     * @param numSigners Number of signers
-     * @param numNonSigners Number of non-signers
-     * @return operators Array of operator infos
-     * @return nonSignerIndices Array of non-signer indices
-     * @return signerPrivKeys Array of signer private keys
-     */
+    /// @notice Create operators with split keys
+    /// @param pseudoRandomNumber Pseudo random number for generating operator data
+    /// @param numSigners Number of signers
+    /// @param numNonSigners Number of non-signers
+    /// @return operators Array of operator infos
+    /// @return nonSignerIndices Array of non-signer indices
+    /// @return signerPrivKeys Array of signer private keys
     function _createOperatorsWithSplitKeys(uint pseudoRandomNumber, uint numSigners, uint numNonSigners)
         internal
         view
@@ -138,15 +132,13 @@ contract ECDSACertificateVerifierUnitTests is
         }
     }
 
-    /**
-     * @notice Create a certificate with ECDSA signatures
-     * @param referenceTimestamp Reference timestamp for the certificate
-     * @param messageHash Message hash to sign
-     * @param nonSignerIndices Array of non-signer indices
-     * @param operators Array of operator infos
-     * @param signerPrivKeys Array of signer private keys
-     * @return cert The created certificate
-     */
+    /// @notice Create a certificate with ECDSA signatures
+    /// @param referenceTimestamp Reference timestamp for the certificate
+    /// @param messageHash Message hash to sign
+    /// @param nonSignerIndices Array of non-signer indices
+    /// @param operators Array of operator infos
+    /// @param signerPrivKeys Array of signer private keys
+    /// @return cert The created certificate
     function _createCertificate(
         uint32 referenceTimestamp,
         bytes32 messageHash,
@@ -198,17 +190,15 @@ contract ECDSACertificateVerifierUnitTests is
         });
     }
 
-    /**
-     * @notice Update operator table with randomness
-     * @param r Randomness for generating operator data
-     * @param numSigners Number of signers
-     * @param numNonSigners Number of non-signers
-     * @return operators Array of operator infos
-     * @return operatorSetConfig Operator set configuration
-     * @return referenceTimestamp Reference timestamp
-     * @return nonSignerIndices Array of non-signer indices
-     * @return signerPrivKeys Array of signer private keys
-     */
+    /// @notice Update operator table with randomness
+    /// @param r Randomness for generating operator data
+    /// @param numSigners Number of signers
+    /// @param numNonSigners Number of non-signers
+    /// @return operators Array of operator infos
+    /// @return operatorSetConfig Operator set configuration
+    /// @return referenceTimestamp Reference timestamp
+    /// @return nonSignerIndices Array of non-signer indices
+    /// @return signerPrivKeys Array of signer private keys
     function _updateOperatorTable(Randomness r, uint numSigners, uint numNonSigners)
         internal
         returns (
@@ -232,10 +222,8 @@ contract ECDSACertificateVerifierUnitTests is
         verifier.updateOperatorTable(defaultOperatorSet, referenceTimestamp, operators, operatorSetConfig);
     }
 
-    /**
-     * @notice Initialize operator table for basic tests
-     * @return referenceTimestamp The reference timestamp used
-     */
+    /// @notice Initialize operator table for basic tests
+    /// @return referenceTimestamp The reference timestamp used
     function _initializeOperatorTableBase() internal returns (uint32 referenceTimestamp) {
         referenceTimestamp = uint32(block.timestamp);
         (IECDSACertificateVerifierTypes.ECDSAOperatorInfo[] memory operators,,) = _createOperatorsWithSplitKeys(123, numOperators, 0);
@@ -245,10 +233,8 @@ contract ECDSACertificateVerifierUnitTests is
     }
 }
 
-/**
- * @title ECDSACertificateVerifierUnitTests_updateOperatorTable
- * @notice Unit tests for ECDSACertificateVerifier.updateOperatorTable
- */
+/// @title ECDSACertificateVerifierUnitTests_updateOperatorTable
+/// @notice Unit tests for ECDSACertificateVerifier.updateOperatorTable
 contract ECDSACertificateVerifierUnitTests_updateOperatorTable is ECDSACertificateVerifierUnitTests {
     function test_revert_notTableUpdater() public {
         // Empty data
@@ -350,10 +336,8 @@ contract ECDSACertificateVerifierUnitTests_updateOperatorTable is ECDSACertifica
     }
 }
 
-/**
- * @title ECDSACertificateVerifierUnitTests_verifyCertificate
- * @notice Unit tests for ECDSACertificateVerifier.verifyCertificate
- */
+/// @title ECDSACertificateVerifierUnitTests_verifyCertificate
+/// @notice Unit tests for ECDSACertificateVerifier.verifyCertificate
 contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificateVerifierUnitTests {
     function test_revert_certificateStale() public {
         uint32 referenceTimestamp = _initializeOperatorTableBase();
@@ -883,10 +867,8 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
     }
 }
 
-/**
- * @title ECDSACertificateVerifierUnitTests_verifyCertificateProportion
- * @notice Unit tests for ECDSACertificateVerifier.verifyCertificateProportion
- */
+/// @title ECDSACertificateVerifierUnitTests_verifyCertificateProportion
+/// @notice Unit tests for ECDSACertificateVerifier.verifyCertificateProportion
 contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSACertificateVerifierUnitTests {
     function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
         // Update operator table
@@ -1012,10 +994,8 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateProportion is ECDSAC
     }
 }
 
-/**
- * @title ECDSACertificateVerifierUnitTests_verifyCertificateNominal
- * @notice Unit tests for ECDSACertificateVerifier.verifyCertificateNominal
- */
+/// @title ECDSACertificateVerifierUnitTests_verifyCertificateNominal
+/// @notice Unit tests for ECDSACertificateVerifier.verifyCertificateNominal
 contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACertificateVerifierUnitTests {
     function testFuzz_revert_arrayLengthMismatch(Randomness r) public rand(r) {
         // Update operator table
@@ -1130,10 +1110,8 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificateNominal is ECDSACert
     }
 }
 
-/**
- * @title ECDSACertificateVerifierUnitTests_ViewFunctions
- * @notice Unit tests for ECDSACertificateVerifier view functions
- */
+/// @title ECDSACertificateVerifierUnitTests_ViewFunctions
+/// @notice Unit tests for ECDSACertificateVerifier view functions
 contract ECDSACertificateVerifierUnitTests_ViewFunctions is ECDSACertificateVerifierUnitTests {
     uint32 referenceTimestamp;
 

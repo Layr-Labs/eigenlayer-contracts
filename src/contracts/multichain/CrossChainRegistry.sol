@@ -4,40 +4,32 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../mixins/PermissionControllerMixin.sol";
-import "../mixins/SemVerMixin.sol";
 import "../permissions/Pausable.sol";
 import "../interfaces/IKeyRegistrar.sol";
 import "./CrossChainRegistryStorage.sol";
 
-/**
- * @title CrossChainRegistry
- * @author Layr Labs, Inc.
- * @notice Implementation contract for managing cross-chain operator set configurations and generation reservations
- * @dev Manages operator table calculations, transport destinations, and operator set configurations for cross-chain operations
- */
+/// @title CrossChainRegistry
+/// @author Layr Labs, Inc.
+/// @notice Implementation contract for managing cross-chain operator set configurations and generation reservations
+/// @dev Manages operator table calculations, transport destinations, and operator set configurations for cross-chain operations
 contract CrossChainRegistry is
     Initializable,
     OwnableUpgradeable,
     Pausable,
     CrossChainRegistryStorage,
-    PermissionControllerMixin,
-    SemVerMixin
+    PermissionControllerMixin
 {
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.UintSet;
     using OperatorSetLib for OperatorSet;
 
-    /**
-     *
-     *                         MODIFIERS
-     *
-     */
+    ///
+    ///                         MODIFIERS
+    ///
 
-    /**
-     * @dev Validates that the operator set exists in the AllocationManager
-     * @param operatorSet The operator set to validate
-     */
+    /// @dev Validates that the operator set exists in the AllocationManager
+    /// @param operatorSet The operator set to validate
     modifier isValidOperatorSet(
         OperatorSet calldata operatorSet
     ) {
@@ -52,41 +44,32 @@ contract CrossChainRegistry is
         _;
     }
 
-    /**
-     *
-     *                         INITIALIZING FUNCTIONS
-     *
-     */
+    ///
+    ///                         INITIALIZING FUNCTIONS
+    ///
 
-    /**
-     * @dev Initializes the CrossChainRegistry with immutable dependencies
-     * @param _allocationManager The allocation manager for operator set validation
-     * @param _keyRegistrar The key registrar for operator set curve type validation
-     * @param _permissionController The permission controller for access control
-     * @param _pauserRegistry The pauser registry for pause functionality
-     * @param _version The semantic version of the contract
-     */
+    /// @dev Initializes the CrossChainRegistry with immutable dependencies
+    /// @param _allocationManager The allocation manager for operator set validation
+    /// @param _keyRegistrar The key registrar for operator set curve type validation
+    /// @param _permissionController The permission controller for access control
+    /// @param _pauserRegistry The pauser registry for pause functionality
     constructor(
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
         IPermissionController _permissionController,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
+        IPauserRegistry _pauserRegistry
     )
         CrossChainRegistryStorage(_allocationManager, _keyRegistrar)
         PermissionControllerMixin(_permissionController)
         Pausable(_pauserRegistry)
-        SemVerMixin(_version)
     {
         _disableInitializers();
     }
 
-    /**
-     * @notice Initializes the contract with the initial paused status and owner
-     * @param initialOwner The initial owner of the contract
-     * @param initialTableUpdateCadence The initial table update cadence
-     * @param initialPausedStatus The initial paused status bitmap
-     */
+    /// @notice Initializes the contract with the initial paused status and owner
+    /// @param initialOwner The initial owner of the contract
+    /// @param initialTableUpdateCadence The initial table update cadence
+    /// @param initialPausedStatus The initial paused status bitmap
     function initialize(
         address initialOwner,
         uint32 initialTableUpdateCadence,
@@ -97,11 +80,9 @@ contract CrossChainRegistry is
         _setPausedStatus(initialPausedStatus);
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc ICrossChainRegistry
     function createGenerationReservation(
@@ -224,17 +205,13 @@ contract CrossChainRegistry is
         _setTableUpdateCadence(tableUpdateCadence);
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @dev Internal function to set the operator table calculator for an operator set
-     * @param operatorSet The operator set to set the calculator for
-     * @param operatorTableCalculator The operator table calculator contract
-     */
+    /// @dev Internal function to set the operator table calculator for an operator set
+    /// @param operatorSet The operator set to set the calculator for
+    /// @param operatorTableCalculator The operator table calculator contract
     function _setOperatorTableCalculator(
         OperatorSet memory operatorSet,
         IOperatorTableCalculator operatorTableCalculator
@@ -243,13 +220,14 @@ contract CrossChainRegistry is
         emit OperatorTableCalculatorSet(operatorSet, operatorTableCalculator);
     }
 
-    /**
-     * @dev Internal function to set the operator set config for an operator set
-     * @param operatorSet The operator set to set the config for
-     * @param config The operator set config
-     * @dev The 0 staleness period is special case and is allowed, since it allows for certificates to ALWAYS be valid
-     */
-    function _setOperatorSetConfig(OperatorSet memory operatorSet, OperatorSetConfig memory config) internal {
+    /// @dev Internal function to set the operator set config for an operator set
+    /// @param operatorSet The operator set to set the config for
+    /// @param config The operator set config
+    /// @dev The 0 staleness period is special case and is allowed, since it allows for certificates to ALWAYS be valid
+    function _setOperatorSetConfig(
+        OperatorSet memory operatorSet,
+        OperatorSetConfig memory config
+    ) internal {
         require(
             config.maxStalenessPeriod == 0 || config.maxStalenessPeriod >= _tableUpdateCadence, InvalidStalenessPeriod()
         );
@@ -257,11 +235,9 @@ contract CrossChainRegistry is
         emit OperatorSetConfigSet(operatorSet, config);
     }
 
-    /**
-     * @dev Internal function to set the table update cadence
-     * @param tableUpdateCadence the table update cadence
-     * @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
-     */
+    /// @dev Internal function to set the table update cadence
+    /// @param tableUpdateCadence the table update cadence
+    /// @dev The table update cadence cannot be 0 as that is special-cased to allow for certificates to ALWAYS be valid
     function _setTableUpdateCadence(
         uint32 tableUpdateCadence
     ) internal {
@@ -270,11 +246,9 @@ contract CrossChainRegistry is
         emit TableUpdateCadenceSet(tableUpdateCadence);
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc ICrossChainRegistry
     function getActiveGenerationReservations() external view returns (OperatorSet[] memory) {

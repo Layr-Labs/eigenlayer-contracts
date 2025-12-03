@@ -11,6 +11,7 @@ import "forge-std/Test.sol";
 
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
@@ -37,7 +38,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     // Fork ids for specific fork tests
     bool isUpgraded;
-    uint mainnetForkBlock = 22_514_370; // Post Pectra Compatibility Upgrade
+    uint mainnetForkBlock = 23_634_615; // Post Redistribution Upgrade
 
     string version = "9.9.9";
 
@@ -118,13 +119,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return "Integration Deployer";
     }
 
-    /**
-     * @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
-     * override this function to set the correct paths for the deployment info files.
-     *
-     * This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
-     * Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
-     */
+    /// @dev Anyone who wants to test using this contract in a separate repo via submodules may have to
+    /// override this function to set the correct paths for the deployment info files.
+    ///
+    /// This setUp function will account for specific --fork-url flags and deploy/upgrade contracts accordingly.
+    /// Note that forkIds are also created so you can make explicit fork tests using cheats.selectFork(forkId)
     function setUp() public virtual {
         bool forkMainnet = isForktest();
 
@@ -144,12 +143,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         return;
     }
 
-    /**
-     * env FOUNDRY_PROFILE=forktest forge t --mc Integration
-     *
-     * Running foundry like this will trigger the fork test profile,
-     * lowering fuzz runs and using a remote RPC to test against mainnet state
-     */
+    /// env FOUNDRY_PROFILE=forktest forge t --mc Integration
+    ///
+    /// Running foundry like this will trigger the fork test profile,
+    /// lowering fuzz runs and using a remote RPC to test against mainnet state
     function isForktest() public view returns (bool) {
         return _hash("forktest") == _hash(cheats.envOr(string("FOUNDRY_PROFILE"), string("default")));
     }
@@ -307,8 +304,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(allocationManager) == address(0)) {
             allocationManager =
-                AllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+                IAllocationManager(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
+        // allocationManagerView is deployed as a standalone implementation (not a proxy) in _deployImplementations()
         if (address(permissionController) == address(0)) {
             permissionController =
                 PermissionController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -323,16 +321,24 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
     /// Deploy an implementation contract for each contract in the system
     function _deployImplementations() public {
-        allocationManagerImplementation = new AllocationManager(
-            delegationManager,
-            eigenStrategy,
-            eigenLayerPauserReg,
-            permissionController,
-            DEALLOCATION_DELAY,
-            ALLOCATION_CONFIGURATION_DELAY,
-            version
+        // Deploy AllocationManagerView as a standalone implementation (not a proxy)
+        allocationManagerView =
+            new AllocationManagerView(delegationManager, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
+
+        allocationManagerImplementation = IAllocationManager(
+            address(
+                new AllocationManager(
+                    allocationManagerView,
+                    delegationManager,
+                    eigenStrategy,
+                    eigenLayerPauserReg,
+                    permissionController,
+                    DEALLOCATION_DELAY,
+                    ALLOCATION_CONFIGURATION_DELAY
+                )
+            )
         );
-        permissionControllerImplementation = new PermissionController(version);
+        permissionControllerImplementation = new PermissionController();
         delegationManagerImplementation = new DelegationManager(
             strategyManager,
             eigenPodManager,
@@ -354,18 +360,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 MAX_REWARDS_DURATION: REWARDS_COORDINATOR_MAX_REWARDS_DURATION,
                 MAX_RETROACTIVE_LENGTH: REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH,
                 MAX_FUTURE_LENGTH: REWARDS_COORDINATOR_MAX_FUTURE_LENGTH,
-                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP,
-                version: version
+                GENESIS_REWARDS_TIMESTAMP: REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP
             })
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
-        eigenPodManagerImplementation =
-            new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg, "9.9.9");
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, "9.9.9");
+        eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Beacon implementations
-        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager, "v9.9.9");
-        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg, "v9.9.9");
+        eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
+        baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
@@ -429,6 +433,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // Key Registrar
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(keyRegistrar))), address(keyRegistrarImplementation));
+
+        // PermissionController
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
+        );
     }
 
     function _initializeProxies() public noTracing {
@@ -513,11 +522,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         assertTrue(userTypes.length != 0, "_configRand: no user types selected");
     }
 
-    /**
-     * @dev Create a new User with a random config using the range defined in `_configRand`
-     *
-     * Assets are pulled from `strategies` based on a random staker/operator `assetType`
-     */
+    /// @dev Create a new User with a random config using the range defined in `_configRand`
+    ///
+    /// Assets are pulled from `strategies` based on a random staker/operator `assetType`
     function _randUser(string memory name) internal noTracing returns (User, IStrategy[] memory, uint[] memory) {
         // Deploy new User contract
         uint userType = _randUserType();
@@ -743,10 +750,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
     }
 
-    /**
-     * @dev Converts a bitmap into an array of bytes
-     * @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
-     */
+    /// @dev Converts a bitmap into an array of bytes
+    /// @dev Each byte in the input is processed as indicating a single bit to flip in the bitmap
     function _bitmapToBytes(uint bitmap) internal pure returns (bytes memory bytesArray) {
         for (uint i = 0; i < 256; ++i) {
             // Mask for i-th bit

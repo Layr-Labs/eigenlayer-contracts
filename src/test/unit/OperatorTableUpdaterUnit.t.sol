@@ -48,8 +48,7 @@ contract OperatorTableUpdaterUnitTests is
         operatorTableUpdaterImplementation = new OperatorTableUpdater(
             IBN254CertificateVerifier(address(bn254CertificateVerifierMock)),
             IECDSACertificateVerifier(address(ecdsaCertificateVerifierMock)),
-            pauserRegistry,
-            "1.0.0"
+            pauserRegistry
         );
 
         eigenLayerProxyAdmin.upgradeAndCall(
@@ -123,7 +122,7 @@ contract OperatorTableUpdaterUnitTests is
     function _createGlobalTableRoot(Randomness r, bytes32 operatorSetLeafHash) internal returns (bytes32, uint32, bytes32[] memory) {
         // Generate a random power of 2 between 2 and 2^16
         uint exponent = r.Uint256(1, 16);
-        uint numLeaves = 2 ** exponent;
+        uint numLeaves = 2**exponent;
 
         // Create leaves array with the specified size
         bytes32[] memory leaves = new bytes32[](numLeaves);
@@ -149,7 +148,7 @@ contract OperatorTableUpdaterUnitTests is
     {
         // Generate a random power of 2 between the number of operatorSetLeafHashes and 2^16
         uint exponent = r.Uint256(operatorSetLeafHashes.length, 16);
-        uint numLeaves = 2 ** exponent;
+        uint numLeaves = 2**exponent;
 
         // Create leaves array with the specified size
         bytes32[] memory leaves = new bytes32[](numLeaves);

@@ -42,12 +42,10 @@ uint64 constant MIN_ACTIVATION_BALANCE_GWEI = 32 gwei;
 
 /// @notice A Pectra Beacon Chain Mock Contract. For testing upgrades, use BeaconChainMock_Upgradeable
 /// @notice This mock assumed the following
-/**
- * @notice A Semi-Compatible Pectra Beacon Chain Mock Contract. For Testing Upgrades to Pectra use BeaconChainMock_Upgradeable
- * @dev This mock assumes the following:
- * - Ceiling is Max EB, at which sweeps will be triggered
- * - No support for consolidations or any execution layer triggerable actions (exits, partial withdrawals)
- */
+/// @notice A Semi-Compatible Pectra Beacon Chain Mock Contract. For Testing Upgrades to Pectra use BeaconChainMock_Upgradeable
+/// @dev This mock assumes the following:
+/// - Ceiling is Max EB, at which sweeps will be triggered
+/// - No support for consolidations or any execution layer triggerable actions (exits, partial withdrawals)
 contract BeaconChainMock is Logger {
     using StdStyle for *;
     using print for *;
@@ -59,7 +57,6 @@ contract BeaconChainMock is Logger {
         Minor, // `MINOR_SLASH_AMOUNT_GWEI`
         Half, // Half of the validator's balance
         Full // The validator's entire balance
-
     }
 
     // Rewards given to each validator during epoch processing
@@ -80,10 +77,8 @@ contract BeaconChainMock is Logger {
     EIP_7002_Mock constant WITHDRAWAL_PREDEPLOY = EIP_7002_Mock(payable(0x00000961Ef480Eb55e80D19ad83579A64c007002));
     EIP_7251_Mock constant CONSOLIDATION_PREDEPLOY = EIP_7251_Mock(payable(0x0000BBdDc7CE488642fb579F8B00f3a590007251));
 
-    /**
-     * BeaconState containers, used for proofgen:
-     * https://eth2book.info/capella/part3/containers/state/#beaconstate
-     */
+    /// BeaconState containers, used for proofgen:
+    /// https://eth2book.info/capella/part3/containers/state/#beaconstate
 
     // Validator container, references every validator created so far
     Validator[] validators;
@@ -95,9 +90,7 @@ contract BeaconChainMock is Logger {
     // length would be validators.length / 4;
     mapping(uint40 => bytes32) balances;
 
-    /**
-     * Generated proofs for each block timestamp:
-     */
+    /// Generated proofs for each block timestamp:
 
     // Maps block.timestamp -> calculated beacon block roots
     mapping(uint64 => bytes32) beaconBlockRoots;
@@ -123,11 +116,9 @@ contract BeaconChainMock is Logger {
         return "BeaconChain";
     }
 
-    /**
-     *
-     *                                 EXTERNAL METHODS
-     *
-     */
+    ///
+    ///                                 EXTERNAL METHODS
+    ///
 
     /// @dev Creates a new validator by:
     /// - Creating the validator container
@@ -592,11 +583,9 @@ contract BeaconChainMock is Logger {
         cheats.resumeTracing();
     }
 
-    /**
-     *
-     *                             INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                             INTERNAL FUNCTIONS
+    ///
     function _createValidator(bytes memory withdrawalCreds, uint64 balanceGwei) internal returns (uint40) {
         cheats.pauseTracing();
         uint40 validatorIndex = uint40(validators.length);
@@ -733,11 +722,9 @@ contract BeaconChainMock is Logger {
         return bytes32(clearedRoot | shiftedBalance);
     }
 
-    /**
-     *
-     *                               VIEW METHODS
-     *
-     */
+    ///
+    ///                               VIEW METHODS
+    ///
     function getCredentialProofs(uint40[] memory _validators) public view returns (CredentialProofs memory) {
         // If we have not advanced an epoch since a validator was created, no proofs have been
         // generated for that validator. We check this here and revert early so we don't return
@@ -816,7 +803,10 @@ contract BeaconChainMock is Logger {
         return StaleBalanceProofs({
             beaconTimestamp: curTimestamp,
             stateRootProof: p.stateRootProof,
-            validatorProof: BeaconChainProofs.ValidatorProof({validatorFields: vfProof.validatorFields, proof: vfProof.validatorFieldsProof})
+            validatorProof: BeaconChainProofs.ValidatorProof({
+                validatorFields: vfProof.validatorFields,
+                proof: vfProof.validatorFieldsProof
+            })
         });
     }
 

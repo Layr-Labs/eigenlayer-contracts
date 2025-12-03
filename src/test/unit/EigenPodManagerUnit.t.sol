@@ -43,13 +43,17 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 
         // Deploy EPM Implementation & Proxy
         eigenPodManagerImplementation =
-            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9");
+            new EigenPodManager(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenPodManager = EigenPodManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(eigenPodManagerImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(EigenPodManager.initialize.selector, initialOwner, 0 /*initialPausedStatus*/ )
+                    abi.encodeWithSelector(
+                        EigenPodManager.initialize.selector,
+                        initialOwner,
+                        0 /*initialPausedStatus*/
+                    )
                 )
             )
         );
@@ -62,11 +66,9 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         isExcludedFuzzAddress[address(eigenPodManager)] = true;
     }
 
-    /**
-     *
-     *                         Helper Functions/Modifiers
-     *
-     */
+    ///
+    ///                         Helper Functions/Modifiers
+    ///
     function _initializePodWithShares(address podOwner, int shares) internal {
         // Deploy pod
         _deployAndReturnEigenPodForStaker(podOwner);
@@ -98,11 +100,9 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 }
 
 contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitTests {
-    /**
-     *
-     *                             Initialization Tests
-     *
-     */
+    ///
+    ///                             Initialization Tests
+    ///
     function test_initialization() public view {
         // Check max pods, beacon chain, owner, and pauser
         assertEq(eigenPodManager.owner(), initialOwner, "Initialization: owner incorrect");
@@ -119,7 +119,10 @@ contract EigenPodManagerUnitTests_Initialization_Setters is EigenPodManagerUnitT
 
     function test_initialize_revert_alreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        eigenPodManager.initialize(initialOwner, 0 /*initialPausedStatus*/ );
+        eigenPodManager.initialize(
+            initialOwner,
+            0 /*initialPausedStatus*/
+        );
     }
 }
 
@@ -233,17 +236,14 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 
-    /**
-     *
-     *                             Add Shares Tests
-     *
-     */
+    ///
+    ///                             Add Shares Tests
+    ///
     function testFuzz_addShares_revert_notDelegationManager(address notDelegationManager)
         public
         filterFuzzedAddressInputs(notDelegationManager)
@@ -317,11 +317,9 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
         else assertEq(addedShares, 0);
     }
 
-    /**
-     *
-     *                             Remove Shares Tests
-     *
-     */
+    ///
+    ///                             Remove Shares Tests
+    ///
     function testFuzz_removeDepositShares_revert_notDelegationManager(address notDelegationManager)
         public
         filterFuzzedAddressInputs(notDelegationManager)
@@ -424,16 +422,13 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
-    /**
-     *
-     *                     WithdrawSharesAsTokens Tests
-     *
-     */
+    ///
+    ///                     WithdrawSharesAsTokens Tests
+    ///
 
     function test_withdrawSharesAsTokens_revert_invalidStrategy() public {
         cheats.prank(address(delegationManagerMock));
@@ -454,10 +449,8 @@ contract EigenPodManagerUnitTests_WithdrawSharesAsTokensTests is EigenPodManager
         eigenPodManager.withdrawSharesAsTokens(defaultStaker, beaconChainETHStrategy, IERC20(address(0)), uint(shares));
     }
 
-    /**
-     * @notice The `withdrawSharesAsTokens` is called in the `completeQueuedWithdrawal` function from the
-     *         delegationManager. When a withdrawal is queued in the delegationManager, `removeDepositShares is called`
-     */
+    /// @notice The `withdrawSharesAsTokens` is called in the `completeQueuedWithdrawal` function from the
+    ///         delegationManager. When a withdrawal is queued in the delegationManager, `removeDepositShares is called`
     function test_withdrawSharesAsTokens_m2NegativeShares_reduceEntireDeficit() public {
         // Shares to initialize & withdraw
         int sharesBeginning = -100e18;
@@ -545,9 +538,8 @@ contract EigenPodManagerUnitTests_BeaconChainETHBalanceUpdateTests is EigenPodMa
         super.setUp();
 
         // Upgrade eigenPodManager to wrapper
-        eigenPodManagerWrapper = new EigenPodManagerWrapper(
-            ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
-        );
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
     }
 

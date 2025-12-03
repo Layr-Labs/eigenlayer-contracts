@@ -10,12 +10,23 @@ Libraries and Mixins:
 
 | File | Notes |
 | -------- | -------- |
+| [`SplitContractMixin.sol`](../../src/contracts/mixins/SplitContractMixin.sol) | contract splitting for codesize optimization |
 | [`PermissionControllerMixin.sol`](../../src/contracts/mixins/PermissionControllerMixin.sol) | account delegation |
 | [`Deprecated_OwnableUpgradeable`](../../src/contracts/mixins/Deprecated_OwnableUpgradeable.sol) | deprecated ownable logic |
 | [`Pausable.sol`](../../src/contracts/permissions/Pausable.sol) | |
 | [`SlashingLib.sol`](../../src/contracts/libraries/SlashingLib.sol) | slashing math |
 | [`OperatorSetLib.sol`](../../src/contracts/libraries/OperatorSetLib.sol) | encode/decode operator sets |
 | [`Snapshots.sol`](../../src/contracts/libraries/Snapshots.sol) | historical state |
+
+### Function Deprecation Notice Q2 2026
+
+The `v1.9.0` slashing upgrade introduces a single slasher per operatorSet that is stored in the `AllocationManager`. The functions in the leftmost column will be deprecated in Q2 2026 in favor of the newly specified function (if applicable). 
+
+| Function | MigrateTo | Notes |
+| -------- | -------- | -------- |
+| `createOperatorSets(avs, CreateSetParams[])` | `createOperatorSets(address avs, CreateSetParamsV2[])` | New function takes in a slasher address |
+| `createRedistributingOperatorSets(avs, CreateSetParams[], redistributionRecipients[])` | `createRedistributingOperatorSets(avs, CreateSetParamsV2[], redistributionRecipients[])` | New function takes in a slasher address |
+| [`migrateSlashers(operatorSets[])`](#migrateslashers) | N/A | Migration function to migrate slashers from the `PermissionController` to the `AllocationManager` |
 
 ## Prior Reading
 
@@ -29,10 +40,57 @@ The `AllocationManager` manages AVS metadata registration, registration and dere
 
 The `AllocationManager's` responsibilities are broken down into the following concepts:
 
+* [Contract Architecture](#contract-architecture)
 * [AVS Metadata](#avs-metadata)
 * [Operator Sets](#operator-sets)
 * [Allocations and Slashing](#allocations-and-slashing)
 * [Config](#config)
+
+## Contract Architecture
+
+The `AllocationManager` uses a **split contract pattern** implemented via the `SplitContractMixin` to address EVM contract size limitations while maintaining full backwards compatibility.
+
+```mermaid
+graph TD
+Alice --> |call| Proxy["AllocationManager Proxy"]
+Proxy -->|delegatecall| Logic["AllocationManager Logic"]
+Logic -->|_delegateView| View["AllocationManager View"]
+```
+
+### Split Contract Pattern
+
+**Main Contract (`AllocationManager`):**
+- Contains all state-mutating functions (actions)
+- Inherits from `SplitContractMixin` which provides delegation capabilities
+- Delegates all view function calls to the separate view contract
+- Maintains the same external interface as a monolithic contract
+
+**View Contract (`AllocationManagerView`):**
+- Contains all read-only view functions
+- Shares the same storage layout as the main contract using `layout at 151` directive
+- Implements the same `IAllocationManagerView` interface
+
+### Rationale
+
+**Codesize Optimization:**
+- The EVM has a contract size limit of 24KB (24,576 bytes) for deployed contracts
+- Complex contracts like `AllocationManager` with extensive functionality can exceed this limit
+- By splitting view functions into a separate contract, the main contract stays under the size limit
+- This allows for more comprehensive functionality without compromising deployability
+
+**Backwards Compatibility:**
+- The external interface remains identical to a monolithic contract
+- All existing integrations continue to work without modification
+- View functions are transparently delegated using `_delegateView()`
+- No breaking changes to the ABI or function signatures
+
+**Implementation Details:**
+- View functions in the main contract use `_delegateView(viewImplementation)` to delegate calls.
+- The `viewImplementation` address is set during construction and stored as an immutable variable.
+- The `_delegateView()` function conveniently indicates which calls are intended to be delegated as view functions, but it does not enforce this at the EVM level; rather, it signals intended usage and expected behavior to the user or integrator. 
+- Both contracts are aligned in storage layout, so all state variables are accessible as intended.
+
+This pattern is especially useful for complex contracts that require a comprehensive set of view functions while maintaining the ability to perform state mutations. It helps keep contracts deployable within EVM bytecode limits, while making clear which functions are for data retrieval.
 
 ## Parameterization
 
@@ -215,11 +273,14 @@ The `RegistrationStatus.slashableUntil` value is used to ensure an operator rema
 
 #### `createOperatorSets`
 
+***Note: The `createOperatorSets` function that uses `CreateSetParams` will be deprecated in favor of `createOperatorSets` that takes in `CreateSetParamsV2` (with a slasher) in Q2 2026.***
+
 ```solidity
 /**
  * @notice Parameters used by an AVS to create new operator sets
  * @param operatorSetId the id of the operator set to create
  * @param strategies the strategies to add as slashable to the operator set
+ * @dev This struct and its associated method will be deprecated in Early Q2 2026
  */
 struct CreateSetParams {
     uint32 operatorSetId;
@@ -227,14 +288,38 @@ struct CreateSetParams {
 }
 
 /**
- * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+ * @notice Parameters used by an AVS to create new operator sets
+ * @param operatorSetId the id of the operator set to create
+ * @param strategies the strategies to add as slashable to the operator set
+ * @param slasher the address that will be the slasher for the operator set
  */
-function createOperatorSets(
-    address avs,
-    CreateSetParams[] calldata params
-)
-    external
-    checkCanCall(avs)
+
+struct CreateSetParamsV2 {
+    uint32 operatorSetId;
+    IStrategy[] strategies;
+    address slasher;
+}
+
+/**
+ * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+ * @dev Upon creation, the address that can slash the operatorSet is the `avs` address. If you would like to use a different address,
+ *      use the `createOperatorSets` method which takes in `CreateSetParamsV2` instead.
+ * @dev THIS FUNCTION WILL BE DEPRECATED IN EARLY Q2 2026 IN FAVOR OF `createOperatorSets`, WHICH TAKES IN `CreateSetParamsV2`
+ * @dev Reverts for: 
+ *      - NonexistentAVSMetadata: The AVS metadata is not registered
+ *      - InvalidOperatorSet: The operatorSet already exists
+ *      - InputAddressZero: The slasher is the zero address
+ */
+function createOperatorSets(address avs, CreateSetParams[] calldata params) external checkCanCall(avs);
+
+/**
+ * @notice Allows an AVS to create new operator sets, defining strategies that the operator set uses
+ * @dev Reverts for: 
+ *      - NonexistentAVSMetadata: The AVS metadata is not registered
+ *      - InvalidOperatorSet: The operatorSet already exists
+ *      - InputAddressZero: The slasher is the zero address
+ */
+function createOperatorSets(address avs, CreateSetParamsV2[] calldata params) external checkCanCall(avs);
 ```
 
 _Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
@@ -243,6 +328,8 @@ AVSs use this method to create new operator sets. An AVS can create as many oper
 
 On creation, the `avs` specifies an `operatorSetId` unique to the AVS. Together, the `avs` address and `operatorSetId` create a `key` that uniquely identifies this operator set throughout the `AllocationManager`.
 
+The `avs` also specifies a `slasher`, an address that can slash the operatorSet. For the `createOperatorSets` function that takes in the *old* `CreateSetParams` struct, the slasher is set to the `avs` address. 
+
 Optionally, the `avs` can provide a list of `strategies`, specifying which strategies will be slashable for the new operator set. AVSs may create operator sets with various strategies based on their needs - and strategies may be added to more than one operator set.
 
 *Effects*:
@@ -250,26 +337,68 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
     * For each `params.strategies` element:
         * Add `strategy` to `_operatorSetStrategies[operatorSetKey]`
         * Emits `StrategyAddedToOperatorSet` event
+    * Sets the slasher in `_slashers[operatorSetKey]`, with an `effectBlock = uint32(block.number)`, allowing the slasher to be active immediately
+    * Emits a `SlasherUpdated` event
+
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
 * AVS MUST have registered metadata via calling `updateAVSMetadataURI`
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
+    * The `slasher` MUST NOT be the zero address
 
 #### `createRedistributingOperatorSets`
 
+***Note: The `createRedistributingOperatorSets` function that uses `CreateSetParams` will be deprecated in favor of `createOperatorSets` that takes in `CreateSetParamsV2` (with a slasher) in Q2 2026.***
+
 ```solidity
 /**
- * @notice Allows an AVS to create new redistributing operator sets, defining strategies and the redistribution recipient the operator set uses
+ * @notice Allows an AVS to create new Redistribution operator sets.
+ * @param avs The AVS creating the new operator sets.
+ * @param params An array of operator set creation parameters.
+ * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
+ * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
+ *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+ * @dev The address that can slash the operatorSet is the `avs` address. If you would like to use a different address,
+ *      use the `createOperatorSets` method which takes in `CreateSetParamsV2` instead.
+ * @dev THIS FUNCTION WILL BE DEPRECATED IN EARLY Q2 2026 IN FAVOR OF `createRedistributingOperatorSets` WHICH TAKES IN `CreateSetParamsV2`
+ * @dev Reverts for:
+ *      - InputArrayLengthMismatch: The length of the params array does not match the length of the redistributionRecipients array
+ *      - NonexistentAVSMetadata: The AVS metadata is not registered
+ *      - InputAddressZero: The redistribution recipient is the zero address
+ *      - InvalidRedistributionRecipient: The redistribution recipient is the zero address or the default burn address
+ *      - InvalidOperatorSet: The operatorSet already exists
+ *      - InvalidStrategy: The strategy is the BEACONCHAIN_ETH_STRAT or the EIGEN strategy
+ *      - InputAddressZero: The slasher is the zero address
  */
 function createRedistributingOperatorSets(
     address avs,
     CreateSetParams[] calldata params,
     address[] calldata redistributionRecipients
-)
-    external
-    checkCanCall(avs)
+) external checkCanCall(avs);
+
+/**
+ * @notice Allows an AVS to create new Redistribution operator sets.
+ * @param avs The AVS creating the new operator sets.
+ * @param params An array of operator set creation parameters.
+ * @param redistributionRecipients An array of addresses that will receive redistributed funds when operators are slashed.
+ * @dev Same logic as `createOperatorSets`, except `redistributionRecipients` corresponding to each operator set are stored.
+ *      Additionally, emits `RedistributionOperatorSetCreated` event instead of `OperatorSetCreated` for each created operator set.
+ * @dev Reverts for:
+ *      - InputArrayLengthMismatch: The length of the params array does not match the length of the redistributionRecipients array
+ *      - NonexistentAVSMetadata: The AVS metadata is not registered
+ *      - InputAddressZero: The redistribution recipient is the zero address
+ *      - InvalidRedistributionRecipient: The redistribution recipient is the zero address or the default burn address
+ *      - InvalidOperatorSet: The operatorSet already exists
+ *      - InvalidStrategy: The strategy is the BEACONCHAIN_ETH_STRAT or the EIGEN strategy
+ *      - InputAddressZero: The slasher is the zero address
+ */
+function createRedistributingOperatorSets(
+    address avs,
+    CreateSetParamsV2[] calldata params,
+    address[] calldata redistributionRecipients
+) external checkCanCall(avs);
 ```
 
 AVSs use this method to create new redistributing operatorSets. Unlike the previous function, slashed funds for this operatorSet are sent to a `redistributionRecipient`. This value is set only once, upon creation. Note that redistributing operatorSets may not have Native ETH, as the protocol does not support native eth redistribution. See [ELIP-006](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-006.md) for additional context. 
@@ -281,6 +410,8 @@ AVSs use this method to create new redistributing operatorSets. Unlike the previ
         * Emits `StrategyAddedToOperatorSet` event
     * Sets the `redistributionRecipient` of the operatorSet
         * Emits the `RedistributionAddressSet`
+    * Sets the slasher in `_slashers[operatorSetKey]`, with an `effectBlock = uint32(block.number)`, allowing the slasher to be active immediately
+    * Emits a `SlasherUpdated` event
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
@@ -288,6 +419,7 @@ AVSs use this method to create new redistributing operatorSets. Unlike the previ
 * The `redistributionRecipient` MUST NOT  be the 0 address
 * For each `CreateSetParams` element:
     * Each `params.operatorSetId` MUST NOT already exist in `_operatorSets[avs]`
+    * The `slasher` MUST NOT be the zero address
     
 #### `addStrategiesToOperatorSet`
 
@@ -771,11 +903,10 @@ function slashOperator(
 )
     external
     onlyWhenNotPaused(PAUSED_OPERATOR_SLASHING)
-    checkCanCall(avs)
     returns (uint256, uint256[] memory)
 ```
 
-_Note: this method can be called directly by an AVS, or by a caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
+_Note: As of v1.9.0, this method can *only* be called by a single caller authorized by the AVS. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
 AVSs use slashing as a punitive disincentive for misbehavior. For details and examples of how slashing works, see [ELIP-002#Slashing of Unique Stake](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#slashing-of-unique-stake). Note that whatever slashing criteria an AVS decides on, the only criteria enforced by the `AllocationManager` are those detailed above (see [Evaluating Whether an Allocation is "Slashable"](#evaluating-whether-an-allocation-is-slashable)).
 
@@ -827,6 +958,7 @@ Once slashing is processed for a strategy, [slashed stake is burned or redistrib
 **Methods:**
 * [`setAllocationDelay`](#setallocationdelay)
 * [`setAVSRegistrar`](#setavsregistrar)
+* [`updateSlasher`](#updateslasher)
 
 #### `setAllocationDelay`
 
@@ -837,6 +969,9 @@ Once slashing is processed for a strategy, [slashed stake is burned or redistrib
  * allocating magnitude to an operator set, and the magnitude becoming slashable.
  * @param operator The operator to set the delay on behalf of.
  * @param delay the allocation delay in blocks
+ * @dev When the delay is set for a newly-registered operator (via the `DelegationManager.registerAsOperator` method),
+ * the delay will take effect immediately, allowing for operators to allocate slashable stake immediately. 
+ * Else, the delay will take effect after `ALLOCATION_CONFIGURATION_DELAY` blocks.
  */
 function setAllocationDelay(
     address operator,
@@ -847,7 +982,7 @@ function setAllocationDelay(
 
 _Note: IF NOT CALLED BY THE `DelegationManager`, this method can be called directly by an operator, or by a caller authorized by the operator. See [`PermissionController.md`](../permissions/PermissionController.md) for details._
 
-This function sets an operator's allocation delay, in blocks. This delay can be updated by the operator once set. Both the initial setting of this value and any further updates _take `ALLOCATION_CONFIGURATION_DELAY` blocks_ to take effect. Because having a delay is a requirement to allocating slashable stake, this effectively means that once the slashing release goes live, no one will be able to allocate slashable stake for at least `ALLOCATION_CONFIGURATION_DELAY` blocks.
+This function sets an operator's allocation delay, in blocks. This delay can be updated by the operator once set. The initial setting of this value by a newly created operator via [`DelegationManager.registerAsOperator`](./DelegationManager.md#registerasoperator) will take effect immediately. The setting of this value for an operator who has already been registered in core or further updates _take `ALLOCATION_CONFIGURATION_DELAY` blocks_ to take effect. Because having a delay is a requirement to allocating slashable stake, this effectively means that once the slashing release goes live, no already-created operators will be able to allocate slashable stake for at least `ALLOCATION_CONFIGURATION_DELAY` blocks.
 
 The `DelegationManager` calls this upon operator registration for all new operators created after the slashing release. For operators that existed in the `DelegationManager` _prior_ to the slashing release, **they will need to call this method to configure an allocation delay prior to allocating slashable stake to any AVS**.
 
@@ -855,7 +990,8 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 
 *Effects*:
 * Sets the operator's `pendingDelay` to the proposed `delay`, and save the `effectBlock` at which the `pendingDelay` can be activated
-    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
+    * If a newly registered operator in core, `effectBlock = uint32(block.number)`, allowing operators to allocate slashable stake immediately after registration
+    * Else, `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
 * If the operator has a `pendingDelay`, and if the `effectBlock` has passed, sets the operator's `delay` to the `pendingDelay` value
     * This also sets the `isSet` boolean to `true` to indicate that the operator's `delay`, even if 0, was set intentionally
 * Emits an `AllocationDelaySet` event
@@ -917,3 +1053,81 @@ Note that when an operator registers, registration will FAIL if the call to `IAV
 
 *Requirements*:
 * Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+
+#### `updateSlasher`
+
+```solidity
+/**
+ * @notice Allows an AVS to update the slasher for an operator set
+ * @param operatorSet the operator set to update the slasher for
+ * @param slasher the new slasher
+ * @dev The new slasher will take effect in DEALLOCATION_DELAY blocks
+ * @dev The slasher can only be updated if it has already been set. The slasher is set either on operatorSet creation or,
+ *      for operatorSets created prior to v1.9.0, via `migrateSlashers`
+ * @dev Reverts for:
+ *      - InvalidCaller: The caller cannot update the slasher for the operator set (set via the `PermissionController`)
+ *      - InvalidOperatorSet: The operator set does not exist
+ *      - SlasherNotSet: The slasher has not been set yet
+ *      - InputAddressZero: The slasher is the zero address
+ */
+function updateSlasher(OperatorSet memory operatorSet, address slasher) external;
+```
+
+Updates the slasher that can call [`slashOperator`](#slashoperator) on behalf of an operatorSet. The slasher will become active after `DEALLOCATION_DELAY` blocks. Only 1 address can slash an operatorSet. 
+
+Prior to `v1.9.0`, the address that could set the slasher was settable via the `PermissionController`, which allowed any number of admins/appointees to slash an operatorSet on behalf of an AVS. OperatorSets created prior to `v1.9.0` will have their slasher migrated to the `AllocationManager` - see [`migrateSlashers`](#migrateslashers) for more information. 
+
+*Effects*:
+* Sets the operatorSet's `pendingSlasher` to the proposed `slasher`, and save the `effectBlock` at which the `pendingSlasher` can be activated
+    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
+* If the operatorSet has a `pendingDelay`, and if the `effectBlock` has passed, sets the operatorSet's slasher to the pendingSlasher
+* Emits an `SlasherUpdated` event
+
+*Requirements*:
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* The operatorSet MUST exist
+* The slasher MUST already be set - either upon creation of the operatorSet or migration for operatorSets created prior to `v1.9.0`
+* The slasher address MUST NOT be the zero address
+
+#### `migrateSlashers`
+
+```solidity
+/**
+ * @notice Allows any address to migrate the slasher from the permission controller to the ALM
+ * @param operatorSets the list of operator sets to migrate the slasher for
+ * @dev This function is used to migrate the slasher from the permission controller to the ALM for operatorSets created prior to `v1.9.0`
+ * @dev Migrates based on the following rules:
+ *      - If there is no slasher set or the slasher in the `PermissionController`is the 0 address, the AVS address will be set as the slasher
+ *      - If there are multiple slashers set in the `PermissionController`, the first address will be set as the slasher
+ * @dev A migration can only be completed once for a given operatorSet
+ * @dev This function will be deprecated in Early Q2 2026. EigenLabs will migrate the slasher for all operatorSets created prior to `v1.9.0`
+ * @dev This function does not revert to allow for simpler offchain calling. It will no-op if:
+ *      - The operator set does not exist
+ *      - The slasher has already been set, either via migration or creation of the operatorSet
+ */
+function migrateSlashers(
+    OperatorSet[] memory operatorSets
+) external;
+```
+
+Migrates a slasher from the `PermissionController` to the `AllocationManager`. **This function is useful for operatorSets that have been created prior to `v1.9.0`**. Customers *will not* have to migrate a slasher themselves; migration will be done on behalf of all operatorSets upon completion of the `v1.9.0` upgrade. 
+
+Only 1 slasher can be slash an operatorSet on behalf of an AVS; however, multiple addresses may have had the ability to slash an operatorSet via the previous `PermissionController`-based access control. Because of this mismatch, slashers are migrated based on the following criteria:
+1. If there are no slashers set in the `PermissionController` OR the slasher set is the 0 address, set the slasher to the AVS
+2. If there are *multiple* slashers set, the first address will be set as the slasher
+
+**The slasher can only be migrated once**. After, an operatorSet must use [`updateSlasher`](#updateslasher) to set a new address. 
+
+*Effects*:
+* For each operatorSet: 
+    * Sets the operatorSet's `pendingSlasher` to the proposed `slasher`, and save the `effectBlock` at which the `pendingSlasher` can be activated
+        * `effectBlock = uint32(block.number)`, allowing the slasher to slash immediately
+    * If the operatorSet has a `pendingDelay`, and if the `effectBlock` has passed, sets the operatorSet's slasher to the pendingSlasher
+    * Emits a `SlasherMigrated` event
+    * Emits an `SlasherUpdated` event
+
+*Requirements*:
+* For each operatorSet: 
+    * If the operatorSet does not exist, do not migrate (no revert)
+    * If the slasher is already set, do not migrate (no revert)
+    * The slasher address MUST NOT be the zero address

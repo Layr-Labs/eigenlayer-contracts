@@ -9,6 +9,7 @@ contract AllocationManagerHarness is AllocationManager {
     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
 
     constructor(
+        IAllocationManagerView _allocationManagerView,
         IDelegationManager _delegation,
         IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
@@ -17,17 +18,21 @@ contract AllocationManagerHarness is AllocationManager {
         uint32 _ALLOCATION_CONFIGURATION_DELAY
     )
         AllocationManager(
+            _allocationManagerView,
             _delegation,
             _eigenStrategy,
             _pauserRegistry,
             _permissionController,
             _DEALLOCATION_DELAY,
-            _ALLOCATION_CONFIGURATION_DELAY,
-            TestConstants.TEST_VERSION
+            _ALLOCATION_CONFIGURATION_DELAY
         )
     {}
 
     function deallocationQueueAtIndex(address operator, IStrategy strategy, uint index) external view returns (bytes32) {
         return deallocationQueue[operator][strategy].at(index);
+    }
+
+    function setSlasherToZero(OperatorSet memory operatorSet) external {
+        _slashers[operatorSet.key()] = SlasherParams(address(0), address(0), 0);
     }
 }

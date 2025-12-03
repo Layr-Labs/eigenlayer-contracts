@@ -11,7 +11,6 @@ Libraries and Mixins:
 | File | Notes |
 | -------- | -------- |
 | [`PermissionControllerMixin.sol`](../../src/contracts/mixins/PermissionControllerMixin.sol) | account delegation |
-| [`SemVerMixin.sol`](../../src/contracts/mixins/SemVerMixin.sol) | semantic versioning |
 | [`OperatorSetLib.sol`](../../src/contracts/libraries/OperatorSetLib.sol) | encode/decode operator sets |
 
 ## Overview

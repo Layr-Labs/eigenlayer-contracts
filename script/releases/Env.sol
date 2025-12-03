@@ -10,15 +10,18 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 /// core/
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AllocationManager.sol";
+import "src/contracts/core/AllocationManagerView.sol";
 import "src/contracts/core/AVSDirectory.sol";
 import "src/contracts/core/DelegationManager.sol";
 import "src/contracts/core/RewardsCoordinator.sol";
 import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/ReleaseManager.sol";
+import "src/contracts/core/ProtocolRegistry.sol";
 
-/// permissions/
+/// pemissions/
 import "src/contracts/permissions/PauserRegistry.sol";
 import "src/contracts/permissions/PermissionController.sol";
 import "src/contracts/permissions/KeyRegistrar.sol";
@@ -73,9 +76,7 @@ library Env {
     DeployedImpl internal constant impl = DeployedImpl.A;
     DeployedInstance internal constant instance = DeployedInstance.A;
 
-    /**
-     * env
-     */
+    /// env
     function env() internal view returns (string memory) {
         return _string("ZEUS_ENV");
     }
@@ -201,9 +202,7 @@ library Env {
         return _envBool("DESTINATION_CHAIN");
     }
 
-    /**
-     * core/
-     */
+    /// core/
     function allocationManager(
         DeployedProxy
     ) internal view returns (AllocationManager) {
@@ -214,6 +213,12 @@ library Env {
         DeployedImpl
     ) internal view returns (AllocationManager) {
         return AllocationManager(_deployedImpl(type(AllocationManager).name));
+    }
+
+    function allocationManagerView(
+        DeployedImpl
+    ) internal view returns (AllocationManagerView) {
+        return AllocationManagerView(_deployedImpl(type(AllocationManagerView).name));
     }
 
     function avsDirectory(
@@ -276,9 +281,19 @@ library Env {
         return ReleaseManager(_deployedImpl(type(ReleaseManager).name));
     }
 
-    /**
-     * permissions/
-     */
+    function protocolRegistry(
+        DeployedProxy
+    ) internal view returns (ProtocolRegistry) {
+        return ProtocolRegistry(_deployedProxy(type(ProtocolRegistry).name));
+    }
+
+    function protocolRegistry(
+        DeployedImpl
+    ) internal view returns (ProtocolRegistry) {
+        return ProtocolRegistry(_deployedImpl(type(ProtocolRegistry).name));
+    }
+
+    /// permissions/
     function pauserRegistry(
         DeployedImpl
     ) internal view returns (PauserRegistry) {
@@ -309,9 +324,7 @@ library Env {
         return KeyRegistrar(_deployedImpl(type(KeyRegistrar).name));
     }
 
-    /**
-     * pods/
-     */
+    /// pods/
     function eigenPod(
         DeployedBeacon
     ) internal view returns (UpgradeableBeacon) {
@@ -336,9 +349,7 @@ library Env {
         return EigenPodManager(_deployedImpl(type(EigenPodManager).name));
     }
 
-    /**
-     * strategies/
-     */
+    /// strategies/
     function eigenStrategy(
         DeployedProxy
     ) internal view returns (EigenStrategy) {
@@ -373,7 +384,10 @@ library Env {
     }
 
     // Returns the proxy instance at index `i`
-    function strategyBaseTVLLimits(DeployedInstance, uint256 i) internal view returns (StrategyBaseTVLLimits) {
+    function strategyBaseTVLLimits(
+        DeployedInstance,
+        uint256 i
+    ) internal view returns (StrategyBaseTVLLimits) {
         return StrategyBaseTVLLimits(_deployedInstance(type(StrategyBaseTVLLimits).name, i));
     }
 
@@ -395,9 +409,7 @@ library Env {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
     }
 
-    /**
-     * token/
-     */
+    /// token/
     function eigen(
         DeployedProxy
     ) internal view returns (Eigen) {
@@ -422,9 +434,7 @@ library Env {
         return IBackingEigen(_deployedImpl(type(BackingEigen).name));
     }
 
-    /**
-     * multichain/
-     */
+    /// multichain/
     function emptyContract(
         DeployedImpl
     ) internal view returns (EmptyContract) {
@@ -491,10 +501,11 @@ library Env {
         return TaskMailbox(_deployedImpl(type(TaskMailbox).name));
     }
 
-    /**
-     * Helpers
-     */
-    function _deployedInstance(string memory name, uint256 idx) private view returns (address) {
+    /// Helpers
+    function _deployedInstance(
+        string memory name,
+        uint256 idx
+    ) private view returns (address) {
         return ZEnvHelpers.state().deployedInstance(name, idx);
     }
 
@@ -567,25 +578,77 @@ library Env {
         return vm.envString(key);
     }
 
-    /**
-     * Test Helpers
-     */
-
-    /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
-    function _getProxyImpl(
-        address _proxy
-    ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyImplementation(ITransparentUpgradeableProxy(_proxy));
+    function _strEq(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
-    /// @dev Query and return `proxyAdmin.getProxyAdmin(proxy)`
-    function _getProxyAdmin(
+    /// @dev Use this function to get the proxy admin when it is not `Env.proxyAdmin()`
+    /// @dev `_getProxyAdmin` expects the caller to be the actual proxy admin
+    function getProxyAdminBySlot(
         address _proxy
     ) internal view returns (address) {
-        return ProxyAdmin(Env.proxyAdmin()).getProxyAdmin(ITransparentUpgradeableProxy(_proxy));
+        // https://eips.ethereum.org/EIPS/eip-1967
+        bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
+        return admin;
     }
 
-    function _strEq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
+    ///
+    /// Environment Type Helpers
+    ///
+
+    /// Types that help facilitate network type differentation
+    /// @dev Mimics the deployment matrix in: https://github.com/Layr-Labs/eigenlayer-contracts?tab=readme-ov-file#deployments
+    function isCoreProtocolDeployed() internal view returns (bool) {
+        return _isMainnet() || _isSepolia() || _isHoodi() || _isPreprod();
+    }
+
+    function supportsEigenPods() internal view returns (bool) {
+        return _isMainnet() || _isHoodi() || _isPreprod();
+    }
+
+    function isSource() internal view returns (bool) {
+        return _isMainnet() || _isSepolia() || _isPreprod();
+    }
+
+    function isDestination() internal view returns (bool) {
+        return _isMainnet() || _isBase() || _isSepolia() || _isBaseSepolia() || _isPreprod();
+    }
+
+    /// @dev Whether the environment is a testnet environment
+    function _isTestnetEnvironment() internal view returns (bool) {
+        return _isSepolia() || _isBaseSepolia() || _isHoodi() || _isPreprod();
+    }
+
+    /// @dev Whether the environment is a production environment with real funds
+    function _isProductionEnvironment() internal view returns (bool) {
+        return _isMainnet() || _isBase();
+    }
+
+    function _isMainnet() private view returns (bool) {
+        return _strEq(env(), "mainnet");
+    }
+
+    function _isBase() private view returns (bool) {
+        return _strEq(env(), "base");
+    }
+
+    function _isSepolia() private view returns (bool) {
+        return _strEq(env(), "testnet-sepolia");
+    }
+
+    function _isBaseSepolia() private view returns (bool) {
+        return _strEq(env(), "testnet-base-sepolia");
+    }
+
+    function _isHoodi() private view returns (bool) {
+        return _strEq(env(), "testnet-hoodi");
+    }
+
+    function _isPreprod() private view returns (bool) {
+        return _strEq(env(), "preprod-hoodi");
     }
 }

@@ -3,11 +3,9 @@ pragma solidity ^0.8.27;
 
 import "../interfaces/IPauserRegistry.sol";
 
-/**
- * @title Defines pauser & unpauser roles + modifiers to be used elsewhere.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Defines pauser & unpauser roles + modifiers to be used elsewhere.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 contract PauserRegistry is IPauserRegistry {
     /// @notice Mapping of addresses to whether they hold the pauser role.
     mapping(address => bool) public isPauser;
@@ -20,7 +18,10 @@ contract PauserRegistry is IPauserRegistry {
         _;
     }
 
-    constructor(address[] memory _pausers, address _unpauser) {
+    constructor(
+        address[] memory _pausers,
+        address _unpauser
+    ) {
         for (uint256 i = 0; i < _pausers.length; i++) {
             _setIsPauser(_pausers[i], true);
         }
@@ -30,7 +31,10 @@ contract PauserRegistry is IPauserRegistry {
     /// @notice Sets new pauser - only callable by unpauser, as the unpauser is expected to be kept more secure, e.g. being a multisig with a higher threshold
     /// @param newPauser Address to be added/removed as pauser
     /// @param canPause Whether the address should be added or removed as pauser
-    function setIsPauser(address newPauser, bool canPause) external onlyUnpauser {
+    function setIsPauser(
+        address newPauser,
+        bool canPause
+    ) external onlyUnpauser {
         _setIsPauser(newPauser, canPause);
     }
 
@@ -41,7 +45,10 @@ contract PauserRegistry is IPauserRegistry {
         _setUnpauser(newUnpauser);
     }
 
-    function _setIsPauser(address pauser, bool canPause) internal {
+    function _setIsPauser(
+        address pauser,
+        bool canPause
+    ) internal {
         require(pauser != address(0), InputAddressZero());
         isPauser[pauser] = canPause;
         emit PauserStatusChanged(pauser, canPause);

@@ -712,10 +712,8 @@ contract Integration_SlashedEigenpod_BC_HalfSlash is IntegrationCheckUtils {
         check_CompleteCheckpoint_WithCLSlashing_HandleRoundDown_State(staker, slashedGwei);
     }
 
-    /**
-     * @notice Test sets up an EigenPod which has a non-WAD BCSF. After queue withdrawing all depositShares
-     * which sets it to 0, they can then complete checkpoints repeatedly with 0 shares increase to increase the staker DSF each time
-     */
+    /// @notice Test sets up an EigenPod which has a non-WAD BCSF. After queue withdrawing all depositShares
+    /// which sets it to 0, they can then complete checkpoints repeatedly with 0 shares increase to increase the staker DSF each time
     function test_completeCP_withNoAddedShares(uint24 _rand) public rand(_rand) {
         // 4. queue withdraw all depositShares having it set to 0
         uint withdrawableSharesBefore = _getStakerWithdrawableShares(staker, strategies)[0];

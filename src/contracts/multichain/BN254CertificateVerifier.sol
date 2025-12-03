@@ -7,28 +7,18 @@ import "../libraries/BN254.sol";
 import "../libraries/BN254SignatureVerifier.sol";
 import "../libraries/Merkle.sol";
 import "../libraries/OperatorSetLib.sol";
-import "../mixins/SemVerMixin.sol";
 import "../mixins/LeafCalculatorMixin.sol";
 import "./BN254CertificateVerifierStorage.sol";
 
-/**
- * @title BN254CertificateVerifier
- * @notice Singleton verifier for BN254 certificates across multiple operator sets
- * @dev This contract uses BN254 curves for signature verification and
- *      caches operator information for efficient verification
- */
-contract BN254CertificateVerifier is
-    Initializable,
-    BN254CertificateVerifierStorage,
-    SemVerMixin,
-    LeafCalculatorMixin
-{
+/// @title BN254CertificateVerifier
+/// @notice Singleton verifier for BN254 certificates across multiple operator sets
+/// @dev This contract uses BN254 curves for signature verification and
+///      caches operator information for efficient verification
+contract BN254CertificateVerifier is Initializable, BN254CertificateVerifierStorage, LeafCalculatorMixin {
     using Merkle for bytes;
     using BN254 for BN254.G1Point;
 
-    /**
-     * @notice Struct to hold verification context and reduce stack depth
-     */
+    /// @notice Struct to hold verification context and reduce stack depth
     struct VerificationContext {
         bytes32 operatorSetKey;
         BN254OperatorSetInfo operatorSetInfo;
@@ -36,32 +26,24 @@ contract BN254CertificateVerifier is
         BN254.G1Point nonSignerApk;
     }
 
-    /**
-     * @notice Restricts access to the operator table updater
-     */
+    /// @notice Restricts access to the operator table updater
     modifier onlyTableUpdater() {
         require(msg.sender == address(operatorTableUpdater), OnlyTableUpdater());
         _;
     }
 
-    /**
-     * @notice Constructor for the certificate verifier
-     * @dev Disables initializers to prevent implementation initialization
-     * @param _operatorTableUpdater Address authorized to update operator tables
-     * @param _version The semantic version of the contract
-     */
+    /// @notice Constructor for the certificate verifier
+    /// @dev Disables initializers to prevent implementation initialization
+    /// @param _operatorTableUpdater Address authorized to update operator tables
     constructor(
-        IOperatorTableUpdater _operatorTableUpdater,
-        string memory _version
-    ) BN254CertificateVerifierStorage(_operatorTableUpdater) SemVerMixin(_version) {
+        IOperatorTableUpdater _operatorTableUpdater
+    ) BN254CertificateVerifierStorage(_operatorTableUpdater) {
         _disableInitializers();
     }
 
-    /**
-     *
-     *                         EXTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     ///@inheritdoc IBN254CertificateVerifier
     function updateOperatorTable(
@@ -139,18 +121,14 @@ contract BN254CertificateVerifier is
         return true;
     }
 
-    /**
-     *
-     *                         INTERNAL FUNCTIONS
-     *
-     */
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
-    /**
-     * @notice Internal function to verify a certificate
-     * @param operatorSet The operator set the certificate is for
-     * @param cert The certificate to verify
-     * @return totalSignedStakeWeights The amount of stake that signed the certificate for each stake type
-     */
+    /// @notice Internal function to verify a certificate
+    /// @param operatorSet The operator set the certificate is for
+    /// @param cert The certificate to verify
+    /// @return totalSignedStakeWeights The amount of stake that signed the certificate for each stake type
     function _verifyCertificate(
         OperatorSet memory operatorSet,
         BN254Certificate memory cert
@@ -174,12 +152,13 @@ contract BN254CertificateVerifier is
         return ctx.totalSignedStakeWeights;
     }
 
-    /**
-     * @notice Validates certificate timestamp against staleness requirements
-     * @param operatorSetKey The operator set key
-     * @param referenceTimestamp The reference timestamp to validate
-     */
-    function _validateCertificateTimestamp(bytes32 operatorSetKey, uint32 referenceTimestamp) internal view {
+    /// @notice Validates certificate timestamp against staleness requirements
+    /// @param operatorSetKey The operator set key
+    /// @param referenceTimestamp The reference timestamp to validate
+    function _validateCertificateTimestamp(
+        bytes32 operatorSetKey,
+        uint32 referenceTimestamp
+    ) internal view {
         // Assert that the certificate is not stale
         uint32 maxStaleness = _maxStalenessPeriods[operatorSetKey];
         require(maxStaleness == 0 || block.timestamp <= referenceTimestamp + maxStaleness, CertificateStale());
@@ -191,12 +170,10 @@ contract BN254CertificateVerifier is
         require(operatorTableUpdater.isRootValidByTimestamp(referenceTimestamp), RootDisabled());
     }
 
-    /**
-     * @notice Processes non-signer witnesses and returns aggregate non-signer public key
-     * @param ctx The verification context
-     * @param cert The certificate being verified
-     * @return nonSignerApk The aggregate public key of non-signers
-     */
+    /// @notice Processes non-signer witnesses and returns aggregate non-signer public key
+    /// @param ctx The verification context
+    /// @param cert The certificate being verified
+    /// @return nonSignerApk The aggregate public key of non-signers
     function _processNonSigners(
         VerificationContext memory ctx,
         BN254Certificate memory cert
@@ -230,13 +207,11 @@ contract BN254CertificateVerifier is
         }
     }
 
-    /**
-     * @notice Gets operator info from cache or verifies and caches it
-     * @param operatorSetKey The operator set key
-     * @param referenceTimestamp The reference timestamp
-     * @param witness The operator info witness containing proof data
-     * @return operatorInfo The verified operator information
-     */
+    /// @notice Gets operator info from cache or verifies and caches it
+    /// @param operatorSetKey The operator set key
+    /// @param referenceTimestamp The reference timestamp
+    /// @param witness The operator info witness containing proof data
+    /// @return operatorInfo The verified operator information
     function _getOrCacheNonsignerOperatorInfo(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
@@ -265,12 +240,13 @@ contract BN254CertificateVerifier is
         }
     }
 
-    /**
-     * @notice Verifies the BLS signature
-     * @param ctx The verification context
-     * @param cert The certificate containing the signature to verify
-     */
-    function _verifySignature(VerificationContext memory ctx, BN254Certificate memory cert) internal view {
+    /// @notice Verifies the BLS signature
+    /// @param ctx The verification context
+    /// @param cert The certificate containing the signature to verify
+    function _verifySignature(
+        VerificationContext memory ctx,
+        BN254Certificate memory cert
+    ) internal view {
         // Calculate signer aggregate public key by subtracting non-signers from total
         BN254.G1Point memory signerApk = ctx.operatorSetInfo.aggregatePubkey.plus(ctx.nonSignerApk.negate());
 
@@ -283,15 +259,13 @@ contract BN254CertificateVerifier is
         require(pairingSuccessful && signatureValid, VerificationFailed());
     }
 
-    /**
-     * @notice Verifies a merkle proof for an operator info
-     * @param operatorSetKey The operator set key
-     * @param referenceTimestamp The reference timestamp
-     * @param operatorIndex The index of the operator
-     * @param operatorInfo The operator info
-     * @param proof The merkle proof as bytes
-     * @return verified Whether the proof is valid
-     */
+    /// @notice Verifies a merkle proof for an operator info
+    /// @param operatorSetKey The operator set key
+    /// @param referenceTimestamp The reference timestamp
+    /// @param operatorIndex The index of the operator
+    /// @param operatorInfo The operator info
+    /// @param proof The merkle proof as bytes
+    /// @return verified Whether the proof is valid
     function _verifyOperatorInfoMerkleProof(
         bytes32 operatorSetKey,
         uint32 referenceTimestamp,
@@ -304,11 +278,9 @@ contract BN254CertificateVerifier is
         return proof.verifyInclusionKeccak(root, leaf, operatorIndex);
     }
 
-    /**
-     *
-     *                         VIEW FUNCTIONS
-     *
-     */
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     ///@inheritdoc IBaseCertificateVerifier
     function getOperatorSetOwner(
@@ -410,7 +382,10 @@ contract BN254CertificateVerifier is
     }
 
     /// @inheritdoc IBN254CertificateVerifier
-    function calculateCertificateDigest(uint32 referenceTimestamp, bytes32 messageHash) public pure returns (bytes32) {
+    function calculateCertificateDigest(
+        uint32 referenceTimestamp,
+        bytes32 messageHash
+    ) public pure returns (bytes32) {
         return keccak256(abi.encode(BN254_CERTIFICATE_TYPEHASH, referenceTimestamp, messageHash));
     }
 }

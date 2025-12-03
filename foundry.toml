@@ -22,7 +22,7 @@
         "forge-std/=lib/forge-std/src/"
     ]
     # Specifies the exact version of Solidity to use, overriding auto-detection.
-    solc_version = '0.8.27'
+    solc_version = '0.8.30'
     # If enabled, treats Solidity compiler warnings as errors, preventing artifact generation if warnings are present.
     deny_warnings = true 
     # If set to true, changes compilation pipeline to go through the new IR optimizer.
@@ -55,7 +55,8 @@
     ]
     # An array of file paths from which warnings should be ignored during compilation.
     ignored_warnings_from = [
-        "src/test"
+        "src/test",
+        "src/contracts/core/AllocationManager.sol" # TODO: Remove
     ]
 
     # Test Configuration
@@ -91,6 +92,8 @@
     line_length = 120  # Default: 120
     # Number of spaces per indentation level
     tab_width = 4  # Default: 4
+    # Style of indent
+    style = "space"  # Options: "space", "tab"
     # Whether to print spaces between brackets
     bracket_spacing = false  
     # Style of uint/int256 types
@@ -99,8 +102,22 @@
     quote_style = "double"  # Options: "double", "single", "preserve"
     # Style of underscores in number literals
     number_underscore = "thousands"  # Options: "preserve", "thousands", "remove"
+    # Style of underscores in hex literals
+    hex_underscore = "preserve"  # Options: "preserve", "remove", "bytes"
+    # Print space in state variable, function and modifier `override` attribute
+    override_spacing = false  
     # Whether or not to wrap comments at line_length
     wrap_comments = false  
+    # Style of doc comments
+    docs_style = "line"  # Options: "preserve", "line", "block"
+    # Add new line at start and end of contract declarations
+    contract_new_lines = false  
+    # Whether to suppress spaces around the power operator (**)
+    pow_no_space = true  
+    # Style that determines if a broken list should keep its elements together before breaking individually
+    prefer_compact = "none"  # Options: "none", "calls", "events", "errors", "events_errors", "all"
+    # Keep single imports on a single line even if they exceed line length
+    single_line_imports = false  
     # List of files to ignore during formatting (can use glob patterns)
     ignore = [
         "./src/test/**/*"

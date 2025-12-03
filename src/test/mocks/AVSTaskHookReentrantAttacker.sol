@@ -9,10 +9,8 @@ import {TaskMailbox} from "src/contracts/avs/task/TaskMailbox.sol";
 import {ITaskMailboxTypes} from "src/contracts/interfaces/ITaskMailbox.sol";
 import {IAVSTaskHook} from "src/contracts/interfaces/IAVSTaskHook.sol";
 
-/**
- * @title AVSTaskHookReentrantAttacker
- * @notice Mock contract for testing reentrancy protection in AVSTaskHook
- */
+/// @title AVSTaskHookReentrantAttacker
+/// @notice Mock contract for testing reentrancy protection in AVSTaskHook
 contract AVSTaskHookReentrantAttacker is IAVSTaskHook, ITaskMailboxTypes {
     TaskMailbox public taskMailbox;
 

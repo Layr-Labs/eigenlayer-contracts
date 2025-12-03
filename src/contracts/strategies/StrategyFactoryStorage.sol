@@ -3,11 +3,9 @@ pragma solidity ^0.8.27;
 
 import "../interfaces/IStrategyFactory.sol";
 
-/**
- * @title Storage for the StrategyFactory contract.
- * @author Layr Labs, Inc.
- * @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
- */
+/// @title Storage for the StrategyFactory contract.
+/// @author Layr Labs, Inc.
+/// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
 abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// @notice Upgradeable beacon used for baseline strategies deployed by this contract.
     IBeacon public strategyBeacon;
