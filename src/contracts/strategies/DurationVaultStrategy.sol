@@ -106,6 +106,16 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         emit MetadataURIUpdated(newMetadataURI);
     }
 
+    /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
+    /// @dev Only callable by the vault admin while deposits are open (before lock).
+    function updateTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newStakeCap
+    ) external override onlyVaultAdmin {
+        require(depositsOpen(), DepositsLocked());
+        _setTVLLimits(newMaxPerDeposit, newStakeCap);
+    }
+
     /// @inheritdoc IDurationVaultStrategy
     function unlockTimestamp() public view override returns (uint32) {
         return unlockAt;

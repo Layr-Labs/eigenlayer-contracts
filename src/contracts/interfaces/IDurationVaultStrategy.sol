@@ -77,6 +77,13 @@ interface IDurationVaultStrategy is IStrategy {
         string calldata newMetadataURI
     ) external;
 
+    /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
+    /// @dev Only callable by the vault admin while deposits are open (before lock).
+    function updateTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newStakeCap
+    ) external;
+
     function vaultAdmin() external view returns (address);
     function duration() external view returns (uint32);
     function lockedAt() external view returns (uint32);
