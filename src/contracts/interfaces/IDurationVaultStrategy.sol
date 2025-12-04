@@ -41,16 +41,12 @@ interface IDurationVaultStrategy is IStrategy {
     error OnlyVaultAdmin();
     /// @dev Thrown when attempting to lock an already locked vault.
     error VaultAlreadyLocked();
-    /// @dev Thrown when attempting to unlock or update a vault that has not been locked yet.
-    error VaultNotLocked();
     /// @dev Thrown when attempting to deposit after the vault has been locked.
     error DepositsLocked();
     /// @dev Thrown when attempting to withdraw while funds remain locked.
     error WithdrawalsLocked();
     /// @dev Thrown when attempting to mark the vault as matured before duration elapses.
     error DurationNotElapsed();
-    /// @dev Thrown when attempting to convert a timestamp that exceeds uint32 bounds.
-    error TimestampOverflow();
     /// @dev Thrown when operator integration inputs are missing or invalid.
     error OperatorIntegrationInvalid();
 
