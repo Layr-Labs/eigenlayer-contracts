@@ -182,7 +182,11 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         IERC20 token,
         uint256 amountShares
     ) internal virtual override {
-        require(withdrawalsOpen(), WithdrawalsLocked());
+        if (!withdrawalsOpen()) {
+            address redistributionRecipient = allocationManager.getRedistributionRecipient(_operatorSet);
+            bool isRedistribution = recipient == redistributionRecipient;
+            require(isRedistribution, WithdrawalsLocked());
+        }
         super._beforeWithdrawal(recipient, token, amountShares);
     }
 

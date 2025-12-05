@@ -16,6 +16,7 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
@@ -313,6 +314,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(eigenPodBeacon) == address(0)) eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         if (address(strategyBeacon) == address(0)) strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(durationVaultBeacon) == address(0)) durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
         // multichain
         if (address(keyRegistrar) == address(0)) {
             keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -370,6 +372,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        durationVaultImplementation = new DurationVaultStrategy(strategyManager, eigenLayerPauserReg, delegationManager, allocationManager);
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
@@ -422,6 +425,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // StrategyBase Beacon
         strategyBeacon.upgradeTo(address(baseStrategyImplementation));
+        durationVaultBeacon.upgradeTo(address(durationVaultImplementation));
 
         // Upgrade All deployed strategy contracts to new base strategy
         for (uint i = 0; i < numStrategiesDeployed; i++) {
@@ -456,6 +460,18 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+
+        rewardsCoordinator.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0,
+            _rewardsUpdater: executorMultisig,
+            _activationDelay: 0,
+            _defaultSplitBips: 5000
+        });
+
+        cheats.startPrank(executorMultisig);
+        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
+        cheats.stopPrank();
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
