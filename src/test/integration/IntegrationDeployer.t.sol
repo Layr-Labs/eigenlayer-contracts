@@ -276,7 +276,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
-        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
         cheats.stopPrank();
     }
 
@@ -460,7 +459,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         allocationManager.initialize({initialPausedStatus: 0});
 
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+        strategyFactory.initialize({
+            _initialOwner: executorMultisig,
+            _initialPausedStatus: 0,
+            _strategyBeacon: strategyBeacon,
+            _durationVaultBeacon: durationVaultBeacon
+        });
 
         rewardsCoordinator.initialize({
             initialOwner: executorMultisig,
@@ -469,10 +473,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             _activationDelay: 0,
             _defaultSplitBips: 5000
         });
-
-        cheats.startPrank(executorMultisig);
-        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
-        cheats.stopPrank();
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

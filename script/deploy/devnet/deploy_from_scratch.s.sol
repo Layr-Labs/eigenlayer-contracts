@@ -344,7 +344,8 @@ contract DeployFromScratch is Script, Test {
                 StrategyFactory.initialize.selector,
                 executorMultisig,
                 0, // initial paused status
-                IBeacon(strategyBeacon)
+                IBeacon(strategyBeacon),
+                IBeacon(address(0))
             )
         );
 

@@ -32,11 +32,15 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     function initialize(
         address _initialOwner,
         uint256 _initialPausedStatus,
-        IBeacon _strategyBeacon
+        IBeacon _strategyBeacon,
+        IBeacon _durationVaultBeacon
     ) public virtual initializer {
         _transferOwnership(_initialOwner);
         _setPausedStatus(_initialPausedStatus);
         _setStrategyBeacon(_strategyBeacon);
+        if (address(_durationVaultBeacon) != address(0)) {
+            _setDurationVaultBeacon(_durationVaultBeacon);
+        }
     }
 
     /// @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy

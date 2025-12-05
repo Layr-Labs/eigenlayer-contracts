@@ -78,12 +78,12 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                 new TransparentUpgradeableProxy(
                     address(strategyFactoryImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(StrategyFactory.initialize.selector, initialOwner, initialPausedStatus, strategyBeacon)
+                    abi.encodeWithSelector(
+                        StrategyFactory.initialize.selector, initialOwner, initialPausedStatus, strategyBeacon, durationVaultBeacon
+                    )
                 )
             )
         );
-
-        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
     }
 
     function test_initialization() public view {
@@ -117,7 +117,8 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyFactory.initialize({
             _initialOwner: initialOwner,
             _initialPausedStatus: initialPausedStatus,
-            _strategyBeacon: strategyBeacon
+            _strategyBeacon: strategyBeacon,
+            _durationVaultBeacon: durationVaultBeacon
         });
     }
 
