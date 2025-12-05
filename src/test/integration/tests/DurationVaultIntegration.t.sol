@@ -27,7 +27,22 @@ contract Integration_DurationVault is IntegrationCheckUtils {
     uint internal constant VAULT_MAX_PER_DEPOSIT = 200 ether;
     uint internal constant VAULT_STAKE_CAP = 1000 ether;
 
-    function test_durationVaultLifecycle_flow_deposit_lock_mature() public {
+    bool internal durationVaultSupported;
+
+    modifier vaultSupported() {
+        if (!durationVaultSupported) {
+            console.log("DurationVaultIntegration: duration vault beacon not configured, skipping");
+            return;
+        }
+        _;
+    }
+
+    function setUp() public virtual override {
+        super.setUp();
+        durationVaultSupported = address(strategyFactory.durationVaultBeacon()) != address(0);
+    }
+
+    function test_durationVaultLifecycle_flow_deposit_lock_mature() public vaultSupported {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
         User staker = new User("duration-staker");
 
@@ -74,7 +89,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker should recover deposit");
     }
 
-    function test_durationVault_operatorIntegrationAndMetadataUpdate() public {
+    function test_durationVault_operatorIntegrationAndMetadataUpdate() public vaultSupported {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
 
         assertTrue(delegationManager.isOperator(address(ctx.vault)), "vault must self-register as operator");
@@ -93,7 +108,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(ctx.vault.metadataURI(), newURI, "metadata not updated");
     }
 
-    function test_durationVault_TVLLimits_enforced_and_frozen_after_lock() public {
+    function test_durationVault_TVLLimits_enforced_and_frozen_after_lock() public vaultSupported {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
         User staker = new User("duration-tvl-staker");
 
@@ -134,7 +149,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         ctx.vault.updateTVLLimits(10 ether, 20 ether);
     }
 
-    function test_durationVault_rewards_claim_while_locked() public {
+    function test_durationVault_rewards_claim_while_locked() public vaultSupported {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
         User staker = new User("duration-reward-staker");
         uint depositAmount = 80 ether;
@@ -168,7 +183,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(rewardToken.balanceOf(address(staker)), rewardAmount, "staker failed to claim rewards");
     }
 
-    function test_durationVault_slashing_routes_to_insurance_and_blocks_after_maturity() public {
+    function test_durationVault_slashing_routes_to_insurance_and_blocks_after_maturity() public vaultSupported {
         address insuranceRecipient = _randomInsuranceRecipient();
         DurationVaultContext memory ctx = _deployDurationVault(insuranceRecipient);
         User staker = new User("duration-slash-staker");
@@ -206,7 +221,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(ctx.asset.balanceOf(insuranceRecipient), expectedRedistribution, "post-maturity slash should not pay");
     }
 
-    function test_durationVault_slashing_affectsQueuedWithdrawalsAndPaysInsurance() public {
+    function test_durationVault_slashing_affectsQueuedWithdrawalsAndPaysInsurance() public vaultSupported {
         address insuranceRecipient = _randomInsuranceRecipient();
         DurationVaultContext memory ctx = _deployDurationVault(insuranceRecipient);
         User staker = new User("duration-slash-queued");
