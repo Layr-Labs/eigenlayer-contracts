@@ -276,6 +276,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
+        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
         cheats.stopPrank();
     }
 
