@@ -25,13 +25,10 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     }
 
     function testScript() public virtual override {
-        if (
-            !Env.isCoreProtocolDeployed()
-                || (_areProxiesDeployed()
-                    && Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin())
-        ) {
+        if (!Env.isCoreProtocolDeployed()) {
             return;
         }
+
         // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
@@ -40,6 +37,12 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
         } else {
             // Since the proxies are already deployed, we need to update the env with the proper addresses
             _addContractsToEnv();
+        }
+
+        // If the proxy has been upgraded already, return
+        if (_areProxiesDeployed() && Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin())
+        {
+            return;
         }
 
         // 2. Deploy the Protocol Registry Implementation
