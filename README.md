@@ -14,9 +14,9 @@ The deployments on `mainnet`, `base`, `sepolia`, `hoodi`, and `base sepolia` are
 | -------- | -------- | -------- | -------- | -------- | 
 | Mainnet Ethereum | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | Yes | Yes (source & destination) |
 | Base | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
-| Testnet Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | Yes | No | Yes (source & destination) |
-| Testnet Hoodi | [`v1.8.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.0) | Yes | Yes | No |
-| Testnet Base Sepolia | [`v1.8.1`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.8.1) | No | No | Yes (destination) |
+| Testnet Sepolia | [`v1.9.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.9.0-rc.0) | Yes | No | Yes (source & destination) |
+| Testnet Hoodi | [`v1.9.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.9.0-rc.0) | Yes | Yes | No |
+| Testnet Base Sepolia | [`v1.9.0-rc.0`](https://github.com/Layr-Labs/eigenlayer-contracts/releases/tag/v1.9.0-rc.0) | No | No | Yes (destination) |
 
 ### Current Deployment Contracts
 
