@@ -81,9 +81,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
         uint32 currentTimestamp = uint32(block.timestamp);
         lockedAt = currentTimestamp;
-        uint32 newUnlockAt = currentTimestamp + duration;
-        require(newUnlockAt >= currentTimestamp, InvalidDuration());
-        unlockAt = newUnlockAt;
+        unlockAt = currentTimestamp + duration;
 
         _state = VaultState.ALLOCATIONS;
 
@@ -131,6 +129,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         uint256 newMaxPerDeposit,
         uint256 newMaxTotalDeposits
     ) external onlyUnpauser {
+        // Keep vault config changes constrained to the deposits window.
+        require(depositsOpen(), DepositsLocked());
         _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
     }
 
@@ -329,7 +329,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         params[0].strategies[0] = IStrategy(address(this));
         params[0].newMagnitudes = new uint64[](1);
         params[0].newMagnitudes[0] = 0;
-        allocationManager.modifyAllocations(address(this), params);
+        // This call is best-effort: failures should not brick `markMatured()` and lock user funds.
+        try allocationManager.modifyAllocations(address(this), params) {} catch {}
     }
 
     function _deregisterFromOperatorSet() internal {
@@ -338,6 +339,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         params.avs = _operatorSet.avs;
         params.operatorSetIds = new uint32[](1);
         params.operatorSetIds[0] = _operatorSet.id;
-        allocationManager.deregisterFromOperatorSets(params);
+        // This call is best-effort: failures should not brick `markMatured()` and lock user funds.
+        try allocationManager.deregisterFromOperatorSets(params) {} catch {}
     }
 }

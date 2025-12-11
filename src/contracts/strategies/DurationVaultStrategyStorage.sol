@@ -29,14 +29,14 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @notice Timestamp when the vault was marked as matured (purely informational).
     uint32 public maturedAt;
 
+    /// @notice Tracks the lifecycle of the vault (deposits -> allocations -> withdrawals).
+    VaultState internal _state;
+
     /// @notice Optional metadata URI describing the vault configuration.
     string public metadataURI;
 
     /// @notice Stored operator set metadata for integration with the allocation manager.
     OperatorSet internal _operatorSet;
-
-    /// @notice Tracks the lifecycle of the vault (deposits -> allocations -> withdrawals).
-    VaultState internal _state;
 
     /// @notice Amount of underlying tokens corresponding to shares that have been queued for withdrawal but not completed yet.
     uint256 internal _queuedUnderlying;
