@@ -10,6 +10,7 @@ import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "src/contracts/interfaces/IDurationVaultStrategy.sol";
 import "src/contracts/interfaces/IStrategy.sol";
 import "src/contracts/interfaces/IDelegationManager.sol";
+import "src/contracts/interfaces/ISignatureUtilsMixin.sol";
 import "src/contracts/interfaces/IAllocationManager.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
@@ -34,6 +35,8 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
     function setUp() public override {
         EigenLayerUnitTestSetup.setUp();
+        // Align allocation delay with expected OPERATOR_ALLOCATION_DELAY for duration vault registration.
+        delegationManagerMock.setMinWithdrawalDelayBlocks(OPERATOR_ALLOCATION_DELAY - 1);
 
         strategyManagerImplementation = new StrategyManager(
             IAllocationManager(address(allocationManagerMock)), IDelegationManager(address(delegationManagerMock)), pauserRegistry, "9.9.9"
@@ -93,6 +96,10 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         uint amount = 10 ether;
         underlyingToken.transfer(STAKER, amount);
 
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
+        cheats.prank(STAKER);
+        delegationManagerMock.delegateTo(address(durationVault), emptySig, bytes32(0));
+
         cheats.startPrank(STAKER);
         underlyingToken.approve(address(strategyManager), amount);
         cheats.expectEmit(true, true, true, true, address(strategyManager));
@@ -119,6 +126,9 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
     function _depositFor(address staker, uint amount) internal {
         underlyingToken.transfer(staker, amount);
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
+        cheats.prank(staker);
+        delegationManagerMock.delegateTo(address(durationVault), emptySig, bytes32(0));
         cheats.startPrank(staker);
         underlyingToken.approve(address(strategyManager), amount);
         strategyManager.depositIntoStrategy(IStrategy(address(durationVault)), IERC20(address(underlyingToken)), amount);

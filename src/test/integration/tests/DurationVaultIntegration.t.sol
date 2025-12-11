@@ -27,6 +27,129 @@ contract Integration_DurationVault is IntegrationCheckUtils {
     uint internal constant VAULT_MAX_PER_DEPOSIT = 200 ether;
     uint internal constant VAULT_STAKE_CAP = 1000 ether;
 
+    function test_durationVault_deposit_requires_delegation() public {
+        DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
+        User staker = new User("duration-no-delegation");
+
+        uint depositAmount = 50 ether;
+        ctx.asset.transfer(address(staker), depositAmount);
+
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory tokenBalances = _singleAmountArray(depositAmount);
+
+        cheats.expectRevert(IDurationVaultStrategy.MustBeDelegatedToVaultOperator.selector);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+    }
+
+    function test_durationVault_queue_blocked_after_lock_but_completion_allowed_if_queued_before() public {
+        DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
+        User staker = new User("duration-queue-lock");
+        uint depositAmount = 80 ether;
+        ctx.asset.transfer(address(staker), depositAmount);
+
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory tokenBalances = _singleAmountArray(depositAmount);
+        _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        // Queue before lock succeeds (partial amount to leave shares for revert check).
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        withdrawableShares[0] = withdrawableShares[0] / 2;
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+
+        // Lock blocks new queues.
+        ctx.vault.lock();
+        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLockedDuringAllocations.selector);
+        staker.queueWithdrawals(strategies, withdrawableShares);
+
+        // Pre-lock queued withdrawal can complete during ALLOCATIONS.
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        assertEq(address(tokens[0]), address(ctx.asset), "unexpected token");
+        uint expectedWithdrawal = depositAmount / 2;
+        assertEq(ctx.asset.balanceOf(address(staker)), expectedWithdrawal, "staker should recover queued portion during allocations");
+    }
+
+    function test_durationVault_allocation_delay_exceeds_withdrawal_delay_for_queued_withdrawals() public {
+        DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
+        User staker = new User("duration-delay-check");
+        uint depositAmount = 60 ether;
+        ctx.asset.transfer(address(staker), depositAmount);
+
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory tokenBalances = _singleAmountArray(depositAmount);
+        _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        // Queue full withdrawal before lock.
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+
+        // Lock the vault; allocation delay is set to minWithdrawalDelayBlocks()+1 inside lock().
+        ctx.vault.lock();
+
+        // Fetch allocation; the effectBlock should be in the future due to allocation delay config.
+        IAllocationManagerTypes.Allocation memory alloc =
+            allocationManager.getAllocation(address(ctx.vault), ctx.operatorSet, strategies[0]);
+        uint startBlock = block.number;
+        assertTrue(alloc.effectBlock > startBlock, "allocation should be pending due to delay");
+
+        // Advance to just before allocation takes effect but after withdrawal delay.
+        uint32 withdrawalDelay = delegationManager.minWithdrawalDelayBlocks();
+        uint32 allocationDelay = uint32(alloc.effectBlock - startBlock);
+        // Roll to min(withdrawalDelay, allocationDelay - 1) to complete before activation.
+        uint32 rollBlocks = withdrawalDelay < allocationDelay ? withdrawalDelay : allocationDelay - 1;
+        cheats.roll(startBlock + rollBlocks);
+        cheats.warp(block.timestamp + 1); // keep timestamps monotonic
+
+        // Ensure allocation still pending (defensive).
+        alloc = allocationManager.getAllocation(address(ctx.vault), ctx.operatorSet, strategies[0]);
+        assertTrue(block.number < alloc.effectBlock, "allocation became active too early");
+
+        // Complete withdrawal successfully before allocation becomes slashable.
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        assertEq(address(tokens[0]), address(ctx.asset), "unexpected token");
+        assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker should recover full queued amount before allocation live");
+    }
+
+    function test_durationVault_queued_withdrawals_reduce_effective_tvl_cap() public {
+        DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
+        User staker = new User("duration-tvl-queue");
+
+        // First deposit.
+        uint firstDeposit = 200 ether;
+        ctx.asset.transfer(address(staker), firstDeposit);
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory amounts = _singleAmountArray(firstDeposit);
+        _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, amounts);
+
+        // Queue most of the stake; this reduces slashable TVL counted toward the cap.
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+
+        // With the first deposit queued, slashable TVL is ~0, so multiple deposits up to the cap succeed.
+        uint perDeposit = 200 ether;
+        for (uint i = 0; i < 5; ++i) {
+            ctx.asset.transfer(address(staker), perDeposit);
+            amounts[0] = perDeposit;
+            staker.depositIntoEigenlayer(strategies, amounts);
+        }
+
+        // Next deposit would exceed the stake cap once queued stake is excluded.
+        ctx.asset.transfer(address(staker), perDeposit);
+        amounts[0] = perDeposit;
+        cheats.expectRevert(IStrategyErrors.BalanceExceedsMaxTotalDeposits.selector);
+        staker.depositIntoEigenlayer(strategies, amounts);
+
+        // Complete the queued withdrawal to recover the first deposit.
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        assertEq(address(tokens[0]), address(ctx.asset), "unexpected token");
+        assertTrue(ctx.asset.balanceOf(address(staker)) >= firstDeposit, "staker should recover first deposit");
+    }
+
     function test_durationVaultLifecycle_flow_deposit_lock_mature() public {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
         User staker = new User("duration-staker");
@@ -38,13 +161,21 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         uint[] memory tokenBalances = _singleAmountArray(depositAmount);
         uint[] memory depositShares = _calculateExpectedShares(strategies, tokenBalances);
 
+        _delegateToVault(staker, ctx.vault);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         check_Deposit_State(staker, strategies, depositShares);
+        // Queue withdrawal prior to lock.
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
 
-        _delegateToVault(staker, ctx.vault);
         ctx.vault.lock();
         assertTrue(ctx.vault.allocationsActive(), "allocations should be active after lock");
         assertTrue(allocationManager.isOperatorSlashable(address(ctx.vault), ctx.operatorSet), "should be slashable");
+
+        // Ensure allocation becomes effective before maturity so deallocation won't hit pending modification.
+        IAllocationManagerTypes.Allocation memory allocLock =
+            allocationManager.getAllocation(address(ctx.vault), ctx.operatorSet, strategies[0]);
+        if (allocLock.effectBlock > block.number) cheats.roll(allocLock.effectBlock);
 
         // Cannot deposit once locked.
         uint extraDeposit = 10 ether;
@@ -53,10 +184,6 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         uint[] memory lateTokenBalances = _singleAmountArray(extraDeposit);
         cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
         lateStaker.depositIntoEigenlayer(strategies, lateTokenBalances);
-
-        // Queue withdrawal prior to maturity.
-        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
-        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
 
         // Mature the vault and allow withdrawals.
         cheats.warp(block.timestamp + ctx.vault.duration() + 1);
@@ -97,7 +224,8 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
         User staker = new User("duration-tvl-staker");
 
-        (uint maxPerDepositBefore, uint maxStakeBefore) = StrategyBaseTVLLimits(address(ctx.vault)).getTVLLimits();
+        uint maxPerDepositBefore = ctx.vault.maxPerDeposit();
+        uint maxStakeBefore = ctx.vault.maxTotalDeposits();
         assertEq(maxPerDepositBefore, VAULT_MAX_PER_DEPOSIT, "initial max per deposit mismatch");
         assertEq(maxStakeBefore, VAULT_STAKE_CAP, "initial stake cap mismatch");
 
@@ -108,6 +236,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
         uint[] memory amounts = _singleAmountArray(60 ether);
         ctx.asset.transfer(address(staker), amounts[0]);
+        _delegateToVault(staker, ctx.vault);
         cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
         staker.depositIntoEigenlayer(strategies, amounts);
 
@@ -142,8 +271,8 @@ contract Integration_DurationVault is IntegrationCheckUtils {
 
         IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
         uint[] memory tokenBalances = _singleAmountArray(depositAmount);
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
         _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
         ctx.vault.lock();
 
         // Prepare reward token and fund RewardsCoordinator.
@@ -177,11 +306,12 @@ contract Integration_DurationVault is IntegrationCheckUtils {
 
         IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
         uint[] memory tokenBalances = _singleAmountArray(depositAmount);
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
         _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
         ctx.vault.lock();
 
         uint slashWad = 0.25e18;
+        uint expectedRedistribution = (depositAmount * slashWad) / 1e18;
         IAllocationManager.SlashingParams memory slashParams;
         slashParams.operator = address(ctx.vault);
         slashParams.operatorSetId = ctx.operatorSet.id;
@@ -189,10 +319,14 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         slashParams.wadsToSlash = _singleAmountArray(slashWad);
         slashParams.description = "insurance event";
 
+        // Move past allocation delay so allocation is active when slashing.
+        IAllocationManagerTypes.Allocation memory alloc =
+            allocationManager.getAllocation(address(ctx.vault), ctx.operatorSet, strategies[0]);
+        if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
+
         (uint slashId,) = ctx.avs.slashOperator(slashParams);
         uint redistributed =
             strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
-        uint expectedRedistribution = (depositAmount * slashWad) / 1e18;
         assertEq(redistributed, expectedRedistribution, "unexpected redistribution amount");
         assertEq(ctx.asset.balanceOf(insuranceRecipient), expectedRedistribution, "insurance recipient not paid");
 
@@ -215,42 +349,38 @@ contract Integration_DurationVault is IntegrationCheckUtils {
 
         IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
         uint[] memory tokenBalances = _singleAmountArray(depositAmount);
-        staker.depositIntoEigenlayer(strategies, tokenBalances);
         _delegateToVault(staker, ctx.vault);
-        ctx.vault.lock();
-
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
         Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        ctx.vault.lock();
 
         uint slashWad = 0.3e18;
-        IAllocationManager.SlashingParams memory slashParams;
-        slashParams.operator = address(ctx.vault);
-        slashParams.operatorSetId = ctx.operatorSet.id;
-        slashParams.strategies = strategies;
-        slashParams.wadsToSlash = _singleAmountArray(slashWad);
-        slashParams.description = "queued withdrawal slash";
+        {
+            IAllocationManager.SlashingParams memory slashParams;
+            slashParams.operator = address(ctx.vault);
+            slashParams.operatorSetId = ctx.operatorSet.id;
+            slashParams.strategies = strategies;
+            slashParams.wadsToSlash = _singleAmountArray(slashWad);
+            slashParams.description = "queued withdrawal slash";
 
-        (uint slashId,) = ctx.avs.slashOperator(slashParams);
-        uint redistributed =
-            strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
-        uint expectedRedistribution = (depositAmount * slashWad) / 1e18;
-        assertEq(redistributed, expectedRedistribution, "queued slash redistribution mismatch");
-        assertEq(ctx.asset.balanceOf(insuranceRecipient), expectedRedistribution, "insurance recipient incorrect");
+            // Move past allocation delay so allocation is active when slashing.
+            IAllocationManagerTypes.Allocation memory alloc =
+                allocationManager.getAllocation(address(ctx.vault), ctx.operatorSet, strategies[0]);
+            if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
+
+            (uint slashId,) = ctx.avs.slashOperator(slashParams);
+            uint redistributed =
+                strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
+            // Queued withdrawals remove shares from the operator, so expect zero redistribution.
+            assertEq(redistributed, 0, "queued slash redistribution mismatch");
+            assertEq(ctx.asset.balanceOf(insuranceRecipient), 0, "insurance recipient incorrect");
+        }
 
         _rollBlocksForCompleteWithdrawals(withdrawals);
-        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLocked.selector);
-        staker.completeWithdrawalAsTokens(withdrawals[0]);
-
-        cheats.warp(block.timestamp + ctx.vault.duration() + 1);
-        ctx.vault.markMatured();
-        cheats.roll(block.number + allocationManager.DEALLOCATION_DELAY() + 2);
-        _rollBlocksForCompleteWithdrawals(withdrawals);
-
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
         assertEq(address(tokens[0]), address(ctx.asset), "unexpected withdrawal token");
-        assertEq(
-            ctx.asset.balanceOf(address(staker)), depositAmount - expectedRedistribution, "staker balance after queued slash incorrect"
-        );
+        assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker balance after queued slash incorrect");
     }
 
     function _deployDurationVault(address insuranceRecipient) internal returns (DurationVaultContext memory ctx) {

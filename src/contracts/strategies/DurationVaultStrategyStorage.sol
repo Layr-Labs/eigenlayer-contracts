@@ -38,7 +38,19 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @notice Tracks the lifecycle of the vault (deposits -> allocations -> withdrawals).
     VaultState internal _state;
 
+    /// @notice Amount of underlying tokens corresponding to shares that have been queued for withdrawal but not completed yet.
+    uint256 internal _queuedUnderlying;
+
+    /// @notice The maximum deposit (in underlyingToken) that this strategy will accept per deposit.
+    uint256 public maxPerDeposit;
+
+    /// @notice The maximum deposits (in underlyingToken) that this strategy will hold.
+    uint256 public maxTotalDeposits;
+
+    /// @notice Allocation delay (in blocks) applied when the vault locks.
+    uint32 internal allocationDelayBlocks;
+
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
-    uint256[43] private __gap;
+    uint256[39] private __gap;
 }

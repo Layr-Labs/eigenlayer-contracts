@@ -29,6 +29,8 @@ contract DurationVaultStrategyUnitTests is StrategyBaseTVLLimitsUnitTests {
         StrategyBaseUnitTests.setUp();
 
         delegationManagerMock = new DelegationManagerMock();
+        // Configure min withdrawal delay so allocationDelayBlocks == OPERATOR_ALLOCATION_DELAY.
+        delegationManagerMock.setMinWithdrawalDelayBlocks(OPERATOR_ALLOCATION_DELAY - 1);
         allocationManagerMock = new AllocationManagerMock();
 
         durationVaultImplementation = new DurationVaultStrategy(

@@ -15,6 +15,8 @@ contract DelegationManagerMock is Test {
     mapping(address => address) public delegatedTo;
     mapping(address => mapping(IStrategy => uint)) public operatorShares;
 
+    uint32 internal _minWithdrawalDelayBlocks;
+
     struct RegisterAsOperatorCall {
         address operator;
         address delegationApprover;
@@ -27,7 +29,13 @@ contract DelegationManagerMock is Test {
 
     function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint[] memory) {}
 
-    function setMinWithdrawalDelayBlocks(uint newMinWithdrawalDelayBlocks) external {}
+    function setMinWithdrawalDelayBlocks(uint32 newMinWithdrawalDelayBlocks) external {
+        _minWithdrawalDelayBlocks = newMinWithdrawalDelayBlocks;
+    }
+
+    function minWithdrawalDelayBlocks() external view returns (uint32) {
+        return _minWithdrawalDelayBlocks;
+    }
 
     function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint[] calldata withdrawalDelayBlocks) external {}
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-import "./StrategyBaseTVLLimits.sol";
+import "./StrategyBase.sol";
 import "./DurationVaultStrategyStorage.sol";
 import "../interfaces/IDurationVaultStrategy.sol";
 import "../interfaces/IDelegationManager.sol";
@@ -11,8 +11,18 @@ import "../libraries/OperatorSetLib.sol";
 /// @title Duration-bound EigenLayer vault strategy with configurable deposit caps and windows.
 /// @author Layr Labs, Inc.
 /// @notice Terms of Service: https://docs.eigenlayer.xyz/overview/terms-of-service
-contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLLimits {
+contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     using OperatorSetLib for OperatorSet;
+
+    /// @dev Thrown when `_queuedUnderlying` exceeds the vault's underlying balance.
+    /// This indicates inconsistent queued-withdrawal accounting and is treated as an invariant violation.
+    error QueuedUnderlyingExceedsBalance();
+
+    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`.
+    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`.
+    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 
     /// @notice Delegation manager reference used to register the vault as an operator.
     IDelegationManager public immutable override delegationManager;
@@ -30,7 +40,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         IPauserRegistry _pauserRegistry,
         IDelegationManager _delegationManager,
         IAllocationManager _allocationManager
-    ) StrategyBaseTVLLimits(_strategyManager, _pauserRegistry) {
+    ) StrategyBase(_strategyManager, _pauserRegistry) {
         require(
             address(_delegationManager) != address(0) && address(_allocationManager) != address(0),
             OperatorIntegrationInvalid()
@@ -116,6 +126,33 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         _setTVLLimits(newMaxPerDeposit, newStakeCap);
     }
 
+    /// @notice Allows the unpauser to update TVL limits, mirroring `StrategyBaseTVLLimits`.
+    function setTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newMaxTotalDeposits
+    ) external onlyUnpauser {
+        _setTVLLimits(newMaxPerDeposit, newMaxTotalDeposits);
+    }
+
+    /// @notice Returns the current TVL limits (per-deposit and total stake cap).
+    /// @dev Helper for tests and parity with `StrategyBaseTVLLimits`.
+    function getTVLLimits() external view returns (uint256, uint256) {
+        return (maxPerDeposit, maxTotalDeposits);
+    }
+
+    /// @inheritdoc StrategyBase
+    function _beforeDeposit(
+        IERC20 token,
+        uint256 amount
+    ) internal virtual override {
+        require(_state == VaultState.DEPOSITS, DepositsLocked());
+        require(amount <= maxPerDeposit, MaxPerDepositExceedsMax());
+        uint256 balance = _tokenBalance();
+        require(balance >= _queuedUnderlying, QueuedUnderlyingExceedsBalance());
+        require(balance - _queuedUnderlying <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
+        super._beforeDeposit(token, amount);
+    }
+
     /// @inheritdoc IDurationVaultStrategy
     function unlockTimestamp() public view override returns (uint32) {
         return unlockAt;
@@ -151,6 +188,46 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         return _state != VaultState.ALLOCATIONS;
     }
 
+    /// @inheritdoc IStrategy
+    function beforeAddShares(
+        address staker,
+        uint256 shares
+    ) external view override(IStrategy, StrategyBase) onlyStrategyManager {
+        require(_state == VaultState.DEPOSITS, DepositsLocked());
+        require(delegationManager.delegatedTo(staker) == address(this), MustBeDelegatedToVaultOperator());
+
+        // Enforce per-deposit and total caps using the minted shares as proxy for underlying.
+        uint256 amountUnderlying = sharesToUnderlyingView(shares);
+        require(amountUnderlying <= maxPerDeposit, MaxPerDepositExceedsMax());
+
+        uint256 balance = _tokenBalance();
+        require(balance >= _queuedUnderlying, QueuedUnderlyingExceedsBalance());
+        require(balance - _queuedUnderlying <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
+    }
+
+    /// @inheritdoc IStrategy
+    function beforeRemoveShares(
+        address,
+        uint256 shares
+    ) external override(IStrategy, StrategyBase) onlyStrategyManager {
+        require(_state != VaultState.ALLOCATIONS, WithdrawalsLockedDuringAllocations());
+        // Track queued underlying when withdrawals are queued (only possible during DEPOSITS).
+        uint256 amountUnderlying = sharesToUnderlyingView(shares);
+        _queuedUnderlying += amountUnderlying;
+    }
+
+    /// @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit.
+    function _setTVLLimits(
+        uint256 newMaxPerDeposit,
+        uint256 newMaxTotalDeposits
+    ) internal {
+        emit MaxPerDepositUpdated(maxPerDeposit, newMaxPerDeposit);
+        emit MaxTotalDepositsUpdated(maxTotalDeposits, newMaxTotalDeposits);
+        require(newMaxPerDeposit <= newMaxTotalDeposits, MaxPerDepositExceedsMax());
+        maxPerDeposit = newMaxPerDeposit;
+        maxTotalDeposits = newMaxTotalDeposits;
+    }
+
     /// @inheritdoc IDurationVaultStrategy
     function operatorIntegrationConfigured() public pure override returns (bool) {
         return true;
@@ -161,6 +238,11 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         return (_operatorSet.avs, _operatorSet.id);
     }
 
+    /// @inheritdoc IDurationVaultStrategy
+    function queuedUnderlying() external view override returns (uint256) {
+        return _queuedUnderlying;
+    }
+
     function operatorSetRegistered() public view override returns (bool) {
         return _state == VaultState.DEPOSITS || _state == VaultState.ALLOCATIONS;
     }
@@ -169,25 +251,36 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         return _state == VaultState.ALLOCATIONS;
     }
 
-    function _beforeDeposit(
-        IERC20 token,
-        uint256 amount
-    ) internal virtual override {
-        require(depositsOpen(), DepositsLocked());
-        super._beforeDeposit(token, amount);
-    }
-
     function _beforeWithdrawal(
         address recipient,
         IERC20 token,
         uint256 amountShares
     ) internal virtual override {
-        if (!withdrawalsOpen()) {
-            address redistributionRecipient = allocationManager.getRedistributionRecipient(_operatorSet);
-            bool isRedistribution = recipient == redistributionRecipient;
-            require(isRedistribution, WithdrawalsLocked());
-        }
+        // Withdrawals can be completed during ALLOCATIONS only if they were queued before lock.
+        // Queuing is blocked by `beforeRemoveShares` once ALLOCATIONS starts, so any withdrawal
+        // reaching this point in ALLOCATIONS must have been queued earlier. Redistribution
+        // during slashing is also allowed while locked.
         super._beforeWithdrawal(recipient, token, amountShares);
+
+        // Mirror `StrategyBase.withdraw`'s totalShares guard to avoid overflow in
+        // `sharesToUnderlyingView(amountShares)` when `amountShares` is extremely large.
+        require(amountShares <= totalShares, WithdrawalAmountExceedsTotalDeposits());
+        uint256 amountUnderlying = sharesToUnderlyingView(amountShares);
+        // Adjust queued-underlying accounting when withdrawals complete as tokens.
+        if (_state == VaultState.ALLOCATIONS) {
+            // During ALLOCATIONS, only withdrawals that were queued pre-lock should be allowed.
+            // Slashing redistribution is also allowed and should not consume queuedUnderlying.
+            if (recipient != allocationManager.getRedistributionRecipient(_operatorSet)) {
+                require(_queuedUnderlying >= amountUnderlying, WithdrawalsLocked());
+                _queuedUnderlying -= amountUnderlying;
+            }
+        } else {
+            if (_queuedUnderlying >= amountUnderlying) {
+                _queuedUnderlying -= amountUnderlying;
+            } else {
+                _queuedUnderlying = 0;
+            }
+        }
     }
 
     function _configureOperatorIntegration(
@@ -196,8 +289,13 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
         require(config.operatorSet.avs != address(0) && config.operatorSet.id != 0, OperatorIntegrationInvalid());
         _operatorSet = config.operatorSet;
 
+        // Set allocation delay strictly greater than withdrawal delay to protect pre-lock queued withdrawals.
+        uint32 minWithdrawal = delegationManager.minWithdrawalDelayBlocks();
+        allocationDelayBlocks = minWithdrawal + 1;
+
+        // apply allocation delay at registration
         delegationManager.registerAsOperator(
-            config.delegationApprover, config.operatorAllocationDelay, config.operatorMetadataURI
+            config.delegationApprover, allocationDelayBlocks, config.operatorMetadataURI
         );
 
         IAllocationManager.RegisterParams memory params;
@@ -209,6 +307,12 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBaseTVLL
     }
 
     function _allocateFullMagnitude() internal {
+        // Ensure no pending allocation modification exists for this operator/operatorSet/strategy.
+        // Pending modifications would cause ModificationAlreadyPending() in AllocationManager.modifyAllocations.
+        IAllocationManager.Allocation memory alloc =
+            allocationManager.getAllocation(address(this), _operatorSet, IStrategy(address(this)));
+        require(alloc.effectBlock == 0, "PendingAllocation");
+
         IAllocationManager.AllocateParams[] memory params = new IAllocationManager.AllocateParams[](1);
         params[0].operatorSet = _operatorSet;
         params[0].strategies = new IStrategy[](1);

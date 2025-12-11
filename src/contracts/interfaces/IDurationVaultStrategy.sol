@@ -45,6 +45,10 @@ interface IDurationVaultStrategy is IStrategy {
     error DepositsLocked();
     /// @dev Thrown when attempting to withdraw while funds remain locked.
     error WithdrawalsLocked();
+    /// @dev Thrown when attempting to remove shares during the allocations period.
+    error WithdrawalsLockedDuringAllocations();
+    /// @dev Thrown when attempting to add shares when not delegated to the vault operator.
+    error MustBeDelegatedToVaultOperator();
     /// @dev Thrown when attempting to mark the vault as matured before duration elapses.
     error DurationNotElapsed();
     /// @dev Thrown when operator integration inputs are missing or invalid.
@@ -93,6 +97,8 @@ interface IDurationVaultStrategy is IStrategy {
     function state() external view returns (VaultState);
     function metadataURI() external view returns (string memory);
     function stakeCap() external view returns (uint256);
+    function maxPerDeposit() external view returns (uint256);
+    function maxTotalDeposits() external view returns (uint256);
     function depositsOpen() external view returns (bool);
     function withdrawalsOpen() external view returns (bool);
     function delegationManager() external view returns (IDelegationManager);
@@ -101,4 +107,7 @@ interface IDurationVaultStrategy is IStrategy {
     function operatorSetRegistered() external view returns (bool);
     function allocationsActive() external view returns (bool);
     function operatorSetInfo() external view returns (address avs, uint32 operatorSetId);
+
+    /// @notice Underlying amount currently queued for withdrawal but not yet completed.
+    function queuedUnderlying() external view returns (uint256);
 }

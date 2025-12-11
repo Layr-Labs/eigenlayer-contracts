@@ -28,6 +28,8 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => mapping(address operator => mapping(IStrategy strategy => uint minimumSlashableStake))) internal
         _minimumSlashableStake;
     mapping(bytes32 operatorSetKey => mapping(address operator => bool)) internal _isOperatorSlashable;
+    mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => IAllocationManagerTypes.Allocation)))
+        internal _allocations;
 
     struct RegisterCall {
         address operator;
@@ -220,6 +222,18 @@ contract AllocationManagerMock is Test {
             if (first.strategies.length > 0) _lastAllocateCall.strategy = first.strategies[0];
             if (first.newMagnitudes.length > 0) _lastAllocateCall.magnitude = first.newMagnitudes[0];
         }
+
+        // Persist allocations so `getAllocation` can return meaningful values.
+        for (uint i = 0; i < params.length; ++i) {
+            IAllocationManager.AllocateParams calldata p = params[i];
+            bytes32 key = p.operatorSet.key();
+            uint stratsLen = p.strategies.length;
+            uint magsLen = p.newMagnitudes.length;
+            for (uint j = 0; j < stratsLen && j < magsLen; ++j) {
+                _allocations[operator][key][p.strategies[j]] =
+                    IAllocationManagerTypes.Allocation({currentMagnitude: p.newMagnitudes[j], pendingDiff: 0, effectBlock: 0});
+            }
+        }
     }
 
     function lastModifyAllocationsCall() external view returns (AllocateCall memory) {
@@ -238,5 +252,13 @@ contract AllocationManagerMock is Test {
 
     function lastDeregisterFromOperatorSetsCall() external view returns (DeregisterCall memory) {
         return _lastDeregisterCall;
+    }
+
+    function getAllocation(address operator, OperatorSet memory operatorSet, IStrategy strategy)
+        external
+        view
+        returns (IAllocationManagerTypes.Allocation memory)
+    {
+        return _allocations[operator][operatorSet.key()][strategy];
     }
 }

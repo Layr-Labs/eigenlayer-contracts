@@ -50,6 +50,8 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function setUp() public virtual override {
         EigenLayerUnitTestSetup.setUp();
+        // Ensure allocation delay matches expected OPERATOR_ALLOCATION_DELAY when vaults register.
+        delegationManagerMock.setMinWithdrawalDelayBlocks(OPERATOR_ALLOCATION_DELAY - 1);
 
         address[] memory pausers = new address[](1);
         pausers[0] = pauser;
