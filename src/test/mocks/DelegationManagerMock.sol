@@ -105,6 +105,14 @@ contract DelegationManagerMock is Test {
         return withdrawalRoot;
     }
 
+    function getOperatorShares(address operator, IStrategy[] memory strategies) external view returns (uint[] memory) {
+        uint[] memory shares = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            shares[i] = operatorShares[operator][strategies[i]];
+        }
+        return shares;
+    }
+
     function getOperatorsShares(address[] memory operators, IStrategy[] memory strategies) external view returns (uint[][] memory) {
         uint[][] memory operatorSharesArray = new uint[][](operators.length);
         for (uint i = 0; i < operators.length; i++) {

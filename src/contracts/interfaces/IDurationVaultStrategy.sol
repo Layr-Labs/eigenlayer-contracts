@@ -29,7 +29,6 @@ interface IDurationVaultStrategy is IStrategy {
         OperatorSet operatorSet;
         bytes operatorSetRegistrationData;
         address delegationApprover;
-        uint32 operatorAllocationDelay;
         string operatorMetadataURI;
     }
 
@@ -107,7 +106,4 @@ interface IDurationVaultStrategy is IStrategy {
     function operatorSetRegistered() external view returns (bool);
     function allocationsActive() external view returns (bool);
     function operatorSetInfo() external view returns (address avs, uint32 operatorSetId);
-
-    /// @notice Underlying amount currently queued for withdrawal but not yet completed.
-    function queuedUnderlying() external view returns (uint256);
 }

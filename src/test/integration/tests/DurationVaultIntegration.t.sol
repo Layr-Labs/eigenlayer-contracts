@@ -403,7 +403,6 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         config.operatorSet = opSet;
         config.operatorSetRegistrationData = "";
         config.delegationApprover = address(0);
-        config.operatorAllocationDelay = 0;
         config.operatorMetadataURI = "ipfs://duration-vault/operator";
 
         IDurationVaultStrategy vault = IDurationVaultStrategy(address(strategyFactory.deployDurationVaultStrategy(config)));

@@ -154,7 +154,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
-            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
             operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
@@ -179,7 +178,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
-            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
             operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
@@ -201,7 +199,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
             operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
-            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
             operatorMetadataURI: OPERATOR_METADATA_URI
         });
 

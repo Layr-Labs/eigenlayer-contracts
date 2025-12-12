@@ -71,7 +71,6 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
             operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
             operatorSetRegistrationData: REGISTRATION_DATA,
             delegationApprover: DELEGATION_APPROVER,
-            operatorAllocationDelay: OPERATOR_ALLOCATION_DELAY,
             operatorMetadataURI: OPERATOR_METADATA_URI
         });
 
@@ -142,9 +141,11 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         uint shares = strategyManager.stakerDepositShares(STAKER, IStrategy(address(durationVault)));
 
+        // Withdrawal blocking now happens at the queueing stage (removeDepositShares -> beforeRemoveShares),
+        // not at the withdrawal execution stage (withdrawSharesAsTokens).
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLocked.selector);
-        strategyManager.withdrawSharesAsTokens(STAKER, IStrategy(address(durationVault)), IERC20(address(underlyingToken)), shares);
+        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLockedDuringAllocations.selector);
+        strategyManager.removeDepositShares(STAKER, IStrategy(address(durationVault)), shares);
     }
 
     function testWithdrawalsAllowedAfterMaturity() public {
