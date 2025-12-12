@@ -281,9 +281,8 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         rewardToken.transfer(address(rewardsCoordinator), rewardAmount);
 
         // Allow this test to submit roots.
-        cheats.startPrank(executorMultisig);
+        cheats.prank(rewardsCoordinator.owner());
         rewardsCoordinator.setRewardsUpdater(address(this));
-        cheats.stopPrank();
 
         // Build single-earner, single-token merkle claim.
         (IRewardsCoordinatorTypes.RewardsMerkleClaim memory claim, bytes32 rootHash) =
