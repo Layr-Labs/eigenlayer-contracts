@@ -277,6 +277,12 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _deployImplementations();
         _upgradeProxies();
         cheats.stopPrank();
+
+        // Set the durationVaultBeacon on strategyFactory since it's a new beacon
+        // that doesn't exist on mainnet and can't be set via initialize() (already initialized).
+        // Must use the actual owner of strategyFactory (may differ from executorMultisig).
+        cheats.prank(strategyFactory.owner());
+        strategyFactory.setDurationVaultBeacon(durationVaultBeacon);
     }
 
     function _deployProxies() public {
