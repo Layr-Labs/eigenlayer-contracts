@@ -291,6 +291,9 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         rewardsCoordinator.submitRoot(rootHash, uint32(block.timestamp - 1));
         claim.rootIndex = uint32(rewardsCoordinator.getDistributionRootsLength() - 1);
 
+        // Advance time past the activation delay so the root becomes claimable.
+        cheats.warp(block.timestamp + rewardsCoordinator.activationDelay() + 1);
+
         cheats.prank(address(staker));
         rewardsCoordinator.processClaim(claim, address(staker));
         assertEq(rewardToken.balanceOf(address(staker)), rewardAmount, "staker failed to claim rewards");
