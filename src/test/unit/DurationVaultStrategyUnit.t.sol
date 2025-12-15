@@ -6,16 +6,19 @@ import "../../contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 import "../../contracts/interfaces/IAllocationManager.sol";
+import "../../contracts/interfaces/IRewardsCoordinator.sol";
 import "../../contracts/interfaces/ISignatureUtilsMixin.sol";
 import "../../contracts/libraries/OperatorSetLib.sol";
 import "../mocks/DelegationManagerMock.sol";
 import "../mocks/AllocationManagerMock.sol";
+import "../mocks/RewardsCoordinatorMock.sol";
 
 contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
     DurationVaultStrategy public durationVaultImplementation;
     DurationVaultStrategy public durationVault;
     DelegationManagerMock internal delegationManagerMock;
     AllocationManagerMock internal allocationManagerMock;
+    RewardsCoordinatorMock internal rewardsCoordinatorMock;
 
     // TVL limits for tests
     uint internal maxTotalDeposits = 3200e18;
@@ -37,12 +40,14 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         // Configure min withdrawal delay so allocationDelayBlocks == OPERATOR_ALLOCATION_DELAY.
         delegationManagerMock.setMinWithdrawalDelayBlocks(OPERATOR_ALLOCATION_DELAY - 1);
         allocationManagerMock = new AllocationManagerMock();
+        rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
         durationVaultImplementation = new DurationVaultStrategy(
             strategyManager,
             pauserRegistry,
             IDelegationManager(address(delegationManagerMock)),
-            IAllocationManager(address(allocationManagerMock))
+            IAllocationManager(address(allocationManagerMock)),
+            IRewardsCoordinator(address(rewardsCoordinatorMock))
         );
 
         IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
@@ -93,7 +98,15 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         assertEq(operatorSetId, OPERATOR_SET_ID, "stored operatorSetId mismatch");
         assertEq(address(durationVault.delegationManager()), address(delegationManagerMock), "delegation manager mismatch");
         assertEq(address(durationVault.allocationManager()), address(allocationManagerMock), "allocation manager mismatch");
+        assertEq(address(durationVault.rewardsCoordinator()), address(rewardsCoordinatorMock), "rewards coordinator mismatch");
         assertTrue(durationVault.operatorSetRegistered(), "operator set should be registered");
+
+        // Verify rewards split is set to 0 (100% to stakers).
+        RewardsCoordinatorMock.SetOperatorSetSplitCall memory splitCall = rewardsCoordinatorMock.lastSetOperatorSetSplitCall();
+        assertEq(splitCall.operator, address(durationVault), "split operator mismatch");
+        assertEq(splitCall.operatorSet.avs, OPERATOR_SET_AVS, "split AVS mismatch");
+        assertEq(splitCall.operatorSet.id, OPERATOR_SET_ID, "split operatorSetId mismatch");
+        assertEq(splitCall.split, 0, "operator split should be 0 for 100% to stakers");
     }
 
     function testLockAllocatesFullMagnitude() public {

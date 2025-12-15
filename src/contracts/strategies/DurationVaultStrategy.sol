@@ -6,6 +6,7 @@ import "./DurationVaultStrategyStorage.sol";
 import "../interfaces/IDurationVaultStrategy.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
+import "../interfaces/IRewardsCoordinator.sol";
 import "../libraries/OperatorSetLib.sol";
 
 /// @title Duration-bound EigenLayer vault strategy with configurable deposit caps and windows.
@@ -29,6 +30,9 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Allocation manager reference used to register/allocate operator sets.
     IAllocationManager public immutable override allocationManager;
 
+    /// @notice Rewards coordinator reference used to configure operator splits.
+    IRewardsCoordinator public immutable override rewardsCoordinator;
+
     modifier onlyVaultAdmin() {
         require(msg.sender == vaultAdmin, OnlyVaultAdmin());
         _;
@@ -38,14 +42,17 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
         IDelegationManager _delegationManager,
-        IAllocationManager _allocationManager
+        IAllocationManager _allocationManager,
+        IRewardsCoordinator _rewardsCoordinator
     ) StrategyBase(_strategyManager, _pauserRegistry) {
         require(
-            address(_delegationManager) != address(0) && address(_allocationManager) != address(0),
+            address(_delegationManager) != address(0) && address(_allocationManager) != address(0)
+                && address(_rewardsCoordinator) != address(0),
             OperatorIntegrationInvalid()
         );
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
+        rewardsCoordinator = _rewardsCoordinator;
     }
 
     /// @notice Initializes the vault configuration.
@@ -282,6 +289,9 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         params.operatorSetIds[0] = config.operatorSet.id;
         params.data = config.operatorSetRegistrationData;
         allocationManager.registerForOperatorSets(address(this), params);
+
+        // Set operator split to 0 (100% of rewards go to stakers).
+        rewardsCoordinator.setOperatorSetSplit(address(this), config.operatorSet, 0);
     }
 
     function _allocateFullMagnitude() internal {

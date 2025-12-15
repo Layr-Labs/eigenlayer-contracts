@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IStrategy.sol";
 import "./IDelegationManager.sol";
 import "./IAllocationManager.sol";
+import "./IRewardsCoordinator.sol";
 import "../libraries/OperatorSetLib.sol";
 
 /// @title Interface for time-bound EigenLayer vault strategies.
@@ -102,6 +103,7 @@ interface IDurationVaultStrategy is IStrategy {
     function withdrawalsOpen() external view returns (bool);
     function delegationManager() external view returns (IDelegationManager);
     function allocationManager() external view returns (IAllocationManager);
+    function rewardsCoordinator() external view returns (IRewardsCoordinator);
     function operatorIntegrationConfigured() external view returns (bool);
     function operatorSetRegistered() external view returns (bool);
     function allocationsActive() external view returns (bool);

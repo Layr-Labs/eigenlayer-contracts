@@ -9,9 +9,11 @@ import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDurationVaultStrategy.sol";
 import "../../contracts/interfaces/IDelegationManager.sol";
 import "../../contracts/interfaces/IAllocationManager.sol";
+import "../../contracts/interfaces/IRewardsCoordinator.sol";
 import "../../contracts/libraries/OperatorSetLib.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "../../contracts/permissions/PauserRegistry.sol";
+import "../mocks/RewardsCoordinatorMock.sol";
 
 /// @notice Unit testing of the StrategyFactory contract.
 /// Contracts tested: StrategyFactory
@@ -26,6 +28,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     UpgradeableBeacon public strategyBeacon;
     UpgradeableBeacon public durationVaultBeacon;
     ERC20PresetFixedSupply public underlyingToken;
+    RewardsCoordinatorMock public rewardsCoordinatorMock;
 
     uint initialSupply = 1e36;
     address initialOwner = address(this);
@@ -64,11 +67,13 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyBeacon = new UpgradeableBeacon(address(strategyImplementation));
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
+        rewardsCoordinatorMock = new RewardsCoordinatorMock();
         durationVaultImplementation = new DurationVaultStrategy(
             IStrategyManager(address(strategyManagerMock)),
             pauserRegistry,
             IDelegationManager(address(delegationManagerMock)),
-            IAllocationManager(address(allocationManagerMock))
+            IAllocationManager(address(allocationManagerMock)),
+            IRewardsCoordinator(address(rewardsCoordinatorMock))
         );
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
