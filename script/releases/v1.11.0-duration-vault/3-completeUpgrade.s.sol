@@ -70,5 +70,12 @@ contract ExecuteUpgrade is QueueUpgrade {
         TestUtils.validateProxyStorage();
         TestUtils.validateImplAddressesMatchProxy();
         TestUtils.validateProtocolRegistry();
+
+        // v1.11.0+ DurationVaultStrategy-specific validations
+        TestUtils.validateDurationVaultStrategyProxyAdmin();
+        TestUtils.validateDurationVaultStrategyStorage();
+        TestUtils.validateDurationVaultStrategyImplConstructors();
+        TestUtils.validateDurationVaultStrategyImplAddressesMatchProxy();
+        TestUtils.validateDurationVaultStrategyProtocolRegistry();
     }
 }

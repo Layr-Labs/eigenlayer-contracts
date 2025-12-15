@@ -57,10 +57,6 @@ library TestUtils {
         /// strategies/
         assertTrue(_getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
         assertTrue(Env.beacon.strategyBase().owner() == Env.executorMultisig(), "strategyBase beacon owner incorrect");
-        assertTrue(
-            Env.beacon.durationVaultStrategy().owner() == Env.executorMultisig(),
-            "durationVaultStrategy beacon owner incorrect"
-        );
 
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint256 i = 0; i < count; i++) {
@@ -268,10 +264,6 @@ library TestUtils {
             assertTrue(strategyFactory.owner() == Env.opsMultisig(), "sFact.owner invalid");
             assertTrue(strategyFactory.paused() == 0, "sFact.paused invalid");
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
-            assertTrue(
-                strategyFactory.durationVaultBeacon() == Env.beacon.durationVaultStrategy(),
-                "sFact.durationVaultBeacon invalid"
-            );
         }
         {
             /// multichain/
@@ -371,7 +363,6 @@ library TestUtils {
         validateStrategyBaseImmutables(Env.impl.strategyBase());
         validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryImmutables(Env.impl.strategyFactory());
-        validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
 
         /// multichain/
         validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
@@ -489,10 +480,6 @@ library TestUtils {
         assertTrue(
             Env.beacon.strategyBase().implementation() == address(Env.impl.strategyBase()),
             "strategyBase impl address mismatch"
-        );
-        assertTrue(
-            Env.beacon.durationVaultStrategy().implementation() == address(Env.impl.durationVaultStrategy()),
-            "durationVaultStrategy impl address mismatch"
         );
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint256 i = 0; i < count; i++) {
@@ -1136,11 +1123,6 @@ library TestUtils {
             assertTrue(addr == address(Env.proxy.strategyFactory()), "strategyFactory address incorrect");
             assertTrue(config.pausable, "strategyFactory should be pausable");
             assertFalse(config.deprecated, "strategyFactory should not be deprecated");
-
-            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DurationVaultStrategy).name);
-            assertTrue(addr == address(Env.beacon.durationVaultStrategy()), "durationVaultStrategy address incorrect");
-            assertFalse(config.pausable, "durationVaultStrategy should not be pausable");
-            assertFalse(config.deprecated, "durationVaultStrategy should not be deprecated");
         }
 
         {
@@ -1226,6 +1208,52 @@ library TestUtils {
         // Lastly, attempt to call pauseAll on the protocol registry
         vm.prank(Env.pauserMultisig());
         Env.proxy.protocolRegistry().pauseAll();
+    }
+
+    ///
+    ///                         DURATION VAULT STRATEGY VALIDATION (v1.11.0+)
+    ///
+    /// @dev These functions are called explicitly by v1.11.0+ scripts only.
+    /// @dev Do NOT call from main validation functions to avoid breaking older releases.
+
+    /// @notice Validates DurationVaultStrategy beacon owner
+    function validateDurationVaultStrategyProxyAdmin() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().owner() == Env.executorMultisig(),
+            "durationVaultStrategy beacon owner incorrect"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy factory beacon reference
+    function validateDurationVaultStrategyStorage() internal view {
+        StrategyFactory strategyFactory = Env.proxy.strategyFactory();
+        assertTrue(
+            strategyFactory.durationVaultBeacon() == Env.beacon.durationVaultStrategy(),
+            "sFact.durationVaultBeacon invalid"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy implementation immutables
+    function validateDurationVaultStrategyImplConstructors() internal view {
+        validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
+    }
+
+    /// @notice Validates DurationVaultStrategy beacon points to correct implementation
+    function validateDurationVaultStrategyImplAddressesMatchProxy() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().implementation() == address(Env.impl.durationVaultStrategy()),
+            "durationVaultStrategy impl address mismatch"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy in protocol registry
+    function validateDurationVaultStrategyProtocolRegistry() internal view {
+        address addr;
+        IProtocolRegistryTypes.DeploymentConfig memory config;
+        (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DurationVaultStrategy).name);
+        assertTrue(addr == address(Env.beacon.durationVaultStrategy()), "durationVaultStrategy address incorrect");
+        assertFalse(config.pausable, "durationVaultStrategy should not be pausable");
+        assertFalse(config.deprecated, "durationVaultStrategy should not be deprecated");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
