@@ -5,10 +5,11 @@ import "../../src/contracts/core/StrategyManager.sol";
 
 contract StrategyManagerHarness is StrategyManager {
     constructor(
+        IAllocationManager _allocationManager,
         IDelegationManager _delegation,
         IPauserRegistry _pauseRegistry,
         string memory _version
-    ) StrategyManager(_delegation, _pauseRegistry, _version)
+    ) StrategyManager(_allocationManager, _delegation, _pauseRegistry, _version)
     {}
 
     function strategy_is_in_stakers_array(address staker, IStrategy strategy) public view returns (bool) {
