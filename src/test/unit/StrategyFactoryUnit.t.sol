@@ -171,7 +171,22 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     }
 
     function test_deployDurationVaultStrategy_revertBeaconNotSet() public {
-        strategyFactory.setDurationVaultBeacon(IBeacon(address(0)));
+        // Create a new StrategyFactory without a duration vault beacon
+        StrategyFactory factoryWithoutDurationVault = StrategyFactory(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(strategyFactoryImplementation),
+                    address(eigenLayerProxyAdmin),
+                    abi.encodeWithSelector(
+                        StrategyFactory.initialize.selector,
+                        initialOwner,
+                        initialPausedStatus,
+                        strategyBeacon,
+                        IBeacon(address(0)) // No duration vault beacon
+                    )
+                )
+            )
+        );
 
         IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
@@ -187,7 +202,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         });
 
         cheats.expectRevert(IStrategyFactory.DurationVaultBeaconNotSet.selector);
-        strategyFactory.deployDurationVaultStrategy(config);
+        factoryWithoutDurationVault.deployDurationVaultStrategy(config);
     }
 
     function test_deployDurationVaultStrategy_withExistingStrategy() public {

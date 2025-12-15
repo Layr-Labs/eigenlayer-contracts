@@ -161,13 +161,6 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyBeacon = _strategyBeacon;
     }
 
-    /// @notice Owner-only function to update the duration vault beacon.
-    function setDurationVaultBeacon(
-        IBeacon newDurationVaultBeacon
-    ) external onlyOwner {
-        _setDurationVaultBeacon(newDurationVaultBeacon);
-    }
-
     /// @inheritdoc IStrategyFactory
     function getDurationVaults(
         IERC20 token

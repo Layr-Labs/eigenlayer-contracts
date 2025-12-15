@@ -70,11 +70,6 @@ interface IStrategyFactory {
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
 
-    /// @notice Owner-only function to update the beacon used for deploying duration vault strategies.
-    function setDurationVaultBeacon(
-        IBeacon newDurationVaultBeacon
-    ) external;
-
     /// @notice Emitted when the `strategyBeacon` is changed
     event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
 
