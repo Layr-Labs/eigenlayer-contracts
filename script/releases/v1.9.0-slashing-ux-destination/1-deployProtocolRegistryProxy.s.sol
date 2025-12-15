@@ -35,18 +35,25 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
             return;
         }
 
-        execute();
+        // Destination chains may already have the deterministic CREATE2 proxy deployed
+        // (e.g. if this step was run previously). In that case, attempting to deploy
+        // again will revert with a CreateX collision. Instead, attach the expected
+        // address into the Zeus env and validate invariants.
+        if (_areProxiesDeployed()) {
+            _addContractsToEnv();
+        } else {
+            execute();
+        }
 
-        _validateProxyAdminIsMultisig();
+        _validateProxyAdminIsExpected();
         _validateExpectedProxyAddress();
     }
 
     /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
-    function _validateProxyAdminIsMultisig() internal view {
-        address multisig = Env.multichainDeployerMultisig();
-
+    function _validateProxyAdminIsExpected() internal view {
+        address admin = Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry()));
         assertTrue(
-            Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == multisig,
+            admin == Env.proxyAdmin() || admin == Env.multichainDeployerMultisig(),
             "protocolRegistry proxyAdmin should be multisig"
         );
     }

@@ -38,12 +38,19 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
             _addContractsToEnv();
         }
 
-        // 2. Deploy the Protocol Registry Implementation
-        _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
-        DeployProtocolRegistryImpl._runAsEOA();
+        // If the proxy admin has already been handed off to the canonical ProxyAdmin, then this
+        // "upgrade + handoff" step has already been completed on this environment. In that case:
+        // - do not attempt to call `upgradeToAndCall` directly from the multisig (it will revert)
+        // - do not deploy a new impl in this test run (it would update the Zeus env and cause
+        //   impl/proxy mismatch validations)
+        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) != Env.proxyAdmin()) {
+            // 2. Deploy the Protocol Registry Implementation
+            _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
+            DeployProtocolRegistryImpl._runAsEOA();
 
-        // 3. Upgrade the Protocol Registry Proxy
-        execute();
+            // 3. Upgrade the Protocol Registry Proxy + handoff admin to ProxyAdmin
+            execute();
+        }
 
         // 4. Validate the Protocol Registry
         TestUtils.validateDestinationProxyAdmins();
