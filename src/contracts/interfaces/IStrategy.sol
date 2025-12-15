@@ -67,6 +67,9 @@ interface IStrategy is IStrategyErrors, IStrategyEvents {
     ) external returns (uint256);
 
     /// @notice Hook invoked by the StrategyManager before adding deposit shares for a staker.
+    /// @dev Shares are added in the following scenarios:
+    ///      - When a staker newly deposits into a strategy via StrategyManager.depositIntoStrategy
+    ///      - When completing a withdrawal as shares via DelegationManager.completeQueuedWithdrawal
     /// @param staker The address receiving shares.
     /// @param shares The number of shares being added.
     function beforeAddShares(
@@ -75,6 +78,7 @@ interface IStrategy is IStrategyErrors, IStrategyEvents {
     ) external;
 
     /// @notice Hook invoked by the StrategyManager before removing deposit shares for a staker.
+    /// @dev Deposit shares are removed when a withdrawal is queued via DelegationManager.queueWithdrawals.
     /// @param staker The address losing shares.
     /// @param shares The number of shares being removed.
     function beforeRemoveShares(

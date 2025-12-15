@@ -50,7 +50,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
             IRewardsCoordinator(address(rewardsCoordinatorMock))
         );
 
-        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
             duration: defaultDuration,
@@ -153,9 +153,12 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         uint depositAmount = 1e18;
 
         underlyingToken.transfer(address(durationVault), depositAmount);
-        cheats.prank(address(strategyManager));
-        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
-        durationVault.deposit(underlyingToken, depositAmount);
+        // The deposit() call succeeds (only validates token), but beforeAddShares() reverts
+        cheats.startPrank(address(strategyManager));
+        uint shares = durationVault.deposit(underlyingToken, depositAmount);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
+        durationVault.beforeAddShares(address(this), shares);
+        cheats.stopPrank();
     }
 
     function testWithdrawalQueueingBlockedDuringAllocations() public {
@@ -174,7 +177,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         // Attempt to queue withdrawal (beforeRemoveShares) during ALLOCATIONS - should revert
         cheats.startPrank(address(strategyManager));
-        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLockedDuringAllocations.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.WithdrawalsLockedDuringAllocations.selector);
         durationVault.beforeRemoveShares(address(this), shares);
         cheats.stopPrank();
 
@@ -266,7 +269,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
     function testTVLLimitsCannotBeChangedAfterLock() public {
         durationVault.lock();
-        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
         durationVault.updateTVLLimits(1e18, 10e18);
     }
 }

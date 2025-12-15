@@ -66,7 +66,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
             IRewardsCoordinator(address(rewardsCoordinatorMock))
         );
 
-        IDurationVaultStrategy.VaultConfig memory cfg = IDurationVaultStrategy.VaultConfig({
+        IDurationVaultStrategyTypes.VaultConfig memory cfg = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: IERC20(address(underlyingToken)),
             vaultAdmin: address(this),
             duration: uint32(30 days),
@@ -123,7 +123,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         cheats.startPrank(STAKER);
         underlyingToken.approve(address(strategyManager), amount);
-        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
         strategyManager.depositIntoStrategy(IStrategy(address(durationVault)), IERC20(address(underlyingToken)), amount);
         cheats.stopPrank();
     }
@@ -149,7 +149,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         // Withdrawal blocking now happens at the queueing stage (removeDepositShares -> beforeRemoveShares),
         // not at the withdrawal execution stage (withdrawSharesAsTokens).
         cheats.prank(address(delegationManagerMock));
-        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLockedDuringAllocations.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.WithdrawalsLockedDuringAllocations.selector);
         strategyManager.removeDepositShares(STAKER, IStrategy(address(durationVault)), shares);
     }
 

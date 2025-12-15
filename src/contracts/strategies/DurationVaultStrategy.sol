@@ -83,7 +83,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
     /// @notice Locks the vault, preventing new deposits and withdrawals until maturity.
     function lock() external override onlyVaultAdmin {
-        require(_state == VaultState.DEPOSITS, VaultAlreadyLocked());
+        require(depositsOpen(), VaultAlreadyLocked());
 
         uint32 currentTimestamp = uint32(block.timestamp);
         lockedAt = currentTimestamp;
@@ -146,17 +146,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         return (maxPerDeposit, maxTotalDeposits);
     }
 
-    /// @inheritdoc StrategyBase
-    /// @dev State and TVL limit checks are performed in `beforeAddShares` which is called
-    /// after deposit by the StrategyManager. This hook only validates the token type.
-    function _beforeDeposit(
-        IERC20 token,
-        uint256 /*amount*/
-    ) internal virtual override {
-        require(_state == VaultState.DEPOSITS, DepositsLocked());
-        super._beforeDeposit(token, 0);
-    }
-
     /// @inheritdoc IDurationVaultStrategy
     function unlockTimestamp() public view override returns (uint32) {
         return unlockAt;
@@ -197,7 +186,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         address staker,
         uint256 shares
     ) external view override(IStrategy, StrategyBase) onlyStrategyManager {
-        require(_state == VaultState.DEPOSITS, DepositsLocked());
+        require(depositsOpen(), DepositsLocked());
         require(delegationManager.delegatedTo(staker) == address(this), MustBeDelegatedToVaultOperator());
 
         // Enforce per-deposit cap using the minted shares as proxy for underlying.
@@ -206,17 +195,11 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
         // Enforce total cap using operatorShares (active, non-queued shares).
         // At this point, operatorShares hasn't been updated yet, so we add the new shares.
-        uint256 currentOperatorShares = _getOperatorShares();
-        uint256 postDepositUnderlying = sharesToUnderlyingView(currentOperatorShares + shares);
-        require(postDepositUnderlying <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
-    }
-
-    /// @notice Returns the current operator shares for this vault/strategy.
-    function _getOperatorShares() internal view returns (uint256) {
         IStrategy[] memory strategies = new IStrategy[](1);
         strategies[0] = IStrategy(address(this));
-        uint256[] memory sharesArray = delegationManager.getOperatorShares(address(this), strategies);
-        return sharesArray[0];
+        uint256 currentOperatorShares = delegationManager.getOperatorShares(address(this), strategies)[0];
+        uint256 postDepositUnderlying = sharesToUnderlyingView(currentOperatorShares + shares);
+        require(postDepositUnderlying <= maxTotalDeposits, BalanceExceedsMaxTotalDeposits());
     }
 
     /// @inheritdoc IStrategy
@@ -257,17 +240,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
     function allocationsActive() public view override returns (bool) {
         return _state == VaultState.ALLOCATIONS;
-    }
-
-    function _beforeWithdrawal(
-        address, /*recipient*/
-        IERC20 token,
-        uint256 /*amountShares*/
-    ) internal view virtual override {
-        // Withdrawals are only blocked at the queue stage (beforeRemoveShares).
-        // Once queued, withdrawals can complete in any state. The DelegationManager
-        // validates that only properly-queued withdrawals reach this point.
-        require(token == underlyingToken, OnlyUnderlyingToken());
     }
 
     function _configureOperatorIntegration(

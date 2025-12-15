@@ -37,7 +37,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
         uint[] memory tokenBalances = _singleAmountArray(depositAmount);
 
-        cheats.expectRevert(IDurationVaultStrategy.MustBeDelegatedToVaultOperator.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.MustBeDelegatedToVaultOperator.selector);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
     }
 
@@ -59,7 +59,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
 
         // Lock blocks new queues.
         ctx.vault.lock();
-        cheats.expectRevert(IDurationVaultStrategy.WithdrawalsLockedDuringAllocations.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.WithdrawalsLockedDuringAllocations.selector);
         staker.queueWithdrawals(strategies, withdrawableShares);
 
         // Pre-lock queued withdrawal can complete during ALLOCATIONS.
@@ -182,7 +182,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         User lateStaker = new User("duration-late-staker");
         ctx.asset.transfer(address(lateStaker), extraDeposit);
         uint[] memory lateTokenBalances = _singleAmountArray(extraDeposit);
-        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
         lateStaker.depositIntoEigenlayer(strategies, lateTokenBalances);
 
         // Mature the vault and allow withdrawals.
@@ -215,7 +215,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
 
         string memory newURI = "ipfs://duration-vault/metadata";
         cheats.expectEmit(false, false, false, true, address(ctx.vault));
-        emit IDurationVaultStrategy.MetadataURIUpdated(newURI);
+        emit IDurationVaultStrategyEvents.MetadataURIUpdated(newURI);
         ctx.vault.updateMetadataURI(newURI);
         assertEq(ctx.vault.metadataURI(), newURI, "metadata not updated");
     }
@@ -259,7 +259,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         staker.depositIntoEigenlayer(strategies, amounts);
 
         ctx.vault.lock();
-        cheats.expectRevert(IDurationVaultStrategy.DepositsLocked.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
         ctx.vault.updateTVLLimits(10 ether, 20 ether);
     }
 
@@ -393,7 +393,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         avsInstance.createOperatorSet(new IStrategy[](0));
         OperatorSet memory opSet = avsInstance.createRedistributingOperatorSet(new IStrategy[](0), insuranceRecipient);
 
-        IDurationVaultStrategy.VaultConfig memory config;
+        IDurationVaultStrategyTypes.VaultConfig memory config;
         config.underlyingToken = asset;
         config.vaultAdmin = address(this);
         config.duration = DEFAULT_DURATION;

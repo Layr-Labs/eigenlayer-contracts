@@ -149,7 +149,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     }
 
     function test_deployDurationVaultStrategy() public {
-        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
             duration: uint32(30 days),
@@ -173,7 +173,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     function test_deployDurationVaultStrategy_revertBeaconNotSet() public {
         strategyFactory.setDurationVaultBeacon(IBeacon(address(0)));
 
-        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
             duration: uint32(30 days),
@@ -194,7 +194,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         StrategyBase base = StrategyBase(address(strategyFactory.deployNewStrategy(underlyingToken)));
         require(strategyFactory.deployedStrategies(underlyingToken) == base, "base strategy missing");
 
-        IDurationVaultStrategy.VaultConfig memory config = IDurationVaultStrategy.VaultConfig({
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
             duration: uint32(7 days),
