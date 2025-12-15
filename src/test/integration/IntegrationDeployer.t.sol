@@ -268,24 +268,31 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
+
+        // Deploy durationVaultBeacon and transfer ownership to executorMultisig
+        // so it can be upgraded uniformly with other beacons in _upgradeProxies()
+        if (address(durationVaultBeacon) == address(0)) {
+            durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
+            durationVaultBeacon.transferOwnership(executorMultisig);
+        }
+
+        cheats.startPrank(address(executorMultisig));
+
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
-        cheats.stopPrank();
 
         // Set the durationVaultBeacon on strategyFactory via reinitializer.
         // This is needed for mainnet fork upgrades where initialize() was already called.
-        cheats.prank(address(eigenLayerProxyAdmin));
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(address(strategyFactory)),
             address(strategyFactoryImplementation),
             abi.encodeWithSelector(StrategyFactory.initializeDurationVaultBeacon.selector, durationVaultBeacon)
         );
+        cheats.stopPrank();
     }
 
     function _deployProxies() public {
@@ -435,6 +442,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // StrategyBase Beacon
         strategyBeacon.upgradeTo(address(baseStrategyImplementation));
+
+        // DurationVault Beacon
         durationVaultBeacon.upgradeTo(address(durationVaultImplementation));
 
         // Upgrade All deployed strategy contracts to new base strategy
