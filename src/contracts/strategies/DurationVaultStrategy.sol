@@ -33,11 +33,17 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Rewards coordinator reference used to configure operator splits.
     IRewardsCoordinator public immutable override rewardsCoordinator;
 
+    /// @dev Restricts function access to the vault administrator.
     modifier onlyVaultAdmin() {
         require(msg.sender == vaultAdmin, OnlyVaultAdmin());
         _;
     }
 
+    /// @param _strategyManager The StrategyManager contract.
+    /// @param _pauserRegistry The PauserRegistry contract.
+    /// @param _delegationManager The DelegationManager contract for operator registration.
+    /// @param _allocationManager The AllocationManager contract for operator set allocations.
+    /// @param _rewardsCoordinator The RewardsCoordinator contract for configuring splits.
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
@@ -56,6 +62,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     }
 
     /// @notice Initializes the vault configuration.
+    /// @param config The vault configuration containing admin, duration, caps, and operator set info.
     function initialize(
         VaultConfig memory config
     ) public initializer {
@@ -213,6 +220,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     }
 
     /// @notice Sets the maximum deposits (in underlyingToken) that this strategy will hold and accept per deposit.
+    /// @param newMaxPerDeposit The new maximum deposit amount per transaction.
+    /// @param newMaxTotalDeposits The new maximum total deposits allowed.
     function _setTVLLimits(
         uint256 newMaxPerDeposit,
         uint256 newMaxTotalDeposits
@@ -234,14 +243,18 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         return (_operatorSet.avs, _operatorSet.id);
     }
 
+    /// @inheritdoc IDurationVaultStrategy
     function operatorSetRegistered() public view override returns (bool) {
         return _state == VaultState.DEPOSITS || _state == VaultState.ALLOCATIONS;
     }
 
+    /// @inheritdoc IDurationVaultStrategy
     function allocationsActive() public view override returns (bool) {
         return _state == VaultState.ALLOCATIONS;
     }
 
+    /// @notice Configures operator integration: registers as operator, registers for operator set, sets splits.
+    /// @param config The vault configuration containing operator set and delegation settings.
     function _configureOperatorIntegration(
         VaultConfig memory config
     ) internal {
@@ -266,6 +279,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         rewardsCoordinator.setOperatorSetSplit(address(this), config.operatorSet, 0);
     }
 
+    /// @notice Allocates full magnitude (1 WAD) to the configured operator set.
+    /// @dev Reverts if there is already a pending allocation modification.
     function _allocateFullMagnitude() internal {
         // Ensure no pending allocation modification exists for this operator/operatorSet/strategy.
         // Pending modifications would cause ModificationAlreadyPending() in AllocationManager.modifyAllocations.
@@ -282,6 +297,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         allocationManager.modifyAllocations(address(this), params);
     }
 
+    /// @notice Deallocates all magnitude from the configured operator set.
+    /// @dev Best-effort: failures are caught to avoid bricking `markMatured()`.
     function _deallocateAll() internal {
         IAllocationManager.AllocateParams[] memory params = new IAllocationManager.AllocateParams[](1);
         params[0].operatorSet = _operatorSet;
@@ -293,6 +310,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         try allocationManager.modifyAllocations(address(this), params) {} catch {}
     }
 
+    /// @notice Deregisters the vault from its configured operator set.
+    /// @dev Best-effort: failures are caught to avoid bricking `markMatured()`.
     function _deregisterFromOperatorSet() internal {
         IAllocationManager.DeregisterParams memory params;
         params.operator = address(this);
