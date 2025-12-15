@@ -621,6 +621,12 @@ library Env {
         return _isMainnet() || _isSepolia() || _isHoodi() || _isPreprod();
     }
 
+    /// @dev Whether the environment has ProtocolRegistry deployed (v1.9.0+)
+    /// @notice This checks if the ProtocolRegistry proxy environment variable exists
+    function isProtocolRegistryDeployed() internal view returns (bool) {
+        return vm.envOr("ZEUS_DEPLOYED_ProtocolRegistry_Proxy", address(0)) != address(0);
+    }
+
     function supportsEigenPods() internal view returns (bool) {
         return _isMainnet() || _isHoodi() || _isPreprod();
     }

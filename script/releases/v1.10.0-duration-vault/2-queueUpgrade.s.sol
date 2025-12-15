@@ -102,6 +102,11 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
             return;
         }
 
+        // This upgrade requires v1.9.0+ (ProtocolRegistry must exist)
+        if (!Env.isProtocolRegistryDeployed()) {
+            return;
+        }
+
         // Deploy the contracts first
         super.runAsEOA();
 

@@ -61,6 +61,11 @@ contract DeployContracts is CoreContractsDeployer {
             return;
         }
 
+        // This upgrade requires v1.9.0+ (ProtocolRegistry must exist)
+        if (!Env.isProtocolRegistryDeployed()) {
+            return;
+        }
+
         // Deploy the contracts
         runAsEOA();
 
