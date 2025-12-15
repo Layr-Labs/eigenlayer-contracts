@@ -5,16 +5,19 @@ import {DeployContracts} from "./1-deployContracts.s.sol";
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import {CoreUpgradeQueueBuilder} from "../CoreUpgradeQueueBuilder.sol";
+import {IProtocolRegistry, IProtocolRegistryTypes} from "src/contracts/interfaces/IProtocolRegistry.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
 /// Purpose: Queue the upgrade for Duration Vault feature.
 /// This script queues upgrades to:
 /// - StrategyManager proxy
+/// - EigenStrategy proxy
 /// - StrategyBase beacon
+/// - StrategyBaseTVLLimits proxies
 /// - StrategyFactory proxy
-/// - Creates new DurationVaultStrategy beacon
-/// - Sets the duration vault beacon on StrategyFactory
+/// - Sets DurationVaultStrategy beacon on StrategyFactory
+/// - Registers DurationVaultStrategy beacon in ProtocolRegistry
 contract QueueUpgrade is DeployContracts, MultisigBuilder {
     using Env for *;
     using Encode for *;
@@ -41,12 +44,25 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
         executorCalls.upgradeStrategyManager();
 
         /// strategies/
+        executorCalls.upgradeEigenStrategy();
         executorCalls.upgradeStrategyBase();
-        executorCalls.upgradeStrategyFactory();
+        executorCalls.upgradeStrategyBaseTVLLimits();
 
-        // Set the duration vault beacon on the strategy factory
-        // The beacon was deployed in step 1 (deployContracts)
-        executorCalls.setDurationVaultBeacon();
+        // Upgrade StrategyFactory with upgradeAndCall to set the duration vault beacon via reinitializer
+        executorCalls.append({
+            to: Env.proxyAdmin(),
+            data: abi.encodeWithSelector(
+                ProxyAdmin.upgradeAndCall.selector,
+                address(Env.proxy.strategyFactory()),
+                address(Env.impl.strategyFactory()),
+                abi.encodeWithSelector(
+                    StrategyFactory.initializeDurationVaultBeacon.selector, Env.beacon.durationVaultStrategy()
+                )
+            )
+        });
+
+        // Register the DurationVaultStrategy beacon in the protocol registry and tick version
+        _appendProtocolRegistryUpgrade(executorCalls);
 
         return Encode.gnosisSafe
             .execTransaction({
@@ -55,6 +71,30 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
                 op: Encode.Operation.DelegateCall,
                 data: Encode.multiSend(executorCalls)
             });
+    }
+
+    /// @notice Appends the protocol registry upgrade to register the DurationVaultStrategy beacon
+    function _appendProtocolRegistryUpgrade(
+        MultisigCall[] storage calls
+    ) internal {
+        address[] memory addresses = new address[](1);
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        string[] memory names = new string[](1);
+
+        IProtocolRegistryTypes.DeploymentConfig memory unpausableConfig =
+            IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+
+        // Register DurationVaultStrategy beacon
+        addresses[0] = address(Env.beacon.durationVaultStrategy());
+        configs[0] = unpausableConfig;
+        names[0] = type(DurationVaultStrategy).name;
+
+        calls.append({
+            to: address(Env.proxy.protocolRegistry()),
+            data: abi.encodeWithSelector(
+                IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion()
+            )
+        });
     }
 
     function testScript() public virtual override {

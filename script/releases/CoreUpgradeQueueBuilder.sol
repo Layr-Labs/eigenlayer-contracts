@@ -185,18 +185,6 @@ library CoreUpgradeQueueBuilder {
         });
     }
 
-    /// @notice Sets the duration vault beacon on the strategy factory
-    function setDurationVaultBeacon(
-        MultisigCall[] storage calls
-    ) internal returns (MultisigCall[] storage) {
-        return calls.append({
-            to: address(Env.proxy.strategyFactory()),
-            data: abi.encodeWithSelector(
-                StrategyFactory.setDurationVaultBeacon.selector, Env.beacon.durationVaultStrategy()
-            )
-        });
-    }
-
     /// multichain/
     function upgradeBN254CertificateVerifier(
         MultisigCall[] storage calls

@@ -57,6 +57,10 @@ library TestUtils {
         /// strategies/
         assertTrue(_getProxyAdmin(address(Env.proxy.eigenStrategy())) == pa, "eigenStrategy proxyAdmin incorrect");
         assertTrue(Env.beacon.strategyBase().owner() == Env.executorMultisig(), "strategyBase beacon owner incorrect");
+        assertTrue(
+            Env.beacon.durationVaultStrategy().owner() == Env.executorMultisig(),
+            "durationVaultStrategy beacon owner incorrect"
+        );
 
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint256 i = 0; i < count; i++) {
@@ -264,6 +268,10 @@ library TestUtils {
             assertTrue(strategyFactory.owner() == Env.opsMultisig(), "sFact.owner invalid");
             assertTrue(strategyFactory.paused() == 0, "sFact.paused invalid");
             assertTrue(strategyFactory.strategyBeacon() == Env.beacon.strategyBase(), "sFact.beacon invalid");
+            assertTrue(
+                strategyFactory.durationVaultBeacon() == Env.beacon.durationVaultStrategy(),
+                "sFact.durationVaultBeacon invalid"
+            );
         }
         {
             /// multichain/
@@ -363,6 +371,7 @@ library TestUtils {
         validateStrategyBaseImmutables(Env.impl.strategyBase());
         validateStrategyBaseTVLLimitsImmutables(Env.impl.strategyBaseTVLLimits());
         validateStrategyFactoryImmutables(Env.impl.strategyFactory());
+        validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
 
         /// multichain/
         validateCrossChainRegistryImmutables(Env.impl.crossChainRegistry());
@@ -480,6 +489,10 @@ library TestUtils {
         assertTrue(
             Env.beacon.strategyBase().implementation() == address(Env.impl.strategyBase()),
             "strategyBase impl address mismatch"
+        );
+        assertTrue(
+            Env.beacon.durationVaultStrategy().implementation() == address(Env.impl.durationVaultStrategy()),
+            "durationVaultStrategy impl address mismatch"
         );
         uint256 count = Env.instance.strategyBaseTVLLimits_Count();
         for (uint256 i = 0; i < count; i++) {
@@ -811,6 +824,31 @@ library TestUtils {
         );
     }
 
+    function validateDurationVaultStrategyImmutables(
+        DurationVaultStrategy durationVaultStrategy
+    ) internal view {
+        assertTrue(
+            durationVaultStrategy.strategyManager() == Env.proxy.strategyManager(),
+            "durationVaultStrategy strategyManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.delegationManager()) == address(Env.proxy.delegationManager()),
+            "durationVaultStrategy delegationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.allocationManager()) == address(Env.proxy.allocationManager()),
+            "durationVaultStrategy allocationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.rewardsCoordinator()) == address(Env.proxy.rewardsCoordinator()),
+            "durationVaultStrategy rewardsCoordinator incorrect"
+        );
+        assertTrue(
+            durationVaultStrategy.pauserRegistry() == Env.impl.pauserRegistry(),
+            "durationVaultStrategy pauserRegistry incorrect"
+        );
+    }
+
     /// multichain/
     function validateBN254CertificateVerifierImmutables(
         BN254CertificateVerifier bn254CertificateVerifier
@@ -1098,6 +1136,11 @@ library TestUtils {
             assertTrue(addr == address(Env.proxy.strategyFactory()), "strategyFactory address incorrect");
             assertTrue(config.pausable, "strategyFactory should be pausable");
             assertFalse(config.deprecated, "strategyFactory should not be deprecated");
+
+            (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DurationVaultStrategy).name);
+            assertTrue(addr == address(Env.beacon.durationVaultStrategy()), "durationVaultStrategy address incorrect");
+            assertFalse(config.pausable, "durationVaultStrategy should not be pausable");
+            assertFalse(config.deprecated, "durationVaultStrategy should not be deprecated");
         }
 
         {

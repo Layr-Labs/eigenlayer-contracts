@@ -12,7 +12,9 @@ import "../TestUtils.sol";
 /// /// Core
 /// - StrategyManager (updated with beforeAddShares/beforeRemoveShares hooks)
 /// /// Strategies
+/// - EigenStrategy (inherits from updated StrategyBase)
 /// - StrategyBase (updated with beforeAddShares/beforeRemoveShares hooks)
+/// - StrategyBaseTVLLimits (inherits from updated StrategyBase)
 /// - StrategyFactory (updated with duration vault beacon support)
 /// - DurationVaultStrategy (new beacon implementation)
 /// - DurationVaultStrategy beacon (new UpgradeableBeacon)
@@ -26,7 +28,9 @@ contract DeployContracts is CoreContractsDeployer {
         deployStrategyManager();
 
         /// strategies/
+        deployEigenStrategy();
         deployStrategyBase();
+        deployStrategyBaseTVLLimits();
         deployStrategyFactory();
 
         // Deploy DurationVaultStrategy implementation
@@ -74,11 +78,28 @@ contract DeployContracts is CoreContractsDeployer {
             "StrategyManager: delegationManager mismatch"
         );
 
+        // Validate EigenStrategy
+        assertTrue(address(Env.impl.eigenStrategy()) != address(0), "EigenStrategy implementation should be deployed");
+        assertTrue(
+            address(Env.impl.eigenStrategy().strategyManager()) == address(Env.proxy.strategyManager()),
+            "EigenStrategy: strategyManager mismatch"
+        );
+
         // Validate StrategyBase
         assertTrue(address(Env.impl.strategyBase()) != address(0), "StrategyBase implementation should be deployed");
         assertTrue(
             address(Env.impl.strategyBase().strategyManager()) == address(Env.proxy.strategyManager()),
             "StrategyBase: strategyManager mismatch"
+        );
+
+        // Validate StrategyBaseTVLLimits
+        assertTrue(
+            address(Env.impl.strategyBaseTVLLimits()) != address(0),
+            "StrategyBaseTVLLimits implementation should be deployed"
+        );
+        assertTrue(
+            address(Env.impl.strategyBaseTVLLimits().strategyManager()) == address(Env.proxy.strategyManager()),
+            "StrategyBaseTVLLimits: strategyManager mismatch"
         );
 
         // Validate StrategyFactory

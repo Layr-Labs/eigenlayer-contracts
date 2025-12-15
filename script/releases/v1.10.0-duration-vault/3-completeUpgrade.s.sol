@@ -58,49 +58,12 @@ contract ExecuteUpgrade is QueueUpgrade {
         // Execute
         execute();
 
-        // Run validation tests
-        _validateUpgrade();
-    }
-
-    function _validateUpgrade() internal view {
-        // Validate StrategyManager upgrade
-        _validateStrategyManagerUpgrade();
-
-        // Validate StrategyBase beacon upgrade
-        _validateStrategyBaseUpgrade();
-
-        // Validate StrategyFactory upgrade
-        _validateStrategyFactoryUpgrade();
-
-        // Validate DurationVaultStrategy beacon is set
-        _validateDurationVaultBeaconSet();
-    }
-
-    function _validateStrategyManagerUpgrade() internal view {
-        StrategyManager sm = Env.proxy.strategyManager();
-        assertTrue(address(sm) != address(0), "StrategyManager proxy should exist");
-        // The new StrategyManager should have the beforeAddShares/beforeRemoveShares hooks
-        // We can verify by checking the implementation address matches
-    }
-
-    function _validateStrategyBaseUpgrade() internal view {
-        UpgradeableBeacon beacon = Env.beacon.strategyBase();
-        assertTrue(
-            beacon.implementation() == address(Env.impl.strategyBase()),
-            "StrategyBase beacon should point to new implementation"
-        );
-    }
-
-    function _validateStrategyFactoryUpgrade() internal view {
-        StrategyFactory sf = Env.proxy.strategyFactory();
-        assertTrue(address(sf) != address(0), "StrategyFactory proxy should exist");
-    }
-
-    function _validateDurationVaultBeaconSet() internal view {
-        StrategyFactory sf = Env.proxy.strategyFactory();
-        assertTrue(
-            address(sf.durationVaultBeacon()) == address(Env.beacon.durationVaultStrategy()),
-            "StrategyFactory should have duration vault beacon set"
-        );
+        // Run validation tests using TestUtils
+        TestUtils.validateProxyAdmins();
+        TestUtils.validateProxyConstructors();
+        TestUtils.validateProxiesAlreadyInitialized();
+        TestUtils.validateProxyStorage();
+        TestUtils.validateImplAddressesMatchProxy();
+        TestUtils.validateProtocolRegistry();
     }
 }
