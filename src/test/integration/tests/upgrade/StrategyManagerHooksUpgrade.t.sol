@@ -35,7 +35,14 @@ contract Integration_Upgrade_StrategyManagerHooks is UpgradeTest {
 
         /// Verify staker has their shares back
         for (uint i = 0; i < strategies.length; i++) {
-            uint stakerShares = strategyManager.stakerDepositShares(address(staker), strategies[i]);
+            uint stakerShares;
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                // Beacon chain ETH shares are tracked in EigenPodManager, not StrategyManager
+                int podShares = eigenPodManager.podOwnerDepositShares(address(staker));
+                stakerShares = podShares > 0 ? uint(podShares) : 0;
+            } else {
+                stakerShares = strategyManager.stakerDepositShares(address(staker), strategies[i]);
+            }
             assertEq(stakerShares, shares[i], "staker should have shares restored after completing as shares");
         }
     }
@@ -97,7 +104,14 @@ contract Integration_Upgrade_StrategyManagerHooks is UpgradeTest {
 
         /// Verify staker has their shares back
         for (uint i = 0; i < strategies.length; i++) {
-            uint stakerShares = strategyManager.stakerDepositShares(address(staker), strategies[i]);
+            uint stakerShares;
+            if (strategies[i] == BEACONCHAIN_ETH_STRAT) {
+                // Beacon chain ETH shares are tracked in EigenPodManager, not StrategyManager
+                int podShares = eigenPodManager.podOwnerDepositShares(address(staker));
+                stakerShares = podShares > 0 ? uint(podShares) : 0;
+            } else {
+                stakerShares = strategyManager.stakerDepositShares(address(staker), strategies[i]);
+            }
             assertEq(stakerShares, shares[i], "staker should have shares restored after completing as shares");
         }
     }
