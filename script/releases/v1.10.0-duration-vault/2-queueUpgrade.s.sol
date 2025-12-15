@@ -15,7 +15,7 @@ import "../TestUtils.sol";
 /// - StrategyFactory proxy
 /// - Creates new DurationVaultStrategy beacon
 /// - Sets the duration vault beacon on StrategyFactory
-contract QueueUpgrade is DeployContracts {
+contract QueueUpgrade is DeployContracts, MultisigBuilder {
     using Env for *;
     using Encode for *;
     using CoreUpgradeQueueBuilder for MultisigCall[];
