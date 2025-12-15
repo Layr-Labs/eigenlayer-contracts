@@ -35,6 +35,7 @@ import "src/contracts/strategies/EigenStrategy.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
 
 /// token/
 import "src/contracts/interfaces/IEigen.sol";
@@ -407,6 +408,20 @@ library Env {
         DeployedImpl
     ) internal view returns (StrategyFactory) {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
+    }
+
+    // Beacon proxy for duration vault strategies
+    function durationVaultStrategy(
+        DeployedBeacon
+    ) internal view returns (UpgradeableBeacon) {
+        return UpgradeableBeacon(_deployedBeacon(type(DurationVaultStrategy).name));
+    }
+
+    // Beaconed impl for duration vault strategies
+    function durationVaultStrategy(
+        DeployedImpl
+    ) internal view returns (DurationVaultStrategy) {
+        return DurationVaultStrategy(_deployedImpl(type(DurationVaultStrategy).name));
     }
 
     /// token/

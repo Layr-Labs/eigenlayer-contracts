@@ -1,0 +1,79 @@
+{
+  "name": "Duration Vault Strategy",
+  "version": "v1.10.0",
+  "description": "Introduces Duration Vault Strategies - time-bound vault strategies with configurable deposit caps and windows that integrate with EigenLayer's operator, allocation, and rewards systems.",
+  "contracts": {
+    "deployed": [
+      {
+        "name": "StrategyManager",
+        "type": "implementation",
+        "changes": [
+          "Added beforeAddShares hook call in _addShares",
+          "Added beforeRemoveShares hook call in _removeDepositShares"
+        ]
+      },
+      {
+        "name": "StrategyBase",
+        "type": "beacon_implementation",
+        "changes": [
+          "Added beforeAddShares hook (empty implementation)",
+          "Added beforeRemoveShares hook (empty implementation)"
+        ]
+      },
+      {
+        "name": "StrategyFactory",
+        "type": "implementation",
+        "changes": [
+          "Added durationVaultBeacon storage and setter",
+          "Added deployDurationVaultStrategy function",
+          "Added getDurationVaults function",
+          "Updated initialize to accept durationVaultBeacon parameter"
+        ]
+      },
+      {
+        "name": "DurationVaultStrategy",
+        "type": "beacon_implementation",
+        "changes": [
+          "New contract - time-bound vault strategy with deposit caps and windows"
+        ]
+      }
+    ],
+    "upgraded": [
+      {
+        "name": "StrategyManager",
+        "type": "proxy"
+      },
+      {
+        "name": "StrategyBase",
+        "type": "beacon"
+      },
+      {
+        "name": "StrategyFactory",
+        "type": "proxy"
+      }
+    ],
+    "new_beacons": [
+      {
+        "name": "DurationVaultStrategy",
+        "description": "Beacon for duration vault strategy proxies deployed by StrategyFactory"
+      }
+    ]
+  },
+  "scripts": [
+    {
+      "order": 1,
+      "file": "1-deployContracts.s.sol",
+      "description": "Deploy new implementations for StrategyManager, StrategyBase, StrategyFactory, and DurationVaultStrategy"
+    },
+    {
+      "order": 2,
+      "file": "2-queueUpgrade.s.sol",
+      "description": "Queue the upgrade in the timelock"
+    },
+    {
+      "order": 3,
+      "file": "3-completeUpgrade.s.sol",
+      "description": "Execute the queued upgrade after timelock delay"
+    }
+  ]
+}
