@@ -38,17 +38,20 @@ interface IEmissionsControllerTypes {
 interface IEmissionsControllerEvents is IEmissionsControllerTypes {
     /// @notice Emitted when a distribution is updated.
     /// @param distributionId The id of the distribution.
+    /// @param epoch The epoch the distribution was updated.
     /// @param distribution The distribution.
-    event DistributionUpdated(uint256 indexed distributionId, Distribution distribution);
+    event DistributionUpdated(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
 
     /// @notice Emitted when a distribution is added.
     /// @param distributionId The id of the distribution.
+    /// @param epoch The epoch the distribution was added.
     /// @param distribution The distribution.
-    event DistributionAdded(uint256 indexed distributionId, Distribution distribution);
+    event DistributionAdded(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
 
     /// @notice Emitted when a distribution is removed.
     /// @param distributionId The id of the distribution.
-    event DistributionRemoved(uint256 indexed distributionId);
+    /// @param epoch The epoch the distribution was removed.
+    event DistributionRemoved(uint256 indexed distributionId, uint256 indexed epoch);
 
     /// @notice Emitted when the Incentive Council address is updated.
     /// @param incentiveCouncil The new Incentive Council address.
