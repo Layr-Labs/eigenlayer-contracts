@@ -35,7 +35,18 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
             return;
         }
 
-        execute();
+        // This script is run in CI against live networks. On some destination environments (e.g. base-sepolia),
+        // the deterministic proxy address may already be deployed, in which case re-deploying would revert due to
+        // Create2 collision. Make this step idempotent by re-using the expected address when already deployed.
+        if (_areProxiesDeployed()) {
+            _addContractsToEnv();
+            // If it's already deployed, don't enforce the (temporary) admin assumption for a fresh deploy;
+            // just ensure the deterministic address is correct.
+            _validateExpectedProxyAddress();
+            return;
+        } else {
+            execute();
+        }
 
         _validateProxyAdminIsMultisig();
         _validateExpectedProxyAddress();
@@ -44,7 +55,6 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     /// @dev Validate that proxies are owned by the multichain deployer multisig (temporarily)
     function _validateProxyAdminIsMultisig() internal view {
         address multisig = Env.multichainDeployerMultisig();
-
         assertTrue(
             Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == multisig,
             "protocolRegistry proxyAdmin should be multisig"
