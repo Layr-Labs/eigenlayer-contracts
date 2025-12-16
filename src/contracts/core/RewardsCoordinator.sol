@@ -222,7 +222,11 @@ contract RewardsCoordinator is
             submissionNonce[operatorSet.avs] = nonce + 1;
 
             emit UniqueStakeRewardsSubmissionCreated(
-                msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission
+                msg.sender,
+                rewardsSubmissionHash,
+                operatorSet,
+                nonce,
+                rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
@@ -245,7 +249,11 @@ contract RewardsCoordinator is
             submissionNonce[operatorSet.avs] = nonce + 1;
 
             emit TotalStakeRewardsSubmissionCreated(
-                msg.sender, rewardsSubmissionHash, operatorSet, nonce, rewardsSubmission
+                msg.sender,
+                rewardsSubmissionHash,
+                operatorSet,
+                nonce,
+                rewardsSubmission
             );
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }

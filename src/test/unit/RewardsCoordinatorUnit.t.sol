@@ -3644,7 +3644,7 @@ contract RewardsCoordinatorUnitTests_createUniqueStakeRewardsSubmission is Rewar
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         RewardsSubmission[] memory rewardsSubmissions;
@@ -4166,7 +4166,11 @@ contract RewardsCoordinatorUnitTests_createUniqueStakeRewardsSubmission is Rewar
         for (uint i = 0; i < numSubmissions; ++i) {
             cheats.expectEmit(true, true, false, true, address(rewardsCoordinator));
             emit UniqueStakeRewardsSubmissionCreated(
-                avs, rewardsSubmissionHashes[i], operatorSet, startSubmissionNonce + i, rewardsSubmissions[i]
+                avs,
+                rewardsSubmissionHashes[i],
+                operatorSet,
+                startSubmissionNonce + i,
+                rewardsSubmissions[i]
             );
         }
 
@@ -4239,7 +4243,11 @@ contract RewardsCoordinatorUnitTests_createUniqueStakeRewardsSubmission is Rewar
         // Expect event emission
         cheats.expectEmit(true, true, false, true, address(rewardsCoordinator));
         emit UniqueStakeRewardsSubmissionCreated(
-            defaultAppointee, rewardsSubmissionHash, operatorSet, startSubmissionNonce, rewardsSubmissions[0]
+            defaultAppointee,
+            rewardsSubmissionHash,
+            operatorSet,
+            startSubmissionNonce,
+            rewardsSubmissions[0]
         );
 
         // 4. Call createUniqueStakeRewardsSubmission() as appointee
@@ -4275,7 +4283,7 @@ contract RewardsCoordinatorUnitTests_createTotalStakeRewardsSubmission is Reward
     // Revert when paused
     function test_Revert_WhenPaused() public {
         cheats.prank(pauser);
-        rewardsCoordinator.pause(2 ** PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION);
+        rewardsCoordinator.pause(2**PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION);
 
         cheats.expectRevert(IPausable.CurrentlyPaused.selector);
         RewardsSubmission[] memory rewardsSubmissions;
@@ -4797,7 +4805,11 @@ contract RewardsCoordinatorUnitTests_createTotalStakeRewardsSubmission is Reward
         for (uint i = 0; i < numSubmissions; ++i) {
             cheats.expectEmit(true, true, false, true, address(rewardsCoordinator));
             emit TotalStakeRewardsSubmissionCreated(
-                avs, rewardsSubmissionHashes[i], operatorSet, startSubmissionNonce + i, rewardsSubmissions[i]
+                avs,
+                rewardsSubmissionHashes[i],
+                operatorSet,
+                startSubmissionNonce + i,
+                rewardsSubmissions[i]
             );
         }
 
@@ -4870,7 +4882,11 @@ contract RewardsCoordinatorUnitTests_createTotalStakeRewardsSubmission is Reward
         // Expect event emission
         cheats.expectEmit(true, true, false, true, address(rewardsCoordinator));
         emit TotalStakeRewardsSubmissionCreated(
-            defaultAppointee, rewardsSubmissionHash, operatorSet, startSubmissionNonce, rewardsSubmissions[0]
+            defaultAppointee,
+            rewardsSubmissionHash,
+            operatorSet,
+            startSubmissionNonce,
+            rewardsSubmissions[0]
         );
 
         // 4. Call createTotalStakeRewardsSubmission() as appointee
