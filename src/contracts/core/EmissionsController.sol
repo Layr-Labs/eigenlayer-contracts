@@ -96,7 +96,9 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
     /// @inheritdoc IEmissionsController
     function getCurrentEpoch() public view returns (uint256) {
+        // If the start time has not elapsed, default to max uint256.
         if (block.timestamp < EMISSIONS_START_TIME) return type(uint256).max;
+        // Calculate the current epoch by dividing the time since start by the epoch length.
         return (block.timestamp - EMISSIONS_START_TIME) / EMISSIONS_EPOCH_LENGTH;
     }
 
