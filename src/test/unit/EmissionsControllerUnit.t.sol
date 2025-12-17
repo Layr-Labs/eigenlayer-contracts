@@ -21,7 +21,15 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
         emissionsController = EmissionsController(
             address(
                 new TransparentUpgradeableProxy(
-                    address(new EmissionsController(EMISSIONS_INFLATION_RATE, EMISSIONS_START_TIME, EMISSIONS_EPOCH_LENGTH)),
+                    address(
+                        new EmissionsController(
+                            IEigen(address(eigenMock)),
+                            IRewardsCoordinator(address(rewardsCoordinatorMock)),
+                            EMISSIONS_INFLATION_RATE,
+                            EMISSIONS_START_TIME,
+                            EMISSIONS_EPOCH_LENGTH
+                        )
+                    ),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(EmissionsController.initialize.selector, owner, incentiveCouncil)
                 )

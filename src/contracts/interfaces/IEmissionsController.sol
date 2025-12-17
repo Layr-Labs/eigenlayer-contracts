@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IRewardsCoordinator.sol";
+import "./IEigen.sol";
+
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.
 interface IEmissionsControllerErrors {
@@ -16,6 +19,8 @@ interface IEmissionsControllerErrors {
     error CannotAddDisabledDistribution();
     /// @dev Thrown when attempting to update a disabled distribution.
     error CannotUpdateDisabledDistribution();
+    /// @dev Thrown when the button has already been pressed for the current epoch.
+    error ButtonAlreadyPressed();
 }
 
 /// @title IEmissionsControllerTypes
@@ -80,6 +85,14 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
+    /// @notice The EIGEN token address.
+    /// @dev Immutable/constant variable that requires an upgrade to modify.
+    function EIGEN() external view returns (IEigen);
+
+    /// @notice The RewardsCoordinator address.
+    /// @dev Immutable/constant variable that requires an upgrade to modify.
+    function REWARDS_COORDINATOR() external view returns (IRewardsCoordinator);
+
     /// @notice The max total weight of all distributions.
     /// @dev Constant variable that requires an upgrade to modify.
     function MAX_TOTAL_WEIGHT() external view returns (uint256);

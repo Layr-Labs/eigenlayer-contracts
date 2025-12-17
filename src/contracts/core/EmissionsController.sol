@@ -17,10 +17,12 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// Initialization
     /// -----------------------------------------------------------------------
     constructor(
+        IEigen eigen,
+        IRewardsCoordinator rewardsCoordinator,
         uint256 inflationRate,
         uint256 startTime,
         uint256 cooldownSeconds
-    ) EmissionsControllerStorage(inflationRate, startTime, cooldownSeconds) {
+    ) EmissionsControllerStorage(eigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds) {
         _disableInitializers();
     }
 
@@ -172,7 +174,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
     /// @inheritdoc IEmissionsController
     function isButtonPressable() external view returns (bool) {
-        return _epochTriggered[getCurrentEpoch()];
+        return !_epochTriggered[getCurrentEpoch()];
     }
 
     /// @inheritdoc IEmissionsController
