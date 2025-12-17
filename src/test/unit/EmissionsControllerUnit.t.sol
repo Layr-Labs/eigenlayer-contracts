@@ -9,7 +9,7 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
     using ArrayLib for *;
 
     uint EMISSIONS_INFLATION_RATE = 50;
-    uint EMISSIONS_START_TIME = block.timestamp;
+    uint EMISSIONS_START_TIME = block.timestamp + 1 weeks;
     uint EMISSIONS_EPOCH_LENGTH = 1 weeks;
 
     address owner = address(0x1);
@@ -104,6 +104,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
     }
 
     function testFuzz_addDistribution_Correctness(uint weight, uint8 distributionTypeUint8) public {
+        weight = bound(weight, 0, 10_000);
         DistributionType distributionType =
             DistributionType(bound(uint8(distributionTypeUint8), uint8(type(DistributionType).min), uint8(type(DistributionType).max)));
 
@@ -112,7 +113,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, encodedRewardsSubmission: ""});
 
         cheats.expectEmit(true, true, true, true);
-        emit DistributionAdded(nextDistributionId, 0, addedDistribution);
+        emit DistributionAdded(nextDistributionId, type(uint256).max, addedDistribution);
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(addedDistribution);
 

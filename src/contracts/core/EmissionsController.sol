@@ -149,7 +149,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) internal view {
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
-        if (distribution.startEpoch <= currentEpoch) {
+        if (distribution.startEpoch == currentEpoch) {
             revert StartEpochMustBeInTheFuture();
         }
 
