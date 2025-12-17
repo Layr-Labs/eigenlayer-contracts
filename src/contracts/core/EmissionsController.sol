@@ -71,24 +71,92 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     function addDistribution(
         Distribution calldata distribution
     ) external override onlyIncentiveCouncil returns (uint256 distributionId) {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // Question: How should be handle added distributions before the first epoch?
+
+        // Check if the distribution is disabled.
+        if (distribution.distributionType == DistributionType.Disabled) {
+            revert CannotAddDisabledDistribution();
+        }
+        // Asserts the following:
+        // - The start epoch is in the future.
+        // - The total weight of all distributions does not exceed the max total weight.
+        _checkDistribution(distribution, currentEpoch);
         // Get the total number of distributions (also next available distribution id).
         distributionId = getTotalDistributions();
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
         // Emit an event for the new distribution.
-        emit DistributionAdded(distributionId, getCurrentEpoch(), distribution);
+        emit DistributionAdded(distributionId, currentEpoch, distribution);
     }
 
     /// @inheritdoc IEmissionsController
     function updateDistribution(
         uint256 distributionId,
         Distribution calldata distribution
-    ) external override onlyIncentiveCouncil {}
+    ) external override onlyIncentiveCouncil {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // Check if the distribution is disabled.
+        if (distribution.distributionType == DistributionType.Disabled) {
+            revert CannotUpdateDisabledDistribution();
+        }
+
+        // Check if the distribution is disabled.
+        _checkDisabled(_distributions[distributionId]);
+        // Asserts the following:
+        // - The start epoch is in the future.
+        // - The total weight of all distributions does not exceed the max total weight.
+        _checkDistribution(distribution, currentEpoch);
+        // Update the distribution in the distributions array.
+        _distributions[distributionId] = distribution;
+        // Emit an event for the updated distribution.
+        emit DistributionUpdated(distributionId, currentEpoch, distribution);
+    }
 
     /// @inheritdoc IEmissionsController
     function removeDistribution(
         uint256 distributionId
-    ) external override onlyIncentiveCouncil {}
+    ) external override onlyIncentiveCouncil {
+        // Check if the distribution is already disabled.
+        _checkDisabled(_distributions[distributionId]);
+        // Set the distribution type to disabled.
+        // Prevents further updates to the distribution.
+        _distributions[distributionId].distributionType = DistributionType.Disabled;
+        // Emit an event for the removed distribution.
+        emit DistributionRemoved(distributionId, getCurrentEpoch());
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Internal Helpers
+    /// -----------------------------------------------------------------------
+
+    function _checkDisabled(
+        Distribution storage distribution
+    ) internal view {
+        // Check if the distribution is disabled.
+        if (distribution.distributionType == DistributionType.Disabled) {
+            revert DistributionIsDisabled();
+        }
+    }
+
+    function _checkDistribution(
+        Distribution calldata distribution,
+        uint256 currentEpoch
+    ) internal view {
+        // Check if the start epoch is in the future.
+        // Prevents updating a distribution to a past or current epoch.
+        if (distribution.startEpoch <= currentEpoch) {
+            revert StartEpochMustBeInTheFuture();
+        }
+
+        // Check if the new total weight of all distributions exceeds max total weight.
+        // Prevents distributing more supply than inflation rate allows.
+        if (distribution.weight + totalWeight > MAX_TOTAL_WEIGHT) {
+            revert TotalWeightExceedsMax();
+        }
+    }
 
     /// -----------------------------------------------------------------------
     /// View

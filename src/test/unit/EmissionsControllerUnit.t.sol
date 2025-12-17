@@ -85,7 +85,13 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         cheats.prank(notIncentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
         emissionsController.addDistribution(
-            Distribution({weight: 10_000, distributionType: DistributionType.RewardsForAllEarners, encodedRewardsSubmission: ""})
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
         );
     }
 
@@ -95,7 +101,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         uint nextDistributionId = emissionsController.getTotalDistributions();
         Distribution memory addedDistribution =
-            Distribution({weight: weight, distributionType: distributionType, encodedRewardsSubmission: ""});
+            Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, encodedRewardsSubmission: ""});
 
         cheats.expectEmit(true, true, true, true);
         emit DistributionAdded(nextDistributionId, 0, addedDistribution);

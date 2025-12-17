@@ -6,6 +6,16 @@ pragma solidity >=0.5.0;
 interface IEmissionsControllerErrors {
     /// @dev Thrown when caller is not the incentive council.
     error CallerIsNotIncentiveCouncil();
+    /// @dev Thrown when the start epoch is the current or past epoch.
+    error StartEpochMustBeInTheFuture();
+    /// @dev Thrown when the total weight of all distributions exceeds the max total weight (100%).
+    error TotalWeightExceedsMax();
+    /// @dev Thrown when the distribution is disabled.
+    error DistributionIsDisabled();
+    /// @dev Thrown when attempting to add a disabled distribution.
+    error CannotAddDisabledDistribution();
+    /// @dev Thrown when attempting to update a disabled distribution.
+    error CannotUpdateDisabledDistribution();
 }
 
 /// @title IEmissionsControllerTypes
@@ -14,6 +24,7 @@ interface IEmissionsControllerTypes {
     /// @notice Distribution types as defined in the ELIP.
     /// @dev Ref: "Distribution Submission types may include: createRewardsForAllEarners, createOperatorSetTotalStakeRewardsSubmission, createOperatorSetUniqueStakeRewardsSubmission, EigenDA Distribution, Manual Distribution."
     enum DistributionType {
+        Disabled,
         RewardsForAllEarners,
         OperatorSetTotalStake,
         OperatorSetUniqueStake,
@@ -26,6 +37,10 @@ interface IEmissionsControllerTypes {
     struct Distribution {
         /// The bips denominated weight of the distribution.
         uint256 weight;
+        /// The epoch the distribution was last triggered.
+        uint256 startEpoch;
+        /// The number of epochs to repeat the distribution.
+        uint256 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
         /// The encoded rewards submission (either `RewardsSubmission` or `OperatorDirectedRewardsSubmission`).
@@ -65,6 +80,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
+    /// @notice The max total weight of all distributions.
+    /// @dev Constant variable that requires an upgrade to modify.
+    function MAX_TOTAL_WEIGHT() external view returns (uint256);
+
     /// @notice The rate of inflation for emissions.
     /// @dev Immutable/constant variable that requires an upgrade to modify.
     function EMISSIONS_INFLATION_RATE() external view returns (uint256);
@@ -151,6 +170,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @notice Returns the current Incentive Council address.
     /// @return The Incentive Council address.
     function incentiveCouncil() external view returns (address);
+
+    /// @notice Returns the total weight of all distributions.
+    /// @return The total weight of all distributions.
+    function totalWeight() external view returns (uint256);
 
     /// @notice Returns the current epoch.
     /// @return The current epoch.

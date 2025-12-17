@@ -4,6 +4,11 @@ pragma solidity ^0.8.27;
 import "../../interfaces/IEmissionsController.sol";
 
 abstract contract EmissionsControllerStorage is IEmissionsController {
+    // Constants
+
+    /// @inheritdoc IEmissionsController
+    uint256 public constant MAX_TOTAL_WEIGHT = 10_000;
+
     // Immutables
 
     /// @inheritdoc IEmissionsController
@@ -17,7 +22,8 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
 
     /// @inheritdoc IEmissionsController
     address public incentiveCouncil;
-
+    /// @inheritdoc IEmissionsController
+    uint256 public totalWeight;
     /// @dev Returns an append-only array of distributions.
     Distribution[] internal _distributions;
     /// @dev Mapping from epoch to whether it has been triggered.
@@ -38,5 +44,5 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[46] private __gap;
+    uint256[45] private __gap;
 }
