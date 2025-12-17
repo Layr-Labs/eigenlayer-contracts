@@ -302,8 +302,6 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
     }
 }
 
-// TODO: update distirbution test reverts if disabled via removeDistribution
-
 contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerUnitTests {
     function test_revert_removeDistribution_OnlyIncentiveCouncil() public {
         address notIncentiveCouncil = address(0x3);
@@ -356,7 +354,7 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
         emissionsController.removeDistribution(distributionId);
 
         Distribution memory distribution = emissionsController.getDistribution(distributionId);
-        assertEq(distribution.distributionType, DistributionType.Disabled);
+        assertEq(uint8(distribution.distributionType), uint8(DistributionType.Disabled));
     }
 }
 
