@@ -992,7 +992,7 @@ library TestUtils {
         StrategyFactory strategyFactory
     ) internal {
         vm.expectRevert(errInit);
-        strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)), UpgradeableBeacon(address(0)));
+        strategyFactory.initialize(address(0), 0);
     }
 
     /// multichain/

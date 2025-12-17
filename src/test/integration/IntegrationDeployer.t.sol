@@ -285,13 +285,6 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _deployImplementations();
         _upgradeProxies();
 
-        // Set the durationVaultBeacon on strategyFactory via reinitializer.
-        // This is needed for mainnet fork upgrades where initialize() was already called.
-        eigenLayerProxyAdmin.upgradeAndCall(
-            ITransparentUpgradeableProxy(address(strategyFactory)),
-            address(strategyFactoryImplementation),
-            abi.encodeWithSelector(StrategyFactory.initializeDurationVaultBeacon.selector, durationVaultBeacon)
-        );
         cheats.stopPrank();
     }
 
@@ -383,7 +376,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, strategyBeacon, durationVaultBeacon);
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
@@ -478,12 +471,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         allocationManager.initialize({initialPausedStatus: 0});
 
-        strategyFactory.initialize({
-            _initialOwner: executorMultisig,
-            _initialPausedStatus: 0,
-            _strategyBeacon: strategyBeacon,
-            _durationVaultBeacon: durationVaultBeacon
-        });
+        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0});
 
         rewardsCoordinator.initialize({
             initialOwner: executorMultisig,

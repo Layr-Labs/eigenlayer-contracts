@@ -43,9 +43,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     string internal constant OPERATOR_METADATA_URI = "ipfs://factory-duration-vault";
     bytes internal constant REGISTRATION_DATA = hex"F00D";
 
-    /// @notice Emitted when the `strategyBeacon` is changed
-    event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
-
     /// @notice Emitted whenever a slot is set in the `deployedStrategies` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);
 
@@ -78,16 +75,15 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation = new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry);
+        strategyFactoryImplementation =
+            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, durationVaultBeacon);
 
         strategyFactory = StrategyFactory(
             address(
                 new TransparentUpgradeableProxy(
                     address(strategyFactoryImplementation),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyFactory.initialize.selector, initialOwner, initialPausedStatus, strategyBeacon, durationVaultBeacon
-                    )
+                    abi.encodeWithSelector(StrategyFactory.initialize.selector, initialOwner, initialPausedStatus)
                 )
             )
         );
@@ -121,12 +117,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
 
     function test_initialize_revert_reinitialization() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        strategyFactory.initialize({
-            _initialOwner: initialOwner,
-            _initialPausedStatus: initialPausedStatus,
-            _strategyBeacon: strategyBeacon,
-            _durationVaultBeacon: durationVaultBeacon
-        });
+        strategyFactory.initialize({_initialOwner: initialOwner, _initialPausedStatus: initialPausedStatus});
     }
 
     function test_deployNewStrategy() public {
@@ -168,41 +159,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         require(deployedVaults.length == 1, "vault not tracked");
         require(address(deployedVaults[0]) == address(vault), "vault mismatch");
         assertTrue(strategyManagerMock.strategyIsWhitelistedForDeposit(vault), "duration vault not whitelisted");
-    }
-
-    function test_deployDurationVaultStrategy_revertBeaconNotSet() public {
-        // Create a new StrategyFactory without a duration vault beacon
-        StrategyFactory factoryWithoutDurationVault = StrategyFactory(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(strategyFactoryImplementation),
-                    address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(
-                        StrategyFactory.initialize.selector,
-                        initialOwner,
-                        initialPausedStatus,
-                        strategyBeacon,
-                        IBeacon(address(0)) // No duration vault beacon
-                    )
-                )
-            )
-        );
-
-        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
-            underlyingToken: underlyingToken,
-            vaultAdmin: address(this),
-            duration: uint32(30 days),
-            maxPerDeposit: 10 ether,
-            stakeCap: 100 ether,
-            metadataURI: "ipfs://duration",
-            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
-            operatorSetRegistrationData: REGISTRATION_DATA,
-            delegationApprover: DELEGATION_APPROVER,
-            operatorMetadataURI: OPERATOR_METADATA_URI
-        });
-
-        cheats.expectRevert(IStrategyFactory.DurationVaultBeaconNotSet.selector);
-        factoryWithoutDurationVault.deployDurationVaultStrategy(config);
     }
 
     function test_deployDurationVaultStrategy_withExistingStrategy() public {

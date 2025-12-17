@@ -59,6 +59,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
         rewardsCoordinator = _rewardsCoordinator;
+        _disableInitializers();
     }
 
     /// @notice Initializes the vault configuration.
@@ -249,8 +250,16 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     }
 
     /// @inheritdoc IDurationVaultStrategy
+    /// @dev Note: This returns true when the vault is in ALLOCATIONS state, but the actual
+    /// allocation on the AllocationManager may not be active immediately due to the
+    /// minWithdrawalDelayBlocks() delay between allocation and effect.
     function allocationsActive() public view override returns (bool) {
         return _state == VaultState.ALLOCATIONS;
+    }
+
+    /// @inheritdoc IStrategy
+    function explanation() external pure virtual override(IStrategy, StrategyBase) returns (string memory) {
+        return "Duration-bound vault strategy with configurable deposit caps and lock periods";
     }
 
     /// @notice Configures operator integration: registers as operator, registers for operator set, sets splits.

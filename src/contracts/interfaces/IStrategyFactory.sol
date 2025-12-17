@@ -18,8 +18,6 @@ interface IStrategyFactory {
     error StrategyAlreadyExists();
     /// @dev Thrown when attempting to blacklist a token that is already blacklisted
     error AlreadyBlacklisted();
-    /// @dev Thrown when attempting to deploy a duration vault before its beacon has been configured.
-    error DurationVaultBeaconNotSet();
 
     event TokenBlacklisted(IERC20 token);
 
@@ -69,12 +67,6 @@ interface IStrategyFactory {
     function removeStrategiesFromWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
     ) external;
-
-    /// @notice Emitted when the `strategyBeacon` is changed
-    event StrategyBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
-
-    /// @notice Emitted when the `durationVaultBeacon` is changed
-    event DurationVaultBeaconModified(IBeacon previousBeacon, IBeacon newBeacon);
 
     /// @notice Emitted whenever a slot is set in the `tokenStrategy` mapping
     event StrategySetForToken(IERC20 token, IStrategy strategy);

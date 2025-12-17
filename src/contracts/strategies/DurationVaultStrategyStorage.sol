@@ -47,7 +47,7 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// Storage slots used: vaultAdmin (1) + duration/lockedAt/unlockAt/maturedAt/_state (packed, 1) +
-    /// metadataURI (1) + _operatorSet (2) + maxPerDeposit (1) + maxTotalDeposits (1) = 8.
-    /// Gap: 50 - 8 = 42.
-    uint256[42] private __gap;
+    /// metadataURI (1) + _operatorSet (1) + maxPerDeposit (1) + maxTotalDeposits (1) = 6.
+    /// Gap: 50 - 6 = 44.
+    uint256[44] private __gap;
 }

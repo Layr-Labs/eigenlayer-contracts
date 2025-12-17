@@ -272,7 +272,6 @@ contract DeployFromScratch is Script, Test {
         );
 
         permissionControllerImplementation = new PermissionController();
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -349,17 +348,16 @@ contract DeployFromScratch is Script, Test {
         );
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
 
+        // Create strategy factory implementation with beacons (beacons are now immutable)
+        strategyFactoryImplementation = new StrategyFactory(
+            strategyManager, eigenLayerPauserReg, IBeacon(strategyBeacon), IBeacon(durationVaultBeacon)
+        );
+
         // Strategy Factory, upgrade and initialized
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(strategyFactory))),
             address(strategyFactoryImplementation),
-            abi.encodeWithSelector(
-                StrategyFactory.initialize.selector,
-                executorMultisig,
-                0, // initial paused status
-                IBeacon(strategyBeacon),
-                IBeacon(durationVaultBeacon)
-            )
+            abi.encodeWithSelector(StrategyFactory.initialize.selector, executorMultisig, 0)
         );
 
         // Set the strategyWhitelister to the factory

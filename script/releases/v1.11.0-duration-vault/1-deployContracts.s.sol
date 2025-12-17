@@ -36,13 +36,13 @@ contract DeployContracts is CoreContractsDeployer {
         deployEigenStrategy();
         deployStrategyBase();
         deployStrategyBaseTVLLimits();
-        deployStrategyFactory();
 
-        // Deploy DurationVaultStrategy implementation
+        // Deploy DurationVaultStrategy implementation and beacon
         DurationVaultStrategy durationVaultImpl = deployDurationVaultStrategy();
-
-        // Deploy the beacon for DurationVaultStrategy if it doesn't exist
         _deployDurationVaultBeacon(address(durationVaultImpl));
+
+        // Deploy StrategyFactory (requires beacons to exist for immutable constructor args)
+        deployStrategyFactory();
 
         vm.stopBroadcast();
     }
@@ -74,6 +74,9 @@ contract DeployContracts is CoreContractsDeployer {
     }
 
     function _validateDeployedContracts() internal view {
+        // Verify expected number of deployments
+        assertEq(deploys().length, 7, "Expected 7 deployed contracts");
+
         // Validate StrategyManager
         assertTrue(
             address(Env.impl.strategyManager()) != address(0), "StrategyManager implementation should be deployed"

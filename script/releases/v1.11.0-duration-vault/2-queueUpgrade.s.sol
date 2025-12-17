@@ -53,18 +53,8 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
         executorCalls.upgradeStrategyBase();
         executorCalls.upgradeStrategyBaseTVLLimits();
 
-        // Upgrade StrategyFactory with upgradeAndCall to set the duration vault beacon via reinitializer
-        executorCalls.append({
-            to: Env.proxyAdmin(),
-            data: abi.encodeWithSelector(
-                ProxyAdmin.upgradeAndCall.selector,
-                address(Env.proxy.strategyFactory()),
-                address(Env.impl.strategyFactory()),
-                abi.encodeWithSelector(
-                    StrategyFactory.initializeDurationVaultBeacon.selector, Env.beacon.durationVaultStrategy()
-                )
-            )
-        });
+        // Upgrade StrategyFactory (beacons are now immutable in the implementation)
+        executorCalls.upgradeStrategyFactory();
 
         // Register the DurationVaultStrategy beacon in the protocol registry and tick version
         _appendProtocolRegistryUpgrade(executorCalls);

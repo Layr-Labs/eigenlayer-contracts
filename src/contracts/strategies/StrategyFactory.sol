@@ -20,35 +20,31 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
+    /// @notice Upgradeable beacon used for baseline strategies deployed by this contract.
+    IBeacon public immutable strategyBeacon;
+
+    /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
+    IBeacon public immutable durationVaultBeacon;
+
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
     constructor(
         IStrategyManager _strategyManager,
-        IPauserRegistry _pauserRegistry
+        IPauserRegistry _pauserRegistry,
+        IBeacon _strategyBeacon,
+        IBeacon _durationVaultBeacon
     ) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
+        strategyBeacon = _strategyBeacon;
+        durationVaultBeacon = _durationVaultBeacon;
         _disableInitializers();
     }
 
     function initialize(
         address _initialOwner,
-        uint256 _initialPausedStatus,
-        IBeacon _strategyBeacon,
-        IBeacon _durationVaultBeacon
+        uint256 _initialPausedStatus
     ) public virtual initializer {
         _transferOwnership(_initialOwner);
         _setPausedStatus(_initialPausedStatus);
-        _setStrategyBeacon(_strategyBeacon);
-        if (address(_durationVaultBeacon) != address(0)) {
-            _setDurationVaultBeacon(_durationVaultBeacon);
-        }
-    }
-
-    /// @notice Reinitializer to set the duration vault beacon during upgrade
-    /// @param _durationVaultBeacon The beacon for duration vault strategies
-    function initializeDurationVaultBeacon(
-        IBeacon _durationVaultBeacon
-    ) public virtual reinitializer(2) {
-        _setDurationVaultBeacon(_durationVaultBeacon);
     }
 
     /// @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy
@@ -120,7 +116,6 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IDurationVaultStrategy newVault) {
         IERC20 underlyingToken = config.underlyingToken;
         require(!isBlacklisted[underlyingToken], BlacklistedToken());
-        require(address(durationVaultBeacon) != address(0), DurationVaultBeaconNotSet());
 
         newVault = IDurationVaultStrategy(
             address(
@@ -154,25 +149,13 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         emit StrategySetForToken(token, strategy);
     }
 
-    function _setStrategyBeacon(
-        IBeacon _strategyBeacon
-    ) internal {
-        emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
-        strategyBeacon = _strategyBeacon;
-    }
-
     /// @inheritdoc IStrategyFactory
     function getDurationVaults(
         IERC20 token
     ) external view returns (IDurationVaultStrategy[] memory) {
+        // NOTE: Consider using the public durationVaultsByToken mapping directly
+        // for on-chain integrations to avoid potential OOG issues with large arrays.
         return durationVaultsByToken[token];
-    }
-
-    function _setDurationVaultBeacon(
-        IBeacon newDurationVaultBeacon
-    ) internal {
-        emit DurationVaultBeaconModified(durationVaultBeacon, newDurationVaultBeacon);
-        durationVaultBeacon = newDurationVaultBeacon;
     }
 
     function _registerDurationVault(

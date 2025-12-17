@@ -159,7 +159,9 @@ abstract contract CoreContractsDeployer is EOADeployer {
     function deployStrategyFactory() internal onlyEOA returns (StrategyFactory deployed) {
         deployed = new StrategyFactory({
             _strategyManager: Env.proxy.strategyManager(),
-            _pauserRegistry: Env.impl.pauserRegistry()
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _strategyBeacon: Env.beacon.strategyBase(),
+            _durationVaultBeacon: Env.beacon.durationVaultStrategy()
         });
         deployImpl({name: type(StrategyFactory).name, deployedTo: address(deployed)});
     }
