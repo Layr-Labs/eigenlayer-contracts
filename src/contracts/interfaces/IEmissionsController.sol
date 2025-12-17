@@ -179,5 +179,8 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @param start The start index of the distributions.
     /// @param length The length of the distributions.
     /// @return An append-only array of Distribution structs.
-    function getDistributions(uint256 start, uint256 length) external view returns (Distribution[] memory);
+    function getDistributions(
+        uint256 start,
+        uint256 length
+    ) external view returns (Distribution[] memory);
 }
