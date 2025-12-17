@@ -4,9 +4,9 @@ pragma solidity >=0.5.0;
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.
 interface IEmissionsControllerErrors {
-    // TODO: Define with implementation.
-
-    }
+    /// @dev Thrown when caller is not the incentive council.
+    error CallerIsNotIncentiveCouncil();
+}
 
 /// @title IEmissionsControllerTypes
 /// @notice Types for the IEmissionsController contract.
@@ -56,10 +56,6 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
     /// @notice Emitted when the Incentive Council address is updated.
     /// @param incentiveCouncil The new Incentive Council address.
     event IncentiveCouncilUpdated(address indexed incentiveCouncil);
-
-    /// @notice Emitted when the inflation rate is updated.
-    /// @param inflationRate The new inflation rate.
-    event InflationRateUpdated(uint256 indexed inflationRate);
 }
 
 /// @title IEmissionsController
@@ -79,15 +75,17 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
 
     /// @notice The cooldown seconds of the emissions.
     /// @dev Immutable/constant variable that requires an upgrade to modify.
-    function EMISSIONS_COOLDOWN_SECONDS() external view returns (uint256);
+    function EMISSIONS_EPOCH_LENGTH() external view returns (uint256);
 
     /// -----------------------------------------------------------------------
     /// Initialization Functions
     /// -----------------------------------------------------------------------
 
     /// @notice Initializes the contract.
+    /// @param initialOwner The initial owner address.
     /// @param incentiveCouncil The initial Incentive Council address.
     function initialize(
+        address initialOwner,
         address incentiveCouncil
     ) external;
 
@@ -150,6 +148,14 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// View
     /// -----------------------------------------------------------------------
 
+    /// @notice Returns the current Incentive Council address.
+    /// @return The Incentive Council address.
+    function incentiveCouncil() external view returns (address);
+
+    /// @notice Returns the current epoch.
+    /// @return The current epoch.
+    function getCurrentEpoch() external view returns (uint256);
+
     /// @notice Checks if the emissions can be triggered.
     /// @return True if the cooldown has passed and the system is ready.
     function isButtonPressable() external view returns (bool);
@@ -158,9 +164,9 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @return The next button press time.
     function nextButtonPressTime() external view returns (uint256);
 
-    /// @notice Returns the last button press time.
-    /// @return The last button press time.
-    function lastButtonPressTime() external view returns (uint256);
+    /// @notice Returns the total number of distributions.
+    /// @return The total number of distributions.
+    function getTotalDistributions() external view returns (uint256);
 
     /// @notice Returns a distribution by index.
     /// @param distributionId The id of the distribution.
@@ -169,11 +175,9 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
         uint256 distributionId
     ) external view returns (Distribution memory);
 
-    /// @notice Returns all distributions.
+    /// @notice Returns a subset of distributions.
+    /// @param start The start index of the distributions.
+    /// @param length The length of the distributions.
     /// @return An append-only array of Distribution structs.
-    function getDistributions() external view returns (Distribution[] memory);
-
-    /// @notice Returns the current Incentive Council address.
-    /// @return The Incentive Council address.
-    function getIncentiveCouncil() external view returns (address);
+    function getDistributions(uint256 start, uint256 length) external view returns (Distribution[] memory);
 }
