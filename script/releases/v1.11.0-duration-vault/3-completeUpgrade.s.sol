@@ -80,4 +80,39 @@ contract ExecuteUpgrade is QueueUpgrade {
         TestUtils.validateDurationVaultStrategyImplAddressesMatchProxy();
         TestUtils.validateDurationVaultStrategyProtocolRegistry();
     }
+
+    /// @notice ensure that the gas used
+    function testGas() public virtual {
+        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._strEq(Env.envVersion(), "1.10.0")) {
+            return;
+        }
+
+        uint256 MAX_GAS_PER_TX = 16_777_216;
+
+        // Deploy the contracts first
+        super.runAsEOA();
+
+        QueueUpgrade._runAsMultisig();
+        TimelockController timelock = Env.timelockController();
+
+        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+        // Warp past delay
+        vm.warp(block.timestamp + timelock.getMinDelay());
+        _startPrank(Env.protocolCouncilMultisig());
+        bytes memory calldata_to_executor = _getCalldataToExecutor();
+
+        vm.startSnapshotGas("execute");
+        timelock.execute({
+            target: Env.executorMultisig(),
+            value: 0,
+            payload: calldata_to_executor,
+            predecessor: 0,
+            salt: 0
+        });
+        uint256 gasUsed = vm.stopSnapshotGas("execute");
+        assertTrue(
+            gasUsed <= MAX_GAS_PER_TX, "TX Gas should be less than or equal to the EIP-7825 transaction gas limit cap"
+        );
+        _stopPrank();
+    }
 }

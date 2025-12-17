@@ -59,6 +59,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
         rewardsCoordinator = _rewardsCoordinator;
+        _disableInitializers();
     }
 
     /// @notice Initializes the vault configuration.

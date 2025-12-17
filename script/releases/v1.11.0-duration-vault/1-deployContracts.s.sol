@@ -74,6 +74,7 @@ contract DeployContracts is CoreContractsDeployer {
     }
 
     function _validateDeployedContracts() internal view {
+        assertTrue(deploys().length == 7, "Deployed contracts should be 7");
         // Validate StrategyManager
         assertTrue(
             address(Env.impl.strategyManager()) != address(0), "StrategyManager implementation should be deployed"

@@ -49,5 +49,5 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// Storage slots used: vaultAdmin (1) + duration/lockedAt/unlockAt/maturedAt/_state (packed, 1) +
     /// metadataURI (1) + _operatorSet (2) + maxPerDeposit (1) + maxTotalDeposits (1) = 8.
     /// Gap: 50 - 8 = 42.
-    uint256[42] private __gap;
+    uint256[44] private __gap;
 }
