@@ -80,14 +80,19 @@ contract EmissionsControllerUnitTests_setIncentiveCouncil is EmissionsController
 /// -----------------------------------------------------------------------
 
 contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnitTests {
-    function testFuzz_addDistribution_OnlyIncentiveCouncil(address notIncentiveCouncil, Distribution memory distribution) public {
+    function testFuzz_addDistribution_OnlyIncentiveCouncil(address notIncentiveCouncil) public {
         cheats.assume(notIncentiveCouncil != incentiveCouncil);
         cheats.prank(notIncentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
-        emissionsController.addDistribution(distribution);
+        emissionsController.addDistribution(
+            Distribution({weight: 10_000, distributionType: DistributionType.RewardsForAllEarners, encodedRewardsSubmission: ""})
+        );
     }
 
-    function testFuzz_addDistribution_Correctness(uint weight, DistributionType distributionType) public {
+    function testFuzz_addDistribution_Correctness(uint weight, uint8 distributionTypeUint8) public {
+        DistributionType distributionType =
+            DistributionType(bound(uint8(distributionTypeUint8), uint8(type(DistributionType).min), uint8(type(DistributionType).max)));
+
         uint nextDistributionId = emissionsController.getTotalDistributions();
         Distribution memory addedDistribution =
             Distribution({weight: weight, distributionType: distributionType, encodedRewardsSubmission: ""});
@@ -113,7 +118,20 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
 /// View Functions
 /// -----------------------------------------------------------------------
 
-contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnitTests {}
+contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnitTests {
+    function test_getCurrentEpoch_ZeroAtStart() public {
+        assertEq(emissionsController.getCurrentEpoch(), 0);
+    }
+
+    function test_getCurrentEpoch_MonotonicallyIncreasing() public {
+        uint n = 10;
+        for (uint i = 1; i < n; i++) {
+            assertEq(emissionsController.getCurrentEpoch(), i - 1);
+            cheats.warp(block.timestamp + EMISSIONS_EPOCH_LENGTH);
+            assertEq(emissionsController.getCurrentEpoch(), i);
+        }
+    }
+}
 
 contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUnitTests {}
 
