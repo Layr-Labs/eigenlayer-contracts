@@ -88,9 +88,8 @@ contract EmissionsControllerUnitTests_setIncentiveCouncil is EmissionsController
 /// -----------------------------------------------------------------------
 
 contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnitTests {
-    function testFuzz_addDistribution_OnlyIncentiveCouncil(address notIncentiveCouncil) public {
-        cheats.assume(notIncentiveCouncil != incentiveCouncil);
-        cheats.prank(notIncentiveCouncil);
+    function test_revert_addDistribution_OnlyIncentiveCouncil() public {
+        address notIncentiveCouncil = address(0x3);
         cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
         emissionsController.addDistribution(
             Distribution({
@@ -103,17 +102,62 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         );
     }
 
+    function test_revert_addDistribution_DisabledDistribution() public {
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.CannotAddDisabledDistribution.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.Disabled,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_addDistribution_StartEpochMustBeInTheFuture() public {
+        cheats.warp(EMISSIONS_START_TIME);
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.StartEpochMustBeInTheFuture.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function testFuzz_revert_addDistribution_TotalWeightExceedsMax(uint weight) public {
+        weight = bound(weight, 10_001, type(uint).max);
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: weight,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
     function testFuzz_addDistribution_Correctness(uint weight, uint8 distributionTypeUint8) public {
         weight = bound(weight, 0, 10_000);
-        DistributionType distributionType =
-            DistributionType(bound(uint8(distributionTypeUint8), uint8(type(DistributionType).min), uint8(type(DistributionType).max)));
+        DistributionType distributionType = DistributionType(
+            bound(uint8(distributionTypeUint8), uint8(DistributionType.RewardsForAllEarners), uint8(type(DistributionType).max))
+        );
 
         uint nextDistributionId = emissionsController.getTotalDistributions();
         Distribution memory addedDistribution =
             Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, encodedRewardsSubmission: ""});
 
         cheats.expectEmit(true, true, true, true);
-        emit DistributionAdded(nextDistributionId, type(uint256).max, addedDistribution);
+        emit DistributionAdded(nextDistributionId, type(uint).max, addedDistribution);
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(addedDistribution);
 
@@ -125,9 +169,196 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
     }
 }
 
-contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerUnitTests {}
+contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerUnitTests {
+    function test_revert_updateDistribution_OnlyIncentiveCouncil() public {
+        address notIncentiveCouncil = address(0x3);
+        cheats.assume(notIncentiveCouncil != incentiveCouncil);
+        cheats.prank(notIncentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
+        emissionsController.updateDistribution(
+            0,
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
 
-contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerUnitTests {}
+    function test_revert_updateDistribution_CannotDisableDistributionViaUpdate() public {
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.CannotDisableDistributionViaUpdate.selector);
+        emissionsController.updateDistribution(
+            0,
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.Disabled,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_updateDistribution_NonExistentDistribution() public {
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(stdError.indexOOBError); // team may want an explicit check for this
+        emissionsController.updateDistribution(
+            0,
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_updateDistribution_DistributionIsDisabled() public {
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.removeDistribution(distributionId);
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
+        emissionsController.updateDistribution(
+            distributionId,
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_updateDistribution_StartEpochMustBeInTheFuture() public {
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        cheats.warp(EMISSIONS_START_TIME);
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.StartEpochMustBeInTheFuture.selector);
+        emissionsController.updateDistribution(
+            distributionId,
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function testFuzz_updateDistribution_TotalWeightExceedsMax(uint weight) public {
+        weight = bound(weight, 10_001, type(uint).max);
+
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
+        emissionsController.updateDistribution(
+            0,
+            Distribution({
+                weight: weight,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+}
+
+// TODO: update distirbution test reverts if disabled via removeDistribution
+
+contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerUnitTests {
+    function test_revert_removeDistribution_OnlyIncentiveCouncil() public {
+        address notIncentiveCouncil = address(0x3);
+        cheats.assume(notIncentiveCouncil != incentiveCouncil);
+        cheats.prank(notIncentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
+        emissionsController.removeDistribution(0);
+    }
+
+    function test_revert_removeDistribution_NonExistentDistribution() public {
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(stdError.indexOOBError); // team may want an explicit check for this
+        emissionsController.removeDistribution(0);
+    }
+
+    function test_revert_removeDistribution_DistributionIsDisabled() public {
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+        cheats.prank(incentiveCouncil);
+        emissionsController.removeDistribution(0);
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
+        emissionsController.removeDistribution(0);
+    }
+
+    function test_removeDistribution_Correctness() public {
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectEmit(true, true, true, true);
+        emit DistributionRemoved(distributionId, type(uint).max);
+        emissionsController.removeDistribution(distributionId);
+
+        Distribution memory distribution = emissionsController.getDistribution(distributionId);
+        assertEq(distribution.distributionType, DistributionType.Disabled);
+    }
+}
 
 /// -----------------------------------------------------------------------
 /// View Functions
@@ -135,7 +366,7 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
 
 contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnitTests {
     function test_getCurrentEpoch_MaxBeforeStart() public {
-        assertEq(emissionsController.getCurrentEpoch(), type(uint256).max);
+        assertEq(emissionsController.getCurrentEpoch(), type(uint).max);
     }
 
     function test_getCurrentEpoch_ZeroAtStart() public {
@@ -143,7 +374,7 @@ contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnit
         assertEq(emissionsController.getCurrentEpoch(), 0);
     }
 
-    function test_getCurrentEpoch_MonotonicallyIncreasing() public {
+    function test_getCurrentEpoch_MonotonicallyIncreasingFromZero() public {
         vm.warp(EMISSIONS_START_TIME);
         uint n = 10;
         for (uint i = 1; i < n; i++) {
