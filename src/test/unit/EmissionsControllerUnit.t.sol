@@ -134,11 +134,17 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
 /// -----------------------------------------------------------------------
 
 contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnitTests {
+    function test_getCurrentEpoch_MaxBeforeStart() public {
+        assertEq(emissionsController.getCurrentEpoch(), type(uint256).max);
+    }
+
     function test_getCurrentEpoch_ZeroAtStart() public {
+        vm.warp(EMISSIONS_START_TIME);
         assertEq(emissionsController.getCurrentEpoch(), 0);
     }
 
     function test_getCurrentEpoch_MonotonicallyIncreasing() public {
+        vm.warp(EMISSIONS_START_TIME);
         uint n = 10;
         for (uint i = 1; i < n; i++) {
             assertEq(emissionsController.getCurrentEpoch(), i - 1);

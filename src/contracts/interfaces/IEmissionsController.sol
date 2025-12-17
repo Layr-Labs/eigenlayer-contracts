@@ -18,7 +18,7 @@ interface IEmissionsControllerErrors {
     /// @dev Thrown when attempting to add a disabled distribution.
     error CannotAddDisabledDistribution();
     /// @dev Thrown when attempting to update a disabled distribution.
-    error CannotUpdateDisabledDistribution();
+    error CannotDisableDistributionViaUpdate();
     /// @dev Thrown when the button has already been pressed for the current epoch.
     error ButtonAlreadyPressed();
 }

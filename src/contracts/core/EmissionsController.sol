@@ -100,12 +100,12 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) external override onlyIncentiveCouncil {
         uint256 currentEpoch = getCurrentEpoch();
 
-        // Check if the distribution is disabled.
+        // Check if the distribution (from calldata) is disabled.
         if (distribution.distributionType == DistributionType.Disabled) {
-            revert CannotUpdateDisabledDistribution();
+            revert CannotDisableDistributionViaUpdate();
         }
 
-        // Check if the distribution is disabled.
+        // Check if the distribution (in storage) is disabled.
         _checkDisabled(_distributions[distributionId]);
         // Asserts the following:
         // - The start epoch is in the future.
