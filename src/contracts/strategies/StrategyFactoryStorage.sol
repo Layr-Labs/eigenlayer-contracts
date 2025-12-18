@@ -23,10 +23,6 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// @notice Mapping token => Whether or not a strategy can be deployed for the token
     mapping(IERC20 => bool) public isBlacklisted;
 
-    /// @dev Deprecated: durationVaultBeacon is now immutable in StrategyFactory.
-    /// Slot preserved for storage layout compatibility with existing proxies.
-    IBeacon private __deprecated_durationVaultBeacon;
-
     /// @notice Mapping token => all duration vault strategies deployed for the token.
     mapping(IERC20 => IDurationVaultStrategy[]) public durationVaultsByToken;
 
@@ -34,6 +30,6 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
     /// Storage slots used: __deprecated_strategyBeacon (1) + deployedStrategies (1) + isBlacklisted (1) +
-    /// __deprecated_durationVaultBeacon (1) + durationVaultsByToken (1) = 5 slots. Gap: 51 - 5 = 46.
-    uint256[46] private __gap;
+    /// durationVaultsByToken (1) = 4 slots. Gap: 51 - 4 = 47.
+    uint256[47] private __gap;
 }
