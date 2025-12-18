@@ -53,7 +53,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         uint256 nextDistributionId = _totalProcessed[currentEpoch];
 
         // Check if all distributions have already been processed.
-        if (!isButtonPressable()) {
+        if (nextDistributionId >= totalDistributions) {
             revert AllDistributionsProcessed();
         }
 
@@ -61,7 +61,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         // Process distributions starting from the next one to process
         for (uint256 i = nextDistributionId; i < length; ++i) {
-            Distribution memory distribution = getDistribution(i);
+            Distribution memory distribution = _distributions[i];
 
             // Skip disabled distributions...
             if (distribution.distributionType == DistributionType.Disabled) {

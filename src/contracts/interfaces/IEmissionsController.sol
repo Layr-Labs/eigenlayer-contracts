@@ -141,7 +141,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @dev Pagination is used to prevent out-of-gas errors; multiple calls may be needed to process all submissions.
     /// @dev Ref: "The ActionGenerator today is a contract ... that is triggered by the Hopper. When triggered, it mints new EIGEN tokens..."
     /// @dev Permissionless function that can be called by anyone when `isButtonPressable()` returns true.
-    function pressButton() external;
+    /// @param length The number of distributions to process.
+    function pressButton(
+        uint256 length
+    ) external;
 
     /// -----------------------------------------------------------------------
     /// Protocol Council Functions
