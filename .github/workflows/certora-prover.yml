@@ -1,11 +1,15 @@
 name: Certora
 
 on:
-  # Run when PRs from feat/* branches are merged into dev
+  # Run when PRs are merged into main and touch relevant code paths
   pull_request:
     types: [closed]
     branches:
       - main
+    paths:
+      - 'src/contracts/**'
+      - 'script/**'
+      - 'certora/**'
 
   # Run on any pushes to certora/* branches
   push:
@@ -24,14 +28,13 @@ jobs:
   compile_and_verify:
     name: Compile and verify
     # Run if it meets one of these conditions:
-    # 1. It's a merged PR from a feat/* branch to dev
+    # 1. It's a merged PR into main (with matching paths)
     # 2. It's a push to a certora/* branch
     # 3. It's a scheduled run
     # 4. It's a manually triggered run
     if: >
       (github.event_name == 'pull_request' &&
-       github.event.pull_request.merged == true &&
-       startsWith(github.head_ref, 'feat/')) ||
+       github.event.pull_request.merged == true) ||
       (github.event_name == 'push' &&
        startsWith(github.ref, 'refs/heads/certora/')) ||
       github.event_name == 'schedule' ||
@@ -52,7 +55,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           submodules: recursive
-          # Use dev branch for scheduled runs, otherwise use the branch that triggered the workflow
+          # Use Main branch for scheduled runs, otherwise use the branch that triggered the workflow
           ref: ${{ github.event_name == 'schedule' && 'main' || github.ref }}
 
       # Run Certora compilation and verification
