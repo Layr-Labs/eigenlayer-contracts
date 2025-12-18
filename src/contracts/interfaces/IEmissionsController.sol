@@ -19,8 +19,8 @@ interface IEmissionsControllerErrors {
     error CannotAddDisabledDistribution();
     /// @dev Thrown when attempting to update a disabled distribution.
     error CannotDisableDistributionViaUpdate();
-    /// @dev Thrown when the button has already been pressed for the current epoch.
-    error ButtonAlreadyPressed();
+    /// @dev Thrown when all distributions have been processed for the current epoch.
+    error AllDistributionsProcessed();
 }
 
 /// @title IEmissionsControllerTypes
@@ -72,6 +72,17 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
     /// @param distributionId The id of the distribution.
     /// @param epoch The epoch the distribution was removed.
     event DistributionRemoved(uint256 indexed distributionId, uint256 indexed epoch);
+
+    /// @notice Emitted when a distribution is processed.
+    /// @param distributionId The id of the distribution.
+    /// @param epoch The epoch the distribution was processed.
+    /// @param distribution The distribution.
+    event DistributionProcessed(
+        uint256 indexed distributionId,
+        uint256 indexed epoch,
+        Distribution distribution,
+        bool success
+    );
 
     /// @notice Emitted when the Incentive Council address is updated.
     /// @param incentiveCouncil The new Incentive Council address.
@@ -172,7 +183,7 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @dev Only the Incentive Council can call this function.
     /// @dev Ref: Implied by "updateDistribution" and general management of distributions.
     /// @param distributionId The id of the distribution to remove.
-    function removeDistribution(
+    function disableDistribution(
         uint256 distributionId
     ) external;
 

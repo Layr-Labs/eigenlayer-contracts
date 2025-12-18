@@ -5,6 +5,9 @@ import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "./storage/EmissionsControllerStorage.sol";
 
+// Add fee, it's enabled by default, with settable fee receipient.
+// AVS's must also have a way to opt-out of the fee.
+
 contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsControllerStorage {
     /// @dev Modifier that checks if the caller is the incentive council.
     modifier onlyIncentiveCouncil() {
@@ -42,7 +45,49 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// -----------------------------------------------------------------------
 
     /// @inheritdoc IEmissionsController
-    function pressButton() external override {}
+    function pressButton(
+        uint256 length
+    ) external override {
+        uint256 currentEpoch = getCurrentEpoch();
+        uint256 totalDistributions = getTotalDistributions();
+        uint256 nextDistributionId = _totalProcessed[currentEpoch];
+
+        // Check if all distributions have already been processed.
+        if (!isButtonPressable()) {
+            revert AllDistributionsProcessed();
+        }
+
+        EIGEN.mint(); // TODO: Investigate how we wanna handle this.
+
+        // Process distributions starting from the next one to process
+        for (uint256 i = nextDistributionId; i < length; ++i) {
+            Distribution memory distribution = getDistribution(i);
+
+            // Skip disabled distributions...
+            if (distribution.distributionType == DistributionType.Disabled) {
+                continue;
+            }
+
+            // Skip distributions that haven't started yet...
+            if (distribution.startEpoch > currentEpoch) {
+                continue;
+            }
+
+            // Skip distributions that have ended...
+            if (distribution.stopEpoch <= currentEpoch) {
+                continue;
+            }
+
+            _processDistribution(distribution);
+        }
+
+        // Update total processed count for this epoch (equals next index to process)
+        _totalProcessed[currentEpoch] = length;
+    }
+
+    function _processDistribution(
+        Distribution memory distribution
+    ) internal {}
 
     /// -----------------------------------------------------------------------
     /// Owner Functions
@@ -118,7 +163,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     }
 
     /// @inheritdoc IEmissionsController
-    function removeDistribution(
+    function disableDistribution(
         uint256 distributionId
     ) external override onlyIncentiveCouncil {
         // Check if the distribution is already disabled.
@@ -174,7 +219,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
     /// @inheritdoc IEmissionsController
     function isButtonPressable() external view returns (bool) {
-        return !_epochTriggered[getCurrentEpoch()];
+        return _totalProcessed[getCurrentEpoch()] < getTotalDistributions();
     }
 
     /// @inheritdoc IEmissionsController

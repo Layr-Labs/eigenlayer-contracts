@@ -230,7 +230,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         );
 
         cheats.prank(incentiveCouncil);
-        emissionsController.removeDistribution(distributionId);
+        emissionsController.disableDistribution(distributionId);
 
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
@@ -302,22 +302,22 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
     }
 }
 
-contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerUnitTests {
-    function test_revert_removeDistribution_OnlyIncentiveCouncil() public {
+contract EmissionsControllerUnitTests_disableDistribution is EmissionsControllerUnitTests {
+    function test_revert_disableDistribution_OnlyIncentiveCouncil() public {
         address notIncentiveCouncil = address(0x3);
         cheats.assume(notIncentiveCouncil != incentiveCouncil);
         cheats.prank(notIncentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
-        emissionsController.removeDistribution(0);
+        emissionsController.disableDistribution(0);
     }
 
-    function test_revert_removeDistribution_NonExistentDistribution() public {
+    function test_revert_disableDistribution_NonExistentDistribution() public {
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(stdError.indexOOBError); // team may want an explicit check for this
-        emissionsController.removeDistribution(0);
+        emissionsController.disableDistribution(0);
     }
 
-    function test_revert_removeDistribution_DistributionIsDisabled() public {
+    function test_revert_disableDistribution_DistributionIsDisabled() public {
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(
             Distribution({
@@ -329,14 +329,14 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
             })
         );
         cheats.prank(incentiveCouncil);
-        emissionsController.removeDistribution(0);
+        emissionsController.disableDistribution(0);
 
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
-        emissionsController.removeDistribution(0);
+        emissionsController.disableDistribution(0);
     }
 
-    function test_removeDistribution_Correctness() public {
+    function test_disableDistribution_Correctness() public {
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(
             Distribution({
@@ -351,7 +351,7 @@ contract EmissionsControllerUnitTests_removeDistribution is EmissionsControllerU
         cheats.prank(incentiveCouncil);
         cheats.expectEmit(true, true, true, true);
         emit DistributionRemoved(distributionId, type(uint).max);
-        emissionsController.removeDistribution(distributionId);
+        emissionsController.disableDistribution(distributionId);
 
         Distribution memory distribution = emissionsController.getDistribution(distributionId);
         assertEq(uint8(distribution.distributionType), uint8(DistributionType.Disabled));
