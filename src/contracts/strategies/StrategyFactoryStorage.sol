@@ -9,7 +9,7 @@ import "../interfaces/IStrategyFactory.sol";
 abstract contract StrategyFactoryStorage is IStrategyFactory {
     /// @dev Deprecated: strategyBeacon is now immutable in StrategyFactory.
     /// Slot preserved for storage layout compatibility with existing proxies.
-    uint256 private __deprecated_strategyBeacon;
+    IBeacon private __deprecated_strategyBeacon;
 
     /// @notice Mapping token => Strategy contract for the token
     /// The strategies in this mapping are deployed by the StrategyFactory.
@@ -25,7 +25,7 @@ abstract contract StrategyFactoryStorage is IStrategyFactory {
 
     /// @dev Deprecated: durationVaultBeacon is now immutable in StrategyFactory.
     /// Slot preserved for storage layout compatibility with existing proxies.
-    uint256 private __deprecated_durationVaultBeacon;
+    IBeacon private __deprecated_durationVaultBeacon;
 
     /// @notice Mapping token => all duration vault strategies deployed for the token.
     mapping(IERC20 => IDurationVaultStrategy[]) public durationVaultsByToken;
