@@ -12,6 +12,7 @@ import "../../contracts/libraries/OperatorSetLib.sol";
 import "../mocks/DelegationManagerMock.sol";
 import "../mocks/AllocationManagerMock.sol";
 import "../mocks/RewardsCoordinatorMock.sol";
+import "../mocks/StrategyFactoryMock.sol";
 
 contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
     DurationVaultStrategy public durationVaultImplementation;
@@ -19,6 +20,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
     DelegationManagerMock internal delegationManagerMock;
     AllocationManagerMock internal allocationManagerMock;
     RewardsCoordinatorMock internal rewardsCoordinatorMock;
+    StrategyFactoryMock internal strategyFactoryMock;
 
     // TVL limits for tests
     uint internal maxTotalDeposits = 3200e18;
@@ -41,13 +43,15 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         delegationManagerMock.setMinWithdrawalDelayBlocks(OPERATOR_ALLOCATION_DELAY - 1);
         allocationManagerMock = new AllocationManagerMock();
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
+        strategyFactoryMock = new StrategyFactoryMock();
 
         durationVaultImplementation = new DurationVaultStrategy(
             strategyManager,
             pauserRegistry,
             IDelegationManager(address(delegationManagerMock)),
             IAllocationManager(address(allocationManagerMock)),
-            IRewardsCoordinator(address(rewardsCoordinatorMock))
+            IRewardsCoordinator(address(rewardsCoordinatorMock)),
+            IStrategyFactory(address(strategyFactoryMock))
         );
 
         IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({

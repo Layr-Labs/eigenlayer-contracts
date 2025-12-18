@@ -65,28 +65,36 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         strategyBeacon.transferOwnership(beaconProxyOwner);
 
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
-        durationVaultImplementation = new DurationVaultStrategy(
-            IStrategyManager(address(strategyManagerMock)),
-            pauserRegistry,
-            IDelegationManager(address(delegationManagerMock)),
-            IAllocationManager(address(allocationManagerMock)),
-            IRewardsCoordinator(address(rewardsCoordinatorMock))
-        );
-        durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
-        durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
-        strategyFactoryImplementation =
-            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, durationVaultBeacon);
-
+        // Deploy strategyFactory proxy first (with placeholder impl) so DurationVaultStrategy can reference it
+        StrategyFactory placeholderFactoryImpl =
+            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, IBeacon(address(0)));
         strategyFactory = StrategyFactory(
             address(
                 new TransparentUpgradeableProxy(
-                    address(strategyFactoryImplementation),
+                    address(placeholderFactoryImpl),
                     address(eigenLayerProxyAdmin),
                     abi.encodeWithSelector(StrategyFactory.initialize.selector, initialOwner, initialPausedStatus)
                 )
             )
         );
+
+        // Now deploy DurationVaultStrategy with the factory reference
+        durationVaultImplementation = new DurationVaultStrategy(
+            IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
+            IDelegationManager(address(delegationManagerMock)),
+            IAllocationManager(address(allocationManagerMock)),
+            IRewardsCoordinator(address(rewardsCoordinatorMock)),
+            IStrategyFactory(address(strategyFactory))
+        );
+        durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
+        durationVaultBeacon.transferOwnership(beaconProxyOwner);
+
+        // Upgrade strategyFactory to final impl with correct beacon
+        strategyFactoryImplementation =
+            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, durationVaultBeacon);
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(address(strategyFactory)), address(strategyFactoryImplementation));
     }
 
     function test_initialization() public view {

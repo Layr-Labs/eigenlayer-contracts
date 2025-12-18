@@ -16,6 +16,7 @@ import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/libraries/OperatorSetLib.sol";
 import "src/test/utils/EigenLayerUnitTestSetup.sol";
 import "src/test/mocks/RewardsCoordinatorMock.sol";
+import "src/test/mocks/StrategyFactoryMock.sol";
 
 contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEvents {
     StrategyManager public strategyManagerImplementation;
@@ -25,6 +26,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     IDurationVaultStrategy public durationVault;
 
     RewardsCoordinatorMock public rewardsCoordinatorMock;
+    StrategyFactoryMock public strategyFactoryMock;
     ERC20PresetFixedSupply public underlyingToken;
 
     address internal constant STAKER = address(0xBEEF);
@@ -57,13 +59,15 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
 
         underlyingToken = new ERC20PresetFixedSupply("Mock Token", "MOCK", INITIAL_SUPPLY, address(this));
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
+        strategyFactoryMock = new StrategyFactoryMock();
 
         durationVaultImplementation = new DurationVaultStrategy(
             IStrategyManager(address(strategyManager)),
             pauserRegistry,
             IDelegationManager(address(delegationManagerMock)),
             IAllocationManager(address(allocationManagerMock)),
-            IRewardsCoordinator(address(rewardsCoordinatorMock))
+            IRewardsCoordinator(address(rewardsCoordinatorMock)),
+            IStrategyFactory(address(strategyFactoryMock))
         );
 
         IDurationVaultStrategyTypes.VaultConfig memory cfg = IDurationVaultStrategyTypes.VaultConfig({

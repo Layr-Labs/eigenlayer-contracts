@@ -7,6 +7,7 @@ import "../interfaces/IDurationVaultStrategy.sol";
 import "../interfaces/IDelegationManager.sol";
 import "../interfaces/IAllocationManager.sol";
 import "../interfaces/IRewardsCoordinator.sol";
+import "../interfaces/IStrategyFactory.sol";
 import "../libraries/OperatorSetLib.sol";
 
 /// @title Duration-bound EigenLayer vault strategy with configurable deposit caps and windows.
@@ -33,6 +34,9 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Rewards coordinator reference used to configure operator splits.
     IRewardsCoordinator public immutable override rewardsCoordinator;
 
+    /// @notice Strategy factory reference used to check token blacklist status.
+    IStrategyFactory public immutable strategyFactory;
+
     /// @dev Restricts function access to the vault administrator.
     modifier onlyVaultAdmin() {
         require(msg.sender == vaultAdmin, OnlyVaultAdmin());
@@ -44,21 +48,24 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @param _delegationManager The DelegationManager contract for operator registration.
     /// @param _allocationManager The AllocationManager contract for operator set allocations.
     /// @param _rewardsCoordinator The RewardsCoordinator contract for configuring splits.
+    /// @param _strategyFactory The StrategyFactory contract for token blacklist checks.
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
         IDelegationManager _delegationManager,
         IAllocationManager _allocationManager,
-        IRewardsCoordinator _rewardsCoordinator
+        IRewardsCoordinator _rewardsCoordinator,
+        IStrategyFactory _strategyFactory
     ) StrategyBase(_strategyManager, _pauserRegistry) {
         require(
             address(_delegationManager) != address(0) && address(_allocationManager) != address(0)
-                && address(_rewardsCoordinator) != address(0),
+                && address(_rewardsCoordinator) != address(0) && address(_strategyFactory) != address(0),
             OperatorIntegrationInvalid()
         );
         delegationManager = _delegationManager;
         allocationManager = _allocationManager;
         rewardsCoordinator = _rewardsCoordinator;
+        strategyFactory = _strategyFactory;
         _disableInitializers();
     }
 
@@ -195,6 +202,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         uint256 shares
     ) external view override(IStrategy, StrategyBase) onlyStrategyManager {
         require(depositsOpen(), DepositsLocked());
+        require(!strategyFactory.isBlacklisted(underlyingToken), UnderlyingTokenBlacklisted());
         require(delegationManager.delegatedTo(staker) == address(this), MustBeDelegatedToVaultOperator());
 
         // Enforce per-deposit cap using the minted shares as proxy for underlying.

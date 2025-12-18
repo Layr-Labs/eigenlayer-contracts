@@ -38,6 +38,11 @@ interface IStrategyFactory {
         IERC20 token
     ) external view returns (IStrategy);
 
+    /// @notice Returns whether a token is blacklisted from having new strategies deployed.
+    function isBlacklisted(
+        IERC20 token
+    ) external view returns (bool);
+
     /// @notice Deploy a new strategyBeacon contract for the ERC20 token.
     /// @param token the token to deploy a strategy for
     /// @dev A strategy contract must not yet exist for the token.

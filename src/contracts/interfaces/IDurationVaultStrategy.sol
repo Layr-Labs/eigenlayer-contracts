@@ -31,6 +31,8 @@ interface IDurationVaultStrategyErrors {
     error DurationNotElapsed();
     /// @dev Thrown when operator integration inputs are missing or invalid.
     error OperatorIntegrationInvalid();
+    /// @dev Thrown when attempting to deposit into a vault whose underlying token is blacklisted.
+    error UnderlyingTokenBlacklisted();
 }
 
 /// @title Types for IDurationVaultStrategy

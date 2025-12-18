@@ -344,7 +344,8 @@ contract DeployFromScratch is Script, Test {
             eigenLayerPauserReg,
             delegation,
             IAllocationManager(address(allocationManager)),
-            rewardsCoordinator
+            rewardsCoordinator,
+            IStrategyFactory(address(strategyFactory))
         );
         durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
 

@@ -172,7 +172,8 @@ abstract contract CoreContractsDeployer is EOADeployer {
             _pauserRegistry: Env.impl.pauserRegistry(),
             _delegationManager: Env.proxy.delegationManager(),
             _allocationManager: Env.proxy.allocationManager(),
-            _rewardsCoordinator: Env.proxy.rewardsCoordinator()
+            _rewardsCoordinator: Env.proxy.rewardsCoordinator(),
+            _strategyFactory: Env.proxy.strategyFactory()
         });
         deployImpl({name: type(DurationVaultStrategy).name, deployedTo: address(deployed)});
     }
