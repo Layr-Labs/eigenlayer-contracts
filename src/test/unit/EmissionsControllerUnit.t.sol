@@ -112,6 +112,7 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
 contract EmissionsControllerUnitTests_setIncentiveCouncil is EmissionsControllerUnitTests {
     function testFuzz_setIncentiveCouncil_OnlyOwner(address notOwner) public {
         cheats.assume(notOwner != owner);
+        cheats.assume(notOwner != address(eigenLayerProxyAdmin));
         cheats.prank(notOwner);
         cheats.expectRevert("Ownable: caller is not the owner");
         emissionsController.setIncentiveCouncil(incentiveCouncil);
