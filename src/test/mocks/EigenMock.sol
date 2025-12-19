@@ -10,5 +10,10 @@ contract EigenMock is Test, ERC20 {
     function mint(address to, uint amount) external {
         _mint(to, amount);
     }
+
+    function wrap(uint amount) external {
+        // Mock implementation - in real contract this would wrap bEIGEN to EIGEN
+        // For testing purposes, we just emit an event or do nothing
+    }
 }
 

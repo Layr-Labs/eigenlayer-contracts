@@ -40,6 +40,13 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         _transferOwnership(initialOwner);
         // Set the initial incentive council.
         _setIncentiveCouncil(initialIncentiveCouncil);
+
+        // NOTE: Reviewers, is this okay? Avoids the need for approvals on each button press.
+
+        // Max approve EIGEN for spending bEIGEN.
+        BACKING_EIGEN.approve(address(EIGEN), type(uint256).max);
+        // Max approve RewardsCoordinator for spending EIGEN.
+        EIGEN.approve(address(REWARDS_COORDINATOR), type(uint256).max);
     }
 
     /// -----------------------------------------------------------------------
@@ -60,9 +67,6 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         }
 
         uint256 totalAmount = EMISSIONS_INFLATION_RATE;
-
-        BACKING_EIGEN.approve(address(EIGEN), totalAmount);
-        EIGEN.approve(address(REWARDS_COORDINATOR), totalAmount);
 
         BACKING_EIGEN.mint(address(this), totalAmount);
         EIGEN.wrap(totalAmount);
@@ -85,6 +89,10 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         _totalProcessed[currentEpoch] = length;
     }
 
+    /// @dev Internal helper that processes a distribution.
+    /// @param distributionId The id of the distribution to process.
+    /// @param currentEpoch The current epoch.
+    /// @param distribution The distribution (from storage).
     function _processDistribution(
         uint256 distributionId,
         uint256 currentEpoch,
@@ -92,33 +100,38 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) internal {
         bool success;
         if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
-            try REWARDS_COORDINATOR.createRewardsForAllEarners(
-                abi.decode(distribution.encodedRewardsSubmission, (IRewardsCoordinatorTypes.RewardsSubmission[]))
-            ) {
-                success = true;
-            } catch {}
+            success = _tryCallRewardsCoordinator(
+                IRewardsCoordinator.createRewardsForAllEarners.selector, distribution.rewardsCoordinatorCalldata
+            );
         } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
-            (OperatorSet memory operatorSet, IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions) = abi.decode(
-                distribution.encodedRewardsSubmission, (OperatorSet, IRewardsCoordinatorTypes.RewardsSubmission[])
+            success = _tryCallRewardsCoordinator(
+                IRewardsCoordinator.createUniqueStakeRewardsSubmission.selector, distribution.rewardsCoordinatorCalldata
             );
-            try REWARDS_COORDINATOR.createUniqueStakeRewardsSubmission(operatorSet, rewardsSubmissions) {
-                success = true;
-            } catch {}
         } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
-            (OperatorSet memory operatorSet, IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions) = abi.decode(
-                distribution.encodedRewardsSubmission, (OperatorSet, IRewardsCoordinatorTypes.RewardsSubmission[])
+            success = _tryCallRewardsCoordinator(
+                IRewardsCoordinator.createTotalStakeRewardsSubmission.selector, distribution.rewardsCoordinatorCalldata
             );
-            try REWARDS_COORDINATOR.createTotalStakeRewardsSubmission(operatorSet, rewardsSubmissions) {
-                success = true;
-            } catch {}
         } else if (distribution.distributionType == DistributionType.EigenDA) {
             // TODO: Implement this.
         } else if (distribution.distributionType == DistributionType.Manual) {
             // TODO: Implement this.
         } else {
-            revert InvalidDistributionType();
+            revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
         }
         emit DistributionProcessed(distributionId, currentEpoch, distribution, success);
+    }
+
+    /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.
+    /// This is needed as using try/catch requires decoding the calldata, which can revert preventing further distributions.
+    /// @param selector The selector of the function to call.
+    /// @param rewardsCoordinatorCalldata The calldata for the function call.
+    /// @return success True if the function call was successful, false otherwise.
+    function _tryCallRewardsCoordinator(
+        bytes4 selector,
+        bytes memory rewardsCoordinatorCalldata
+    ) internal returns (bool success) {
+        (success,) = address(REWARDS_COORDINATOR).call(abi.encodeWithSelector(selector, rewardsCoordinatorCalldata));
+        return success;
     }
 
     /// -----------------------------------------------------------------------

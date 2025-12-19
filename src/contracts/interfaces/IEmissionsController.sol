@@ -51,8 +51,8 @@ interface IEmissionsControllerTypes {
         uint256 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
-        /// The encoded rewards submission (either `RewardsSubmission` or `OperatorDirectedRewardsSubmission`).
-        bytes encodedRewardsSubmission;
+        /// The calldata for the RewardsCoordinator function call.
+        bytes rewardsCoordinatorCalldata;
     }
 }
 

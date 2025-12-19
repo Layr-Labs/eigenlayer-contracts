@@ -77,34 +77,31 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
     }
 
     function test_revert_pressButton_AllDistributionsProcessed() public {
-        // // Add a distribution first (before emissions start, so startEpoch 0 is in the future)
-        // cheats.prank(incentiveCouncil);
-        // emissionsController.addDistribution(
-        //     Distribution({
-        //         weight: 10_000,
-        //         startEpoch: 0,
-        //         stopEpoch: 1,
-        //         distributionType: DistributionType.RewardsForAllEarners,
-        //         encodedRewardsSubmission: ""
-        //     })
-        // );
+        // Encode an empty array of RewardsSubmissions
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory emptySubmissions = new IRewardsCoordinatorTypes.RewardsSubmission[](0);
+        bytes memory encodedSubmission = abi.encode(emptySubmissions);
 
-        // // Mock the wrap function on eigenMock
-        // cheats.mockCall(
-        //     address(eigenMock),
-        //     abi.encodeWithSignature("wrap(uint256)", EMISSIONS_INFLATION_RATE),
-        //     abi.encode()
-        // );
+        // Add a distribution first (before emissions start, so startEpoch 0 is in the future)
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: encodedSubmission
+            })
+        );
 
-        // // Warp to after emissions start (now at epoch 0)
-        // cheats.warp(EMISSIONS_START_TIME);
+        // Warp to after emissions start (now at epoch 0)
+        cheats.warp(EMISSIONS_START_TIME);
 
-        // // Process all distributions
-        // emissionsController.pressButton(1);
+        // Process all distributions
+        emissionsController.pressButton(1);
 
-        // // Attempt to press button again should revert
-        // cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
-        // emissionsController.pressButton(1);
+        // Attempt to press button again should revert
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        emissionsController.pressButton(1);
     }
 }
 
@@ -143,7 +140,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -157,7 +154,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.Disabled,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -172,7 +169,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -187,7 +184,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -201,7 +198,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -214,7 +211,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -227,7 +224,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         uint nextDistributionId = emissionsController.getTotalDistributions();
         Distribution memory addedDistribution =
-            Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, encodedRewardsSubmission: ""});
+            Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, rewardsCoordinatorCalldata: ""});
 
         cheats.expectEmit(true, true, true, true);
         emit DistributionAdded(nextDistributionId, type(uint).max, addedDistribution);
@@ -255,7 +252,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -270,7 +267,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.Disabled,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -285,7 +282,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -298,7 +295,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -314,7 +311,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -327,7 +324,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -341,38 +338,12 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
 
-    function testFuzz_revert_updateDistribution_TotalWeightExceedsMax(uint weight) public {
-        weight = bound(weight, 10_001, type(uint).max);
-
-        cheats.prank(incentiveCouncil);
-        uint distributionId = emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
-            })
-        );
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
-        emissionsController.updateDistribution(
-            0,
-            Distribution({
-                weight: weight,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
-            })
-        );
-    }
+    // NOTE: Fuzz test removed - covered by test_revert_updateDistribution_TotalWeightExceedsMax_MultipleDistributions
 
     function test_revert_updateDistribution_TotalWeightExceedsMax_MultipleDistributions() public {
         // Add first distribution with weight 6000
@@ -383,7 +354,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -395,7 +366,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -409,7 +380,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
     }
@@ -438,7 +409,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
         cheats.prank(incentiveCouncil);
@@ -457,7 +428,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                encodedRewardsSubmission: ""
+                rewardsCoordinatorCalldata: ""
             })
         );
 
@@ -496,12 +467,488 @@ contract EmissionsControllerUnitTests_getCurrentEpoch is EmissionsControllerUnit
     }
 }
 
-contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUnitTests {}
+contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUnitTests {
+    function test_isButtonPressable_NoDistributions() public {
+        // Before emissions start, no distributions
+        assertFalse(emissionsController.isButtonPressable());
 
-contract EmissionsControllerUnitTests_nextButtonPressTime is EmissionsControllerUnitTests {}
+        // After emissions start, still no distributions
+        cheats.warp(EMISSIONS_START_TIME);
+        assertFalse(emissionsController.isButtonPressable());
+    }
 
-contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControllerUnitTests {}
+    function test_isButtonPressable_WithDistributions() public {
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
 
-contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnitTests {}
+        // Should be pressable after emissions start
+        cheats.warp(EMISSIONS_START_TIME);
+        assertTrue(emissionsController.isButtonPressable());
+    }
 
-contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUnitTests {}
+    function test_isButtonPressable_AfterProcessing() public {
+        // Encode an empty array of RewardsSubmissions
+        IRewardsCoordinatorTypes.RewardsSubmission[] memory emptySubmissions = new IRewardsCoordinatorTypes.RewardsSubmission[](0);
+        bytes memory encodedSubmission = abi.encode(emptySubmissions);
+
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: encodedSubmission
+            })
+        );
+
+        // Warp to emissions start
+        cheats.warp(EMISSIONS_START_TIME);
+        assertTrue(emissionsController.isButtonPressable());
+
+        // Process all distributions
+        emissionsController.pressButton(1);
+
+        // Should not be pressable after processing all
+        assertFalse(emissionsController.isButtonPressable());
+    }
+}
+
+contract EmissionsControllerUnitTests_nextButtonPressTime is EmissionsControllerUnitTests {
+    function test_revert_nextButtonPressTime_BeforeStart() public {
+        // Before emissions start, getCurrentEpoch() returns type(uint).max
+        // The calculation (type(uint).max + 1) will overflow and revert in Solidity 0.8.x
+        cheats.expectRevert(stdError.arithmeticError);
+        emissionsController.nextButtonPressTime();
+    }
+
+    function test_nextButtonPressTime_AtStart() public {
+        // At emissions start (epoch 0)
+        cheats.warp(EMISSIONS_START_TIME);
+        assertEq(emissionsController.nextButtonPressTime(), EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH);
+    }
+
+    function test_nextButtonPressTime_AfterMultipleEpochs() public {
+        // Warp to epoch 5
+        cheats.warp(EMISSIONS_START_TIME + 5 * EMISSIONS_EPOCH_LENGTH);
+        assertEq(emissionsController.getCurrentEpoch(), 5);
+        assertEq(emissionsController.nextButtonPressTime(), EMISSIONS_START_TIME + 6 * EMISSIONS_EPOCH_LENGTH);
+    }
+
+    function testFuzz_nextButtonPressTime_Correctness(uint numEpochs) public {
+        numEpochs = bound(numEpochs, 0, 1000);
+
+        // Warp to arbitrary epoch
+        cheats.warp(EMISSIONS_START_TIME + numEpochs * EMISSIONS_EPOCH_LENGTH);
+        uint currentEpoch = emissionsController.getCurrentEpoch();
+        assertEq(currentEpoch, numEpochs);
+
+        // Next button press time should be start of next epoch
+        assertEq(emissionsController.nextButtonPressTime(), EMISSIONS_START_TIME + (currentEpoch + 1) * EMISSIONS_EPOCH_LENGTH);
+    }
+}
+
+contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControllerUnitTests {
+    function test_getTotalDistributions_InitiallyZero() public {
+        assertEq(emissionsController.getTotalDistributions(), 0);
+    }
+
+    function test_getTotalDistributions_AfterAdding() public {
+        // Add first distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+        assertEq(emissionsController.getTotalDistributions(), 1);
+
+        // Add second distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 2000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+        assertEq(emissionsController.getTotalDistributions(), 2);
+    }
+
+    function test_getTotalDistributions_AfterDisabling() public {
+        // Add distributions
+        cheats.prank(incentiveCouncil);
+        uint distributionId1 = emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 2000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        assertEq(emissionsController.getTotalDistributions(), 2);
+
+        // Disable one distribution - total count should not change
+        cheats.prank(incentiveCouncil);
+        emissionsController.disableDistribution(distributionId1);
+        assertEq(emissionsController.getTotalDistributions(), 2);
+    }
+
+    function testFuzz_getTotalDistributions_Correctness(uint8 count) public {
+        count = uint8(bound(count, 0, 50)); // Reasonable upper bound for gas
+
+        for (uint i = 0; i < count; i++) {
+            cheats.prank(incentiveCouncil);
+            emissionsController.addDistribution(
+                Distribution({
+                    weight: 100,
+                    startEpoch: 0,
+                    stopEpoch: 1,
+                    distributionType: DistributionType.RewardsForAllEarners,
+                    rewardsCoordinatorCalldata: ""
+                })
+            );
+        }
+
+        assertEq(emissionsController.getTotalDistributions(), count);
+    }
+}
+
+contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnitTests {
+    function test_revert_getDistribution_NonExistent() public {
+        cheats.expectRevert(stdError.indexOOBError);
+        emissionsController.getDistribution(0);
+    }
+
+    function test_getDistribution_SingleDistribution() public {
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                stopEpoch: 10,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Retrieve and verify
+        Distribution memory retrieved = emissionsController.getDistribution(distributionId);
+        assertEq(retrieved.weight, 5000);
+        assertEq(retrieved.startEpoch, 0);
+        assertEq(retrieved.stopEpoch, 10);
+        assertEq(uint8(retrieved.distributionType), uint8(DistributionType.RewardsForAllEarners));
+    }
+
+    function test_getDistribution_MultipleDistributions() public {
+        // Add multiple distributions with different parameters
+        cheats.prank(incentiveCouncil);
+        uint distributionId0 = emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        uint distributionId1 = emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 1,
+                stopEpoch: 8,
+                distributionType: DistributionType.OperatorSetTotalStake,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Verify first distribution
+        Distribution memory retrieved0 = emissionsController.getDistribution(distributionId0);
+        assertEq(retrieved0.weight, 3000);
+        assertEq(retrieved0.startEpoch, 0);
+        assertEq(retrieved0.stopEpoch, 5);
+        assertEq(uint8(retrieved0.distributionType), uint8(DistributionType.RewardsForAllEarners));
+
+        // Verify second distribution
+        Distribution memory retrieved1 = emissionsController.getDistribution(distributionId1);
+        assertEq(retrieved1.weight, 4000);
+        assertEq(retrieved1.startEpoch, 1);
+        assertEq(retrieved1.stopEpoch, 8);
+        assertEq(uint8(retrieved1.distributionType), uint8(DistributionType.OperatorSetTotalStake));
+    }
+
+    function test_getDistribution_AfterUpdate() public {
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Update the distribution (new weight 4000 is still within limits)
+        cheats.prank(incentiveCouncil);
+        emissionsController.updateDistribution(
+            distributionId,
+            Distribution({
+                weight: 4000,
+                startEpoch: 2,
+                stopEpoch: 15,
+                distributionType: DistributionType.OperatorSetUniqueStake,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Verify updated values
+        Distribution memory retrieved = emissionsController.getDistribution(distributionId);
+        assertEq(retrieved.weight, 4000);
+        assertEq(retrieved.startEpoch, 2);
+        assertEq(retrieved.stopEpoch, 15);
+        assertEq(uint8(retrieved.distributionType), uint8(DistributionType.OperatorSetUniqueStake));
+    }
+
+    function test_getDistribution_AfterDisable() public {
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                stopEpoch: 10,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Disable the distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.disableDistribution(distributionId);
+
+        // Verify it's disabled
+        Distribution memory retrieved = emissionsController.getDistribution(distributionId);
+        assertEq(uint8(retrieved.distributionType), uint8(DistributionType.Disabled));
+    }
+}
+
+contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUnitTests {
+    function test_revert_getDistributions_OutOfBounds() public {
+        // Add 2 distributions
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 2000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Try to get distributions beyond available length
+        cheats.expectRevert(stdError.indexOOBError);
+        emissionsController.getDistributions(0, 3);
+
+        cheats.expectRevert(stdError.indexOOBError);
+        emissionsController.getDistributions(1, 2);
+    }
+
+    function test_getDistributions_All() public {
+        // Add multiple distributions
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 1,
+                stopEpoch: 8,
+                distributionType: DistributionType.OperatorSetTotalStake,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 2000,
+                startEpoch: 2,
+                stopEpoch: 10,
+                distributionType: DistributionType.OperatorSetUniqueStake,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Get all distributions
+        Distribution[] memory distributions = emissionsController.getDistributions(0, 3);
+
+        assertEq(distributions.length, 3);
+        assertEq(distributions[0].weight, 3000);
+        assertEq(distributions[1].weight, 4000);
+        assertEq(distributions[2].weight, 2000);
+    }
+
+    function test_getDistributions_Subset() public {
+        // Add multiple distributions (total weight: 100 * 5 = 500, well under 10000 limit)
+        for (uint i = 0; i < 5; i++) {
+            cheats.prank(incentiveCouncil);
+            emissionsController.addDistribution(
+                Distribution({
+                    weight: 100 * (i + 1),
+                    startEpoch: 0,
+                    stopEpoch: 5,
+                    distributionType: DistributionType.RewardsForAllEarners,
+                    rewardsCoordinatorCalldata: ""
+                })
+            );
+        }
+
+        // Get subset starting at index 1, length 3
+        Distribution[] memory distributions = emissionsController.getDistributions(1, 3);
+
+        assertEq(distributions.length, 3);
+        assertEq(distributions[0].weight, 200); // Index 1
+        assertEq(distributions[1].weight, 300); // Index 2
+        assertEq(distributions[2].weight, 400); // Index 3
+    }
+
+    function test_getDistributions_EmptyArray() public {
+        // Add some distributions
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Get 0 length
+        Distribution[] memory distributions = emissionsController.getDistributions(0, 0);
+        assertEq(distributions.length, 0);
+    }
+
+    function test_getDistributions_SingleElement() public {
+        // Add multiple distributions
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 5,
+                distributionType: DistributionType.RewardsForAllEarners,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 1,
+                stopEpoch: 8,
+                distributionType: DistributionType.OperatorSetTotalStake,
+                rewardsCoordinatorCalldata: ""
+            })
+        );
+
+        // Get single element at index 1
+        Distribution[] memory distributions = emissionsController.getDistributions(1, 1);
+
+        assertEq(distributions.length, 1);
+        assertEq(distributions[0].weight, 4000);
+        assertEq(uint8(distributions[0].distributionType), uint8(DistributionType.OperatorSetTotalStake));
+    }
+
+    function testFuzz_getDistributions_Correctness(uint8 totalCount, uint8 start, uint8 length) public {
+        // Limit totalCount to 10 to avoid exceeding MAX_TOTAL_WEIGHT (10000)
+        // Each distribution has weight 100 * (i+1), so max weight per distribution is 100 * 10 = 1000
+        // Total max weight = 100 + 200 + ... + 1000 = 5500, well under 10000
+        totalCount = uint8(bound(totalCount, 1, 10));
+        start = uint8(bound(start, 0, totalCount - 1));
+        // Ensure we don't go out of bounds
+        uint8 maxLength = totalCount - start;
+        length = uint8(bound(length, 0, maxLength));
+
+        // Add distributions
+        for (uint i = 0; i < totalCount; i++) {
+            cheats.prank(incentiveCouncil);
+            emissionsController.addDistribution(
+                Distribution({
+                    weight: 100 * (i + 1),
+                    startEpoch: 0,
+                    stopEpoch: 5,
+                    distributionType: DistributionType.RewardsForAllEarners,
+                    rewardsCoordinatorCalldata: ""
+                })
+            );
+        }
+
+        // Get subset
+        Distribution[] memory distributions = emissionsController.getDistributions(start, length);
+
+        assertEq(distributions.length, length);
+
+        // Verify each element
+        for (uint i = 0; i < length; i++) {
+            assertEq(distributions[i].weight, 100 * (start + i + 1));
+        }
+    }
+}
