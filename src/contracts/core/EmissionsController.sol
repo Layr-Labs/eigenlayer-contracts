@@ -112,7 +112,9 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
                 IRewardsCoordinator.createTotalStakeRewardsSubmission.selector, distribution.rewardsCalldata
             );
         } else if (distribution.distributionType == DistributionType.EigenDA) {
-            // TODO: Implement this.
+            success = _tryCallRewardsCoordinator(
+                IRewardsCoordinator.createAVSRewardsSubmission.selector, distribution.rewardsCalldata
+            );
         } else if (distribution.distributionType == DistributionType.Manual) {
             // We use call to prevent further distributions from being processed if the mint fails.
             (success,) = address(BACKING_EIGEN)
