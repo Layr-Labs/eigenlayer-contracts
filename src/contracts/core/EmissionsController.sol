@@ -115,8 +115,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             // TODO: Implement this.
         } else if (distribution.distributionType == DistributionType.Manual) {
             // We use call to prevent further distributions from being processed if the mint fails.
-            (success,) =
-                address(BACKING_EIGEN).call(abi.encodeWithSelector(IBackingEigen.mint.selector, distribution.rewardsCalldata));
+            (success,) = address(BACKING_EIGEN)
+                .call(abi.encodeWithSelector(IBackingEigen.mint.selector, distribution.rewardsCalldata));
         } else {
             revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
         }
