@@ -600,6 +600,52 @@ library Env {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
+    /// @notice Checks if version a >= version b (semver comparison for x.y.z format)
+    /// @dev Supports versions like "1.10.0", "1.10.1", etc.
+    function _versionGte(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        (uint256 aMajor, uint256 aMinor, uint256 aPatch) = _parseVersion(a);
+        (uint256 bMajor, uint256 bMinor, uint256 bPatch) = _parseVersion(b);
+
+        if (aMajor != bMajor) return aMajor > bMajor;
+        if (aMinor != bMinor) return aMinor > bMinor;
+        return aPatch >= bPatch;
+    }
+
+    /// @notice Parses a semver string into major, minor, patch components
+    function _parseVersion(
+        string memory version
+    ) private pure returns (uint256 major, uint256 minor, uint256 patch) {
+        bytes memory vBytes = bytes(version);
+        uint256 dotCount = 0;
+        uint256 startIdx = 0;
+
+        for (uint256 i = 0; i <= vBytes.length; i++) {
+            if (i == vBytes.length || vBytes[i] == ".") {
+                uint256 num = _parseUint(vBytes, startIdx, i);
+                if (dotCount == 0) major = num;
+                else if (dotCount == 1) minor = num;
+                else if (dotCount == 2) patch = num;
+                dotCount++;
+                startIdx = i + 1;
+            }
+        }
+    }
+
+    /// @notice Parses a uint from a substring of bytes
+    function _parseUint(
+        bytes memory data,
+        uint256 start,
+        uint256 end
+    ) private pure returns (uint256 result) {
+        for (uint256 i = start; i < end; i++) {
+            require(data[i] >= 0x30 && data[i] <= 0x39, "Invalid version character");
+            result = result * 10 + (uint8(data[i]) - 48);
+        }
+    }
+
     /// @dev Use this function to get the proxy admin when it is not `Env.proxyAdmin()`
     /// @dev `_getProxyAdmin` expects the caller to be the actual proxy admin
     function getProxyAdminBySlot(
