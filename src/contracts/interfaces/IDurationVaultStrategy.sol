@@ -21,8 +21,6 @@ interface IDurationVaultStrategyErrors {
     error VaultAlreadyLocked();
     /// @dev Thrown when attempting to deposit after the vault has been locked.
     error DepositsLocked();
-    /// @dev Thrown when attempting to withdraw while funds remain locked.
-    error WithdrawalsLocked();
     /// @dev Thrown when attempting to remove shares during the allocations period.
     error WithdrawalsLockedDuringAllocations();
     /// @dev Thrown when attempting to add shares when not delegated to the vault operator.
