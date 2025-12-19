@@ -101,20 +101,22 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         bool success;
         if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createRewardsForAllEarners.selector, distribution.rewardsCoordinatorCalldata
+                IRewardsCoordinator.createRewardsForAllEarners.selector, distribution.rewardsCalldata
             );
         } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createUniqueStakeRewardsSubmission.selector, distribution.rewardsCoordinatorCalldata
+                IRewardsCoordinator.createUniqueStakeRewardsSubmission.selector, distribution.rewardsCalldata
             );
         } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createTotalStakeRewardsSubmission.selector, distribution.rewardsCoordinatorCalldata
+                IRewardsCoordinator.createTotalStakeRewardsSubmission.selector, distribution.rewardsCalldata
             );
         } else if (distribution.distributionType == DistributionType.EigenDA) {
             // TODO: Implement this.
         } else if (distribution.distributionType == DistributionType.Manual) {
-            // TODO: Implement this.
+            // We use call to prevent further distributions from being processed if the mint fails.
+            (success,) =
+                address(BACKING_EIGEN).call(abi.encodeWithSelector(IBackingEigen.mint.selector, distribution.rewardsCalldata));
         } else {
             revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
         }
@@ -124,13 +126,13 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.
     /// This is needed as using try/catch requires decoding the calldata, which can revert preventing further distributions.
     /// @param selector The selector of the function to call.
-    /// @param rewardsCoordinatorCalldata The calldata for the function call.
+    /// @param rewardsCalldata The calldata for the function call.
     /// @return success True if the function call was successful, false otherwise.
     function _tryCallRewardsCoordinator(
         bytes4 selector,
-        bytes memory rewardsCoordinatorCalldata
+        bytes memory rewardsCalldata
     ) internal returns (bool success) {
-        (success,) = address(REWARDS_COORDINATOR).call(abi.encodeWithSelector(selector, rewardsCoordinatorCalldata));
+        (success,) = address(REWARDS_COORDINATOR).call(abi.encodeWithSelector(selector, rewardsCalldata));
         return success;
     }
 

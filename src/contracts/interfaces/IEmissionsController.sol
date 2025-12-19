@@ -52,7 +52,7 @@ interface IEmissionsControllerTypes {
         /// The type of distribution.
         DistributionType distributionType;
         /// The calldata for the RewardsCoordinator function call.
-        bytes rewardsCoordinatorCalldata;
+        bytes rewardsCalldata;
     }
 }
 

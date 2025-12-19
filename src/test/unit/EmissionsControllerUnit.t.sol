@@ -89,7 +89,7 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: encodedSubmission
+                rewardsCalldata: encodedSubmission
             })
         );
 
@@ -140,7 +140,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -149,13 +149,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.CannotAddDisabledDistribution.selector);
         emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.Disabled,
-                rewardsCoordinatorCalldata: ""
-            })
+            Distribution({weight: 10_000, startEpoch: 0, stopEpoch: 0, distributionType: DistributionType.Disabled, rewardsCalldata: ""})
         );
     }
 
@@ -169,7 +163,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -184,7 +178,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -198,7 +192,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -211,7 +205,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -224,7 +218,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         uint nextDistributionId = emissionsController.getTotalDistributions();
         Distribution memory addedDistribution =
-            Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, rewardsCoordinatorCalldata: ""});
+            Distribution({weight: weight, startEpoch: 0, stopEpoch: 0, distributionType: distributionType, rewardsCalldata: ""});
 
         cheats.expectEmit(true, true, true, true);
         emit DistributionAdded(nextDistributionId, type(uint).max, addedDistribution);
@@ -252,7 +246,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -261,14 +255,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.CannotDisableDistributionViaUpdate.selector);
         emissionsController.updateDistribution(
-            0,
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.Disabled,
-                rewardsCoordinatorCalldata: ""
-            })
+            0, Distribution({weight: 10_000, startEpoch: 0, stopEpoch: 0, distributionType: DistributionType.Disabled, rewardsCalldata: ""})
         );
     }
 
@@ -282,7 +269,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -295,7 +282,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -311,7 +298,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -324,7 +311,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -338,7 +325,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -354,7 +341,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -366,7 +353,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -380,7 +367,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
     }
@@ -409,7 +396,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
         cheats.prank(incentiveCouncil);
@@ -428,7 +415,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -486,7 +473,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -508,7 +495,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: encodedSubmission
+                rewardsCalldata: encodedSubmission
             })
         );
 
@@ -572,7 +559,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
         assertEq(emissionsController.getTotalDistributions(), 1);
@@ -585,7 +572,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
         assertEq(emissionsController.getTotalDistributions(), 2);
@@ -600,7 +587,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -611,7 +598,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 startEpoch: 0,
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -634,7 +621,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                     startEpoch: 0,
                     stopEpoch: 1,
                     distributionType: DistributionType.RewardsForAllEarners,
-                    rewardsCoordinatorCalldata: ""
+                    rewardsCalldata: ""
                 })
             );
         }
@@ -658,7 +645,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -679,7 +666,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -690,7 +677,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 1,
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -718,7 +705,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -731,7 +718,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 2,
                 stopEpoch: 15,
                 distributionType: DistributionType.OperatorSetUniqueStake,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -752,7 +739,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 startEpoch: 0,
                 stopEpoch: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -776,7 +763,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -787,7 +774,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -808,7 +795,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -819,7 +806,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 1,
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -830,7 +817,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 2,
                 stopEpoch: 10,
                 distributionType: DistributionType.OperatorSetUniqueStake,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -853,7 +840,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                     startEpoch: 0,
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
-                    rewardsCoordinatorCalldata: ""
+                    rewardsCalldata: ""
                 })
             );
         }
@@ -876,7 +863,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -894,7 +881,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 0,
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -905,7 +892,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 startEpoch: 1,
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
-                rewardsCoordinatorCalldata: ""
+                rewardsCalldata: ""
             })
         );
 
@@ -936,7 +923,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                     startEpoch: 0,
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
-                    rewardsCoordinatorCalldata: ""
+                    rewardsCalldata: ""
                 })
             );
         }
