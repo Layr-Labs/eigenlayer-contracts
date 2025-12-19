@@ -166,6 +166,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         distributionId = getTotalDistributions();
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
+        // Update the total weight.
+        totalWeight += distribution.weight;
         // Emit an event for the new distribution.
         emit DistributionAdded(distributionId, currentEpoch, distribution);
     }
@@ -184,10 +186,18 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         // Check if the distribution (in storage) is disabled.
         _checkDisabled(_distributions[distributionId]);
+
+        uint256 weight = _distributions[distributionId].weight;
+        // Subtract the old weight.
+        totalWeight -= weight;
+        // Add the new weight.
+        totalWeight += distribution.weight;
+
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
         _checkDistribution(distribution, currentEpoch);
+
         // Update the distribution in the distributions array.
         _distributions[distributionId] = distribution;
         // Emit an event for the updated distribution.
@@ -200,6 +210,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) external override onlyIncentiveCouncil {
         // Check if the distribution is already disabled.
         _checkDisabled(_distributions[distributionId]);
+        // Subtract the weight from total weight.
+        totalWeight -= _distributions[distributionId].weight;
         // Set the distribution type to disabled.
         // Prevents further updates to the distribution.
         _distributions[distributionId].distributionType = DistributionType.Disabled;
