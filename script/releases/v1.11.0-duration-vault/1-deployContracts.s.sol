@@ -22,11 +22,6 @@ contract DeployContracts is CoreContractsDeployer {
     using Env for *;
 
     function _runAsEOA() internal override {
-        // Only execute on version 1.10.0
-        if (!Env._strEq(Env.envVersion(), "1.10.0")) {
-            return;
-        }
-
         vm.startBroadcast();
 
         /// core/
@@ -62,7 +57,7 @@ contract DeployContracts is CoreContractsDeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._strEq(Env.envVersion(), "1.10.0")) {
+        if (!Env.isCoreProtocolDeployed() || !Env.isSource()) {
             return;
         }
 

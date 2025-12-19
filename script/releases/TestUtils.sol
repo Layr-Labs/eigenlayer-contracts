@@ -834,6 +834,10 @@ library TestUtils {
             durationVaultStrategy.pauserRegistry() == Env.impl.pauserRegistry(),
             "durationVaultStrategy pauserRegistry incorrect"
         );
+        assertTrue(
+            address(durationVaultStrategy.strategyFactory()) == address(Env.proxy.strategyFactory()),
+            "durationVaultStrategy strategyFactory incorrect"
+        );
     }
 
     /// multichain/
