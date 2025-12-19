@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "../libraries/OperatorSetLib.sol";
 import "./storage/EmissionsControllerStorage.sol";
 
 // Add fee, it's enabled by default, with settable fee receipient.
@@ -59,7 +60,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         }
 
         uint256 totalAmount = EMISSIONS_INFLATION_RATE;
-        
+
         BACKING_EIGEN.approve(address(EIGEN), totalAmount);
         EIGEN.approve(address(REWARDS_COORDINATOR), totalAmount);
 
@@ -77,26 +78,47 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             // Skip distributions that have ended...
             if (distribution.stopEpoch <= currentEpoch) continue;
 
-            _processDistribution(distribution);
+            _processDistribution(i, currentEpoch, distribution);
         }
 
         // Update total processed count for this epoch (equals next index to process)
         _totalProcessed[currentEpoch] = length;
     }
 
-    // TODO: Implement this.
     function _processDistribution(
+        uint256 distributionId,
+        uint256 currentEpoch,
         Distribution memory distribution
-    ) internal pure {
-        if (distribution.distributionType == DistributionType.RewardsForAllEarners) {} else if (
-            distribution.distributionType == DistributionType.OperatorSetTotalStake
-        ) {} else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {} else if (
-            distribution.distributionType == DistributionType.UniqueStakeRewardsSubmission
-        ) {} else if (distribution.distributionType == DistributionType.TotalStakeRewardsSubmission) {} else if (
-            distribution.distributionType == DistributionType.EigenDA
-        ) {} else if (distribution.distributionType == DistributionType.Manual) {} else {
+    ) internal {
+        bool success;
+        if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
+            try REWARDS_COORDINATOR.createRewardsForAllEarners(
+                abi.decode(distribution.encodedRewardsSubmission, (IRewardsCoordinatorTypes.RewardsSubmission[]))
+            ) {
+                success = true;
+            } catch {}
+        } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
+            (OperatorSet memory operatorSet, IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions) = abi.decode(
+                distribution.encodedRewardsSubmission, (OperatorSet, IRewardsCoordinatorTypes.RewardsSubmission[])
+            );
+            try REWARDS_COORDINATOR.createUniqueStakeRewardsSubmission(operatorSet, rewardsSubmissions) {
+                success = true;
+            } catch {}
+        } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
+            (OperatorSet memory operatorSet, IRewardsCoordinatorTypes.RewardsSubmission[] memory rewardsSubmissions) = abi.decode(
+                distribution.encodedRewardsSubmission, (OperatorSet, IRewardsCoordinatorTypes.RewardsSubmission[])
+            );
+            try REWARDS_COORDINATOR.createTotalStakeRewardsSubmission(operatorSet, rewardsSubmissions) {
+                success = true;
+            } catch {}
+        } else if (distribution.distributionType == DistributionType.EigenDA) {
+            // TODO: Implement this.
+        } else if (distribution.distributionType == DistributionType.Manual) {
+            // TODO: Implement this.
+        } else {
             revert InvalidDistributionType();
         }
+        emit DistributionProcessed(distributionId, currentEpoch, distribution, success);
     }
 
     /// -----------------------------------------------------------------------

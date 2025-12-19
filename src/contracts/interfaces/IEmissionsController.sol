@@ -36,8 +36,6 @@ interface IEmissionsControllerTypes {
         RewardsForAllEarners,
         OperatorSetTotalStake,
         OperatorSetUniqueStake,
-        UniqueStakeRewardsSubmission,
-        TotalStakeRewardsSubmission,
         EigenDA,
         Manual
     }
