@@ -17,6 +17,7 @@ import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
 import "src/test/mocks/EigenMock.sol";
+import "src/test/mocks/BackingEigenMock.sol";
 import "src/test/mocks/RewardsCoordinatorMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
@@ -46,6 +47,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
     DelegationManagerMock delegationManagerMock;
     EigenPodManagerMock eigenPodManagerMock;
     EigenMock eigenMock;
+    BackingEigenMock backingEigenMock;
     RewardsCoordinatorMock rewardsCoordinatorMock;
     EmptyContract emptyContract;
 
@@ -86,6 +88,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
         eigenMock = EigenMock(payable(address(new EigenMock())));
+        backingEigenMock = BackingEigenMock(payable(address(new BackingEigenMock())));
         rewardsCoordinatorMock = RewardsCoordinatorMock(payable(address(new RewardsCoordinatorMock())));
         emptyContract = new EmptyContract();
 
@@ -99,6 +102,7 @@ abstract contract EigenLayerUnitTestSetup is Test {
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenMock)] = true;
+        isExcludedFuzzAddress[address(backingEigenMock)] = true;
         isExcludedFuzzAddress[address(rewardsCoordinatorMock)] = true;
     }
 }

@@ -3,8 +3,6 @@ pragma solidity ^0.8.27;
 
 import "../../interfaces/IEmissionsController.sol";
 import "../../interfaces/IRewardsCoordinator.sol";
-import "../../interfaces/IEigen.sol";
-import "../../libraries/OperatorSetLib.sol";
 
 abstract contract EmissionsControllerStorage is IEmissionsController {
     // Constants
@@ -16,6 +14,8 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
 
     /// @dev The EIGEN token that will be minted for emissions.
     IEigen public immutable override EIGEN;
+    /// @dev The backing Eigen token that will be minted for emissions.
+    IBackingEigen public immutable override BACKING_EIGEN;
     /// @dev The RewardsCoordinator contract for submitting rewards.
     IRewardsCoordinator public immutable override REWARDS_COORDINATOR;
 
@@ -42,12 +42,14 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
 
     constructor(
         IEigen eigen,
+        IBackingEigen backingEigen,
         IRewardsCoordinator rewardsCoordinator,
         uint256 inflationRate,
         uint256 startTime,
         uint256 epochLength
     ) {
         EIGEN = eigen;
+        BACKING_EIGEN = backingEigen;
         REWARDS_COORDINATOR = rewardsCoordinator;
 
         EMISSIONS_INFLATION_RATE = inflationRate;

@@ -3,6 +3,7 @@ pragma solidity >=0.5.0;
 
 import "./IRewardsCoordinator.sol";
 import "./IEigen.sol";
+import "./IBackingEigen.sol";
 
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.
@@ -21,6 +22,8 @@ interface IEmissionsControllerErrors {
     error CannotDisableDistributionViaUpdate();
     /// @dev Thrown when all distributions have been processed for the current epoch.
     error AllDistributionsProcessed();
+    /// @dev Thrown when the distribution type is invalid. Should be unreachable.
+    error InvalidDistributionType();
 }
 
 /// @title IEmissionsControllerTypes
@@ -33,6 +36,8 @@ interface IEmissionsControllerTypes {
         RewardsForAllEarners,
         OperatorSetTotalStake,
         OperatorSetUniqueStake,
+        UniqueStakeRewardsSubmission,
+        TotalStakeRewardsSubmission,
         EigenDA,
         Manual
     }
@@ -99,6 +104,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @notice The EIGEN token address.
     /// @dev Immutable/constant variable that requires an upgrade to modify.
     function EIGEN() external view returns (IEigen);
+
+    /// @notice The BACKING_EIGEN token address.
+    /// @dev Immutable/constant variable that requires an upgrade to modify.
+    function BACKING_EIGEN() external view returns (IBackingEigen);
 
     /// @notice The RewardsCoordinator address.
     /// @dev Immutable/constant variable that requires an upgrade to modify.

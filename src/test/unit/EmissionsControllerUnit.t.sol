@@ -24,6 +24,7 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
                     address(
                         new EmissionsController(
                             IEigen(address(eigenMock)),
+                            IBackingEigen(address(backingEigenMock)),
                             IRewardsCoordinator(address(rewardsCoordinatorMock)),
                             EMISSIONS_INFLATION_RATE,
                             EMISSIONS_START_TIME,

@@ -21,11 +21,12 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// -----------------------------------------------------------------------
     constructor(
         IEigen eigen,
+        IBackingEigen backingEigen,
         IRewardsCoordinator rewardsCoordinator,
         uint256 inflationRate,
         uint256 startTime,
         uint256 cooldownSeconds
-    ) EmissionsControllerStorage(eigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds) {
+    ) EmissionsControllerStorage(eigen, backingEigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds) {
         _disableInitializers();
     }
 
@@ -57,26 +58,24 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             revert AllDistributionsProcessed();
         }
 
-        EIGEN.mint(); // TODO: Investigate how we wanna handle this.
+        uint256 totalAmount = EMISSIONS_INFLATION_RATE;
+        
+        BACKING_EIGEN.approve(address(EIGEN), totalAmount);
+        EIGEN.approve(address(REWARDS_COORDINATOR), totalAmount);
+
+        BACKING_EIGEN.mint(address(this), totalAmount);
+        EIGEN.wrap(totalAmount);
 
         // Process distributions starting from the next one to process
         for (uint256 i = nextDistributionId; i < length; ++i) {
             Distribution memory distribution = _distributions[i];
 
             // Skip disabled distributions...
-            if (distribution.distributionType == DistributionType.Disabled) {
-                continue;
-            }
-
+            if (distribution.distributionType == DistributionType.Disabled) continue;
             // Skip distributions that haven't started yet...
-            if (distribution.startEpoch > currentEpoch) {
-                continue;
-            }
-
+            if (distribution.startEpoch > currentEpoch) continue;
             // Skip distributions that have ended...
-            if (distribution.stopEpoch <= currentEpoch) {
-                continue;
-            }
+            if (distribution.stopEpoch <= currentEpoch) continue;
 
             _processDistribution(distribution);
         }
@@ -85,9 +84,20 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         _totalProcessed[currentEpoch] = length;
     }
 
+    // TODO: Implement this.
     function _processDistribution(
         Distribution memory distribution
-    ) internal {}
+    ) internal pure {
+        if (distribution.distributionType == DistributionType.RewardsForAllEarners) {} else if (
+            distribution.distributionType == DistributionType.OperatorSetTotalStake
+        ) {} else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {} else if (
+            distribution.distributionType == DistributionType.UniqueStakeRewardsSubmission
+        ) {} else if (distribution.distributionType == DistributionType.TotalStakeRewardsSubmission) {} else if (
+            distribution.distributionType == DistributionType.EigenDA
+        ) {} else if (distribution.distributionType == DistributionType.Manual) {} else {
+            revert InvalidDistributionType();
+        }
+    }
 
     /// -----------------------------------------------------------------------
     /// Owner Functions
