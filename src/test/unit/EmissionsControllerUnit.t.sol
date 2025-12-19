@@ -55,13 +55,58 @@ contract EmissionsControllerUnitTests_Initialization_Setters is EmissionsControl
         assertEq(emissionsController.EMISSIONS_START_TIME(), EMISSIONS_START_TIME);
         assertEq(emissionsController.EMISSIONS_EPOCH_LENGTH(), EMISSIONS_EPOCH_LENGTH);
     }
+
+    function test_revert_initialize_AlreadyInitialized() public {
+        cheats.expectRevert("Initializable: contract is already initialized");
+        emissionsController.initialize(owner, incentiveCouncil);
+    }
 }
 
 /// -----------------------------------------------------------------------
 /// Permissionless Trigger
 /// -----------------------------------------------------------------------
 
-contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTests {}
+contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTests {
+    function test_revert_pressButton_AllDistributionsProcessed_NoDistributions() public {
+        // Warp to after emissions start
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Attempt to press button with no distributions should revert
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        emissionsController.pressButton(0);
+    }
+
+    function test_revert_pressButton_AllDistributionsProcessed() public {
+        // // Add a distribution first (before emissions start, so startEpoch 0 is in the future)
+        // cheats.prank(incentiveCouncil);
+        // emissionsController.addDistribution(
+        //     Distribution({
+        //         weight: 10_000,
+        //         startEpoch: 0,
+        //         stopEpoch: 1,
+        //         distributionType: DistributionType.RewardsForAllEarners,
+        //         encodedRewardsSubmission: ""
+        //     })
+        // );
+
+        // // Mock the wrap function on eigenMock
+        // cheats.mockCall(
+        //     address(eigenMock),
+        //     abi.encodeWithSignature("wrap(uint256)", EMISSIONS_INFLATION_RATE),
+        //     abi.encode()
+        // );
+
+        // // Warp to after emissions start (now at epoch 0)
+        // cheats.warp(EMISSIONS_START_TIME);
+
+        // // Process all distributions
+        // emissionsController.pressButton(1);
+
+        // // Attempt to press button again should revert
+        // cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        // emissionsController.pressButton(1);
+    }
+}
 
 /// -----------------------------------------------------------------------
 /// Owner Functions
@@ -139,6 +184,33 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         emissionsController.addDistribution(
             Distribution({
                 weight: weight,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_addDistribution_TotalWeightExceedsMax_MultipleDistributions() public {
+        // Add first distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        // Attempt to add second distribution with weight 5000, total would be 11000 > 10000
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
@@ -274,7 +346,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         );
     }
 
-    function testFuzz_updateDistribution_TotalWeightExceedsMax(uint weight) public {
+    function testFuzz_revert_updateDistribution_TotalWeightExceedsMax(uint weight) public {
         weight = bound(weight, 10_001, type(uint).max);
 
         cheats.prank(incentiveCouncil);
@@ -294,6 +366,46 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             0,
             Distribution({
                 weight: weight,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+    }
+
+    function test_revert_updateDistribution_TotalWeightExceedsMax_MultipleDistributions() public {
+        // Add first distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        uint distributionId1 = emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        // Add second distribution with weight 3000
+        cheats.prank(incentiveCouncil);
+        uint distributionId2 = emissionsController.addDistribution(
+            Distribution({
+                weight: 3000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                encodedRewardsSubmission: ""
+            })
+        );
+
+        // Attempt to update second distribution to weight 5000, total would be 11000 > 10000
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
+        emissionsController.updateDistribution(
+            distributionId2,
+            Distribution({
+                weight: 5000,
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
