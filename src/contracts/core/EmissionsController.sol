@@ -6,7 +6,7 @@ import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "../libraries/OperatorSetLib.sol";
 import "./storage/EmissionsControllerStorage.sol";
 
-// Add fee, it's enabled by default, with settable fee receipient.
+// Add fee, it's enabled by default, with settable fee recipient.
 // AVS's must also have a way to opt-out of the fee.
 
 contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsControllerStorage {
