@@ -67,14 +67,27 @@ contract Integration_Upgrade_StrategyManagerHooks is UpgradeTest {
 
         /// Complete withdrawal as tokens
         _rollBlocksForCompleteWithdrawals(withdrawals);
+
+        // Record token balances before completing withdrawals
+        IERC20[] memory tokens = _getUnderlyingTokens(strategies);
+        uint[] memory balancesBefore = _getTokenBalances(staker, tokens);
+
         for (uint i = 0; i < withdrawals.length; i++) {
             staker.completeWithdrawalAsTokens(withdrawals[i]);
         }
+
+        // Get balances after completing withdrawals
+        uint[] memory balancesAfter = _getTokenBalances(staker, tokens);
 
         /// Verify staker has no shares and got tokens back
         for (uint i = 0; i < strategies.length; i++) {
             uint stakerShares = strategyManager.stakerDepositShares(address(staker), strategies[i]);
             assertEq(stakerShares, 0, "staker should have no shares after completing as tokens");
+
+            // Verify token balance increased (skip beacon chain ETH which has different mechanics)
+            if (strategies[i] != BEACONCHAIN_ETH_STRAT) {
+                assertGt(balancesAfter[i], balancesBefore[i], "staker should have received tokens back");
+            }
         }
     }
 
