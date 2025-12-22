@@ -62,11 +62,11 @@ interface IEmissionsControllerTypes {
     ///      Active distributions are processed sequentially.
     struct Distribution {
         /// The bips denominated weight of the distribution.
-        uint256 weight;
-        /// The epoch the distribution was last triggered.
-        uint256 startEpoch;
-        /// The number of epochs to repeat the distribution.
-        uint256 stopEpoch;
+        uint64 weight;
+        /// The epoch the distribution was last triggered ().
+        uint64 startEpoch;
+        /// The number of epochs to repeat the distribution (1256 years supported).
+        uint64 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
         /// The operator set (Required only for OperatorSetTotalStake and OperatorSetUniqueStake distribution types).

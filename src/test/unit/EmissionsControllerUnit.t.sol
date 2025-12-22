@@ -214,7 +214,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
         emissionsController.addDistribution(
             Distribution({
-                weight: weight,
+                weight: uint64(weight),
                 startEpoch: 0,
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
@@ -266,7 +266,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             distributionType == DistributionType.Manual ? emptySubmission() : defaultSubmission();
 
         Distribution memory addedDistribution = Distribution({
-            weight: weight,
+            weight: uint64(weight),
             startEpoch: 0,
             stopEpoch: 0,
             distributionType: distributionType,
@@ -951,7 +951,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             cheats.prank(incentiveCouncil);
             emissionsController.addDistribution(
                 Distribution({
-                    weight: 100 * (i + 1),
+                    weight: uint64(100 * (i + 1)),
                     startEpoch: 0,
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
@@ -1038,7 +1038,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             cheats.prank(incentiveCouncil);
             emissionsController.addDistribution(
                 Distribution({
-                    weight: 100 * (i + 1),
+                    weight: uint64(100 * (i + 1)),
                     startEpoch: 0,
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
