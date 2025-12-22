@@ -68,7 +68,6 @@ contract EmissionsController is
 
         // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
         if (!_epochs[currentEpoch].minted) {
-
             // Max approve EIGEN for spending bEIGEN.
             BACKING_EIGEN.approve(address(EIGEN), EMISSIONS_INFLATION_RATE);
             // Max approve RewardsCoordinator for spending EIGEN.
@@ -88,8 +87,8 @@ contract EmissionsController is
         // Calculate the last index to process.
         uint256 lastIndex = nextDistributionId + length;
 
-        // If length exceeds total distributions, set last index to last distribution index.
-        if (lastIndex > totalDistributions) lastIndex = totalDistributions - 1;
+        // If length exceeds total distributions, set last index to total distributions (exclusive upper bound).
+        if (lastIndex > totalDistributions) lastIndex = totalDistributions;
 
         // Process distributions starting from the next one to process...
         for (uint256 i = nextDistributionId; i < lastIndex; ++i) {
@@ -107,8 +106,8 @@ contract EmissionsController is
 
         // QUESTION: Should be burn excess supply that wasn't distributed (e.g. if the distribution reverts)?
 
-        // Update total processed count for this epoch (equals next index to process)
-        _epochs[currentEpoch].totalProcessed = uint248(length);
+        // Update total processed count for this epoch.
+        _epochs[currentEpoch].totalProcessed = uint248(lastIndex);
     }
 
     /// @dev Internal helper that processes a distribution.
@@ -217,8 +216,6 @@ contract EmissionsController is
         Distribution calldata distribution
     ) external override onlyIncentiveCouncil returns (uint256 distributionId) {
         uint256 currentEpoch = getCurrentEpoch();
-
-        // Question: How should be handle added distributions before the first epoch?
 
         // Check if the distribution is disabled.
         if (distribution.distributionType == DistributionType.Disabled) {
