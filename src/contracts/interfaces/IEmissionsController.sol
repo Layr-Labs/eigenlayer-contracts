@@ -24,6 +24,8 @@ interface IEmissionsControllerErrors {
     error AllDistributionsProcessed();
     /// @dev Thrown when the distribution type is invalid. Should be unreachable.
     error InvalidDistributionType();
+    /// @dev Thrown when rewards submissions array is empty for a distribution that requires it.
+    error RewardsSubmissionsCannotBeEmpty();
 }
 
 /// @title IEmissionsControllerTypes

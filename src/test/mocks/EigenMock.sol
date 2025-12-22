@@ -3,17 +3,17 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "./BackingEigenMock.sol";
 
 contract EigenMock is Test, ERC20 {
-    constructor() ERC20("EIGEN", "EIGEN") {}
+    BackingEigenMock backingEigen;
 
-    function mint(address to, uint amount) external {
-        _mint(to, amount);
+    constructor(BackingEigenMock _backingEigen) ERC20("EIGEN", "EIGEN") {
+        backingEigen = _backingEigen;
     }
 
     function wrap(uint amount) external {
-        // Mock implementation - in real contract this would wrap bEIGEN to EIGEN
-        // For testing purposes, we just emit an event or do nothing
+        backingEigen.transferFrom(msg.sender, address(this), amount);
+        _mint(msg.sender, amount);
     }
 }
-

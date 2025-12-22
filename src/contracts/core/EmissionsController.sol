@@ -12,8 +12,7 @@ import "./storage/EmissionsControllerStorage.sol";
 contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsControllerStorage {
     /// @dev Modifier that checks if the caller is the incentive council.
     modifier onlyIncentiveCouncil() {
-        // Check if the caller is the incentive council.
-        require(msg.sender == incentiveCouncil, CallerIsNotIncentiveCouncil());
+        _checkOnlyIncentiveCouncil();
         _;
     }
 
@@ -68,7 +67,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         uint256 totalAmount = EMISSIONS_INFLATION_RATE;
 
-        // TODO: Should we only mint if the supply is actually distributed?
+        // QUESTION: Should we only mint if the supply is actually distributed?
+        // QUESTION: If not, what do we do with excess supply?
         BACKING_EIGEN.mint(address(this), totalAmount);
         EIGEN.wrap(totalAmount);
 
@@ -99,11 +99,18 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         uint256 currentEpoch,
         Distribution memory distribution
     ) internal {
-        // Update the start timestamp and duration of the rewards submissions.
+        // Calculate the total amount of emissions for the distribution.
+        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
+        // Calculate the amount per submission (total amount divided by the number of submissions).
+        uint256 amountPerSubmission = totalAmount / distribution.rewardsSubmissions.length;
+
+        // Update the rewards submissions start timestamp, duration, and amount.
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = distribution.rewardsSubmissions;
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            rewardsSubmissions[i].startTimestamp = uint32(lastTimeButtonPressable()); // Start of this epoch.
+            uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
+            rewardsSubmissions[i].startTimestamp = uint32(startTimestamp); // Start of this epoch.
             rewardsSubmissions[i].duration = uint32(EMISSIONS_EPOCH_LENGTH); // QUESTION: Should this be configurable?
+            rewardsSubmissions[i].amount = amountPerSubmission; // QUESTION: Should multiple rewards submissions be allowed? If not, each submission will have a constant amount.
         }
 
         // Dispatch the `RewardsCoordinator` call based on the distribution type.
@@ -256,6 +263,11 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// Internal Helpers
     /// -----------------------------------------------------------------------
 
+    function _checkOnlyIncentiveCouncil() internal view {
+        // Check if the caller is the incentive council.
+        if (msg.sender != incentiveCouncil) revert CallerIsNotIncentiveCouncil();
+    }
+
     function _checkDisabled(
         Distribution storage distribution
     ) internal view {
@@ -279,6 +291,12 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         // Prevents distributing more supply than inflation rate allows.
         if (distribution.weight + totalWeight > MAX_TOTAL_WEIGHT) {
             revert TotalWeightExceedsMax();
+        }
+
+        // Check if rewards submissions array is empty for non-Manual distributions.
+        // Manual distributions handle rewards differently and don't require submissions.
+        if (distribution.distributionType != DistributionType.Manual && distribution.rewardsSubmissions.length == 0) {
+            revert RewardsSubmissionsCannotBeEmpty();
         }
     }
 
