@@ -127,15 +127,15 @@ contract EmissionsController is
         // Calculate the amount per submission. Use 1 if Manual, otherwise divide equally among submissions.
         uint256 amountPerSubmission = (distribution.distributionType == DistributionType.Manual)
             ? 1
-            : totalAmount / distribution.partialRewardsSubmissions.length;
+            : totalAmount / distribution.strategiesAndMultipliers.length;
 
         // Update the rewards submissions start timestamp, duration, and amount.
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-            new IRewardsCoordinator.RewardsSubmission[](distribution.partialRewardsSubmissions.length);
+            new IRewardsCoordinator.RewardsSubmission[](distribution.strategiesAndMultipliers.length);
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
             rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
-                strategiesAndMultipliers: distribution.partialRewardsSubmissions[i].strategiesAndMultipliers,
-                token: distribution.partialRewardsSubmissions[i].token,
+                strategiesAndMultipliers: distribution.strategiesAndMultipliers[i],
+                token: EIGEN,
                 amount: amountPerSubmission,
                 startTimestamp: uint32(startTimestamp),
                 duration: uint32(EMISSIONS_EPOCH_LENGTH) // QUESTION: Should this be configurable?
@@ -328,7 +328,7 @@ contract EmissionsController is
         // Manual distributions handle rewards differently and don't require submissions.
         if (
             distribution.distributionType != DistributionType.Manual
-                && distribution.partialRewardsSubmissions.length == 0
+                && distribution.strategiesAndMultipliers.length == 0
         ) {
             revert RewardsSubmissionsCannotBeEmpty();
         }

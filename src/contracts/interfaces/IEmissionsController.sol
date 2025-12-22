@@ -71,19 +71,8 @@ interface IEmissionsControllerTypes {
         DistributionType distributionType;
         /// The operator set (Required only for OperatorSetTotalStake and OperatorSetUniqueStake distribution types).
         OperatorSet operatorSet;
-        /// The rewards submissions.
-        PartialRewardsSubmission[] partialRewardsSubmissions;
-    }
-
-    /// @notice A partial rewards submission that will be converted to a full RewardsSubmission during processing.
-    /// @dev This struct contains the static parameters for a rewards submission (strategies and token).
-    ///      During epoch processing, these are augmented with dynamic parameters (amount, startTimestamp, duration)
-    ///      to create complete RewardsSubmission objects for the RewardsCoordinator.
-    struct PartialRewardsSubmission {
         /// The strategies and their respective multipliers for distributing rewards.
-        IRewardsCoordinator.StrategyAndMultiplier[] strategiesAndMultipliers;
-        /// The ERC20 token to be distributed as rewards.
-        IERC20 token;
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[][] strategiesAndMultipliers;
     }
 }
 

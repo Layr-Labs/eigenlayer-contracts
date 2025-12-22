@@ -42,17 +42,13 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
         return OperatorSet({avs: address(0), id: 0});
     }
 
-    function emptySubmission() public pure returns (IEmissionsControllerTypes.PartialRewardsSubmission[] memory) {
-        return new IEmissionsControllerTypes.PartialRewardsSubmission[](0);
+    function emptyStrategiesAndMultipliers() public pure returns (IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory) {
+        return new IRewardsCoordinatorTypes.StrategyAndMultiplier[][](0);
     }
 
-    function defaultSubmission() public pure returns (IEmissionsControllerTypes.PartialRewardsSubmission[] memory) {
-        IEmissionsControllerTypes.PartialRewardsSubmission[] memory submissions =
-            new IEmissionsControllerTypes.PartialRewardsSubmission[](1);
-        submissions[0] = IEmissionsControllerTypes.PartialRewardsSubmission({
-            strategiesAndMultipliers: new IRewardsCoordinatorTypes.StrategyAndMultiplier[](0),
-            token: IERC20(address(0))
-        });
+    function defaultStrategiesAndMultipliers() public pure returns (IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory) {
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory submissions = new IRewardsCoordinatorTypes.StrategyAndMultiplier[][](1);
+        submissions[0] = new IRewardsCoordinatorTypes.StrategyAndMultiplier[](0);
         return submissions;
     }
 }
@@ -104,7 +100,7 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -157,7 +153,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -172,7 +168,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.Disabled,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -187,7 +183,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: emptySubmission()
+                strategiesAndMultipliers: emptyStrategiesAndMultipliers()
             })
         );
     }
@@ -203,7 +199,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -219,7 +215,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -234,7 +230,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -248,7 +244,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -261,9 +257,9 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         uint nextDistributionId = emissionsController.getTotalDistributions();
 
-        // Use defaultSubmission for non-Manual types, empty for Manual
-        IEmissionsControllerTypes.PartialRewardsSubmission[] memory partialRewardsSubmissions =
-            distributionType == DistributionType.Manual ? emptySubmission() : defaultSubmission();
+        // Use defaultStrategiesAndMultipliers for non-Manual types, empty for Manual
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory strategiesAndMultipliers =
+            distributionType == DistributionType.Manual ? emptyStrategiesAndMultipliers() : defaultStrategiesAndMultipliers();
 
         Distribution memory addedDistribution = Distribution({
             weight: uint64(weight),
@@ -271,7 +267,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             stopEpoch: 0,
             distributionType: distributionType,
             operatorSet: emptyOperatorSet(),
-            partialRewardsSubmissions: partialRewardsSubmissions
+            strategiesAndMultipliers: strategiesAndMultipliers
         });
 
         cheats.expectEmit(true, true, true, true);
@@ -301,7 +297,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -317,7 +313,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.Disabled,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -333,7 +329,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -347,7 +343,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -364,7 +360,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -378,7 +374,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -393,7 +389,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -407,7 +403,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -421,7 +417,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: emptySubmission()
+                strategiesAndMultipliers: emptyStrategiesAndMultipliers()
             })
         );
     }
@@ -438,7 +434,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -451,7 +447,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -466,7 +462,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
     }
@@ -496,7 +492,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
         cheats.prank(incentiveCouncil);
@@ -516,7 +512,7 @@ contract EmissionsControllerUnitTests_disableDistribution is EmissionsController
                 stopEpoch: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -575,7 +571,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -594,7 +590,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -659,7 +655,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
         assertEq(emissionsController.getTotalDistributions(), 1);
@@ -673,7 +669,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
         assertEq(emissionsController.getTotalDistributions(), 2);
@@ -689,7 +685,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -701,7 +697,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 stopEpoch: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -725,7 +721,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                     stopEpoch: 1,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
-                    partialRewardsSubmissions: defaultSubmission()
+                    strategiesAndMultipliers: defaultStrategiesAndMultipliers()
                 })
             );
         }
@@ -750,7 +746,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -772,7 +768,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -784,7 +780,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -813,7 +809,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -827,7 +823,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 15,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -849,7 +845,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
                 stopEpoch: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -874,7 +870,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -886,7 +882,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -908,7 +904,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -920,7 +916,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -932,7 +928,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 10,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -956,7 +952,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
-                    partialRewardsSubmissions: defaultSubmission()
+                    strategiesAndMultipliers: defaultStrategiesAndMultipliers()
                 })
             );
         }
@@ -980,7 +976,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -999,7 +995,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -1011,7 +1007,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 stopEpoch: 8,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
-                partialRewardsSubmissions: defaultSubmission()
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
 
@@ -1043,7 +1039,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                     stopEpoch: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
-                    partialRewardsSubmissions: defaultSubmission()
+                    strategiesAndMultipliers: defaultStrategiesAndMultipliers()
                 })
             );
         }
