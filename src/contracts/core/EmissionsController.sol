@@ -45,13 +45,6 @@ contract EmissionsController is
         _transferOwnership(initialOwner);
         // Set the initial incentive council.
         _setIncentiveCouncil(initialIncentiveCouncil);
-
-        // NOTE: Reviewers, is this okay? Avoids the need for approvals on each button press.
-
-        // Max approve EIGEN for spending bEIGEN.
-        BACKING_EIGEN.approve(address(EIGEN), type(uint256).max);
-        // Max approve RewardsCoordinator for spending EIGEN.
-        EIGEN.approve(address(REWARDS_COORDINATOR), type(uint256).max);
     }
 
     /// -----------------------------------------------------------------------
@@ -75,6 +68,12 @@ contract EmissionsController is
 
         // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
         if (!_epochs[currentEpoch].minted) {
+
+            // Max approve EIGEN for spending bEIGEN.
+            BACKING_EIGEN.approve(address(EIGEN), EMISSIONS_INFLATION_RATE);
+            // Max approve RewardsCoordinator for spending EIGEN.
+            EIGEN.approve(address(REWARDS_COORDINATOR), EMISSIONS_INFLATION_RATE);
+
             // First mint the bEIGEN in order to wrap it into EIGEN.
             BACKING_EIGEN.mint(address(this), EMISSIONS_INFLATION_RATE);
             // Then wrap it into EIGEN.
