@@ -68,6 +68,8 @@ contract EmissionsController is
 
         // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
         if (!_epochs[currentEpoch].minted) {
+            // NOTE: Approvals may not be entirely spent.
+
             // Max approve EIGEN for spending bEIGEN.
             BACKING_EIGEN.approve(address(EIGEN), EMISSIONS_INFLATION_RATE);
             // Max approve RewardsCoordinator for spending EIGEN.
