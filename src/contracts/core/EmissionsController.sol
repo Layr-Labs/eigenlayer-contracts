@@ -65,12 +65,13 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             revert AllDistributionsProcessed();
         }
 
-        uint256 totalAmount = EMISSIONS_INFLATION_RATE;
+        // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
+        uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
 
         // QUESTION: Should we only mint if the supply is actually distributed?
         // QUESTION: If not, what do we do with excess supply?
-        BACKING_EIGEN.mint(address(this), totalAmount);
-        EIGEN.wrap(totalAmount);
+        BACKING_EIGEN.mint(address(this), EMISSIONS_INFLATION_RATE);
+        EIGEN.wrap(EMISSIONS_INFLATION_RATE);
 
         // Process distributions starting from the next one to process
         for (uint256 i = nextDistributionId; i < length; ++i) {
@@ -83,7 +84,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             // Skip distributions that have ended...
             if (distribution.stopEpoch <= currentEpoch) continue;
 
-            _processDistribution(i, currentEpoch, distribution);
+            _processDistribution(i, currentEpoch, startTimestamp, distribution);
         }
 
         // Update total processed count for this epoch (equals next index to process)
@@ -97,20 +98,25 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     function _processDistribution(
         uint256 distributionId,
         uint256 currentEpoch,
+        uint256 startTimestamp,
         Distribution memory distribution
     ) internal {
         // Calculate the total amount of emissions for the distribution.
         uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
         // Calculate the amount per submission (total amount divided by the number of submissions).
-        uint256 amountPerSubmission = totalAmount / distribution.rewardsSubmissions.length;
+        uint256 amountPerSubmission = totalAmount / distribution.partialRewardsSubmissions.length;
 
         // Update the rewards submissions start timestamp, duration, and amount.
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = distribution.rewardsSubmissions;
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+            new IRewardsCoordinator.RewardsSubmission[](distribution.partialRewardsSubmissions.length);
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
-            rewardsSubmissions[i].startTimestamp = uint32(startTimestamp); // Start of this epoch.
-            rewardsSubmissions[i].duration = uint32(EMISSIONS_EPOCH_LENGTH); // QUESTION: Should this be configurable?
-            rewardsSubmissions[i].amount = amountPerSubmission; // QUESTION: Should multiple rewards submissions be allowed? If not, each submission will have a constant amount.
+            rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
+                strategiesAndMultipliers: distribution.partialRewardsSubmissions[i].strategiesAndMultipliers,
+                token: distribution.partialRewardsSubmissions[i].token,
+                amount: amountPerSubmission,
+                startTimestamp: uint32(startTimestamp), // QUESTION: Should this be configurable?
+                duration: uint32(EMISSIONS_EPOCH_LENGTH) // QUESTION: Should multiple rewards submissions be allowed? If not, each submission will have a constant amount.
+            });
         }
 
         // Dispatch the `RewardsCoordinator` call based on the distribution type.
@@ -295,7 +301,10 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         // Check if rewards submissions array is empty for non-Manual distributions.
         // Manual distributions handle rewards differently and don't require submissions.
-        if (distribution.distributionType != DistributionType.Manual && distribution.rewardsSubmissions.length == 0) {
+        if (
+            distribution.distributionType != DistributionType.Manual
+                && distribution.partialRewardsSubmissions.length == 0
+        ) {
             revert RewardsSubmissionsCannotBeEmpty();
         }
     }

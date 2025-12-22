@@ -31,8 +31,14 @@ interface IEmissionsControllerErrors {
 /// @title IEmissionsControllerTypes
 /// @notice Types for the IEmissionsController contract.
 interface IEmissionsControllerTypes {
-    /// @notice Distribution types as defined in the ELIP.
-    /// @dev Ref: "Distribution Submission types may include: createRewardsForAllEarners, createOperatorSetTotalStakeRewardsSubmission, createOperatorSetUniqueStakeRewardsSubmission, EigenDA Distribution, Manual Distribution."
+    /// @notice Distribution types that determine how emissions are routed to the RewardsCoordinator.
+    /// @dev Each type maps to a specific RewardsCoordinator function or minting mechanism.
+    ///      - Disabled: Distribution is inactive and skipped during processing
+    ///      - RewardsForAllEarners: Calls `createRewardsForAllEarners` for protocol-wide rewards
+    ///      - OperatorSetTotalStake: Calls `createTotalStakeRewardsSubmission` for operator set rewards weighted by total stake
+    ///      - OperatorSetUniqueStake: Calls `createUniqueStakeRewardsSubmission` for operator set rewards weighted by unique stake
+    ///      - EigenDA: Calls `createAVSRewardsSubmission` for EigenDA-specific rewards
+    ///      - Manual: Directly mints bEIGEN to specified recipients without RewardsCoordinator interaction
     enum DistributionType {
         Disabled,
         RewardsForAllEarners,
@@ -42,8 +48,10 @@ interface IEmissionsControllerTypes {
         Manual
     }
 
-    /// @notice A Distribution structure containing weight, type and strategies.
-    /// @dev Ref: "A Distribution consists of N fields: Weight, Distribution-type, Strategies and Multipliers."
+    /// @notice A Distribution structure defining how a portion of emissions should be allocated.
+    /// @dev Distributions are stored in an append-only array and processed each epoch by `pressButton`.
+    ///      The weight determines the proportion of total emissions allocated to this distribution.
+    ///      Active distributions are processed sequentially.
     struct Distribution {
         /// The bips denominated weight of the distribution.
         uint256 weight;
@@ -53,11 +61,16 @@ interface IEmissionsControllerTypes {
         uint256 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
-
         /// The operator set (Required depending on the distribution type). // TODO: more context
         OperatorSet operatorSet;
         /// The rewards submissions.
-        IRewardsCoordinator.RewardsSubmission[] rewardsSubmissions;
+        PartialRewardsSubmission[] partialRewardsSubmissions;
+    }
+
+    // TODO: natspec
+    struct PartialRewardsSubmission {
+        IRewardsCoordinator.StrategyAndMultiplier[] strategiesAndMultipliers;
+        IERC20 token;
     }
 }
 
@@ -98,8 +111,10 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
 }
 
 /// @title IEmissionsController
-/// @notice Interface for the EmissionsController contract, which acts as the upgraded ActionGenerator.
-/// @dev Ref: "This proposal requires upgrades to the TokenHopper and Action Generator contracts."
+/// @notice Interface for the EmissionsController contract that manages programmatic EIGEN emissions.
+/// @dev The EmissionsController mints EIGEN at a fixed inflation rate per epoch and distributes it
+///      according to configured distributions. It replaces the legacy ActionGenerator pattern with
+///      a more flexible distribution system controlled by the Incentive Council.
 interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControllerEvents {
     /// -----------------------------------------------------------------------
     /// Constants
@@ -148,12 +163,14 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// Permissionless Trigger
     /// -----------------------------------------------------------------------
 
-    /// @notice Triggers the weekly emissions.
-    /// @dev Try/catch is used to prevent a single reverting rewards submission from halting emissions.
-    /// @dev Pagination is used to prevent out-of-gas errors; multiple calls may be needed to process all submissions.
-    /// @dev Ref: "The ActionGenerator today is a contract ... that is triggered by the Hopper. When triggered, it mints new EIGEN tokens..."
+    /// @notice Triggers emissions for the current epoch and processes distributions.
+    /// @dev This function mints EMISSIONS_INFLATION_RATE of bEIGEN, wraps it to EIGEN, then processes
+    ///      distributions from _totalProcessed[currentEpoch] up to the specified length.
+    ///      Each distribution receives a proportional amount based on its weight and submits to RewardsCoordinator.
+    ///      Uses low-level calls to prevent reverts in one distribution from blocking others.
+    ///      Can be called multiple times per epoch to paginate through all distributions if needed.
     /// @dev Permissionless function that can be called by anyone when `isButtonPressable()` returns true.
-    /// @param length The number of distributions to process.
+    /// @param length The number of distributions to process (upper bound for the loop).
     function pressButton(
         uint256 length
     ) external;
@@ -163,8 +180,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// -----------------------------------------------------------------------
 
     /// @notice Sets the Incentive Council address.
-    /// @dev Only the Protocol Council can call this function.
-    /// @dev Ref: "Protocol Council Functions: Set Incentive Council multisig address that can interface with the ActionGenerator..."
+    /// @dev Only the contract owner (Protocol Council) can call this function.
+    ///      The Incentive Council has exclusive rights to add, update, and disable distributions.
+    ///      This separation of powers allows the Protocol Council to delegate distribution management
+    ///      without giving up ownership of the contract.
     /// @param incentiveCouncil The new Incentive Council address.
     function setIncentiveCouncil(
         address incentiveCouncil
@@ -174,30 +193,38 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// Incentive Council Functions
     /// -----------------------------------------------------------------------
 
-    /// @notice Adds a new distribution.
+    /// @notice Adds a new distribution to the emissions schedule.
     /// @dev Only the Incentive Council can call this function.
-    /// @dev Ref: "Incentive Council Functions: addDistribution(weight{int}, distribution-type{see below}, strategiesAndMultipliers())"
+    ///      The distribution is appended to the _distributions array and assigned the next available ID.
+    ///      The distribution's weight is added to totalWeight, which must not exceed MAX_TOTAL_WEIGHT.
+    ///      The startEpoch must be in the future to prevent immediate processing.
+    ///      Cannot add distributions with DistributionType.Disabled.
     /// @param distribution The distribution to add.
     /// @return distributionId The id of the added distribution.
     function addDistribution(
         Distribution calldata distribution
     ) external returns (uint256 distributionId);
 
-    /// @notice Updates an existing distribution.
+    /// @notice Updates an existing distribution's parameters.
     /// @dev Only the Incentive Council can call this function.
-    /// @dev Ref: "Incentive Council Functions: updateDistribution(distributionId)"
+    ///      Replaces the entire distribution at the given ID with the new distribution.
+    ///      Adjusts totalWeight by subtracting the old weight and adding the new weight.
+    ///      Cannot update distributions that are already disabled.
+    ///      Cannot use this function to disable a distribution (must use disableDistribution).
     /// @param distributionId The id of the distribution to update.
-    /// @param distribution The new distribution.
+    /// @param distribution The new distribution parameters.
     function updateDistribution(
         uint256 distributionId,
         Distribution calldata distribution
     ) external;
 
-    /// @notice Cancels a distribution.
-    /// @dev The distribution remains in storage, but is marked as cancelled.
-    /// @dev Only the Incentive Council can call this function.
-    /// @dev Ref: Implied by "updateDistribution" and general management of distributions.
-    /// @param distributionId The id of the distribution to remove.
+    /// @notice Disables a distribution permanently.
+    /// @dev The distribution remains in storage but is marked as Disabled and skipped during processing.
+    ///      Only the Incentive Council can call this function.
+    ///      The distribution's weight is subtracted from totalWeight, freeing up allocation capacity.
+    ///      This action is permanent - disabled distributions cannot be re-enabled or updated.
+    ///      The distribution will be skipped in all future epochs regardless of startEpoch/stopEpoch.
+    /// @param distributionId The id of the distribution to disable.
     function disableDistribution(
         uint256 distributionId
     ) external;
