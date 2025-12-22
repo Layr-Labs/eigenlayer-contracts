@@ -35,8 +35,8 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
 
     /// @dev Returns an append-only array of distributions.
     Distribution[] internal _distributions;
-    /// @dev Mapping from epoch to the total number of distributions processed for that epoch.
-    mapping(uint256 epoch => uint256 totalProcessed) internal _totalProcessed;
+    /// @dev Mapping from epoch number to epoch metadata.
+    mapping(uint256 epoch => Epoch) internal _epochs;
 
     // Construction
 

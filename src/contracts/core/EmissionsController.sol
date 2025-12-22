@@ -58,20 +58,26 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) external override {
         uint256 currentEpoch = getCurrentEpoch();
         uint256 totalDistributions = getTotalDistributions();
-        uint256 nextDistributionId = _totalProcessed[currentEpoch];
+        uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
         // Check if all distributions have already been processed.
         if (nextDistributionId >= totalDistributions) {
             revert AllDistributionsProcessed();
         }
 
+        // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
+        if (!_epochs[currentEpoch].minted) {
+            // First mint the bEIGEN in order to wrap it into EIGEN.
+            BACKING_EIGEN.mint(address(this), EMISSIONS_INFLATION_RATE);
+            // Then wrap it into EIGEN.
+            EIGEN.wrap(EMISSIONS_INFLATION_RATE);
+
+            // Mark the epoch as minted.
+            _epochs[currentEpoch].minted = true;
+        }
+
         // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
         uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
-
-        // QUESTION: Should we only mint if the supply is actually distributed?
-        // QUESTION: If not, what do we do with excess supply?
-        BACKING_EIGEN.mint(address(this), EMISSIONS_INFLATION_RATE);
-        EIGEN.wrap(EMISSIONS_INFLATION_RATE);
 
         // Process distributions starting from the next one to process
         for (uint256 i = nextDistributionId; i < length; ++i) {
@@ -87,8 +93,10 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
             _processDistribution(i, currentEpoch, startTimestamp, distribution);
         }
 
+        // QUESTION: Should be burn excess supply that wasn't distributed (e.g. if the distribution reverts)?
+
         // Update total processed count for this epoch (equals next index to process)
-        _totalProcessed[currentEpoch] = length;
+        _epochs[currentEpoch].totalProcessed = uint248(length);
     }
 
     /// @dev Internal helper that processes a distribution.
@@ -114,8 +122,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
                 strategiesAndMultipliers: distribution.partialRewardsSubmissions[i].strategiesAndMultipliers,
                 token: distribution.partialRewardsSubmissions[i].token,
                 amount: amountPerSubmission,
-                startTimestamp: uint32(startTimestamp), // QUESTION: Should this be configurable?
-                duration: uint32(EMISSIONS_EPOCH_LENGTH) // QUESTION: Should multiple rewards submissions be allowed? If not, each submission will have a constant amount.
+                startTimestamp: uint32(startTimestamp),
+                duration: uint32(EMISSIONS_EPOCH_LENGTH) // QUESTION: Should this be configurable?
             });
         }
 
@@ -210,6 +218,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         _checkDistribution(distribution, currentEpoch);
         // Get the total number of distributions (also next available distribution id).
         distributionId = getTotalDistributions();
+
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
         // Update the total weight.
@@ -323,7 +332,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
     /// @inheritdoc IEmissionsController
     function isButtonPressable() external view returns (bool) {
-        return _totalProcessed[getCurrentEpoch()] < getTotalDistributions();
+        return _epochs[getCurrentEpoch()].totalProcessed < getTotalDistributions();
     }
 
     /// @inheritdoc IEmissionsController

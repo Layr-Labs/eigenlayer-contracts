@@ -48,6 +48,14 @@ interface IEmissionsControllerTypes {
         Manual
     }
 
+    /// @notice A struct containing the total minted and processed amounts for an epoch.
+    struct Epoch {
+        /// Whether the epoch has been minted.
+        bool minted;
+        /// The total number of distributions processed for the epoch.
+        uint248 totalProcessed;
+    }
+
     /// @notice A Distribution structure defining how a portion of emissions should be allocated.
     /// @dev Distributions are stored in an append-only array and processed each epoch by `pressButton`.
     ///      The weight determines the proportion of total emissions allocated to this distribution.
