@@ -313,8 +313,11 @@ contract EmissionsController is
     ) internal view {
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
-        if (distribution.startEpoch == currentEpoch) {
-            revert StartEpochMustBeInTheFuture();
+        if (currentEpoch != type(uint256).max) {
+            // After emissions start - require future epochs only
+            if (distribution.startEpoch <= currentEpoch) {
+                revert StartEpochMustBeInTheFuture();
+            }
         }
 
         // Check if the new total weight of all distributions exceeds max total weight.
