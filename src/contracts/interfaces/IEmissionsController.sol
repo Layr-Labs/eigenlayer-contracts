@@ -51,8 +51,11 @@ interface IEmissionsControllerTypes {
         uint256 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
-        /// The calldata for the RewardsCoordinator function call.
-        bytes rewardsCalldata;
+
+        /// The operator set (Required depending on the distribution type). // TODO: more context
+        OperatorSet operatorSet;
+        /// The rewards submissions.
+        IRewardsCoordinator.RewardsSubmission[] rewardsSubmissions;
     }
 }
 
@@ -217,9 +220,13 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @return True if the cooldown has passed and the system is ready.
     function isButtonPressable() external view returns (bool);
 
-    /// @notice Returns the next button press time.
-    /// @return The next button press time.
-    function nextButtonPressTime() external view returns (uint256);
+    /// @notice Returns the next time the button will be pressable.
+    /// @return The next time the button will be pressable.
+    function nextTimeButtonPressable() external view returns (uint256);
+
+    /// @notice Returns the last time the button was pressable.
+    /// @return The last time the button was pressable.
+    function lastTimeButtonPressable() external view returns (uint256);
 
     /// @notice Returns the total number of distributions.
     /// @return The total number of distributions.

@@ -68,6 +68,7 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         uint256 totalAmount = EMISSIONS_INFLATION_RATE;
 
+        // TODO: Should we only mint if the supply is actually distributed?
         BACKING_EIGEN.mint(address(this), totalAmount);
         EIGEN.wrap(totalAmount);
 
@@ -98,44 +99,57 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         uint256 currentEpoch,
         Distribution memory distribution
     ) internal {
+        // Update the start timestamp and duration of the rewards submissions.
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions = distribution.rewardsSubmissions;
+        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+            rewardsSubmissions[i].startTimestamp = uint32(lastTimeButtonPressable()); // Start of this epoch.
+            rewardsSubmissions[i].duration = uint32(EMISSIONS_EPOCH_LENGTH); // QUESTION: Should this be configurable?
+        }
+
+        // Dispatch the `RewardsCoordinator` call based on the distribution type.
         bool success;
         if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createRewardsForAllEarners.selector, distribution.rewardsCalldata
+                abi.encodeCall(IRewardsCoordinator.createRewardsForAllEarners, (rewardsSubmissions))
             );
         } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createUniqueStakeRewardsSubmission.selector, distribution.rewardsCalldata
+                abi.encodeCall(
+                    IRewardsCoordinator.createUniqueStakeRewardsSubmission,
+                    (distribution.operatorSet, rewardsSubmissions)
+                )
             );
         } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createTotalStakeRewardsSubmission.selector, distribution.rewardsCalldata
+                abi.encodeCall(
+                    IRewardsCoordinator.createTotalStakeRewardsSubmission,
+                    (distribution.operatorSet, rewardsSubmissions)
+                )
             );
         } else if (distribution.distributionType == DistributionType.EigenDA) {
             success = _tryCallRewardsCoordinator(
-                IRewardsCoordinator.createAVSRewardsSubmission.selector, distribution.rewardsCalldata
+                abi.encodeCall(IRewardsCoordinator.createAVSRewardsSubmission, (rewardsSubmissions))
             );
         } else if (distribution.distributionType == DistributionType.Manual) {
             // We use call to prevent further distributions from being processed if the mint fails.
-            (success,) = address(BACKING_EIGEN)
-                .call(abi.encodeWithSelector(IBackingEigen.mint.selector, distribution.rewardsCalldata));
+            (success,) =
+                address(BACKING_EIGEN).call(abi.encodeWithSelector(IBackingEigen.mint.selector, rewardsSubmissions));
         } else {
             revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
         }
+
+        // Emit an event for the processed distribution.
         emit DistributionProcessed(distributionId, currentEpoch, distribution, success);
     }
 
     /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.
     /// This is needed as using try/catch requires decoding the calldata, which can revert preventing further distributions.
-    /// @param selector The selector of the function to call.
-    /// @param rewardsCalldata The calldata for the function call.
+    /// @param abiEncodedCall The ABI encoded call to the RewardsCoordinator.
     /// @return success True if the function call was successful, false otherwise.
     function _tryCallRewardsCoordinator(
-        bytes4 selector,
-        bytes memory rewardsCalldata
+        bytes memory abiEncodedCall
     ) internal returns (bool success) {
-        (success,) = address(REWARDS_COORDINATOR).call(abi.encodeWithSelector(selector, rewardsCalldata));
-        return success;
+        (success,) = address(REWARDS_COORDINATOR).call(abiEncodedCall);
     }
 
     /// -----------------------------------------------------------------------
@@ -175,6 +189,8 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
         if (distribution.distributionType == DistributionType.Disabled) {
             revert CannotAddDisabledDistribution();
         }
+
+        // operatorSet only non-zero if distribution type is OperatorSetTotalStake or OperatorSetUniqueStake.
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
@@ -284,8 +300,13 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     }
 
     /// @inheritdoc IEmissionsController
-    function nextButtonPressTime() external view returns (uint256) {
+    function nextTimeButtonPressable() external view returns (uint256) {
         return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * (getCurrentEpoch() + 1);
+    }
+
+    /// @inheritdoc IEmissionsController
+    function lastTimeButtonPressable() public view returns (uint256) {
+        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * getCurrentEpoch();
     }
 
     /// @inheritdoc IEmissionsController
