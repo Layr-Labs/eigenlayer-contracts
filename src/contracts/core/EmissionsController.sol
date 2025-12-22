@@ -3,13 +3,19 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "../libraries/OperatorSetLib.sol";
 import "./storage/EmissionsControllerStorage.sol";
 
 // Add fee, it's enabled by default, with settable fee recipient.
 // AVS's must also have a way to opt-out of the fee.
 
-contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsControllerStorage {
+contract EmissionsController is
+    Initializable,
+    OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    EmissionsControllerStorage
+{
     /// @dev Modifier that checks if the caller is the incentive council.
     modifier onlyIncentiveCouncil() {
         _checkOnlyIncentiveCouncil();
@@ -52,10 +58,12 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     /// Permissionless Trigger
     /// -----------------------------------------------------------------------
 
+    // QUESTION: Should this be pausable?
+
     /// @inheritdoc IEmissionsController
     function pressButton(
         uint256 length
-    ) external override {
+    ) external override nonReentrant {
         uint256 currentEpoch = getCurrentEpoch();
         uint256 totalDistributions = getTotalDistributions();
         uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
@@ -78,9 +86,14 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
 
         // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
         uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
+        // Calculate the last index to process.
+        uint256 lastIndex = nextDistributionId + length;
 
-        // Process distributions starting from the next one to process
-        for (uint256 i = nextDistributionId; i < length; ++i) {
+        // If length exceeds total distributions, set last index to last distribution index.
+        if (lastIndex > totalDistributions) lastIndex = totalDistributions - 1;
+
+        // Process distributions starting from the next one to process...
+        for (uint256 i = nextDistributionId; i < lastIndex; ++i) {
             Distribution memory distribution = _distributions[i];
 
             // Skip disabled distributions...
@@ -111,8 +124,10 @@ contract EmissionsController is Initializable, OwnableUpgradeable, EmissionsCont
     ) internal {
         // Calculate the total amount of emissions for the distribution.
         uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
-        // Calculate the amount per submission (total amount divided by the number of submissions).
-        uint256 amountPerSubmission = totalAmount / distribution.partialRewardsSubmissions.length;
+        // Calculate the amount per submission. Use 1 if Manual, otherwise divide equally among submissions.
+        uint256 amountPerSubmission = (distribution.distributionType == DistributionType.Manual)
+            ? 1
+            : totalAmount / distribution.partialRewardsSubmissions.length;
 
         // Update the rewards submissions start timestamp, duration, and amount.
         IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
