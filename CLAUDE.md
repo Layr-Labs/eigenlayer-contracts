@@ -72,5 +72,5 @@ make fmt
 forge t
 
 5. Commit Changes & Open PR
-- All commits MUST follow conventional commits standard
+- All commits MUST follow conventional commit standard
 - PRs must be named with (release|feat|fix|chore|docs|refactor|test|style|ci|perf): 
