@@ -71,4 +71,6 @@ make fmt
 4. Ensure Tests Pass
 forge t
 
-5. Open PR
+5. Commit Changes & Open PR
+- All commits MUST follow conventional commits standard
+- PRs must be named with (release|feat|fix|chore|docs|refactor|test|style|ci|perf): 
