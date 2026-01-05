@@ -337,7 +337,7 @@ Optionally, the `avs` can provide a list of `strategies`, specifying which strat
     * For each `params.strategies` element:
         * Add `strategy` to `_operatorSetStrategies[operatorSetKey]`
         * Emits `StrategyAddedToOperatorSet` event
-    * Sets the slasher in `_slashers[operatorSetKey]`, with an `effectBlock = uint32(block.number)`, allowing the slasher to be active immediately
+    * Sets the slasher in `_slashers[operatorSetKey]`, with an `effectBlock = uint32(block.number)`, allowing the slasher to be active immediately. Both `slasher` and `pendingSlasher` fields are set to ensure storage consistency.
     * Emits a `SlasherUpdated` event
 
 
@@ -1119,9 +1119,8 @@ Only 1 slasher can be slash an operatorSet on behalf of an AVS; however, multipl
 **The slasher can only be migrated once**. After, an operatorSet must use [`updateSlasher`](#updateslasher) to set a new address. 
 
 *Effects*:
-* For each operatorSet: 
-    * Sets the operatorSet's `pendingSlasher` to the proposed `slasher`, and save the `effectBlock` at which the `pendingSlasher` can be activated
-        * `effectBlock = uint32(block.number)`, allowing the slasher to slash immediately
+* For each operatorSet:
+    * Sets the operatorSet's `slasher` and `pendingSlasher` to the proposed slasher, with `effectBlock = uint32(block.number)`, ensuring immediate effect with consistent storage.
     * If the operatorSet has a `pendingDelay`, and if the `effectBlock` has passed, sets the operatorSet's slasher to the pendingSlasher
     * Emits a `SlasherMigrated` event
     * Emits an `SlasherUpdated` event

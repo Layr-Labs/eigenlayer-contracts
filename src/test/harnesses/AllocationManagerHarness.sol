@@ -35,4 +35,10 @@ contract AllocationManagerHarness is AllocationManager {
     function setSlasherToZero(OperatorSet memory operatorSet) external {
         _slashers[operatorSet.key()] = SlasherParams(address(0), address(0), 0);
     }
+
+    /// @notice Returns the raw SlasherParams struct from storage for testing purposes.
+    /// @dev This bypasses the in-memory application of pending slasher that getSlasher() does.
+    function getSlasherParams(OperatorSet memory operatorSet) external view returns (SlasherParams memory) {
+        return _slashers[operatorSet.key()];
+    }
 }
