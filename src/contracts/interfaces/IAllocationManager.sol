@@ -93,12 +93,11 @@ interface IAllocationManagerTypes {
         uint32 effectBlock;
     }
 
-    /// @notice Struct containing allocation delay metadata for a given operator.
-    /// @param delay Current allocation delay
-    /// @param isSet Whether the operator has initially set an allocation delay. Note that this could be false but the
-    /// block.number >= effectBlock in which we consider their delay to be configured and active.
-    /// @param pendingDelay The delay that will take effect after `effectBlock`
-    /// @param effectBlock The block number after which a pending delay will take effect
+    /// @notice Allocation delay configuration for an operator.
+    /// @param delay The current effective allocation delay. Updated immediately for newly registered operators.
+    /// @param isSet Whether the allocation delay has been configured. True immediately for newly registered operators.
+    /// @param pendingDelay The allocation delay that will become effective at effectBlock.
+    /// @param effectBlock The block number at which pendingDelay becomes the effective delay.
     struct AllocationDelayInfo {
         uint32 delay;
         bool isSet;

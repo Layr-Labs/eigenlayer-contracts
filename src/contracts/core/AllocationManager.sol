@@ -605,7 +605,9 @@ contract AllocationManager is
         /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
         if (newlyRegistered) {
-            // The delay takes effect immediately
+            // Update delay and isSet immediately for storage consistency
+            info.delay = delay;
+            info.isSet = true;
             info.effectBlock = uint32(block.number);
         } else {
             // Wait the entire configuration delay before the delay takes effect

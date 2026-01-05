@@ -990,8 +990,8 @@ The allocation delay's primary purpose is to give stakers delegated to an operat
 
 *Effects*:
 * Sets the operator's `pendingDelay` to the proposed `delay`, and save the `effectBlock` at which the `pendingDelay` can be activated
-    * If a newly registered operator in core, `effectBlock = uint32(block.number)`, allowing operators to allocate slashable stake immediately after registration
-    * Else, `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
+    * For newly registered operators (called by DelegationManager): Sets `delay`, `isSet`, and `pendingDelay` immediately with `effectBlock = uint32(block.number)`, ensuring storage consistency and allowing operators to allocate slashable stake immediately after registration.
+    * For existing operators: Sets `pendingDelay` and `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`. The `delay` and `isSet` fields are updated when the pending delay is applied.
 * If the operator has a `pendingDelay`, and if the `effectBlock` has passed, sets the operator's `delay` to the `pendingDelay` value
     * This also sets the `isSet` boolean to `true` to indicate that the operator's `delay`, even if 0, was set intentionally
 * Emits an `AllocationDelaySet` event

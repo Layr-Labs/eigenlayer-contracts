@@ -5161,3 +5161,47 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
         assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
     }
 }
+
+contract AllocationManagerUnitTests_setAllocationDelay is AllocationManagerUnitTests {
+    /// @notice Tests that newly registered operator has delay and isSet fields set immediately in raw storage
+    function test_setAllocationDelay_newlyRegistered_setsDelayAndIsSetImmediately() public {
+        address operator = address(0x456);
+        uint32 delay = 100;
+
+        // Register operator
+        delegationManagerMock.setIsOperator(operator, true);
+
+        // Call setAllocationDelay as DelegationManager (triggers newlyRegistered=true path)
+        cheats.prank(address(delegationManagerMock));
+        allocationManager.setAllocationDelay(operator, delay);
+
+        // Verify raw storage: delay and isSet should be set immediately, not just pendingDelay
+        AllocationDelayInfo memory info = AllocationManagerHarness(address(allocationManager)).getAllocationDelayInfoRaw(operator);
+        assertEq(info.delay, delay, "delay field should be set immediately");
+        assertTrue(info.isSet, "isSet should be true immediately");
+        assertEq(info.pendingDelay, delay, "pendingDelay should also be set");
+        assertEq(info.effectBlock, uint32(block.number), "effectBlock should be current block");
+    }
+
+    /// @notice Tests that existing operator update does NOT set delay/isSet immediately
+    function test_setAllocationDelay_existingOperator_delayNotSetImmediately() public {
+        address operator = address(0x456);
+        uint32 initialDelay = 100;
+        uint32 newDelay = 200;
+
+        // Register operator and set initial delay
+        delegationManagerMock.setIsOperator(operator, true);
+        cheats.prank(address(delegationManagerMock));
+        allocationManager.setAllocationDelay(operator, initialDelay);
+
+        // Update delay as the operator (not newly registered)
+        cheats.prank(operator);
+        allocationManager.setAllocationDelay(operator, newDelay);
+
+        // Verify raw storage: delay should still be initialDelay until effectBlock
+        AllocationDelayInfo memory info = AllocationManagerHarness(address(allocationManager)).getAllocationDelayInfoRaw(operator);
+        assertEq(info.delay, initialDelay, "delay should not change until effectBlock");
+        assertEq(info.pendingDelay, newDelay, "pendingDelay should be updated");
+        assertTrue(info.isSet, "isSet should still be true");
+    }
+}
