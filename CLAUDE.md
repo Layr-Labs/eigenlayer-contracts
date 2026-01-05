@@ -74,3 +74,18 @@ forge t
 5. Commit Changes & Open PR
 - All commits MUST follow conventional commit standard
 - PRs must be named with (release|feat|fix|chore|docs|refactor|test|style|ci|perf): 
+- All PRs MUST be formatted per the following formatting:
+
+```markdown
+**Motivation:**
+
+*Explain here the context, and why you're making that change. What is the problem you're trying to solve.*
+
+**Modifications:**
+
+*Describe the modifications you've done.*
+
+**Result:**
+
+*After your change, what will change.*
+```
