@@ -63,9 +63,9 @@ interface IEmissionsControllerTypes {
     struct Distribution {
         /// The bips denominated weight of the distribution.
         uint64 weight;
-        /// The epoch the distribution was last triggered ().
+        /// The configured start epoch.
         uint64 startEpoch;
-        /// The number of epochs to repeat the distribution.
+        /// The number of epochs to repeat the distribution (0 for infinite).
         uint64 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;

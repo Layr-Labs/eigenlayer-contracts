@@ -124,54 +124,56 @@ contract EmissionsController is
     ) internal {
         // Calculate the total amount of emissions for the distribution.
         uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
-        // Calculate the amount per submission. Use 1 if Manual, otherwise divide equally among submissions.
-        uint256 amountPerSubmission = (distribution.distributionType == DistributionType.Manual)
-            ? 1
-            : totalAmount / distribution.strategiesAndMultipliers.length;
-
-        // Update the rewards submissions start timestamp, duration, and amount.
-        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-            new IRewardsCoordinator.RewardsSubmission[](distribution.strategiesAndMultipliers.length);
-        for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
-                strategiesAndMultipliers: distribution.strategiesAndMultipliers[i],
-                token: EIGEN,
-                amount: amountPerSubmission,
-                startTimestamp: uint32(startTimestamp),
-                duration: uint32(EMISSIONS_EPOCH_LENGTH) // QUESTION: Should this be configurable?
-            });
-        }
-
-        // Dispatch the `RewardsCoordinator` call based on the distribution type.
+        // Success flag for the distribution.
         bool success;
-        if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
-            success = _tryCallRewardsCoordinator(
-                abi.encodeCall(IRewardsCoordinator.createRewardsForAllEarners, (rewardsSubmissions))
-            );
-        } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
-            success = _tryCallRewardsCoordinator(
-                abi.encodeCall(
-                    IRewardsCoordinator.createUniqueStakeRewardsSubmission,
-                    (distribution.operatorSet, rewardsSubmissions)
-                )
-            );
-        } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
-            success = _tryCallRewardsCoordinator(
-                abi.encodeCall(
-                    IRewardsCoordinator.createTotalStakeRewardsSubmission,
-                    (distribution.operatorSet, rewardsSubmissions)
-                )
-            );
-        } else if (distribution.distributionType == DistributionType.EigenDA) {
-            success = _tryCallRewardsCoordinator(
-                abi.encodeCall(IRewardsCoordinator.createAVSRewardsSubmission, (rewardsSubmissions))
-            );
-        } else if (distribution.distributionType == DistributionType.Manual) {
-            // We use call to prevent further distributions from being processed if the mint fails.
-            (success,) =
-                address(BACKING_EIGEN).call(abi.encodeWithSelector(IBackingEigen.mint.selector, rewardsSubmissions));
+
+        if (distribution.distributionType != DistributionType.Manual) {
+            // Calculate the amount per submission.
+            uint256 amountPerSubmission = totalAmount / distribution.strategiesAndMultipliers.length;
+            // Update the rewards submissions start timestamp, duration, and amount.
+            IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+                new IRewardsCoordinator.RewardsSubmission[](distribution.strategiesAndMultipliers.length);
+            for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+                rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
+                    strategiesAndMultipliers: distribution.strategiesAndMultipliers[i],
+                    token: EIGEN,
+                    amount: amountPerSubmission,
+                    startTimestamp: uint32(startTimestamp),
+                    duration: uint32(EMISSIONS_EPOCH_LENGTH)
+                });
+            }
+
+            // Dispatch the `RewardsCoordinator` call based on the distribution type.
+            if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(IRewardsCoordinator.createRewardsForAllEarners, (rewardsSubmissions))
+                );
+            } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(
+                        IRewardsCoordinator.createUniqueStakeRewardsSubmission,
+                        (distribution.operatorSet, rewardsSubmissions)
+                    )
+                );
+            } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(
+                        IRewardsCoordinator.createTotalStakeRewardsSubmission,
+                        (distribution.operatorSet, rewardsSubmissions)
+                    )
+                );
+            } else if (distribution.distributionType == DistributionType.EigenDA) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(IRewardsCoordinator.createAVSRewardsSubmission, (rewardsSubmissions))
+                );
+            } else {
+                revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
+            }
         } else {
-            revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
+            (success,) = address(BACKING_EIGEN)
+                .call(abi.encodeWithSelector(IBackingEigen.mint.selector, incentiveCouncil, totalAmount));
+
+            // Question: Should we also wrap the bEIGEN into EIGEN?
         }
 
         // Emit an event for the processed distribution.
