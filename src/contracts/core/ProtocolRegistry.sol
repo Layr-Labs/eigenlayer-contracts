@@ -37,9 +37,14 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         string[] calldata names,
         string calldata semanticVersion
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Validate array lengths match
+        require(addresses.length == configs.length && configs.length == names.length, ArrayLengthMismatch());
+
         // Update the semantic version.
         _updateSemanticVersion(semanticVersion);
         for (uint256 i = 0; i < addresses.length; ++i) {
+            // Validate no zero addresses
+            require(addresses[i] != address(0), InputAddressZero());
             // Append each provided
             _appendDeployment(addresses[i], configs[i], names[i]);
         }
@@ -50,6 +55,8 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         address addr,
         DeploymentConfig calldata config
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        // Verify address is a shipped deployment
+        require(_isShipped(addr), DeploymentNotShipped());
         // Update the config
         _deploymentConfigs[addr] = config;
         // Emit the event.
@@ -57,6 +64,9 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
     }
 
     /// @inheritdoc IProtocolRegistry
+    /// @dev WARNING: This function will revert if ANY pausable deployment fails to pause.
+    ///      Ensure all deployments marked as pausable correctly implement IPausable.pauseAll().
+    ///      A single misconfigured deployment will block the entire protocol pause.
     function pauseAll() external onlyRole(PAUSER_ROLE) {
         uint256 length = totalDeployments();
         // Iterate over all stored deployments.
@@ -89,12 +99,33 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         DeploymentConfig calldata config,
         string calldata name
     ) internal {
+        uint256 nameKey = _unwrap(name.toShortString());
+
+        // Clean up old config if name exists with different address
+        (bool exists, address oldAddr) = _deployments.tryGet(nameKey);
+        if (exists && oldAddr != addr) {
+            delete _deploymentConfigs[oldAddr];
+            emit DeploymentConfigDeleted(oldAddr);
+        }
+
         // Store name => address mapping
-        _deployments.set({key: _unwrap(name.toShortString()), value: addr});
+        _deployments.set({key: nameKey, value: addr});
         // Store deployment config
         _deploymentConfigs[addr] = config;
         // Emit the events.
         emit DeploymentShipped(addr, config);
+    }
+
+    /// @dev Checks if an address is a shipped deployment.
+    function _isShipped(
+        address addr
+    ) internal view returns (bool) {
+        uint256 length = _deployments.length();
+        for (uint256 i = 0; i < length; ++i) {
+            (, address deployedAddr) = _deployments.at(i);
+            if (deployedAddr == addr) return true;
+        }
+        return false;
     }
 
     /// @dev Unwraps a ShortString to a uint256.
