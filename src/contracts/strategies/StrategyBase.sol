@@ -99,7 +99,7 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         IERC20 token,
         uint256 amount
     ) external virtual override onlyWhenNotPaused(PAUSED_DEPOSITS) onlyStrategyManager returns (uint256 newShares) {
-        // call hook to allow for any pre-deposit logic
+        // Run pre-deposit hook
         _beforeDeposit(token, amount);
 
         // copy `totalShares` value to memory, prior to any change
@@ -164,6 +164,18 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
 
         return amountOut;
     }
+
+    /// @notice Hook invoked by the StrategyManager before adding deposit shares for a staker.
+    function beforeAddShares(
+        address, // staker
+        uint256 // shares
+    ) external virtual override onlyStrategyManager {}
+
+    /// @notice Hook invoked by the StrategyManager before removing deposit shares for a staker.
+    function beforeRemoveShares(
+        address, // staker
+        uint256 // shares
+    ) external virtual override onlyStrategyManager {}
 
     /// @notice Called in the external `deposit` function, before any logic is executed. Expected to be overridden if strategies want such logic.
     /// @param token The token being deposited

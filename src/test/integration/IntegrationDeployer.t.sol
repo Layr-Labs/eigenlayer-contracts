@@ -16,6 +16,7 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
@@ -267,14 +268,23 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
+
+        // Deploy durationVaultBeacon and transfer ownership to executorMultisig
+        // so it can be upgraded uniformly with other beacons in _upgradeProxies()
+        if (address(durationVaultBeacon) == address(0)) {
+            durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
+            durationVaultBeacon.transferOwnership(executorMultisig);
+        }
+
+        cheats.startPrank(address(executorMultisig));
+
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
+
         cheats.stopPrank();
     }
 
@@ -313,6 +323,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(eigenPodBeacon) == address(0)) eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         if (address(strategyBeacon) == address(0)) strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(durationVaultBeacon) == address(0)) durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
         // multichain
         if (address(keyRegistrar) == address(0)) {
             keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
@@ -365,11 +376,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, strategyBeacon, durationVaultBeacon);
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        durationVaultImplementation = new DurationVaultStrategy(
+            strategyManager, eigenLayerPauserReg, delegationManager, allocationManager, rewardsCoordinator, strategyFactory
+        );
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
@@ -423,6 +437,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // StrategyBase Beacon
         strategyBeacon.upgradeTo(address(baseStrategyImplementation));
 
+        // DurationVault Beacon
+        durationVaultBeacon.upgradeTo(address(durationVaultImplementation));
+
         // Upgrade All deployed strategy contracts to new base strategy
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
@@ -455,7 +472,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         allocationManager.initialize({initialPausedStatus: 0});
 
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0});
+
+        rewardsCoordinator.initialize({
+            initialOwner: executorMultisig,
+            initialPausedStatus: 0,
+            _rewardsUpdater: executorMultisig,
+            _activationDelay: 0,
+            _defaultSplitBips: 5000
+        });
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

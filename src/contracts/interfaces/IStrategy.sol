@@ -66,6 +66,26 @@ interface IStrategy is IStrategyErrors, IStrategyEvents {
         uint256 amountShares
     ) external returns (uint256);
 
+    /// @notice Hook invoked by the StrategyManager before adding deposit shares for a staker.
+    /// @dev Shares are added in the following scenarios:
+    ///      - When a staker newly deposits into a strategy via StrategyManager.depositIntoStrategy
+    ///      - When completing a withdrawal as shares via DelegationManager.completeQueuedWithdrawal
+    /// @param staker The address receiving shares.
+    /// @param shares The number of shares being added.
+    function beforeAddShares(
+        address staker,
+        uint256 shares
+    ) external;
+
+    /// @notice Hook invoked by the StrategyManager before removing deposit shares for a staker.
+    /// @dev Deposit shares are removed when a withdrawal is queued via DelegationManager.queueWithdrawals.
+    /// @param staker The address losing shares.
+    /// @param shares The number of shares being removed.
+    function beforeRemoveShares(
+        address staker,
+        uint256 shares
+    ) external;
+
     /// @notice Used to convert a number of shares to the equivalent amount of underlying tokens for this strategy.
     /// For a staker using this function and trying to calculate the amount of underlying tokens they have in total they
     /// should input into `amountShares` their withdrawable shares read from the `DelegationManager` contract.

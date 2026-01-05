@@ -267,6 +267,9 @@ contract StrategyManager is
         require(staker != address(0), StakerAddressZero());
         require(shares != 0, SharesAmountZero());
 
+        // allow the strategy to veto or enforce constraints on adding shares
+        strategy.beforeAddShares(staker, shares);
+
         uint256 prevDepositShares = stakerDepositShares[staker][strategy];
 
         // if they dont have prevDepositShares of this strategy, add it to their strats
@@ -336,6 +339,10 @@ contract StrategyManager is
         // This check technically shouldn't actually ever revert because depositSharesToRemove is already
         // checked to not exceed max amount of shares when the withdrawal was queued in the DelegationManager
         require(depositSharesToRemove <= userDepositShares, SharesAmountTooHigh());
+
+        // allow the strategy to veto or enforce constraints on removing shares
+        strategy.beforeRemoveShares(staker, depositSharesToRemove);
+
         userDepositShares = userDepositShares - depositSharesToRemove;
 
         // subtract the shares from the staker's existing shares for this strategy

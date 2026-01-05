@@ -15,9 +15,27 @@ contract DelegationManagerMock is Test {
     mapping(address => address) public delegatedTo;
     mapping(address => mapping(IStrategy => uint)) public operatorShares;
 
+    uint32 internal _minWithdrawalDelayBlocks;
+
+    struct RegisterAsOperatorCall {
+        address operator;
+        address delegationApprover;
+        uint32 allocationDelay;
+        string metadataURI;
+    }
+
+    RegisterAsOperatorCall internal _lastRegisterAsOperatorCall;
+    uint public registerAsOperatorCallCount;
+
     function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint[] memory) {}
 
-    function setMinWithdrawalDelayBlocks(uint newMinWithdrawalDelayBlocks) external {}
+    function setMinWithdrawalDelayBlocks(uint32 newMinWithdrawalDelayBlocks) external {
+        _minWithdrawalDelayBlocks = newMinWithdrawalDelayBlocks;
+    }
+
+    function minWithdrawalDelayBlocks() external view returns (uint32) {
+        return _minWithdrawalDelayBlocks;
+    }
 
     function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint[] calldata withdrawalDelayBlocks) external {}
 
@@ -67,9 +85,32 @@ contract DelegationManagerMock is Test {
         delegatedTo[msg.sender] = operator;
     }
 
+    function registerAsOperator(address delegationApprover, uint32 allocationDelay, string calldata metadataURI) external {
+        registerAsOperatorCallCount++;
+        isOperator[msg.sender] = true;
+        _lastRegisterAsOperatorCall = RegisterAsOperatorCall({
+            operator: msg.sender,
+            delegationApprover: delegationApprover,
+            allocationDelay: allocationDelay,
+            metadataURI: metadataURI
+        });
+    }
+
+    function lastRegisterAsOperatorCall() external view returns (RegisterAsOperatorCall memory) {
+        return _lastRegisterAsOperatorCall;
+    }
+
     function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot) {
         delegatedTo[staker] = address(0);
         return withdrawalRoot;
+    }
+
+    function getOperatorShares(address operator, IStrategy[] memory strategies) external view returns (uint[] memory) {
+        uint[] memory shares = new uint[](strategies.length);
+        for (uint i = 0; i < strategies.length; i++) {
+            shares[i] = operatorShares[operator][strategies[i]];
+        }
+        return shares;
     }
 
     function getOperatorsShares(address[] memory operators, IStrategy[] memory strategies) external view returns (uint[][] memory) {
