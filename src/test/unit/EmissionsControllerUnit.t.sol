@@ -205,7 +205,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
     }
 
     function testFuzz_revert_addDistribution_TotalWeightExceedsMax(uint weight) public {
-        weight = bound(weight, 10_001, type(uint).max);
+        weight = bound(weight, 10_001, type(uint64).max);
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(IEmissionsControllerErrors.TotalWeightExceedsMax.selector);
         emissionsController.addDistribution(

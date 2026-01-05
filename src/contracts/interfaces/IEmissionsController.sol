@@ -65,7 +65,7 @@ interface IEmissionsControllerTypes {
         uint64 weight;
         /// The epoch the distribution was last triggered ().
         uint64 startEpoch;
-        /// The number of epochs to repeat the distribution (1256 years supported).
+        /// The number of epochs to repeat the distribution.
         uint64 stopEpoch;
         /// The type of distribution.
         DistributionType distributionType;
