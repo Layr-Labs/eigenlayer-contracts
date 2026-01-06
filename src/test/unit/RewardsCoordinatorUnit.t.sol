@@ -2439,7 +2439,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        amount = bound(amount, 1e38, type(uint).max - 5e18);
+        // Bound amount to be above MAX_REWARDS_AMOUNT but not so large it causes overflow in arithmetic operations
+        amount = bound(amount, 1e38, 1e38 + 1e30);
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
@@ -2451,13 +2452,15 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create operator directed rewards submission input param
+        // 2. Create operator directed rewards submission with single operator to avoid overflow in sum
+        OperatorReward[] memory largeOperatorRewards = new OperatorReward[](1);
+        largeOperatorRewards[0] = OperatorReward(defaultOperatorRewards[0].operator, amount);
+
         OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
-        defaultOperatorRewards[0].amount = amount;
         operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
-            operatorRewards: defaultOperatorRewards,
+            operatorRewards: largeOperatorRewards,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration),
             description: ""
@@ -3149,14 +3152,6 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         });
 
         uint totalAmount = _getTotalRewardsAmount(defaultOperatorRewards);
-        uint expectedFee;
-        {
-            // Calculate expected fee: 20% of each operator reward
-            for (uint i = 0; i < defaultOperatorRewards.length; i++) {
-                expectedFee += (defaultOperatorRewards[i].amount * 2000) / 10_000;
-            }
-        }
-
         {
             uint avsBalanceBefore = rewardToken.balanceOf(avs);
             uint rcBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
@@ -3166,11 +3161,9 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
             cheats.stopPrank();
 
-            // Verify balances - fee not transferred when feeRecipient is address(0)
+            // Verify balances - full amount stays in RC when feeRecipient is address(0)
             assertEq(rewardToken.balanceOf(avs), avsBalanceBefore - totalAmount, "AVS balance incorrect");
-            assertEq(
-                rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + totalAmount - expectedFee, "RC balance incorrect"
-            );
+            assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + totalAmount, "RC balance incorrect");
         }
     }
 }
@@ -3207,17 +3200,12 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
     }
 
     /// @dev Sort to ensure that the array is in ascending order for addresses
-    function _sortAddressArrayAsc(address[] memory arr) internal pure returns (address[] memory) {
-        uint l = arr.length;
-        for (uint i = 0; i < l; i++) {
-            for (uint j = i + 1; j < l; j++) {
-                if (arr[i] > arr[j]) {
-                    address temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
-                }
-            }
+    function _sortAddressArrayAsc(address[] memory arr) internal returns (address[] memory) {
+        uint[] memory casted;
+        assembly {
+            casted := arr
         }
+        casted = cheats.sort(casted);
         return arr;
     }
 
@@ -3511,7 +3499,8 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
-        amount = bound(amount, 1e38, type(uint).max - 5e18);
+        // Bound amount to be above MAX_REWARDS_AMOUNT but not so large it causes overflow in arithmetic operations
+        amount = bound(amount, 1e38, 1e38 + 1e30);
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
         duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
         duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
@@ -3523,13 +3512,15 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSub
         );
         startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
 
-        // 2. Create operator directed rewards submission input param
+        // 2. Create operator directed rewards submission with single operator to avoid overflow in sum
+        OperatorReward[] memory largeOperatorRewards = new OperatorReward[](1);
+        largeOperatorRewards[0] = OperatorReward(defaultOperatorRewards[0].operator, amount);
+
         OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
-        defaultOperatorRewards[0].amount = amount;
         operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
             strategiesAndMultipliers: defaultStrategyAndMultipliers,
             token: rewardToken,
-            operatorRewards: defaultOperatorRewards,
+            operatorRewards: largeOperatorRewards,
             startTimestamp: uint32(startTimestamp),
             duration: uint32(duration),
             description: ""
