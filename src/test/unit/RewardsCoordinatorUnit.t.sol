@@ -105,6 +105,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
     address defaultClaimer = address(1002);
     address rewardsForAllSubmitter = address(1003);
     address defaultAppointee = address(1004);
+    address feeRecipient = address(1005);
 
     function setUp() public virtual override {
         // Setup
@@ -137,7 +138,8 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                         0, // 0 is initialPausedStatus
                         rewardsUpdater,
                         activationDelay,
-                        defaultSplitBips
+                        defaultSplitBips,
+                        feeRecipient
                     )
                 )
             )

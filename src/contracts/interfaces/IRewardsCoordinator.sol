@@ -414,6 +414,11 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         IERC20 token,
         uint256 claimedAmount
     );
+
+    /// @notice Emitted when the fee recipient is set.
+    /// @param oldFeeRecipient The old fee recipient
+    /// @param newFeeRecipient The new fee recipient
+    event FeeRecipientSet(address indexed oldFeeRecipient, address indexed newFeeRecipient);
 }
 
 /// @title Interface for the `IRewardsCoordinator` contract.
@@ -431,7 +436,8 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
-        uint16 _defaultSplitBips
+        uint16 _defaultSplitBips,
+        address _feeRecipient
     ) external;
 
     /// @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -604,6 +610,13 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @dev Only callable by the contract owner.
     function setDefaultOperatorSplit(
         uint16 split
+    ) external;
+
+    /// @notice Sets the fee recipient address which receives optional protocol fees
+    /// @dev Only callable by the contract owner
+    /// @param _feeRecipient The address of the new fee recipient
+    function setFeeRecipient(
+        address _feeRecipient
     ) external;
 
     /// @notice Sets the split for a specific operator for a specific avs

@@ -48,6 +48,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
+    /// @notice Protocol fee percentage in basis points (20%).
+    uint16 internal constant PROTOCOL_FEE_BIPS = 2000;
+
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
@@ -136,6 +139,12 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns whether a `hash` is a `valid` total stake rewards submission hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isTotalStakeRewardsSubmissionHash;
 
+    /// @notice Returns whether a `submitter` is opted in for protocol fees.
+    mapping(address submitter => bool isOptedIn) public isOptedInForProtocolFee;
+
+    /// @notice The address that receives optional protocol fees
+    address public feeRecipient;
+
     // Construction
     constructor(
         IDelegationManager _delegationManager,
@@ -164,5 +173,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[33] private __gap;
+    uint256[31] private __gap;
 }

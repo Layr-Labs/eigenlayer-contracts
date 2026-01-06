@@ -67,25 +67,49 @@ contract RewardsCoordinator is
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
-        uint16 _defaultSplitBips
+        uint16 _defaultSplitBips,
+        address _feeRecipient
     ) external initializer {
         _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);
         _setDefaultOperatorSplit(_defaultSplitBips);
+        _setFeeRecipient(_feeRecipient);
     }
 
     ///
     ///                         EXTERNAL FUNCTIONS
     ///
 
+    /// @notice Internal helper to take protocol fees from a submission.
+    function _takeProtocolFee(
+        address submitter,
+        IERC20 token,
+        uint256 amountBeforeFee
+    ) internal returns (uint256 amountAfterFee) {
+        uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
+        if (isOptedInForProtocolFee[submitter] && feeAmount != 0 && feeRecipient != address(0)) {
+            token.safeTransfer(feeRecipient, feeAmount);
+            return amountBeforeFee - feeAmount;
+        }
+        return amountBeforeFee;
+    }
+
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Then validate the submission and store it.
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
@@ -95,7 +119,6 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -104,7 +127,15 @@ contract RewardsCoordinator is
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Then validate the submission and store it.
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
@@ -114,7 +145,6 @@ contract RewardsCoordinator is
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -123,7 +153,15 @@ contract RewardsCoordinator is
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Then validate the submission and store it.
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllEarnersHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
 
@@ -138,7 +176,6 @@ contract RewardsCoordinator is
                 rewardsSubmissionForAllEarnersHash,
                 rewardsSubmission
             );
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -212,7 +249,15 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Then validate the submission and store it.
             uint256 nonce = submissionNonce[operatorSet.avs];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
 
@@ -228,7 +273,6 @@ contract RewardsCoordinator is
                 nonce,
                 rewardsSubmission
             );
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -239,7 +283,15 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Then validate the submission and store it.
             uint256 nonce = submissionNonce[operatorSet.avs];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
 
@@ -255,7 +307,6 @@ contract RewardsCoordinator is
                 nonce,
                 rewardsSubmission
             );
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -344,6 +395,13 @@ contract RewardsCoordinator is
         uint16 split
     ) external onlyOwner {
         _setDefaultOperatorSplit(split);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
+    function setFeeRecipient(
+        address _feeRecipient
+    ) external onlyOwner {
+        _setFeeRecipient(_feeRecipient);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -468,6 +526,13 @@ contract RewardsCoordinator is
         emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
+    function _setFeeRecipient(
+        address _feeRecipient
+    ) internal {
+        emit FeeRecipientSet(feeRecipient, _feeRecipient);
+        feeRecipient = _feeRecipient;
+    }
+
     /// @notice Internal helper to set the operator split.
     /// @param operatorSplit The split struct for an Operator
     /// @param split The split in basis points.
@@ -494,7 +559,7 @@ contract RewardsCoordinator is
 
     /// @notice Common checks for all RewardsSubmissions.
     function _validateCommonRewardsSubmission(
-        StrategyAndMultiplier[] calldata strategiesAndMultipliers,
+        StrategyAndMultiplier[] memory strategiesAndMultipliers,
         uint32 startTimestamp,
         uint32 duration
     ) internal view {
@@ -523,7 +588,7 @@ contract RewardsCoordinator is
 
     /// @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
     function _validateRewardsSubmission(
-        RewardsSubmission calldata rewardsSubmission
+        RewardsSubmission memory rewardsSubmission
     ) internal view {
         _validateCommonRewardsSubmission(
             rewardsSubmission.strategiesAndMultipliers, rewardsSubmission.startTimestamp, rewardsSubmission.duration
