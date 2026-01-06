@@ -458,9 +458,10 @@ contract RewardsCoordinator is
 
     /// @inheritdoc IRewardsCoordinator
     function setOptInForProtocolFee(
+        address submitter,
         bool optInForProtocolFee
-    ) external {
-        _setOptInForProtocolFee(msg.sender, optInForProtocolFee);
+    ) external checkCanCall(submitter) {
+        _setOptInForProtocolFee(submitter, optInForProtocolFee);
     }
 
     /// @inheritdoc IRewardsCoordinator

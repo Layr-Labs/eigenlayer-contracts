@@ -664,8 +664,10 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
 
     /// @notice Sets whether the submitter wants to pay the protocol fee on their rewards submissions.
     /// @dev Submitters must opt-in to pay the protocol fee to be eligible for rewards.
+    /// @param submitter The address of the submitter that wants to opt-in or out of the protocol fee.
     /// @param optInForProtocolFee Whether the submitter wants to pay the protocol fee.
     function setOptInForProtocolFee(
+        address submitter,
         bool optInForProtocolFee
     ) external;
 
