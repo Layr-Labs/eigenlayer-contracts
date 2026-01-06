@@ -419,6 +419,12 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
     /// @param oldFeeRecipient The old fee recipient
     /// @param newFeeRecipient The new fee recipient
     event FeeRecipientSet(address indexed oldFeeRecipient, address indexed newFeeRecipient);
+
+    /// @notice Emitted when the opt in for protocol fee is set.
+    /// @param submitter The address of the submitter
+    /// @param oldValue The old value of the opt in for protocol fee
+    /// @param newValue The new value of the opt in for protocol fee
+    event OptInForProtocolFeeSet(address indexed submitter, bool indexed oldValue, bool indexed newValue);
 }
 
 /// @title Interface for the `IRewardsCoordinator` contract.
@@ -654,6 +660,13 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         address operator,
         OperatorSet calldata operatorSet,
         uint16 split
+    ) external;
+
+    /// @notice Sets whether the submitter wants to pay the protocol fee on their rewards submissions.
+    /// @dev Submitters must opt-in to pay the protocol fee to be eligible for rewards.
+    /// @param optInForProtocolFee Whether the submitter wants to pay the protocol fee.
+    function setOptInForProtocolFee(
+        bool optInForProtocolFee
     ) external;
 
     /// @notice Sets the permissioned `rewardsUpdater` address which can post new roots

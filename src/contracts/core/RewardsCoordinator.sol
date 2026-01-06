@@ -457,6 +457,13 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
+    function setOptInForProtocolFee(
+        bool optInForProtocolFee
+    ) external {
+        _setOptInForProtocolFee(msg.sender, optInForProtocolFee);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function setRewardsUpdater(
         address _rewardsUpdater
     ) external onlyOwner {
@@ -567,6 +574,15 @@ contract RewardsCoordinator is
 
         operatorSplit.newSplitBips = split;
         operatorSplit.activatedAt = activatedAt;
+    }
+
+    function _setOptInForProtocolFee(
+        address submitter,
+        bool value
+    ) internal {
+        bool prevValue = isOptedInForProtocolFee[submitter];
+        emit OptInForProtocolFeeSet(submitter, prevValue, value);
+        isOptedInForProtocolFee[submitter] = value;
     }
 
     /// @notice Common checks for all RewardsSubmissions.
