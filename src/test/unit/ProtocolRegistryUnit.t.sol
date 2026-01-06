@@ -139,6 +139,117 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         assertEq(protocolRegistry.getAddress("Contract3"), addr3);
     }
 
+    function test_ship_revert_arrayLengthMismatch_addressesConfigs() public {
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(0x1);
+        addresses[1] = address(0x2);
+
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+
+        string[] memory names = new string[](2);
+        names[0] = "A";
+        names[1] = "B";
+
+        cheats.expectRevert(ArrayLengthMismatch.selector);
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+    }
+
+    function test_ship_revert_arrayLengthMismatch_configsNames() public {
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(0x1);
+        addresses[1] = address(0x2);
+
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+
+        string[] memory names = new string[](1);
+        names[0] = "A";
+
+        cheats.expectRevert(ArrayLengthMismatch.selector);
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+    }
+
+    function test_ship_revert_zeroAddress() public {
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(0x1);
+        addresses[1] = address(0); // Zero address
+
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+
+        string[] memory names = new string[](2);
+        names[0] = "A";
+        names[1] = "B";
+
+        cheats.expectRevert(InputAddressZero.selector);
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+    }
+
+    function test_ship_overwriteName_deletesOldConfig() public {
+        address oldAddr = address(0x111);
+        address newAddr = address(0x222);
+        string memory name = "TestContract";
+
+        // Ship with old address
+        address[] memory addresses1 = new address[](1);
+        addresses1[0] = oldAddr;
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs1 = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs1[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
+        string[] memory names1 = new string[](1);
+        names1[0] = name;
+        protocolRegistry.ship(addresses1, configs1, names1, "1.0.0");
+
+        // Verify old address is set
+        assertEq(protocolRegistry.getAddress(name), oldAddr);
+
+        // Ship same name with new address - should emit DeploymentConfigDeleted for old address
+        address[] memory addresses2 = new address[](1);
+        addresses2[0] = newAddr;
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs2 = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs2[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: true});
+        string[] memory names2 = new string[](1);
+        names2[0] = name;
+
+        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
+        emit DeploymentConfigDeleted(oldAddr);
+        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
+        emit DeploymentShipped(newAddr, configs2[0]);
+
+        protocolRegistry.ship(addresses2, configs2, names2, "1.1.0");
+
+        // Verify new address is set
+        assertEq(protocolRegistry.getAddress(name), newAddr);
+        // Verify total deployments is still 1 (not 2)
+        assertEq(protocolRegistry.totalDeployments(), 1);
+    }
+
+    function test_ship_sameNameSameAddress_noDeleteEvent() public {
+        address addr = address(0x111);
+        string memory name = "TestContract";
+
+        // Ship with address
+        address[] memory addresses1 = new address[](1);
+        addresses1[0] = addr;
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs1 = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs1[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
+        string[] memory names1 = new string[](1);
+        names1[0] = name;
+        protocolRegistry.ship(addresses1, configs1, names1, "1.0.0");
+
+        // Ship same name with same address - should NOT emit DeploymentConfigDeleted
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs2 = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs2[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: true});
+
+        // We only expect DeploymentShipped, not DeploymentConfigDeleted
+        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
+        emit DeploymentShipped(addr, configs2[0]);
+
+        protocolRegistry.ship(addresses1, configs2, names1, "1.1.0");
+    }
+
     /// -----------------------------------------------------------------------
     /// configure()
     /// -----------------------------------------------------------------------
@@ -150,6 +261,40 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         cheats.prank(nonOwner);
         cheats.expectRevert();
         protocolRegistry.configure(addr, config);
+    }
+
+    function test_configure_revert_unshippedAddress() public {
+        address unshipped = address(0x999);
+        IProtocolRegistryTypes.DeploymentConfig memory config = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
+
+        cheats.expectRevert(DeploymentNotShipped.selector);
+        protocolRegistry.configure(unshipped, config);
+    }
+
+    function test_configure_succeeds_shippedAddress() public {
+        address shipped = address(0x111);
+
+        // First ship the address
+        address[] memory addresses = new address[](1);
+        addresses[0] = shipped;
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        string[] memory names = new string[](1);
+        names[0] = "Test";
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+
+        // Now configure should succeed
+        IProtocolRegistryTypes.DeploymentConfig memory newConfig =
+            IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: true});
+
+        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
+        emit DeploymentConfigured(shipped, newConfig);
+
+        protocolRegistry.configure(shipped, newConfig);
+
+        (, IProtocolRegistryTypes.DeploymentConfig memory retrievedConfig) = protocolRegistry.getDeployment("Test");
+        assertEq(retrievedConfig.pausable, true);
+        assertEq(retrievedConfig.deprecated, true);
     }
 
     function test_configure_Correctness() public {
@@ -392,163 +537,6 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         assertEq(protocolRegistry.majorVersion(), "1");
 
         assertEq(protocolRegistry.totalDeployments(), 2);
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Fix 7: ship() validation tests
-    /// -----------------------------------------------------------------------
-
-    function test_ship_revert_arrayLengthMismatch_addressesConfigs() public {
-        address[] memory addresses = new address[](2);
-        addresses[0] = address(0x1);
-        addresses[1] = address(0x2);
-
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-
-        string[] memory names = new string[](2);
-        names[0] = "A";
-        names[1] = "B";
-
-        cheats.expectRevert(ArrayLengthMismatch.selector);
-        protocolRegistry.ship(addresses, configs, names, "1.0.0");
-    }
-
-    function test_ship_revert_arrayLengthMismatch_configsNames() public {
-        address[] memory addresses = new address[](2);
-        addresses[0] = address(0x1);
-        addresses[1] = address(0x2);
-
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
-        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-
-        string[] memory names = new string[](1);
-        names[0] = "A";
-
-        cheats.expectRevert(ArrayLengthMismatch.selector);
-        protocolRegistry.ship(addresses, configs, names, "1.0.0");
-    }
-
-    function test_ship_revert_zeroAddress() public {
-        address[] memory addresses = new address[](2);
-        addresses[0] = address(0x1);
-        addresses[1] = address(0); // Zero address
-
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
-        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-
-        string[] memory names = new string[](2);
-        names[0] = "A";
-        names[1] = "B";
-
-        cheats.expectRevert(InputAddressZero.selector);
-        protocolRegistry.ship(addresses, configs, names, "1.0.0");
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Fix 8: ship() orphaned configs cleanup test
-    /// -----------------------------------------------------------------------
-
-    function test_ship_overwriteName_deletesOldConfig() public {
-        address oldAddr = address(0x111);
-        address newAddr = address(0x222);
-        string memory name = "TestContract";
-
-        // Ship with old address
-        address[] memory addresses1 = new address[](1);
-        addresses1[0] = oldAddr;
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs1 = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs1[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
-        string[] memory names1 = new string[](1);
-        names1[0] = name;
-        protocolRegistry.ship(addresses1, configs1, names1, "1.0.0");
-
-        // Verify old address is set
-        assertEq(protocolRegistry.getAddress(name), oldAddr);
-
-        // Ship same name with new address - should emit DeploymentConfigDeleted for old address
-        address[] memory addresses2 = new address[](1);
-        addresses2[0] = newAddr;
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs2 = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs2[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: true});
-        string[] memory names2 = new string[](1);
-        names2[0] = name;
-
-        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
-        emit DeploymentConfigDeleted(oldAddr);
-        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
-        emit DeploymentShipped(newAddr, configs2[0]);
-
-        protocolRegistry.ship(addresses2, configs2, names2, "1.1.0");
-
-        // Verify new address is set
-        assertEq(protocolRegistry.getAddress(name), newAddr);
-        // Verify total deployments is still 1 (not 2)
-        assertEq(protocolRegistry.totalDeployments(), 1);
-    }
-
-    function test_ship_sameNameSameAddress_noDeleteEvent() public {
-        address addr = address(0x111);
-        string memory name = "TestContract";
-
-        // Ship with address
-        address[] memory addresses1 = new address[](1);
-        addresses1[0] = addr;
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs1 = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs1[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
-        string[] memory names1 = new string[](1);
-        names1[0] = name;
-        protocolRegistry.ship(addresses1, configs1, names1, "1.0.0");
-
-        // Ship same name with same address - should NOT emit DeploymentConfigDeleted
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs2 = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs2[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: true});
-
-        // We only expect DeploymentShipped, not DeploymentConfigDeleted
-        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
-        emit DeploymentShipped(addr, configs2[0]);
-
-        protocolRegistry.ship(addresses1, configs2, names1, "1.1.0");
-    }
-
-    /// -----------------------------------------------------------------------
-    /// Fix 9: configure() for unshipped addresses test
-    /// -----------------------------------------------------------------------
-
-    function test_configure_revert_unshippedAddress() public {
-        address unshipped = address(0x999);
-        IProtocolRegistryTypes.DeploymentConfig memory config = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
-
-        cheats.expectRevert(DeploymentNotShipped.selector);
-        protocolRegistry.configure(unshipped, config);
-    }
-
-    function test_configure_succeeds_shippedAddress() public {
-        address shipped = address(0x111);
-
-        // First ship the address
-        address[] memory addresses = new address[](1);
-        addresses[0] = shipped;
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
-        string[] memory names = new string[](1);
-        names[0] = "Test";
-        protocolRegistry.ship(addresses, configs, names, "1.0.0");
-
-        // Now configure should succeed
-        IProtocolRegistryTypes.DeploymentConfig memory newConfig =
-            IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: true});
-
-        cheats.expectEmit(true, true, true, true, address(protocolRegistry));
-        emit DeploymentConfigured(shipped, newConfig);
-
-        protocolRegistry.configure(shipped, newConfig);
-
-        (, IProtocolRegistryTypes.DeploymentConfig memory retrievedConfig) = protocolRegistry.getDeployment("Test");
-        assertEq(retrievedConfig.pausable, true);
-        assertEq(retrievedConfig.deprecated, true);
     }
 }
 

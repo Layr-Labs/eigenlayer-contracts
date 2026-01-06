@@ -117,6 +117,7 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
     }
 
     /// @dev Checks if an address is a shipped deployment.
+    /// @dev We use a loop over the entire _deployments array because it is mapped from a ShortString to an address.
     function _isShipped(
         address addr
     ) internal view returns (bool) {
