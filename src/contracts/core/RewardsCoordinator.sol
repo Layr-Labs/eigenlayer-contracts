@@ -39,6 +39,10 @@ contract RewardsCoordinator is
         _;
     }
 
+    /// -----------------------------------------------------------------------
+    /// Initialization
+    /// -----------------------------------------------------------------------
+
     /// @dev Sets the immutable variables for the contract
     constructor(
         RewardsCoordinatorConstructorParams memory params
@@ -78,23 +82,9 @@ contract RewardsCoordinator is
         _setFeeRecipient(_feeRecipient);
     }
 
-    ///
-    ///                         EXTERNAL FUNCTIONS
-    ///
-
-    /// @notice Internal helper to take protocol fees from a submission.
-    function _takeProtocolFee(
-        address submitter,
-        IERC20 token,
-        uint256 amountBeforeFee
-    ) internal returns (uint256 amountAfterFee) {
-        uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-        if (isOptedInForProtocolFee[submitter] && feeAmount != 0 && feeRecipient != address(0)) {
-            token.safeTransfer(feeRecipient, feeAmount);
-            return amountBeforeFee - feeAmount;
-        }
-        return amountBeforeFee;
-    }
+    /// -----------------------------------------------------------------------
+    /// External Functions
+    /// -----------------------------------------------------------------------
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
@@ -276,7 +266,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /// @inheritdoc IRewardsCoordinator
+    /// @inheritdoc IRewardsCoordinator1
     function createTotalStakeRewardsSubmission(
         OperatorSet calldata operatorSet,
         RewardsSubmission[] calldata rewardsSubmissions
@@ -461,9 +451,9 @@ contract RewardsCoordinator is
         isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
-    ///
-    ///                         INTERNAL FUNCTIONS
-    ///
+    /// -----------------------------------------------------------------------
+    /// Internal Helper Functions
+    /// -----------------------------------------------------------------------
 
     /// @notice Internal helper to process reward claims.
     /// @param claim The RewardsMerkleClaims to be processed.
@@ -736,9 +726,27 @@ contract RewardsCoordinator is
         }
     }
 
-    ///
-    ///                         VIEW FUNCTIONS
-    ///
+    /// @notice Internal helper to take protocol fees from a submission.
+    /// @param submitter The address of the submitter.
+    /// @param token The token to take the protocol fee from.
+    /// @param amountBeforeFee The amount before the protocol fee is taken.
+    /// @return amountAfterFee The amount after the protocol fee is taken.
+    function _takeProtocolFee(
+        address submitter,
+        IERC20 token,
+        uint256 amountBeforeFee
+    ) internal returns (uint256 amountAfterFee) {
+        uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
+        if (isOptedInForProtocolFee[submitter] && feeAmount != 0 && feeRecipient != address(0)) {
+            token.safeTransfer(feeRecipient, feeAmount);
+            return amountBeforeFee - feeAmount;
+        }
+        return amountBeforeFee;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// External View Functions
+    /// -----------------------------------------------------------------------
 
     /// @inheritdoc IRewardsCoordinator
     function calculateEarnerLeafHash(
