@@ -38,6 +38,11 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
             _addContractsToEnv();
         }
 
+        // If the proxy has been upgraded already, return
+        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()) {
+            return;
+        }
+
         // 2. Deploy the Protocol Registry Implementation
         _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeployProtocolRegistryImpl._runAsEOA();

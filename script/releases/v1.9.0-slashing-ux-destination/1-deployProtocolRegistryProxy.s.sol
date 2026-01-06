@@ -31,7 +31,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (Env.isCoreProtocolDeployed()) {
+        if (Env.isCoreProtocolDeployed() || _areProxiesDeployed()) {
             return;
         }
 
@@ -59,12 +59,12 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
         assertTrue(expectedProxy == actualProxy, "protocolRegistry proxy address mismatch");
     }
 
-    /// @dev Check if the proxies are deployed by checking if the empty contract is deployed
+    /// @dev Check if the proxies are deployed by checking if the protocol registry proxy is deployed
     function _areProxiesDeployed() internal view returns (bool) {
         address expectedProtocolRegistry =
             _computeExpectedProxyAddress(type(ProtocolRegistry).name, address(Env.impl.emptyContract()));
 
-        // If the empty contract is deployed, then the proxies are deployed
+        // If the protocol registry proxy is deployed, then the proxies are deployed
         return expectedProtocolRegistry.code.length > 0;
     }
 
