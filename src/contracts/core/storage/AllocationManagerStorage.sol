@@ -44,8 +44,7 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
     uint32 public immutable ALLOCATION_CONFIGURATION_DELAY;
 
     /// @notice Delay before slasher changes take effect.
-    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY but
-    /// can be changed independently in future upgrades.
+    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY.
     uint32 public immutable SLASHER_CONFIGURATION_DELAY;
 
     // Mutatables
@@ -136,7 +135,6 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
         eigenStrategy = _eigenStrategy;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
         ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
-        // Set to same value as ALLOCATION_CONFIGURATION_DELAY for now
         SLASHER_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
     }
 

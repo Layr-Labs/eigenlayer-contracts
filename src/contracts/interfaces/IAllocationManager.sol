@@ -265,7 +265,7 @@ interface IAllocationManagerStorage is IAllocationManagerEvents {
     function ALLOCATION_CONFIGURATION_DELAY() external view returns (uint32);
 
     /// @notice Delay before slasher changes take effect.
-    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY but can be changed independently in future upgrades.
+    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY.
     function SLASHER_CONFIGURATION_DELAY() external view returns (uint32);
 }
 
