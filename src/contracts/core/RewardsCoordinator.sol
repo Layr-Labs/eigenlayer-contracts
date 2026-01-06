@@ -649,7 +649,7 @@ contract RewardsCoordinator is
 
         require(amountAfterFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
 
-        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee);
+        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee, feeOn);
     }
 
     function _checkClaim(
