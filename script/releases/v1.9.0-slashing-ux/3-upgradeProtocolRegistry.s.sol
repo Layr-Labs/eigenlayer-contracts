@@ -40,8 +40,7 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
         }
 
         // If the proxy has been upgraded already, return
-        if (_areProxiesDeployed() && Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin())
-        {
+        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()) {
             return;
         }
 
