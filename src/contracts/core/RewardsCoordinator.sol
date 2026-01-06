@@ -189,8 +189,10 @@ contract RewardsCoordinator is
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
             uint256 feeAmount = amountBeforeFee - amountAfterFee;
-            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
-                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
+            if (feeOn) {
+                if (feeRecipient != address(0) && feeAmount != 0) {
+                    operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
+                }
             }
 
             isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
@@ -232,8 +234,10 @@ contract RewardsCoordinator is
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
             uint256 feeAmount = amountBeforeFee - amountAfterFee;
-            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
-                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
+            if (feeOn) {
+                if (feeRecipient != address(0) && feeAmount != 0) {
+                    operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
+                }
             }
 
             isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
@@ -772,9 +776,11 @@ contract RewardsCoordinator is
         uint256 amountBeforeFee
     ) internal returns (uint256 amountAfterFee) {
         uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-        if (isOptedInForProtocolFee[submitter] && feeAmount != 0 && feeRecipient != address(0)) {
-            token.safeTransfer(feeRecipient, feeAmount);
-            return amountBeforeFee - feeAmount;
+        if (isOptedInForProtocolFee[submitter]) {
+            if (feeRecipient != address(0) && feeAmount != 0) {
+                token.safeTransfer(feeRecipient, feeAmount);
+                return amountBeforeFee - feeAmount;
+            }
         }
         return amountBeforeFee;
     }
