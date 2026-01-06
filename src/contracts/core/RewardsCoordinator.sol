@@ -188,8 +188,9 @@ contract RewardsCoordinator is
 
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
-            if (feeOn) {
-                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
+            uint256 feeAmount = amountBeforeFee - amountAfterFee;
+            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
+                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
             }
 
             isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
@@ -230,8 +231,9 @@ contract RewardsCoordinator is
 
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
-            if (feeOn) {
-                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
+            uint256 feeAmount = amountBeforeFee - amountAfterFee;
+            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
+                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
             }
 
             isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
