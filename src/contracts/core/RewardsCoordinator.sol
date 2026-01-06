@@ -177,11 +177,20 @@ contract RewardsCoordinator is
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
             OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
-            uint256 nonce = submissionNonce[avs];
-            bytes32 operatorDirectedRewardsSubmissionHash =
-                keccak256(abi.encode(avs, nonce, operatorDirectedRewardsSubmission));
 
-            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
+            uint256 nonce = submissionNonce[avs];
+            (
+                bytes32 operatorDirectedRewardsSubmissionHash,
+                uint256 amountBeforeFee,
+                uint256 amountAfterFee,
+                bool feeOn
+            ) = _validateOperatorDirectedRewardsSubmission(avs, nonce, operatorDirectedRewardsSubmission);
+
+            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
+
+            if (feeOn) {
+                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
+            }
 
             isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
             submissionNonce[avs] = nonce + 1;
@@ -193,7 +202,6 @@ contract RewardsCoordinator is
                 nonce,
                 operatorDirectedRewardsSubmission
             );
-            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -211,11 +219,20 @@ contract RewardsCoordinator is
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
             OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
-            uint256 nonce = submissionNonce[operatorSet.avs];
-            bytes32 operatorDirectedRewardsSubmissionHash =
-                keccak256(abi.encode(operatorSet.avs, nonce, operatorDirectedRewardsSubmission));
 
-            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
+            uint256 nonce = submissionNonce[operatorSet.avs];
+            (
+                bytes32 operatorDirectedRewardsSubmissionHash,
+                uint256 amountBeforeFee,
+                uint256 amountAfterFee,
+                bool feeOn
+            ) = _validateOperatorDirectedRewardsSubmission(operatorSet.avs, nonce, operatorDirectedRewardsSubmission);
+
+            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
+
+            if (feeOn) {
+                operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
+            }
 
             isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
                 true;
@@ -228,7 +245,6 @@ contract RewardsCoordinator is
                 nonce,
                 operatorDirectedRewardsSubmission
             );
-            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -266,7 +282,7 @@ contract RewardsCoordinator is
         }
     }
 
-    /// @inheritdoc IRewardsCoordinator1
+    /// @inheritdoc IRewardsCoordinator
     function createTotalStakeRewardsSubmission(
         OperatorSet calldata operatorSet,
         RewardsSubmission[] calldata rewardsSubmissions
@@ -591,10 +607,14 @@ contract RewardsCoordinator is
     /// @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
     /// @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive).
     /// @param submission OperatorDirectedRewardsSubmission to validate.
-    /// @return total amount to be transferred from the avs to the contract.
+    /// @return submissionHash The hash of the submission.
+    /// @return amountBeforeFee The sum of all operator reward amounts before fees are taken.
+    /// @return amountAfterFee The sum of all operator reward amounts after fees are taken.
     function _validateOperatorDirectedRewardsSubmission(
-        OperatorDirectedRewardsSubmission calldata submission
-    ) internal view returns (uint256) {
+        address submitter,
+        uint256 nonce,
+        OperatorDirectedRewardsSubmission memory submission
+    ) internal view returns (bytes32 submissionHash, uint256 amountBeforeFee, uint256 amountAfterFee, bool feeOn) {
         _validateCommonRewardsSubmission(
             submission.strategiesAndMultipliers, submission.startTimestamp, submission.duration
         );
@@ -602,21 +622,34 @@ contract RewardsCoordinator is
         require(submission.operatorRewards.length > 0, InputArrayLengthZero());
         require(submission.startTimestamp + submission.duration < block.timestamp, SubmissionNotRetroactive());
 
-        uint256 totalAmount = 0;
-        address currOperatorAddress = address(0);
-        for (uint256 i = 0; i < submission.operatorRewards.length; ++i) {
-            OperatorReward calldata operatorReward = submission.operatorRewards[i];
-            require(operatorReward.operator != address(0), InvalidAddressZero());
-            require(currOperatorAddress < operatorReward.operator, OperatorsNotInAscendingOrder());
-            require(operatorReward.amount > 0, AmountIsZero());
+        feeOn = isOptedInForProtocolFee[submitter];
 
-            currOperatorAddress = operatorReward.operator;
-            totalAmount += operatorReward.amount;
+        address lastOperator = address(0);
+        uint256 length = submission.operatorRewards.length;
+        for (uint256 i = 0; i < length; ++i) {
+            // Check that each operator is a non-zero address.
+            require(submission.operatorRewards[i].operator != address(0), InvalidAddressZero());
+            // Check that each operator is in ascending order.
+            require(lastOperator < submission.operatorRewards[i].operator, OperatorsNotInAscendingOrder());
+            // Check that each operator reward amount is non-zero.
+            require(submission.operatorRewards[i].amount > 0, AmountIsZero());
+
+            // Increment the total amount before fees by the operator reward amount.
+            amountBeforeFee += submission.operatorRewards[i].amount;
+
+            // Take the protocol fee (if the submitter is opted in for protocol fees).
+            uint256 feeAmount = submission.operatorRewards[i].amount * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
+            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
+                submission.operatorRewards[i].amount -= feeAmount;
+            }
+
+            amountAfterFee += submission.operatorRewards[i].amount;
+            lastOperator = submission.operatorRewards[i].operator;
         }
 
-        require(totalAmount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(amountAfterFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
 
-        return totalAmount;
+        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee);
     }
 
     function _checkClaim(
