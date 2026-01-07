@@ -249,15 +249,15 @@ contract EmissionsController is
 
         // Effects
 
+        // Update return value to the next available distribution id.
+        distributionId = getTotalDistributions();
+
         // Update the total weight.
         totalWeight = totalWeightBefore + distribution.weight;
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
         // Emit an event for the new distribution.
         emit DistributionAdded(distributionId, currentEpoch, distribution);
-
-        // Return distribution id (also next available distribution id).
-        return getTotalDistributions();
     }
 
     /// @inheritdoc IEmissionsController
