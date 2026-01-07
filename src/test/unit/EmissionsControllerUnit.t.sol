@@ -467,6 +467,57 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             })
         );
     }
+
+    // Regression test for bug where _checkDistribution was called after updating totalWeight,
+    // causing valid weight updates to incorrectly revert due to double-counting the new weight
+    function test_updateDistribution_DoesNotDoubleCountNewWeight() public {
+        // Add first distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        uint distributionId1 = emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Add second distribution with weight 1000 (total = 7000)
+        cheats.prank(incentiveCouncil);
+        uint distributionId2 = emissionsController.addDistribution(
+            Distribution({
+                weight: 1000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Update second distribution to weight 4000 (total should be 10000, which is valid)
+        // Without the fix, this would incorrectly check: 4000 + (7000 - 1000 + 4000) = 14000 > 10000
+        // With the fix, this correctly checks: 4000 + (7000 - 1000) = 10000 <= 10000
+        cheats.prank(incentiveCouncil);
+        emissionsController.updateDistribution(
+            distributionId2,
+            Distribution({
+                weight: 4000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Verify the update succeeded
+        Distribution memory updated = emissionsController.getDistribution(distributionId2);
+        assertEq(updated.weight, 4000);
+        assertEq(emissionsController.totalWeight(), 10_000);
+    }
 }
 
 contract EmissionsControllerUnitTests_disableDistribution is EmissionsControllerUnitTests {
