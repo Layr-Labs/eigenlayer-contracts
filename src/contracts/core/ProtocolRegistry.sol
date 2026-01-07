@@ -52,11 +52,12 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
 
     /// @inheritdoc IProtocolRegistry
     function configure(
-        address addr,
+        string calldata name,
         DeploymentConfig calldata config
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        // Verify address is a shipped deployment
-        require(_isShipped(addr), DeploymentNotShipped());
+        // Verify name is a shipped deployment and get its address (O(1) lookup)
+        (bool exists, address addr) = _deployments.tryGet(_unwrap(name.toShortString()));
+        require(exists, DeploymentNotShipped());
         // Update the config
         _deploymentConfigs[addr] = config;
         // Emit the event.
@@ -114,19 +115,6 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         _deploymentConfigs[addr] = config;
         // Emit the events.
         emit DeploymentShipped(addr, config);
-    }
-
-    /// @dev Checks if an address is a shipped deployment.
-    /// @dev We use a loop over the entire _deployments array because it is mapped from a ShortString to an address.
-    function _isShipped(
-        address addr
-    ) internal view returns (bool) {
-        uint256 length = _deployments.length();
-        for (uint256 i = 0; i < length; ++i) {
-            (, address deployedAddr) = _deployments.at(i);
-            if (deployedAddr == addr) return true;
-        }
-        return false;
     }
 
     /// @dev Unwraps a ShortString to a uint256.

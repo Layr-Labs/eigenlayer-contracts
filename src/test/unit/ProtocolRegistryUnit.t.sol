@@ -255,23 +255,32 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
     /// -----------------------------------------------------------------------
 
     function test_configure_OnlyOwner() public {
+        // First ship a deployment
         address addr = cheats.randomAddress();
-        IProtocolRegistryTypes.DeploymentConfig memory config = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
+        address[] memory addresses = new address[](1);
+        addresses[0] = addr;
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        string[] memory names = new string[](1);
+        names[0] = "TestName";
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+
+        IProtocolRegistryTypes.DeploymentConfig memory newConfig =
+            IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
 
         cheats.prank(nonOwner);
         cheats.expectRevert();
-        protocolRegistry.configure(addr, config);
+        protocolRegistry.configure("TestName", newConfig);
     }
 
-    function test_configure_revert_unshippedAddress() public {
-        address unshipped = address(0x999);
+    function test_configure_revert_unshippedName() public {
         IProtocolRegistryTypes.DeploymentConfig memory config = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
 
         cheats.expectRevert(DeploymentNotShipped.selector);
-        protocolRegistry.configure(unshipped, config);
+        protocolRegistry.configure("Unshipped", config);
     }
 
-    function test_configure_succeeds_shippedAddress() public {
+    function test_configure_succeeds_shippedName() public {
         address shipped = address(0x111);
 
         // First ship the address
@@ -290,7 +299,7 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         cheats.expectEmit(true, true, true, true, address(protocolRegistry));
         emit DeploymentConfigured(shipped, newConfig);
 
-        protocolRegistry.configure(shipped, newConfig);
+        protocolRegistry.configure("Test", newConfig);
 
         (, IProtocolRegistryTypes.DeploymentConfig memory retrievedConfig) = protocolRegistry.getDeployment("Test");
         assertEq(retrievedConfig.pausable, true);
@@ -323,7 +332,7 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         cheats.expectEmit(true, true, true, true, address(protocolRegistry));
         emit DeploymentConfigured(addr, newConfig);
 
-        protocolRegistry.configure(addr, newConfig);
+        protocolRegistry.configure("TestContract", newConfig);
 
         (, IProtocolRegistryTypes.DeploymentConfig memory retrievedConfig) = protocolRegistry.getDeployment("TestContract");
         assertEq(retrievedConfig.pausable, true);

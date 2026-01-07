@@ -71,11 +71,11 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
     ) external;
 
     /// @notice Configures a deployment.
-    /// @dev Only callable by the admin. Address must have been previously shipped.
-    /// @param addr The address of the deployment to configure.
+    /// @dev Only callable by the admin. Name must have been previously shipped.
+    /// @param name The name of the deployment to configure.
     /// @param config The configuration to set.
     function configure(
-        address addr,
+        string calldata name,
         DeploymentConfig calldata config
     ) external;
 
