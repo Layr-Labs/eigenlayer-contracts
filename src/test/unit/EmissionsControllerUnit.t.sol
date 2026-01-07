@@ -303,58 +303,11 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         );
     }
 
-    function test_revert_updateDistribution_CannotDisableDistributionViaUpdate() public {
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.CannotDisableDistributionViaUpdate.selector);
-        emissionsController.updateDistribution(
-            0,
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.Disabled,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-    }
-
     function test_revert_updateDistribution_NonExistentDistribution() public {
         cheats.prank(incentiveCouncil);
         cheats.expectRevert(stdError.indexOOBError); // team may want an explicit check for this
         emissionsController.updateDistribution(
             0,
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-    }
-
-    function test_revert_updateDistribution_DistributionIsDisabled() public {
-        cheats.prank(incentiveCouncil);
-        uint distributionId = emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        cheats.prank(incentiveCouncil);
-        emissionsController.disableDistribution(distributionId);
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
-        emissionsController.updateDistribution(
-            distributionId,
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
@@ -520,64 +473,6 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
     }
 }
 
-contract EmissionsControllerUnitTests_disableDistribution is EmissionsControllerUnitTests {
-    function test_revert_disableDistribution_OnlyIncentiveCouncil() public {
-        address notIncentiveCouncil = address(0x3);
-        cheats.assume(notIncentiveCouncil != incentiveCouncil);
-        cheats.prank(notIncentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.CallerIsNotIncentiveCouncil.selector);
-        emissionsController.disableDistribution(0);
-    }
-
-    function test_revert_disableDistribution_NonExistentDistribution() public {
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(stdError.indexOOBError); // team may want an explicit check for this
-        emissionsController.disableDistribution(0);
-    }
-
-    function test_revert_disableDistribution_DistributionIsDisabled() public {
-        cheats.prank(incentiveCouncil);
-        uint distributionId = emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-        cheats.prank(incentiveCouncil);
-        emissionsController.disableDistribution(0);
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.DistributionIsDisabled.selector);
-        emissionsController.disableDistribution(0);
-    }
-
-    function test_disableDistribution_Correctness() public {
-        cheats.prank(incentiveCouncil);
-        uint distributionId = emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                stopEpoch: 0,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectEmit(true, true, true, true);
-        emit DistributionRemoved(distributionId, type(uint).max);
-        emissionsController.disableDistribution(distributionId);
-
-        Distribution memory distribution = emissionsController.getDistribution(distributionId);
-        assertEq(uint8(distribution.distributionType), uint8(DistributionType.Disabled));
-    }
-}
-
 /// -----------------------------------------------------------------------
 /// View Functions
 /// -----------------------------------------------------------------------
@@ -727,40 +622,6 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
         assertEq(emissionsController.getTotalDistributions(), 2);
     }
 
-    function test_getTotalDistributions_AfterDisabling() public {
-        // Add distributions
-        cheats.prank(incentiveCouncil);
-        uint distributionId1 = emissionsController.addDistribution(
-            Distribution({
-                weight: 3000,
-                startEpoch: 0,
-                stopEpoch: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 2000,
-                startEpoch: 0,
-                stopEpoch: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        assertEq(emissionsController.getTotalDistributions(), 2);
-
-        // Disable one distribution - total count should not change
-        cheats.prank(incentiveCouncil);
-        emissionsController.disableDistribution(distributionId1);
-        assertEq(emissionsController.getTotalDistributions(), 2);
-    }
-
     function testFuzz_getTotalDistributions_Correctness(uint8 count) public {
         count = uint8(bound(count, 0, 50)); // Reasonable upper bound for gas
 
@@ -885,29 +746,6 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
         assertEq(retrieved.startEpoch, 2);
         assertEq(retrieved.stopEpoch, 15);
         assertEq(uint8(retrieved.distributionType), uint8(DistributionType.OperatorSetUniqueStake));
-    }
-
-    function test_getDistribution_AfterDisable() public {
-        // Add a distribution
-        cheats.prank(incentiveCouncil);
-        uint distributionId = emissionsController.addDistribution(
-            Distribution({
-                weight: 5000,
-                startEpoch: 0,
-                stopEpoch: 10,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Disable the distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.disableDistribution(distributionId);
-
-        // Verify it's disabled
-        Distribution memory retrieved = emissionsController.getDistribution(distributionId);
-        assertEq(uint8(retrieved.distributionType), uint8(DistributionType.Disabled));
     }
 }
 

@@ -15,8 +15,6 @@ interface IEmissionsControllerErrors {
     error StartEpochMustBeInTheFuture();
     /// @dev Thrown when the total weight of all distributions exceeds the max total weight (100%).
     error TotalWeightExceedsMax();
-    /// @dev Thrown when the distribution is disabled.
-    error DistributionIsDisabled();
     /// @dev Thrown when attempting to add a disabled distribution.
     error CannotAddDisabledDistribution();
     /// @dev Thrown when attempting to update a disabled distribution.
@@ -85,23 +83,6 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
     /// @param amount The amount of EIGEN swept.
     event Swept(address indexed incentiveCouncil, uint256 amount);
 
-    /// @notice Emitted when a distribution is updated.
-    /// @param distributionId The id of the distribution.
-    /// @param epoch The epoch the distribution was updated.
-    /// @param distribution The distribution.
-    event DistributionUpdated(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
-
-    /// @notice Emitted when a distribution is added.
-    /// @param distributionId The id of the distribution.
-    /// @param epoch The epoch the distribution was added.
-    /// @param distribution The distribution.
-    event DistributionAdded(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
-
-    /// @notice Emitted when a distribution is removed.
-    /// @param distributionId The id of the distribution.
-    /// @param epoch The epoch the distribution was removed.
-    event DistributionRemoved(uint256 indexed distributionId, uint256 indexed epoch);
-
     /// @notice Emitted when a distribution is processed.
     /// @param distributionId The id of the distribution.
     /// @param epoch The epoch the distribution was processed.
@@ -112,6 +93,18 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
         Distribution distribution,
         bool success
     );
+
+    /// @notice Emitted when a distribution is added.
+    /// @param distributionId The id of the distribution.
+    /// @param epoch The epoch the distribution was added.
+    /// @param distribution The distribution.
+    event DistributionAdded(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
+
+    /// @notice Emitted when a distribution is updated.
+    /// @param distributionId The id of the distribution.
+    /// @param epoch The epoch the distribution was updated.
+    /// @param distribution The distribution.
+    event DistributionUpdated(uint256 indexed distributionId, uint256 indexed epoch, Distribution distribution);
 
     /// @notice Emitted when the Incentive Council address is updated.
     /// @param incentiveCouncil The new Incentive Council address.
@@ -223,24 +216,13 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @dev Only the Incentive Council can call this function.
     ///      Replaces the entire distribution at the given ID with the new distribution.
     ///      Adjusts totalWeight by subtracting the old weight and adding the new weight.
-    ///      Cannot update distributions that are already disabled.
-    ///      Cannot use this function to disable a distribution (must use disableDistribution).
+    ///      Set `disabled` to true to disable the distribution.
+    ///      Set `disabled` to false to re-enable the distribution.
     /// @param distributionId The id of the distribution to update.
     /// @param distribution The new distribution parameters.
     function updateDistribution(
         uint256 distributionId,
         Distribution calldata distribution
-    ) external;
-
-    /// @notice Disables a distribution permanently.
-    /// @dev The distribution remains in storage but is marked as Disabled and skipped during processing.
-    ///      Only the Incentive Council can call this function.
-    ///      The distribution's weight is subtracted from totalWeight, freeing up allocation capacity.
-    ///      This action is permanent - disabled distributions cannot be re-enabled or updated.
-    ///      The distribution will be skipped in all future epochs regardless of startEpoch/stopEpoch.
-    /// @param distributionId The id of the distribution to disable.
-    function disableDistribution(
-        uint256 distributionId
     ) external;
 
     /// -----------------------------------------------------------------------

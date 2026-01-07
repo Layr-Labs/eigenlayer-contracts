@@ -268,15 +268,6 @@ contract EmissionsController is
         // Checks
 
         uint256 currentEpoch = getCurrentEpoch();
-
-        // Check if the distribution (from calldata) is disabled.
-        if (distribution.distributionType == DistributionType.Disabled) {
-            revert CannotDisableDistributionViaUpdate();
-        }
-
-        // Check if the distribution (in storage) is disabled.
-        _checkDisabled(_distributions[distributionId]);
-
         uint256 totalWeightBefore = totalWeight;
         uint256 weight = _distributions[distributionId].weight;
 
@@ -295,26 +286,6 @@ contract EmissionsController is
         emit DistributionUpdated(distributionId, currentEpoch, distribution);
     }
 
-    /// @inheritdoc IEmissionsController
-    function disableDistribution(
-        uint256 distributionId
-    ) external override onlyIncentiveCouncil {
-        // Checks
-
-        // Check if the distribution is already disabled.
-        _checkDisabled(_distributions[distributionId]);
-
-        // Effects
-
-        // Subtract the weight from total weight.
-        totalWeight -= _distributions[distributionId].weight;
-        // Set the distribution type to disabled.
-        // Prevents further updates to the distribution.
-        _distributions[distributionId].distributionType = DistributionType.Disabled;
-        // Emit an event for the removed distribution.
-        emit DistributionRemoved(distributionId, getCurrentEpoch());
-    }
-
     /// -----------------------------------------------------------------------
     /// Internal Helpers
     /// -----------------------------------------------------------------------
@@ -322,15 +293,6 @@ contract EmissionsController is
     function _checkOnlyIncentiveCouncil() internal view {
         // Check if the caller is the incentive council.
         if (msg.sender != incentiveCouncil) revert CallerIsNotIncentiveCouncil();
-    }
-
-    function _checkDisabled(
-        Distribution storage distribution
-    ) internal view {
-        // Check if the distribution is disabled.
-        if (distribution.distributionType == DistributionType.Disabled) {
-            revert DistributionIsDisabled();
-        }
     }
 
     function _checkDistribution(
