@@ -4,18 +4,20 @@ pragma solidity ^0.8.27;
 import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/OperatorSetLib.sol";
+import "../permissions/Pausable.sol";
 import "./storage/EmissionsControllerStorage.sol";
-
-// Add fee, it's enabled by default, with settable fee recipient.
-// AVS's must also have a way to opt-out of the fee.
 
 contract EmissionsController is
     Initializable,
     OwnableUpgradeable,
+    Pausable,
     ReentrancyGuardUpgradeable,
     EmissionsControllerStorage
 {
+    using SafeERC20 for IERC20;
+
     /// @dev Modifier that checks if the caller is the incentive council.
     modifier onlyIncentiveCouncil() {
         _checkOnlyIncentiveCouncil();
@@ -29,34 +31,46 @@ contract EmissionsController is
         IEigen eigen,
         IBackingEigen backingEigen,
         IRewardsCoordinator rewardsCoordinator,
+        IPauserRegistry pauserRegistry,
         uint256 inflationRate,
         uint256 startTime,
         uint256 cooldownSeconds
-    ) EmissionsControllerStorage(eigen, backingEigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds) {
+    )
+        EmissionsControllerStorage(eigen, backingEigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds)
+        Pausable(pauserRegistry)
+    {
         _disableInitializers();
     }
 
     /// @inheritdoc IEmissionsController
     function initialize(
         address initialOwner,
-        address initialIncentiveCouncil
+        address initialIncentiveCouncil,
+        uint256 initialPausedStatus
     ) external override initializer {
         // Set the initial owner.
         _transferOwnership(initialOwner);
         // Set the initial incentive council.
         _setIncentiveCouncil(initialIncentiveCouncil);
+        // Set the initial paused status.
+        _setPausedStatus(initialPausedStatus);
     }
 
     /// -----------------------------------------------------------------------
     /// Permissionless Trigger
     /// -----------------------------------------------------------------------
 
-    // QUESTION: Should this be pausable?
+    /// @inheritdoc IEmissionsController
+    function sweep() external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
+        if (!isButtonPressable()) {
+            IERC20(EIGEN).safeTransfer(incentiveCouncil, EIGEN.balanceOf(address(this)));
+        }
+    }
 
     /// @inheritdoc IEmissionsController
     function pressButton(
         uint256 length
-    ) external override nonReentrant {
+    ) external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
         uint256 currentEpoch = getCurrentEpoch();
         uint256 totalDistributions = getTotalDistributions();
         uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
@@ -105,8 +119,6 @@ contract EmissionsController is
 
             _processDistribution(i, currentEpoch, startTimestamp, distribution);
         }
-
-        // QUESTION: Should be burn excess supply that wasn't distributed (e.g. if the distribution reverts)?
 
         // Update total processed count for this epoch.
         _epochs[currentEpoch].totalProcessed = uint248(lastIndex);
@@ -170,10 +182,8 @@ contract EmissionsController is
                 revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
             }
         } else {
-            (success,) = address(BACKING_EIGEN)
-                .call(abi.encodeWithSelector(IBackingEigen.mint.selector, incentiveCouncil, totalAmount));
-
-            // Question: Should we also wrap the bEIGEN into EIGEN?
+            (success,) =
+                address(EIGEN).call(abi.encodeWithSelector(IERC20.transfer.selector, incentiveCouncil, totalAmount));
         }
 
         // Emit an event for the processed distribution.
@@ -349,7 +359,7 @@ contract EmissionsController is
     }
 
     /// @inheritdoc IEmissionsController
-    function isButtonPressable() external view returns (bool) {
+    function isButtonPressable() public view returns (bool) {
         return _epochs[getCurrentEpoch()].totalProcessed < getTotalDistributions();
     }
 

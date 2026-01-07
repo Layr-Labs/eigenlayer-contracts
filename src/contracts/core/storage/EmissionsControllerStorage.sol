@@ -10,6 +10,9 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     /// @inheritdoc IEmissionsController
     uint256 public constant MAX_TOTAL_WEIGHT = 10_000;
 
+    /// @dev Index for flag that pauses pressing the button when set.
+    uint8 internal constant PAUSED_TOKEN_FLOWS = 0;
+
     // Immutables
 
     /// @dev The EIGEN token that will be minted for emissions.

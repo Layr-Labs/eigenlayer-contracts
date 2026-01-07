@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 import "./IRewardsCoordinator.sol";
 import "./IEigen.sol";
 import "./IBackingEigen.sol";
+import "./IPausable.sol";
 
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.
@@ -117,7 +118,7 @@ interface IEmissionsControllerEvents is IEmissionsControllerTypes {
 /// @dev The EmissionsController mints EIGEN at a fixed inflation rate per epoch and distributes it
 ///      according to configured distributions. It replaces the legacy ActionGenerator pattern with
 ///      a more flexible distribution system controlled by the Incentive Council.
-interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControllerEvents {
+interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControllerEvents, IPausable {
     /// -----------------------------------------------------------------------
     /// Constants
     /// -----------------------------------------------------------------------
@@ -156,14 +157,20 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @notice Initializes the contract.
     /// @param initialOwner The initial owner address.
     /// @param incentiveCouncil The initial Incentive Council address.
+    /// @param initialPausedStatus The initial paused status.
     function initialize(
         address initialOwner,
-        address incentiveCouncil
+        address incentiveCouncil,
+        uint256 initialPausedStatus
     ) external;
 
     /// -----------------------------------------------------------------------
     /// Permissionless Trigger
     /// -----------------------------------------------------------------------
+
+    /// @notice Sweeps the remaining EIGEN to the incentive council.
+    /// @dev This function is only callable after all distributions have been processed for the current epoch.
+    function sweep() external;
 
     /// @notice Triggers emissions for the current epoch and processes distributions.
     /// @dev This function mints EMISSIONS_INFLATION_RATE of bEIGEN, wraps it to EIGEN, then processes

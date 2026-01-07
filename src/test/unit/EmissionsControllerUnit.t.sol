@@ -26,13 +26,14 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
                             IEigen(address(eigenMock)),
                             IBackingEigen(address(backingEigenMock)),
                             IRewardsCoordinator(address(rewardsCoordinatorMock)),
+                            IPauserRegistry(address(pauserRegistry)),
                             EMISSIONS_INFLATION_RATE,
                             EMISSIONS_START_TIME,
                             EMISSIONS_EPOCH_LENGTH
                         )
                     ),
                     address(eigenLayerProxyAdmin),
-                    abi.encodeWithSelector(EmissionsController.initialize.selector, owner, incentiveCouncil)
+                    abi.encodeWithSelector(EmissionsController.initialize.selector, owner, incentiveCouncil, 0)
                 )
             )
         );
@@ -72,7 +73,7 @@ contract EmissionsControllerUnitTests_Initialization_Setters is EmissionsControl
 
     function test_revert_initialize_AlreadyInitialized() public {
         cheats.expectRevert("Initializable: contract is already initialized");
-        emissionsController.initialize(owner, incentiveCouncil);
+        emissionsController.initialize(owner, incentiveCouncil, 0);
     }
 }
 
@@ -1053,5 +1054,50 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
         for (uint i = 0; i < length; i++) {
             assertEq(distributions[i].weight, 100 * (start + i + 1));
         }
+    }
+}
+
+/// -----------------------------------------------------------------------
+/// Pausable Token Flows
+/// -----------------------------------------------------------------------
+
+contract EmissionsControllerUnitTests_Pausable is EmissionsControllerUnitTests {
+    function test_revert_pressButton_WhenPaused() public {
+        // Add a distribution before emissions start
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                stopEpoch: 10,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to after emissions start
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Pause token flows (PAUSED_TOKEN_FLOWS = 0, so bit flag is 2^0 = 1)
+        cheats.prank(pauser);
+        emissionsController.pause(1);
+
+        // Attempt to press button should revert
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        emissionsController.pressButton(1);
+    }
+
+    function test_revert_sweep_WhenPaused() public {
+        // Warp to after emissions start
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Pause token flows (PAUSED_TOKEN_FLOWS = 0, so bit flag is 2^0 = 1)
+        cheats.prank(pauser);
+        emissionsController.pause(1);
+
+        // Attempt to sweep should revert
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        emissionsController.sweep();
     }
 }
