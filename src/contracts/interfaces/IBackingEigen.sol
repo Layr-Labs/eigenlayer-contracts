@@ -54,6 +54,11 @@ interface IBackingEigen is IERC20 {
     /// @notice the timestamp after which transfer restrictions are disabled
     function transferRestrictionsDisabledAfter() external view returns (uint256);
 
+    /// @notice whether or not an address is allowed to mint new bEIGEN tokens
+    function isMinter(
+        address minterAddress
+    ) external view returns (bool);
+
     /// @dev Clock used for flagging checkpoints. Has been overridden to implement timestamp based
     /// checkpoints (and voting).
     function clock() external view returns (uint48);
