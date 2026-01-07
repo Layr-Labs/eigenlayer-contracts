@@ -229,6 +229,8 @@ contract EmissionsController is
     function addDistribution(
         Distribution calldata distribution
     ) external override onlyIncentiveCouncil returns (uint256 distributionId) {
+        // Checks
+
         uint256 currentEpoch = getCurrentEpoch();
 
         // Check if the distribution is disabled.
@@ -236,20 +238,24 @@ contract EmissionsController is
             revert CannotAddDisabledDistribution();
         }
 
-        // operatorSet only non-zero if distribution type is OperatorSetTotalStake or OperatorSetUniqueStake.
+        uint256 totalWeightBefore = totalWeight;
+
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch);
-        // Get the total number of distributions (also next available distribution id).
-        distributionId = getTotalDistributions();
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore);
 
+        // Effects
+
+        // Update the total weight.
+        totalWeight = totalWeightBefore + distribution.weight;
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
-        // Update the total weight.
-        totalWeight += distribution.weight;
         // Emit an event for the new distribution.
         emit DistributionAdded(distributionId, currentEpoch, distribution);
+
+        // Return distribution id (also next available distribution id).
+        return getTotalDistributions();
     }
 
     /// @inheritdoc IEmissionsController
@@ -257,6 +263,8 @@ contract EmissionsController is
         uint256 distributionId,
         Distribution calldata distribution
     ) external override onlyIncentiveCouncil {
+        // Checks
+
         uint256 currentEpoch = getCurrentEpoch();
 
         // Check if the distribution (from calldata) is disabled.
@@ -267,17 +275,18 @@ contract EmissionsController is
         // Check if the distribution (in storage) is disabled.
         _checkDisabled(_distributions[distributionId]);
 
+        uint256 totalWeightBefore = totalWeight;
         uint256 weight = _distributions[distributionId].weight;
-        // Subtract the old weight.
-        totalWeight -= weight;
-        // Add the new weight.
-        totalWeight += distribution.weight;
 
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch);
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore - weight);
 
+        // Effects
+
+        // Add the new weight.
+        totalWeight = totalWeightBefore - weight + distribution.weight;
         // Update the distribution in the distributions array.
         _distributions[distributionId] = distribution;
         // Emit an event for the updated distribution.
@@ -288,8 +297,13 @@ contract EmissionsController is
     function disableDistribution(
         uint256 distributionId
     ) external override onlyIncentiveCouncil {
+        // Checks
+
         // Check if the distribution is already disabled.
         _checkDisabled(_distributions[distributionId]);
+
+        // Effects
+
         // Subtract the weight from total weight.
         totalWeight -= _distributions[distributionId].weight;
         // Set the distribution type to disabled.
@@ -319,7 +333,8 @@ contract EmissionsController is
 
     function _checkDistribution(
         Distribution calldata distribution,
-        uint256 currentEpoch
+        uint256 currentEpoch,
+        uint256 totalWeightBefore
     ) internal view {
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
@@ -332,7 +347,7 @@ contract EmissionsController is
 
         // Check if the new total weight of all distributions exceeds max total weight.
         // Prevents distributing more supply than inflation rate allows.
-        if (distribution.weight + totalWeight > MAX_TOTAL_WEIGHT) {
+        if (distribution.weight + totalWeightBefore > MAX_TOTAL_WEIGHT) {
             revert TotalWeightExceedsMax();
         }
 
