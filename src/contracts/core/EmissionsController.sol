@@ -108,6 +108,8 @@ contract EmissionsController is
         // If length exceeds total distributions, set last index to total distributions (exclusive upper bound).
         if (lastIndex > totalDistributions) lastIndex = totalDistributions;
 
+        uint256 totalWeightBefore = totalWeight;
+
         // Process distributions starting from the next one to process...
         for (uint256 i = nextDistributionId; i < lastIndex; ++i) {
             Distribution memory distribution = _distributions[i];
@@ -119,7 +121,7 @@ contract EmissionsController is
             // Skip distributions that have ended...
             if (distribution.stopEpoch <= currentEpoch) continue;
 
-            _processDistribution(i, currentEpoch, startTimestamp, distribution);
+            _processDistribution(i, currentEpoch, startTimestamp, totalWeightBefore, distribution);
         }
 
         // Update total processed count for this epoch.
@@ -134,10 +136,11 @@ contract EmissionsController is
         uint256 distributionId,
         uint256 currentEpoch,
         uint256 startTimestamp,
+        uint256 totalWeightBefore,
         Distribution memory distribution
     ) internal {
         // Calculate the total amount of emissions for the distribution.
-        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
+        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / totalWeightBefore;
         // Success flag for the distribution.
         bool success;
 
