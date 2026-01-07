@@ -80,6 +80,11 @@ interface IEmissionsControllerTypes {
 /// @title IEmissionsControllerEvents
 /// @notice Events for the IEmissionsController contract.
 interface IEmissionsControllerEvents is IEmissionsControllerTypes {
+    /// @notice Emitted when the remaining EIGEN is swept to the incentive council.
+    /// @param incentiveCouncil The address to sweep the EIGEN to.
+    /// @param amount The amount of EIGEN swept.
+    event Swept(address indexed incentiveCouncil, uint256 amount);
+
     /// @notice Emitted when a distribution is updated.
     /// @param distributionId The id of the distribution.
     /// @param epoch The epoch the distribution was updated.

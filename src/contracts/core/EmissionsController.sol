@@ -62,8 +62,10 @@ contract EmissionsController is
 
     /// @inheritdoc IEmissionsController
     function sweep() external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
-        if (!isButtonPressable()) {
-            IERC20(EIGEN).safeTransfer(incentiveCouncil, EIGEN.balanceOf(address(this)));
+        uint256 amount = EIGEN.balanceOf(address(this));
+        if (!isButtonPressable() && amount != 0) {
+            IERC20(EIGEN).safeTransfer(incentiveCouncil, amount);
+            emit Swept(incentiveCouncil, amount);
         }
     }
 
@@ -335,7 +337,7 @@ contract EmissionsController is
         Distribution calldata distribution,
         uint256 currentEpoch,
         uint256 totalWeightBefore
-    ) internal view {
+    ) internal pure {
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
         if (currentEpoch != type(uint256).max) {
