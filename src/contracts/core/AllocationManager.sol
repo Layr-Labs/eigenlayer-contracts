@@ -364,6 +364,8 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
+    /// @dev WARNING: Gas cost is O(appointees) per operator set due to `PermissionController.getAppointees()` call.
+    ///      May exceed block gas limit for AVSs with large appointee sets. Consider batching operator sets if needed.
     function migrateSlashers(
         OperatorSet[] memory operatorSets
     ) external {
@@ -753,6 +755,11 @@ contract AllocationManager is
             params.slasher = params.pendingSlasher;
         }
 
+        // No-op if proposing the same pending slasher that hasn't taken effect yet
+        if (slasher == params.pendingSlasher && block.number < params.effectBlock) {
+            return;
+        }
+
         // Set the pending parameters
         params.pendingSlasher = slasher;
         if (instantEffectBlock) {
@@ -760,7 +767,7 @@ contract AllocationManager is
             params.slasher = slasher;
             params.effectBlock = uint32(block.number);
         } else {
-            params.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+            params.effectBlock = uint32(block.number) + SLASHER_CONFIGURATION_DELAY + 1;
         }
 
         _slashers[operatorSet.key()] = params;
