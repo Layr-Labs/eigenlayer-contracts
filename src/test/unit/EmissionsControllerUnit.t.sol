@@ -116,6 +116,493 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
         cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
         emissionsController.pressButton(1);
     }
+
+    function test_revert_pressButton_EmissionsNotStarted() public {
+        // Add a distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Before emissions start, pressing button should revert
+        cheats.expectRevert(IEmissionsControllerErrors.EmissionsNotStarted.selector);
+        emissionsController.pressButton(1);
+    }
+
+    function test_pressButton_CommitsPendingTotalWeightOnFirstCall() public {
+        // Add distribution with weight 6000 before emissions start
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Verify initial state: totalWeight = 0, pendingTotalWeight = 6000
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 6000);
+
+        // Warp to emissions start (epoch 0)
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Press button for the first time - should commit pendingTotalWeight to totalWeight
+        emissionsController.pressButton(1);
+
+        // Verify totalWeight was committed from pendingTotalWeight
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 6000);
+    }
+
+    function test_pressButton_TotalWeightStableWithinEpoch() public {
+        // Add first distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 2,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Press button - commits weight to 6000
+        emissionsController.pressButton(1);
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 6000);
+
+        // Add another distribution during epoch 0 (for future epoch 1)
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 1,
+                stopEpoch: 2,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // totalWeight should remain 6000, pendingTotalWeight should be 10000
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Press button again in same epoch to process the new distribution
+        // The new distribution will be skipped (startEpoch: 1 > currentEpoch: 0)
+        // but totalWeight should remain stable (not re-committed)
+        emissionsController.pressButton(1);
+
+        // totalWeight still stable at 6000, pendingTotalWeight still 10000
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Now all distributions have been processed for epoch 0
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        emissionsController.pressButton(1);
+    }
+
+    function test_pressButton_CommitsWeightOncePerEpoch() public {
+        // Add distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Add second distribution with weight 2000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 2000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Press button with length=1 to process only first distribution
+        emissionsController.pressButton(1);
+
+        // Weight should be committed to 8000
+        assertEq(emissionsController.totalWeight(), 8000);
+        assertEq(emissionsController.pendingTotalWeight(), 8000);
+
+        // Press button again to process second distribution
+        emissionsController.pressButton(1);
+
+        // Weight should still be 8000 (not committed again)
+        assertEq(emissionsController.totalWeight(), 8000);
+        assertEq(emissionsController.pendingTotalWeight(), 8000);
+    }
+
+    function test_pressButton_CommitsWeightCorrectlyAcrossEpochs() public {
+        // Add distribution with weight 6000 for epoch 0
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 2,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Press button - commits weight to 6000
+        emissionsController.pressButton(1);
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 6000);
+
+        // Add another distribution during epoch 0 (for future epoch)
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 1,
+                stopEpoch: 2,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // pendingTotalWeight should now be 10000
+        assertEq(emissionsController.totalWeight(), 6000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Warp to epoch 1
+        cheats.warp(EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH);
+
+        // Press button - should commit new weight (10000)
+        emissionsController.pressButton(2);
+
+        // Both should now be 10000
+        assertEq(emissionsController.totalWeight(), 10_000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Update a distribution during epoch 1 (for future epoch)
+        cheats.prank(incentiveCouncil);
+        emissionsController.updateDistribution(
+            0,
+            Distribution({
+                weight: 3000, // Changed from 6000 to 3000
+                startEpoch: 2,
+                stopEpoch: 3,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // pendingTotalWeight should be 7000 (10000 - 6000 + 3000)
+        assertEq(emissionsController.totalWeight(), 10_000);
+        assertEq(emissionsController.pendingTotalWeight(), 7000);
+
+        // Warp to epoch 2
+        cheats.warp(EMISSIONS_START_TIME + 2 * EMISSIONS_EPOCH_LENGTH);
+
+        // Press button - should commit new weight (7000)
+        emissionsController.pressButton(2);
+
+        // Both should now be 7000
+        assertEq(emissionsController.totalWeight(), 7000);
+        assertEq(emissionsController.pendingTotalWeight(), 7000);
+    }
+
+    function test_pressButton_WeightCommitmentWithZeroInitialWeight() public {
+        // Don't add any distributions initially
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 0);
+
+        // Warp to epoch 0 - can't press button with no distributions
+        cheats.warp(EMISSIONS_START_TIME);
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        emissionsController.pressButton(0);
+
+        // Still both 0
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 0);
+
+        // Add distribution during epoch 0 (for future epoch 1)
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 1,
+                stopEpoch: 2,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // pendingTotalWeight updated, totalWeight remains 0
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 5000);
+
+        // Warp to epoch 1
+        cheats.warp(EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH);
+
+        // Press button - should commit weight
+        emissionsController.pressButton(1);
+
+        // Both should now be 5000
+        assertEq(emissionsController.totalWeight(), 5000);
+        assertEq(emissionsController.pendingTotalWeight(), 5000);
+    }
+}
+
+contract EmissionsControllerUnitTests_sweep is EmissionsControllerUnitTests {
+    function test_sweep_TransfersTokensToIncentiveCouncil() public {
+        // Add distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0 and press button
+        cheats.warp(EMISSIONS_START_TIME);
+        emissionsController.pressButton(1);
+
+        // Give some EIGEN tokens directly to the controller (simulating leftover tokens)
+        uint sweepAmount = 100 ether;
+        deal(address(eigenMock), address(emissionsController), sweepAmount);
+
+        // Verify initial balance
+        assertEq(eigenMock.balanceOf(address(emissionsController)), sweepAmount);
+        uint councilBalanceBefore = eigenMock.balanceOf(incentiveCouncil);
+
+        // Sweep should work after all distributions are processed
+        cheats.expectEmit(true, true, true, true);
+        emit Swept(incentiveCouncil, sweepAmount);
+        emissionsController.sweep();
+
+        // Verify tokens were transferred
+        assertEq(eigenMock.balanceOf(address(emissionsController)), 0);
+        assertEq(eigenMock.balanceOf(incentiveCouncil), councilBalanceBefore + sweepAmount);
+    }
+
+    function test_sweep_DoesNothingWhenButtonPressable() public {
+        // Add distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0 - button is pressable
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Give some EIGEN tokens directly to the controller
+        uint sweepAmount = 100 ether;
+        deal(address(eigenMock), address(emissionsController), sweepAmount);
+
+        // Sweep should do nothing when button is pressable
+        emissionsController.sweep();
+
+        // Tokens should still be in the controller
+        assertEq(eigenMock.balanceOf(address(emissionsController)), sweepAmount);
+    }
+
+    function test_sweep_DoesNothingWhenBalanceZeroAfterButtonNotPressable() public {
+        // Don't add any distributions - button won't be pressable after start
+
+        // Warp to epoch 0
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Can't press button with no distributions
+        assertFalse(emissionsController.isButtonPressable());
+
+        // Balance is 0, sweep should do nothing (no transfer, no event)
+        uint councilBalanceBefore = eigenMock.balanceOf(incentiveCouncil);
+        assertEq(eigenMock.balanceOf(address(emissionsController)), 0);
+        emissionsController.sweep();
+        assertEq(eigenMock.balanceOf(address(emissionsController)), 0);
+        assertEq(eigenMock.balanceOf(incentiveCouncil), councilBalanceBefore);
+    }
+}
+
+contract EmissionsControllerUnitTests_pressButton_DistributionTypes is EmissionsControllerUnitTests {
+    OperatorSet testOperatorSet = OperatorSet({avs: address(0x123), id: 1});
+
+    function test_pressButton_OperatorSetUniqueStake() public {
+        // Mock operator set as registered
+        allocationManagerMock.setIsOperatorSet(testOperatorSet, true);
+
+        // Add OperatorSetUniqueStake distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.OperatorSetUniqueStake,
+                operatorSet: testOperatorSet,
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0 and press button
+        cheats.warp(EMISSIONS_START_TIME);
+        emissionsController.pressButton(1);
+
+        // Distribution should be processed (check via event emission)
+        // The distribution will be processed even if RewardsCoordinator call fails
+    }
+
+    function test_pressButton_OperatorSetTotalStake() public {
+        // Mock operator set as registered
+        allocationManagerMock.setIsOperatorSet(testOperatorSet, true);
+
+        // Add OperatorSetTotalStake distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.OperatorSetTotalStake,
+                operatorSet: testOperatorSet,
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0 and press button
+        cheats.warp(EMISSIONS_START_TIME);
+        emissionsController.pressButton(1);
+
+        // Distribution should be processed
+    }
+
+    function test_pressButton_EigenDA() public {
+        // Add EigenDA distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.EigenDA,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Warp to epoch 0 and press button
+        cheats.warp(EMISSIONS_START_TIME);
+        emissionsController.pressButton(1);
+
+        // Distribution should be processed
+    }
+
+    function test_pressButton_Manual() public {
+        // Add Manual distribution
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.Manual,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: emptyStrategiesAndMultipliers() // Manual doesn't need submissions
+            })
+        );
+
+        uint councilBalanceBefore = eigenMock.balanceOf(incentiveCouncil);
+
+        // Warp to epoch 0 and press button
+        cheats.warp(EMISSIONS_START_TIME);
+        emissionsController.pressButton(1);
+
+        // Manual distribution transfers directly to incentive council
+        assertEq(eigenMock.balanceOf(incentiveCouncil), councilBalanceBefore + EMISSIONS_INFLATION_RATE);
+    }
+
+    function test_revert_addDistribution_OperatorSetNotRegistered_UniqueStake() public {
+        OperatorSet memory unregisteredOpSet = OperatorSet({avs: address(0x999), id: 99});
+
+        // Don't register the operator set
+        allocationManagerMock.setIsOperatorSet(unregisteredOpSet, false);
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.OperatorSetNotRegistered.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.OperatorSetUniqueStake,
+                operatorSet: unregisteredOpSet,
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+    }
+
+    function test_revert_addDistribution_OperatorSetNotRegistered_TotalStake() public {
+        OperatorSet memory unregisteredOpSet = OperatorSet({avs: address(0x999), id: 99});
+
+        // Don't register the operator set
+        allocationManagerMock.setIsOperatorSet(unregisteredOpSet, false);
+
+        cheats.prank(incentiveCouncil);
+        cheats.expectRevert(IEmissionsControllerErrors.OperatorSetNotRegistered.selector);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 10_000,
+                startEpoch: 0,
+                stopEpoch: 1,
+                distributionType: DistributionType.OperatorSetTotalStake,
+                operatorSet: unregisteredOpSet,
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+    }
 }
 
 /// -----------------------------------------------------------------------
@@ -472,7 +959,76 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         // Verify the update succeeded
         Distribution memory updated = emissionsController.getDistribution(distributionId2);
         assertEq(updated.weight, 4000);
+        // After add/update, pendingTotalWeight is updated, not totalWeight
+        // totalWeight is only updated when pressButton starts a new epoch
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+    }
+
+    function test_weightCommitment_OnlyUpdatedWhenPressingButton() public {
+        // Initially both weights should be 0
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 0);
+
+        // Add first distribution with weight 6000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 6000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // pendingTotalWeight should be updated, but totalWeight should remain 0
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 6000);
+
+        // Add second distribution with weight 4000
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 4000,
+                startEpoch: 0,
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // pendingTotalWeight should be updated to 10000, totalWeight still 0
+        assertEq(emissionsController.totalWeight(), 0);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Warp to emissions start time (epoch 0)
+        cheats.warp(EMISSIONS_START_TIME);
+
+        // Press button for the first time - this should commit pendingTotalWeight to totalWeight
+        emissionsController.pressButton(2);
+
+        // Now both should be 10000
         assertEq(emissionsController.totalWeight(), 10_000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
+
+        // Add another distribution in the same epoch with weight 0 (to test mid-epoch changes)
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 0,
+                startEpoch: 1, // Future epoch
+                stopEpoch: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // totalWeight should remain 10000, pendingTotalWeight unchanged (weight is 0)
+        assertEq(emissionsController.totalWeight(), 10_000);
+        assertEq(emissionsController.pendingTotalWeight(), 10_000);
     }
 }
 
@@ -587,6 +1143,41 @@ contract EmissionsControllerUnitTests_nextTimeButtonPressable is EmissionsContro
 
         // Next button press time should be start of next epoch
         assertEq(emissionsController.nextTimeButtonPressable(), EMISSIONS_START_TIME + (currentEpoch + 1) * EMISSIONS_EPOCH_LENGTH);
+    }
+}
+
+contract EmissionsControllerUnitTests_lastTimeButtonPressable is EmissionsControllerUnitTests {
+    function test_lastTimeButtonPressable_BeforeStart() public {
+        // Before emissions start, getCurrentEpoch() returns type(uint).max
+        // This will cause overflow in multiplication
+        cheats.expectRevert(stdError.arithmeticError);
+        emissionsController.lastTimeButtonPressable();
+    }
+
+    function test_lastTimeButtonPressable_AtStart() public {
+        // At emissions start (epoch 0)
+        cheats.warp(EMISSIONS_START_TIME);
+        assertEq(emissionsController.lastTimeButtonPressable(), EMISSIONS_START_TIME);
+    }
+
+    function test_lastTimeButtonPressable_AfterMultipleEpochs() public {
+        // Warp to middle of epoch 5
+        cheats.warp(EMISSIONS_START_TIME + 5 * EMISSIONS_EPOCH_LENGTH + EMISSIONS_EPOCH_LENGTH / 2);
+        assertEq(emissionsController.getCurrentEpoch(), 5);
+        // Last time pressable should be start of epoch 5
+        assertEq(emissionsController.lastTimeButtonPressable(), EMISSIONS_START_TIME + 5 * EMISSIONS_EPOCH_LENGTH);
+    }
+
+    function testFuzz_lastTimeButtonPressable_Correctness(uint numEpochs) public {
+        numEpochs = bound(numEpochs, 0, 1000);
+
+        // Warp to arbitrary epoch
+        cheats.warp(EMISSIONS_START_TIME + numEpochs * EMISSIONS_EPOCH_LENGTH);
+        uint currentEpoch = emissionsController.getCurrentEpoch();
+        assertEq(currentEpoch, numEpochs);
+
+        // Last button press time should be start of current epoch
+        assertEq(emissionsController.lastTimeButtonPressable(), EMISSIONS_START_TIME + currentEpoch * EMISSIONS_EPOCH_LENGTH);
     }
 }
 
