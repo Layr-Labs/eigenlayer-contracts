@@ -40,8 +40,12 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
     /// In this window, deallocations still remain slashable by the operatorSet they were allocated to.
     uint32 public immutable DEALLOCATION_DELAY;
 
-    /// @notice Delay before alloaction delay modifications take effect.
+    /// @notice Delay before allocation delay modifications take effect.
     uint32 public immutable ALLOCATION_CONFIGURATION_DELAY;
+
+    /// @notice Delay before slasher changes take effect.
+    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY.
+    uint32 public immutable SLASHER_CONFIGURATION_DELAY;
 
     // Mutatables
 
@@ -131,6 +135,7 @@ abstract contract AllocationManagerStorage is IAllocationManagerStorage {
         eigenStrategy = _eigenStrategy;
         DEALLOCATION_DELAY = _DEALLOCATION_DELAY;
         ALLOCATION_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
+        SLASHER_CONFIGURATION_DELAY = _ALLOCATION_CONFIGURATION_DELAY;
     }
 
     /// @dev This empty reserved space is put in place to allow future versions to add new

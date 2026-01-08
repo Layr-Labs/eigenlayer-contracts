@@ -100,6 +100,9 @@ This pattern is especially useful for complex contracts that require a comprehen
 * `DEALLOCATION_DELAY`: The delay in blocks before deallocations take effect.
     * Mainnet: `100800 blocks` (14 days).
     * Testnet: `50 blocks` (10 minutes).
+* `SLASHER_CONFIGURATION_DELAY`: The delay in blocks before slasher changes take effect.
+    * Currently set to the same value as `ALLOCATION_CONFIGURATION_DELAY`.
+    * Can be changed independently in future upgrades.
 
 ---
 
@@ -1073,13 +1076,14 @@ Note that when an operator registers, registration will FAIL if the call to `IAV
 function updateSlasher(OperatorSet memory operatorSet, address slasher) external;
 ```
 
-Updates the slasher that can call [`slashOperator`](#slashoperator) on behalf of an operatorSet. The slasher will become active after `DEALLOCATION_DELAY` blocks. Only 1 address can slash an operatorSet. 
+Updates the slasher that can call [`slashOperator`](#slashoperator) on behalf of an operatorSet. The slasher will become active after `SLASHER_CONFIGURATION_DELAY` blocks. Only 1 address can slash an operatorSet.
 
-Prior to `v1.9.0`, the address that could set the slasher was settable via the `PermissionController`, which allowed any number of admins/appointees to slash an operatorSet on behalf of an AVS. OperatorSets created prior to `v1.9.0` will have their slasher migrated to the `AllocationManager` - see [`migrateSlashers`](#migrateslashers) for more information. 
+Prior to `v1.9.0`, the address that could set the slasher was settable via the `PermissionController`, which allowed any number of admins/appointees to slash an operatorSet on behalf of an AVS. OperatorSets created prior to `v1.9.0` will have their slasher migrated to the `AllocationManager` - see [`migrateSlashers`](#migrateslashers) for more information.
 
 *Effects*:
+* If the proposed slasher is the same as the currently pending slasher and the pending change hasn't taken effect yet, this is a no-op (delay countdown is not restarted).
 * Sets the operatorSet's `pendingSlasher` to the proposed `slasher`, and save the `effectBlock` at which the `pendingSlasher` can be activated
-    * `effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1`
+    * `effectBlock = uint32(block.number) + SLASHER_CONFIGURATION_DELAY + 1`
 * If the operatorSet has a `pendingDelay`, and if the `effectBlock` has passed, sets the operatorSet's slasher to the pendingSlasher
 * Emits an `SlasherUpdated` event
 
@@ -1110,7 +1114,9 @@ function migrateSlashers(
 ) external;
 ```
 
-Migrates a slasher from the `PermissionController` to the `AllocationManager`. **This function is useful for operatorSets that have been created prior to `v1.9.0`**. Customers *will not* have to migrate a slasher themselves; migration will be done on behalf of all operatorSets upon completion of the `v1.9.0` upgrade. 
+Migrates a slasher from the `PermissionController` to the `AllocationManager`. **This function is useful for operatorSets that have been created prior to `v1.9.0`**. Customers *will not* have to migrate a slasher themselves; migration will be done on behalf of all operatorSets upon completion of the `v1.9.0` upgrade.
+
+**Gas Warning**: This function can be expensive for AVSs with many slashing appointees. The `PermissionController.getAppointees()` call enumerates the full appointee set (using `EnumerableSet.values()`), which has O(n) gas cost. Large appointee sets may cause this function to exceed block gas limits. Consider batching operator sets if needed.
 
 Only 1 slasher can be slash an operatorSet on behalf of an AVS; however, multiple addresses may have had the ability to slash an operatorSet via the previous `PermissionController`-based access control. Because of this mismatch, slashers are migrated based on the following criteria:
 1. If there are no slashers set in the `PermissionController` OR the slasher set is the 0 address, set the slasher to the AVS

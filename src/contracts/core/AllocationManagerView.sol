@@ -503,6 +503,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
     }
 
     /// @inheritdoc IAllocationManagerView
+    /// @dev Returns (address(0), 0) for non-existent operator sets or when no pending slasher change exists.
     function getPendingSlasher(
         OperatorSet memory operatorSet
     ) external view returns (address, uint32) {
@@ -521,6 +522,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
     }
 
     /// @inheritdoc IAllocationManagerView
+    /// @dev Returns address(0) for non-existent operator sets.
     function getSlasher(
         OperatorSet memory operatorSet
     ) public view returns (address) {
