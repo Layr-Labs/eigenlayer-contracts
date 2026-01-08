@@ -81,10 +81,11 @@ interface IAllocationManagerTypes {
         uint32 effectBlock;
     }
 
-    /// @notice Parameters for addresses that can slash operatorSets
-    /// @param slasher the address that can slash the operator set
-    /// @param pendingSlasher the address that will become the slasher for the operator set after a delay
-    /// @param effectBlock the block at which the pending slasher will take effect
+    /// @notice Slasher configuration for an operator set.
+    /// @param slasher The current effective slasher address. Updated immediately when instantEffectBlock=true
+    ///        (e.g., during operator set creation or migration).
+    /// @param pendingSlasher The slasher address that will become effective at effectBlock.
+    /// @param effectBlock The block number at which pendingSlasher becomes the effective slasher.
     /// @dev It is not possible for the slasher to be the 0 address, which is used to denote if the slasher is not set
     struct SlasherParams {
         address slasher;

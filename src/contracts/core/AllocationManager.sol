@@ -754,6 +754,8 @@ contract AllocationManager is
         // Set the pending parameters
         params.pendingSlasher = slasher;
         if (instantEffectBlock) {
+            // Update slasher field immediately for storage consistency
+            params.slasher = slasher;
             params.effectBlock = uint32(block.number);
         } else {
             params.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
