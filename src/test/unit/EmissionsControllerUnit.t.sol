@@ -673,6 +673,8 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
     }
 
     function test_getDistribution_MultipleDistributions() public {
+        allocationManagerMock.setIsOperatorSet(emptyOperatorSet(), true);
+
         // Add multiple distributions with different parameters
         cheats.prank(incentiveCouncil);
         uint distributionId0 = emissionsController.addDistribution(
@@ -714,6 +716,8 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
     }
 
     function test_getDistribution_AfterUpdate() public {
+        allocationManagerMock.setIsOperatorSet(emptyOperatorSet(), true);
+
         // Add a distribution
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(
@@ -786,6 +790,8 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
     }
 
     function test_getDistributions_All() public {
+        allocationManagerMock.setIsOperatorSet(emptyOperatorSet(), true);
+
         // Add multiple distributions
         cheats.prank(incentiveCouncil);
         emissionsController.addDistribution(
@@ -877,6 +883,8 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
     }
 
     function test_getDistributions_SingleElement() public {
+        allocationManagerMock.setIsOperatorSet(emptyOperatorSet(), true);
+
         // Add multiple distributions
         cheats.prank(incentiveCouncil);
         emissionsController.addDistribution(
