@@ -107,6 +107,11 @@ contract EmissionsController is
 
             // Mark the epoch as minted.
             _epochs[currentEpoch].minted = true;
+
+            // Commit pending weight changes to totalWeight for the new epoch.
+            // This ensures that weight modifications made during the previous epoch
+            // (via addDistribution/updateDistribution) take effect starting from this epoch.
+            totalWeight = pendingTotalWeight;
         }
 
         // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
@@ -117,11 +122,9 @@ contract EmissionsController is
         // If length exceeds total distributions, set last index to total distributions (exclusive upper bound).
         if (lastIndex > totalDistributions) lastIndex = totalDistributions;
 
-        uint256 totalWeightBefore = totalWeight;
-
         // Process distributions starting from the next one to process...
-        for (uint256 i = nextDistributionId; i < lastIndex; ++i) {
-            Distribution memory distribution = _distributions[i];
+        for (uint256 distributionId = nextDistributionId; distributionId < lastIndex; ++distributionId) {
+            Distribution memory distribution = _distributions[distributionId];
 
             // Skip disabled distributions...
             if (distribution.distributionType == DistributionType.Disabled) continue;
@@ -130,7 +133,12 @@ contract EmissionsController is
             // Skip distributions that have ended...
             if (distribution.stopEpoch <= currentEpoch) continue;
 
-            _processDistribution(i, currentEpoch, startTimestamp, totalWeightBefore, distribution);
+            _processDistribution({
+                distribution: distribution,
+                distributionId: distributionId,
+                currentEpoch: currentEpoch,
+                startTimestamp: startTimestamp
+            });
         }
 
         // Update total processed count for this epoch.
@@ -142,14 +150,13 @@ contract EmissionsController is
     /// @param currentEpoch The current epoch.
     /// @param distribution The distribution (from storage).
     function _processDistribution(
+        Distribution memory distribution,
         uint256 distributionId,
         uint256 currentEpoch,
-        uint256 startTimestamp,
-        uint256 totalWeightBefore,
-        Distribution memory distribution
+        uint256 startTimestamp
     ) internal {
         // Calculate the total amount of emissions for the distribution.
-        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / totalWeightBefore;
+        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
         // Success flag for the distribution.
         bool success;
 
@@ -252,20 +259,20 @@ contract EmissionsController is
             revert CannotAddDisabledDistribution();
         }
 
-        uint256 totalWeightBefore = totalWeight;
+        uint256 pendingTotalWeightBefore = pendingTotalWeight;
 
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch, totalWeightBefore);
+        _checkDistribution(distribution, currentEpoch, pendingTotalWeightBefore);
 
         // Effects
 
         // Update return value to the next available distribution id.
         distributionId = getTotalDistributions();
 
-        // Update the total weight.
-        totalWeight = totalWeightBefore + distribution.weight;
+        // Update the pending total weight (will be committed when pressButton starts a new epoch).
+        pendingTotalWeight = uint16(pendingTotalWeightBefore + distribution.weight);
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
         // Emit an event for the new distribution.
@@ -280,18 +287,18 @@ contract EmissionsController is
         // Checks
 
         uint256 currentEpoch = getCurrentEpoch();
-        uint256 totalWeightBefore = totalWeight;
+        uint256 pendingTotalWeightBefore = pendingTotalWeight;
         uint256 weight = _distributions[distributionId].weight;
 
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch, totalWeightBefore - weight);
+        _checkDistribution(distribution, currentEpoch, pendingTotalWeightBefore - weight);
 
         // Effects
 
-        // Add the new weight.
-        totalWeight = totalWeightBefore - weight + distribution.weight;
+        // Update the pending total weight (will be committed when pressButton starts a new epoch).
+        pendingTotalWeight = uint16(pendingTotalWeightBefore - weight + distribution.weight);
         // Update the distribution in the distributions array.
         _distributions[distributionId] = distribution;
         // Emit an event for the updated distribution.

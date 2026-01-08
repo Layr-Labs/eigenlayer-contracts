@@ -27,6 +27,8 @@ interface IEmissionsControllerErrors {
     error RewardsSubmissionsCannotBeEmpty();
     /// @dev Thrown when the operator set is not registered.
     error OperatorSetNotRegistered();
+    /// @dev Thrown when emissions have not started yet.
+    error EmissionsNotStarted();
 }
 
 /// @title IEmissionsControllerTypes
@@ -239,9 +241,17 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @return The Incentive Council address.
     function incentiveCouncil() external view returns (address);
 
-    /// @notice Returns the total weight of all distributions.
+    /// @notice Returns the total weight of all distributions for the current epoch.
+    /// @dev This weight is used to calculate distribution amounts in pressButton.
+    ///      It is updated at the start of each new epoch from pendingTotalWeight.
     /// @return The total weight of all distributions.
-    function totalWeight() external view returns (uint256);
+    function totalWeight() external view returns (uint16);
+
+    /// @notice Returns the pending total weight that will take effect in the next epoch.
+    /// @dev This weight is modified when distributions are added or updated.
+    ///      It gets committed to totalWeight when pressButton starts a new epoch.
+    /// @return The pending total weight of all distributions.
+    function pendingTotalWeight() external view returns (uint16);
 
     /// @notice Returns the current epoch.
     /// @return The current epoch.
