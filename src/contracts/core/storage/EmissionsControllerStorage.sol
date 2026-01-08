@@ -39,8 +39,6 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     address public incentiveCouncil;
     /// @inheritdoc IEmissionsController
     uint16 public totalWeight;
-    /// @inheritdoc IEmissionsController
-    uint16 public pendingTotalWeight;
 
     /// @dev Returns an append-only array of distributions.
     Distribution[] internal _distributions;

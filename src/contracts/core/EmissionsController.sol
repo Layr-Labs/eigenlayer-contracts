@@ -77,14 +77,15 @@ contract EmissionsController is
         uint256 length
     ) external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
         uint256 currentEpoch = getCurrentEpoch();
-        uint256 totalDistributions = getTotalDistributions();
-        uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
         // Check if emissions have not started yet.
         // Prevents minting EIGEN before the first epoch has started.
         if (currentEpoch == type(uint256).max) {
             revert EmissionsNotStarted();
         }
+
+        uint256 totalDistributions = getTotalDistributions();
+        uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
         // Check if all distributions have already been processed.
         if (nextDistributionId >= totalDistributions) {
@@ -107,11 +108,6 @@ contract EmissionsController is
 
             // Mark the epoch as minted.
             _epochs[currentEpoch].minted = true;
-
-            // Commit pending weight changes to totalWeight for the new epoch.
-            // This ensures that weight modifications made during the previous epoch
-            // (via addDistribution/updateDistribution) take effect starting from this epoch.
-            totalWeight = pendingTotalWeight;
         }
 
         // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
@@ -142,7 +138,7 @@ contract EmissionsController is
         }
 
         // Update total processed count for this epoch.
-        _epochs[currentEpoch].totalProcessed = uint248(lastIndex);
+        _epochs[currentEpoch].totalProcessed = uint64(lastIndex);
     }
 
     /// @dev Internal helper that processes a distribution.
@@ -259,20 +255,28 @@ contract EmissionsController is
             revert CannotAddDisabledDistribution();
         }
 
-        uint256 pendingTotalWeightBefore = pendingTotalWeight;
+        // Can only add/update distributions if all distributions have been processed for the current epoch.
+        // Prevents pending weight changes from affecting the current epoch.
+        _checkAllDistributionsProcessed(currentEpoch);
+
+        uint256 totalWeightBefore = totalWeight;
 
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch, pendingTotalWeightBefore);
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore);
 
         // Effects
 
-        // Update return value to the next available distribution id.
-        distributionId = getTotalDistributions();
+        // Increment the total added count for the current epoch.
+        ++_epochs[currentEpoch].totalAdded;
 
-        // Update the pending total weight (will be committed when pressButton starts a new epoch).
-        pendingTotalWeight = uint16(pendingTotalWeightBefore + distribution.weight);
+        // Update return value to the next available distribution id.
+        // Use the current length of the distributions array as the new id.
+        distributionId = _distributions.length;
+
+        // Update the total weight.
+        totalWeight = uint16(totalWeightBefore + distribution.weight);
         // Append the distribution to the distributions array.
         _distributions.push(distribution);
         // Emit an event for the new distribution.
@@ -287,18 +291,22 @@ contract EmissionsController is
         // Checks
 
         uint256 currentEpoch = getCurrentEpoch();
-        uint256 pendingTotalWeightBefore = pendingTotalWeight;
+        uint256 totalWeightBefore = totalWeight;
         uint256 weight = _distributions[distributionId].weight;
+
+        // Can only add/update distributions if all distributions have been processed for the current epoch.
+        // Prevents pending weight changes from affecting the current epoch.
+        _checkAllDistributionsProcessed(currentEpoch);
 
         // Asserts the following:
         // - The start epoch is in the future.
         // - The total weight of all distributions does not exceed the max total weight.
-        _checkDistribution(distribution, currentEpoch, pendingTotalWeightBefore - weight);
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore - weight);
 
         // Effects
 
         // Update the pending total weight (will be committed when pressButton starts a new epoch).
-        pendingTotalWeight = uint16(pendingTotalWeightBefore - weight + distribution.weight);
+        totalWeight = uint16(totalWeightBefore - weight + distribution.weight);
         // Update the distribution in the distributions array.
         _distributions[distributionId] = distribution;
         // Emit an event for the updated distribution.
@@ -312,6 +320,17 @@ contract EmissionsController is
     function _checkOnlyIncentiveCouncil() internal view {
         // Check if the caller is the incentive council.
         if (msg.sender != incentiveCouncil) revert CallerIsNotIncentiveCouncil();
+    }
+
+    function _checkAllDistributionsProcessed(
+        uint256 currentEpoch
+    ) internal view {
+        // Check if all distributions have been processed for the current epoch.
+        // Same logic found in `isButtonPressable()`.
+        // Skip check if emissions haven't started yet.
+        if (currentEpoch != type(uint256).max && _epochs[currentEpoch].totalProcessed < getTotalDistributions()) {
+            revert NotAllDistributionsProcessed();
+        }
     }
 
     function _checkDistribution(
@@ -383,7 +402,13 @@ contract EmissionsController is
 
     /// @inheritdoc IEmissionsController
     function getTotalDistributions() public view returns (uint256) {
-        return _distributions.length;
+        uint256 currentEpoch = getCurrentEpoch();
+        // Before emissions start, return the full count since distributions added
+        // before emissions are not tracked as "added in current epoch"
+        if (currentEpoch == type(uint256).max) {
+            return _distributions.length;
+        }
+        return _distributions.length - _epochs[currentEpoch].totalAdded;
     }
 
     /// @inheritdoc IEmissionsController
