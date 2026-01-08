@@ -272,6 +272,8 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             strategiesAndMultipliers: strategiesAndMultipliers
         });
 
+        allocationManagerMock.setIsOperatorSet(addedDistribution.operatorSet, true);
+
         cheats.expectEmit(true, true, true, true);
         emit DistributionAdded(nextDistributionId, type(uint).max, addedDistribution);
         cheats.prank(incentiveCouncil);
