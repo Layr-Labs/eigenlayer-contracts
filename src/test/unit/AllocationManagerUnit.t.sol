@@ -4181,6 +4181,8 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSetsV2 is Alloca
 }
 
 contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests, IPermissionControllerErrors {
+    using ArrayLib for *;
+
     /// -----------------------------------------------------------------------
     /// updateSlasher() + getSlasher() + getPendingSlasher()
     /// -----------------------------------------------------------------------
@@ -4331,6 +4333,29 @@ contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests,
         cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         (returnedSlasher) = allocationManager.getSlasher(defaultOperatorSet);
         assertEq(returnedSlasher, secondSlasher, "slasher not set");
+    }
+
+    /// @notice Tests that createOperatorSets with instantEffectBlock=true sets the slasher field in raw storage
+    function test_createOperatorSets_instantEffectBlock_setsSlasherFieldInStorage() public {
+        address avs = address(0x123);
+        address slasher = address(0x456);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        // Create operator set with slasher (uses instantEffectBlock=true)
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(
+            avs, CreateSetParamsV2({operatorSetId: 0, strategies: defaultStrategies, slasher: slasher}).toArray()
+        );
+
+        OperatorSet memory operatorSet = OperatorSet(avs, 0);
+
+        // Verify raw storage: slasher field should be set, not just pendingSlasher
+        SlasherParams memory params = AllocationManagerHarness(address(allocationManager)).getSlasherParams(operatorSet);
+        assertEq(params.slasher, slasher, "slasher field should be set immediately in storage");
+        assertEq(params.pendingSlasher, slasher, "pendingSlasher should also be set");
+        assertEq(params.effectBlock, uint32(block.number), "effectBlock should be current block");
     }
 }
 
@@ -4521,6 +4546,25 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
             assertEq(allocationManager.getSlasher(operatorSets[i]), avs, "slasher should be the AVS");
             _assertNothingPending(operatorSets[i]);
         }
+    }
+
+    /// @notice Tests that migrateSlashers sets the slasher field immediately in raw storage
+    function test_migrateSlashers_setsSlasherFieldImmediatelyInStorage() public {
+        // Zero out the slasher (simulating a legacy operator set)
+        AllocationManagerHarness(address(allocationManager)).setSlasherToZero(defaultOperatorSet);
+
+        // Verify slasher is zeroed in raw storage
+        SlasherParams memory paramsBefore = AllocationManagerHarness(address(allocationManager)).getSlasherParams(defaultOperatorSet);
+        assertEq(paramsBefore.slasher, address(0), "slasher should be zeroed before migration");
+
+        // Migrate the slasher
+        allocationManager.migrateSlashers(defaultOperatorSet.toArray());
+
+        // Verify raw storage: slasher field should be set, not just pendingSlasher
+        SlasherParams memory paramsAfter = AllocationManagerHarness(address(allocationManager)).getSlasherParams(defaultOperatorSet);
+        assertEq(paramsAfter.slasher, defaultAVS, "slasher field should be set immediately in storage");
+        assertEq(paramsAfter.pendingSlasher, defaultAVS, "pendingSlasher should also be set");
+        assertEq(paramsAfter.effectBlock, uint32(block.number), "effectBlock should be current block");
     }
 }
 
