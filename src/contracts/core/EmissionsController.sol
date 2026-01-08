@@ -80,6 +80,12 @@ contract EmissionsController is
         uint256 totalDistributions = getTotalDistributions();
         uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
+        // Check if emissions have not started yet.
+        // Prevents minting EIGEN before the first epoch has started.
+        if (currentEpoch == type(uint256).max) {
+            revert EmissionsNotStarted();
+        }
+
         // Check if all distributions have already been processed.
         if (nextDistributionId >= totalDistributions) {
             revert AllDistributionsProcessed();
