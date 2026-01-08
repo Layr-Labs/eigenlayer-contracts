@@ -41,4 +41,10 @@ contract AllocationManagerHarness is AllocationManager {
     function getSlasherParams(OperatorSet memory operatorSet) external view returns (SlasherParams memory) {
         return _slashers[operatorSet.key()];
     }
+
+    /// @notice Returns the raw AllocationDelayInfo struct from storage for testing purposes.
+    /// @dev This bypasses the in-memory application of pending delay that getAllocationDelay() does.
+    function getAllocationDelayInfoRaw(address operator) external view returns (AllocationDelayInfo memory) {
+        return _allocationDelayInfo[operator];
+    }
 }
