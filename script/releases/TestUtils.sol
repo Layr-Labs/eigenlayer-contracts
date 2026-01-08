@@ -606,6 +606,10 @@ library TestUtils {
             allocationManagerView.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManagerView ALLOCATION_CONFIGURATION_DELAY incorrect"
         );
+        assertTrue(
+            allocationManagerView.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+            "allocationManagerView SLASHER_CONFIGURATION_DELAY incorrect"
+        );
     }
 
     function validateAllocationManagerImmutables(
@@ -636,6 +640,10 @@ library TestUtils {
         assertTrue(
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManager ALLOCATION_CONFIGURATION_DELAY incorrect"
+        );
+        assertTrue(
+            allocationManager.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+            "allocationManager SLASHER_CONFIGURATION_DELAY incorrect"
         );
     }
 

@@ -82,17 +82,19 @@ A contract name may be passed to this function repeatedly; each time, the previo
 ### `configure`
 
 ```solidity
-function configure(address addr, DeploymentConfig calldata config) external onlyRole(DEFAULT_ADMIN_ROLE)
+function configure(string calldata name, DeploymentConfig calldata config) external onlyRole(DEFAULT_ADMIN_ROLE)
 ```
 
 Updates the stored `DeploymentConfig` for a single deployment:
 
 *Effects*:
+* Looks up the address for `name` from `_deployments`.
 * Overwrites `_deploymentConfigs[addr]` with the supplied configuration.
 * Emits `DeploymentConfigured(addr, config)`.
 
 *Requirements*:
 * Caller must hold `DEFAULT_ADMIN_ROLE`.
+* `name` must have been previously shipped.
 
 ### `pauseAll`
 

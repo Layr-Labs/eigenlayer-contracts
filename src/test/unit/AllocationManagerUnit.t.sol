@@ -4181,6 +4181,8 @@ contract AllocationManagerUnitTests_createRedistributingOperatorSetsV2 is Alloca
 }
 
 contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests, IPermissionControllerErrors {
+    using ArrayLib for *;
+
     /// -----------------------------------------------------------------------
     /// updateSlasher() + getSlasher() + getPendingSlasher()
     /// -----------------------------------------------------------------------
@@ -4331,6 +4333,121 @@ contract AllocationManagerUnitTests_updateSlasher is AllocationManagerUnitTests,
         cheats.roll(block.number + ALLOCATION_CONFIGURATION_DELAY + 1);
         (returnedSlasher) = allocationManager.getSlasher(defaultOperatorSet);
         assertEq(returnedSlasher, secondSlasher, "slasher not set");
+    }
+
+    /// @notice Tests that createOperatorSets with instantEffectBlock=true sets the slasher field in raw storage
+    function test_createOperatorSets_instantEffectBlock_setsSlasherFieldInStorage() public {
+        address avs = address(0x123);
+        address slasher = address(0x456);
+
+        cheats.prank(avs);
+        allocationManager.updateAVSMetadataURI(avs, "https://example.com");
+
+        // Create operator set with slasher (uses instantEffectBlock=true)
+        cheats.prank(avs);
+        allocationManager.createOperatorSets(
+            avs, CreateSetParamsV2({operatorSetId: 0, strategies: defaultStrategies, slasher: slasher}).toArray()
+        );
+
+        OperatorSet memory operatorSet = OperatorSet(avs, 0);
+
+        // Verify raw storage: slasher field should be set, not just pendingSlasher
+        SlasherParams memory params = AllocationManagerHarness(address(allocationManager)).getSlasherParams(operatorSet);
+        assertEq(params.slasher, slasher, "slasher field should be set immediately in storage");
+        assertEq(params.pendingSlasher, slasher, "pendingSlasher should also be set");
+        assertEq(params.effectBlock, uint32(block.number), "effectBlock should be current block");
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Fix 3: Re-proposing same slasher is a no-op
+    /// -----------------------------------------------------------------------
+
+    /// @notice Test that re-proposing the same pending slasher is a no-op (effectBlock doesn't restart)
+    function test_updateSlasher_reProposeSamePendingSlasher_isNoOp(Randomness r) public rand(r) {
+        address slasher = r.Address();
+
+        // First proposal
+        cheats.prank(defaultAVS);
+        allocationManager.updateSlasher(defaultOperatorSet, slasher);
+
+        (, uint32 originalEffectBlock) = allocationManager.getPendingSlasher(defaultOperatorSet);
+
+        // Roll forward but stay before effectBlock
+        cheats.roll(block.number + 10);
+
+        // Re-propose the same slasher - should be a no-op
+        cheats.prank(defaultAVS);
+        allocationManager.updateSlasher(defaultOperatorSet, slasher);
+
+        // effectBlock should NOT have changed
+        (, uint32 newEffectBlock) = allocationManager.getPendingSlasher(defaultOperatorSet);
+        assertEq(newEffectBlock, originalEffectBlock, "effectBlock should not restart when re-proposing same slasher");
+    }
+
+    /// @notice Test that proposing a different slasher does restart the delay
+    function test_updateSlasher_proposeDifferentSlasher_restartsDelay(Randomness r) public rand(r) {
+        address firstSlasher = r.Address();
+        address secondSlasher = r.Address();
+        cheats.assume(firstSlasher != secondSlasher);
+
+        // First proposal
+        cheats.prank(defaultAVS);
+        allocationManager.updateSlasher(defaultOperatorSet, firstSlasher);
+
+        (, uint32 originalEffectBlock) = allocationManager.getPendingSlasher(defaultOperatorSet);
+
+        // Roll forward but stay before effectBlock
+        cheats.roll(block.number + 10);
+
+        // Propose a different slasher - should restart the delay
+        cheats.prank(defaultAVS);
+        allocationManager.updateSlasher(defaultOperatorSet, secondSlasher);
+
+        // effectBlock should have changed
+        (, uint32 newEffectBlock) = allocationManager.getPendingSlasher(defaultOperatorSet);
+        assertTrue(newEffectBlock > originalEffectBlock, "effectBlock should restart when proposing different slasher");
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Fix 4: getSlasher/getPendingSlasher return zero for non-existent operator sets
+    /// -----------------------------------------------------------------------
+
+    /// @notice Test that getSlasher returns address(0) for non-existent operator set
+    function test_getSlasher_nonExistentOperatorSet_returnsZero() public {
+        OperatorSet memory nonExistent = OperatorSet({avs: address(0x999), id: 999});
+        address slasher = allocationManager.getSlasher(nonExistent);
+        assertEq(slasher, address(0), "should return address(0) for non-existent operator set");
+    }
+
+    /// @notice Test that getPendingSlasher returns (address(0), 0) for non-existent operator set
+    function test_getPendingSlasher_nonExistentOperatorSet_returnsZero() public {
+        OperatorSet memory nonExistent = OperatorSet({avs: address(0x999), id: 999});
+        (address pendingSlasher, uint32 effectBlock) = allocationManager.getPendingSlasher(nonExistent);
+        assertEq(pendingSlasher, address(0), "should return address(0) for non-existent operator set");
+        assertEq(effectBlock, 0, "should return 0 for non-existent operator set");
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Fix 5: SLASHER_CONFIGURATION_DELAY constant
+    /// -----------------------------------------------------------------------
+
+    /// @notice Test that SLASHER_CONFIGURATION_DELAY constant exists and equals ALLOCATION_CONFIGURATION_DELAY
+    function test_SLASHER_CONFIGURATION_DELAY_exists() public view {
+        uint32 slasherDelay = allocationManager.SLASHER_CONFIGURATION_DELAY();
+        uint32 allocationDelay = allocationManager.ALLOCATION_CONFIGURATION_DELAY();
+        assertEq(slasherDelay, allocationDelay, "SLASHER_CONFIGURATION_DELAY should equal ALLOCATION_CONFIGURATION_DELAY initially");
+    }
+
+    /// @notice Test that updateSlasher uses SLASHER_CONFIGURATION_DELAY for effectBlock calculation
+    function test_updateSlasher_usesSlasherConfigurationDelay(Randomness r) public rand(r) {
+        address slasher = r.Address();
+
+        cheats.prank(defaultAVS);
+        allocationManager.updateSlasher(defaultOperatorSet, slasher);
+
+        (, uint32 effectBlock) = allocationManager.getPendingSlasher(defaultOperatorSet);
+        uint32 expected = uint32(block.number) + allocationManager.SLASHER_CONFIGURATION_DELAY() + 1;
+        assertEq(effectBlock, expected, "should use SLASHER_CONFIGURATION_DELAY for effectBlock calculation");
     }
 }
 
@@ -4521,6 +4638,25 @@ contract AllocationManagerUnitTests_migrateSlashers is AllocationManagerUnitTest
             assertEq(allocationManager.getSlasher(operatorSets[i]), avs, "slasher should be the AVS");
             _assertNothingPending(operatorSets[i]);
         }
+    }
+
+    /// @notice Tests that migrateSlashers sets the slasher field immediately in raw storage
+    function test_migrateSlashers_setsSlasherFieldImmediatelyInStorage() public {
+        // Zero out the slasher (simulating a legacy operator set)
+        AllocationManagerHarness(address(allocationManager)).setSlasherToZero(defaultOperatorSet);
+
+        // Verify slasher is zeroed in raw storage
+        SlasherParams memory paramsBefore = AllocationManagerHarness(address(allocationManager)).getSlasherParams(defaultOperatorSet);
+        assertEq(paramsBefore.slasher, address(0), "slasher should be zeroed before migration");
+
+        // Migrate the slasher
+        allocationManager.migrateSlashers(defaultOperatorSet.toArray());
+
+        // Verify raw storage: slasher field should be set, not just pendingSlasher
+        SlasherParams memory paramsAfter = AllocationManagerHarness(address(allocationManager)).getSlasherParams(defaultOperatorSet);
+        assertEq(paramsAfter.slasher, defaultAVS, "slasher field should be set immediately in storage");
+        assertEq(paramsAfter.pendingSlasher, defaultAVS, "pendingSlasher should also be set");
+        assertEq(paramsAfter.effectBlock, uint32(block.number), "effectBlock should be current block");
     }
 }
 
@@ -5115,5 +5251,49 @@ contract AllocationManagerUnitTests_isOperatorRedistributable is AllocationManag
 
         // Operator should be redistributable (still registered)
         assertTrue(allocationManager.isOperatorRedistributable(defaultOperator), "operator should be redistributable");
+    }
+}
+
+contract AllocationManagerUnitTests_setAllocationDelay is AllocationManagerUnitTests {
+    /// @notice Tests that newly registered operator has delay and isSet fields set immediately in raw storage
+    function test_setAllocationDelay_newlyRegistered_setsDelayAndIsSetImmediately() public {
+        address operator = address(0x456);
+        uint32 delay = 100;
+
+        // Register operator
+        delegationManagerMock.setIsOperator(operator, true);
+
+        // Call setAllocationDelay as DelegationManager (triggers newlyRegistered=true path)
+        cheats.prank(address(delegationManagerMock));
+        allocationManager.setAllocationDelay(operator, delay);
+
+        // Verify raw storage: delay and isSet should be set immediately, not just pendingDelay
+        AllocationDelayInfo memory info = AllocationManagerHarness(address(allocationManager)).getAllocationDelayInfoRaw(operator);
+        assertEq(info.delay, delay, "delay field should be set immediately");
+        assertTrue(info.isSet, "isSet should be true immediately");
+        assertEq(info.pendingDelay, delay, "pendingDelay should also be set");
+        assertEq(info.effectBlock, uint32(block.number), "effectBlock should be current block");
+    }
+
+    /// @notice Tests that existing operator update does NOT set delay/isSet immediately
+    function test_setAllocationDelay_existingOperator_delayNotSetImmediately() public {
+        address operator = address(0x456);
+        uint32 initialDelay = 100;
+        uint32 newDelay = 200;
+
+        // Register operator and set initial delay
+        delegationManagerMock.setIsOperator(operator, true);
+        cheats.prank(address(delegationManagerMock));
+        allocationManager.setAllocationDelay(operator, initialDelay);
+
+        // Update delay as the operator (not newly registered)
+        cheats.prank(operator);
+        allocationManager.setAllocationDelay(operator, newDelay);
+
+        // Verify raw storage: delay should still be initialDelay until effectBlock
+        AllocationDelayInfo memory info = AllocationManagerHarness(address(allocationManager)).getAllocationDelayInfoRaw(operator);
+        assertEq(info.delay, initialDelay, "delay should not change until effectBlock");
+        assertEq(info.pendingDelay, newDelay, "pendingDelay should be updated");
+        assertTrue(info.isSet, "isSet should still be true");
     }
 }

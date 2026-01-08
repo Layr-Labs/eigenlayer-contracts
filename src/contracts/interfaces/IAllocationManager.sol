@@ -81,10 +81,11 @@ interface IAllocationManagerTypes {
         uint32 effectBlock;
     }
 
-    /// @notice Parameters for addresses that can slash operatorSets
-    /// @param slasher the address that can slash the operator set
-    /// @param pendingSlasher the address that will become the slasher for the operator set after a delay
-    /// @param effectBlock the block at which the pending slasher will take effect
+    /// @notice Slasher configuration for an operator set.
+    /// @param slasher The current effective slasher address. Updated immediately when instantEffectBlock=true
+    ///        (e.g., during operator set creation or migration).
+    /// @param pendingSlasher The slasher address that will become effective at effectBlock.
+    /// @param effectBlock The block number at which pendingSlasher becomes the effective slasher.
     /// @dev It is not possible for the slasher to be the 0 address, which is used to denote if the slasher is not set
     struct SlasherParams {
         address slasher;
@@ -92,12 +93,11 @@ interface IAllocationManagerTypes {
         uint32 effectBlock;
     }
 
-    /// @notice Struct containing allocation delay metadata for a given operator.
-    /// @param delay Current allocation delay
-    /// @param isSet Whether the operator has initially set an allocation delay. Note that this could be false but the
-    /// block.number >= effectBlock in which we consider their delay to be configured and active.
-    /// @param pendingDelay The delay that will take effect after `effectBlock`
-    /// @param effectBlock The block number after which a pending delay will take effect
+    /// @notice Allocation delay configuration for an operator.
+    /// @param delay The current effective allocation delay. Updated immediately for newly registered operators.
+    /// @param isSet Whether the allocation delay has been configured. True immediately for newly registered operators.
+    /// @param pendingDelay The allocation delay that will become effective at effectBlock.
+    /// @param effectBlock The block number at which pendingDelay becomes the effective delay.
     struct AllocationDelayInfo {
         uint32 delay;
         bool isSet;
@@ -263,6 +263,10 @@ interface IAllocationManagerStorage is IAllocationManagerEvents {
 
     /// @notice Delay before alloaction delay modifications take effect.
     function ALLOCATION_CONFIGURATION_DELAY() external view returns (uint32);
+
+    /// @notice Delay before slasher changes take effect.
+    /// @dev Currently set to the same value as ALLOCATION_CONFIGURATION_DELAY.
+    function SLASHER_CONFIGURATION_DELAY() external view returns (uint32);
 }
 
 interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationManagerEvents, IAllocationManagerStorage {
@@ -469,7 +473,8 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
     /// @notice Allows an AVS to update the slasher for an operator set
     /// @param operatorSet the operator set to update the slasher for
     /// @param slasher the new slasher
-    /// @dev The new slasher will take effect in DEALLOCATION_DELAY blocks
+    /// @dev The new slasher will take effect after `SLASHER_CONFIGURATION_DELAY` blocks.
+    /// @dev No-op if the proposed slasher is already pending and hasn't taken effect yet (delay countdown is not restarted).
     /// @dev The slasher can only be updated if it has already been set. The slasher is set either on operatorSet creation or,
     ///      for operatorSets created prior to v1.9.0, via `migrateSlashers`
     /// @dev Reverts for:
@@ -493,6 +498,8 @@ interface IAllocationManagerActions is IAllocationManagerErrors, IAllocationMana
     /// @dev This function does not revert to allow for simpler offchain calling. It will no-op if:
     ///      - The operator set does not exist
     ///      - The slasher has already been set, either via migration or creation of the operatorSet
+    /// @dev WARNING: Gas cost is O(appointees) per operator set due to `PermissionController.getAppointees()` call.
+    ///      May exceed block gas limit for AVSs with large appointee sets. Consider batching operator sets if needed.
     function migrateSlashers(
         OperatorSet[] memory operatorSets
     ) external;
@@ -722,7 +729,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
 
     /// @notice Returns the address that can slash a given operator set.
     /// @param operatorSet The operator set to query.
-    /// @return The address that can slash the operator set.
+    /// @return The address that can slash the operator set. Returns `address(0)` if the operator set doesn't exist.
     /// @dev If there is a pending slasher that can be applied after the `effectBlock`, the pending slasher will be returned.
     function getSlasher(
         OperatorSet memory operatorSet
@@ -730,8 +737,8 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
 
     /// @notice Returns pending slasher for a given operator set.
     /// @param operatorSet The operator set to query.
-    /// @return pendingSlasher The pending slasher for the operator set. This value is 0 if there is no pending slasher.
-    /// @return effectBlock The block at which the pending slasher will take effect. This value is 0 if there is no pending slasher.
+    /// @return pendingSlasher The pending slasher for the operator set. Returns `address(0)` if there is no pending slasher or the operator set doesn't exist.
+    /// @return effectBlock The block at which the pending slasher will take effect. Returns `0` if there is no pending slasher or the operator set doesn't exist.
     function getPendingSlasher(
         OperatorSet memory operatorSet
     ) external view returns (address pendingSlasher, uint32 effectBlock);
