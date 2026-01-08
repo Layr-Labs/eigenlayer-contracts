@@ -30,13 +30,16 @@ contract EmissionsController is
     constructor(
         IEigen eigen,
         IBackingEigen backingEigen,
+        IAllocationManager allocationManager,
         IRewardsCoordinator rewardsCoordinator,
         IPauserRegistry pauserRegistry,
         uint256 inflationRate,
         uint256 startTime,
         uint256 cooldownSeconds
     )
-        EmissionsControllerStorage(eigen, backingEigen, rewardsCoordinator, inflationRate, startTime, cooldownSeconds)
+        EmissionsControllerStorage(
+            eigen, backingEigen, allocationManager, rewardsCoordinator, inflationRate, startTime, cooldownSeconds
+        )
         Pausable(pauserRegistry)
     {
         _disableInitializers();
@@ -302,7 +305,17 @@ contract EmissionsController is
         Distribution calldata distribution,
         uint256 currentEpoch,
         uint256 totalWeightBefore
-    ) internal pure {
+    ) internal view {
+        // Check if the operator set is registered (for OperatorSetTotalStake or OperatorSetUniqueStake distributions).
+        if (
+            distribution.distributionType == DistributionType.OperatorSetTotalStake
+                || distribution.distributionType == DistributionType.OperatorSetUniqueStake
+        ) {
+            if (!ALLOCATION_MANAGER.isOperatorSet(distribution.operatorSet)) {
+                revert OperatorSetNotRegistered();
+            }
+        }
+
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
         if (currentEpoch != type(uint256).max) {

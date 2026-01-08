@@ -25,6 +25,8 @@ interface IEmissionsControllerErrors {
     error InvalidDistributionType();
     /// @dev Thrown when rewards submissions array is empty for a distribution that requires it.
     error RewardsSubmissionsCannotBeEmpty();
+    /// @dev Thrown when the operator set is not registered.
+    error OperatorSetNotRegistered();
 }
 
 /// @title IEmissionsControllerTypes
@@ -127,6 +129,10 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     /// @notice The BACKING_EIGEN token address.
     /// @dev Immutable/constant variable that requires an upgrade to modify.
     function BACKING_EIGEN() external view returns (IBackingEigen);
+
+    /// @notice The AllocationManager address.
+    /// @dev Immutable/constant variable that requires an upgrade to modify.
+    function ALLOCATION_MANAGER() external view returns (IAllocationManager);
 
     /// @notice The RewardsCoordinator address.
     /// @dev Immutable/constant variable that requires an upgrade to modify.

@@ -19,6 +19,8 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     IEigen public immutable override EIGEN;
     /// @dev The backing Eigen token that will be minted for emissions.
     IBackingEigen public immutable override BACKING_EIGEN;
+    /// @dev The AllocationManager contract for managing operator sets.
+    IAllocationManager public immutable override ALLOCATION_MANAGER;
     /// @dev The RewardsCoordinator contract for submitting rewards.
     IRewardsCoordinator public immutable override REWARDS_COORDINATOR;
 
@@ -46,6 +48,7 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     constructor(
         IEigen eigen,
         IBackingEigen backingEigen,
+        IAllocationManager allocationManager,
         IRewardsCoordinator rewardsCoordinator,
         uint256 inflationRate,
         uint256 startTime,
@@ -53,6 +56,7 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     ) {
         EIGEN = eigen;
         BACKING_EIGEN = backingEigen;
+        ALLOCATION_MANAGER = allocationManager;
         REWARDS_COORDINATOR = rewardsCoordinator;
 
         EMISSIONS_INFLATION_RATE = inflationRate;
