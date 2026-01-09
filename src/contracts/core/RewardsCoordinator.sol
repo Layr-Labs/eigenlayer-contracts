@@ -118,25 +118,17 @@ contract RewardsCoordinator is
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARDS_FOR_ALL_SUBMISSION) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllHash[msg.sender][rewardsSubmissionForAllHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
 
             emit RewardsSubmissionForAllCreated(msg.sender, nonce, rewardsSubmissionForAllHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -145,20 +137,11 @@ contract RewardsCoordinator is
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS) onlyRewardsForAllSubmitter nonReentrant {
         for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[msg.sender];
             bytes32 rewardsSubmissionForAllEarnersHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
 
             isRewardsSubmissionForAllEarnersHash[msg.sender][rewardsSubmissionForAllEarnersHash] = true;
             submissionNonce[msg.sender] = nonce + 1;
@@ -169,6 +152,7 @@ contract RewardsCoordinator is
                 rewardsSubmissionForAllEarnersHash,
                 rewardsSubmission
             );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
