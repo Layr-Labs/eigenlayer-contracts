@@ -316,7 +316,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     }
 
     /// @notice Deallocates all magnitude from the configured operator set.
-    /// @dev Best-effort: failures are caught to avoid bricking `markMatured()`.
+    /// @dev Best-effort: failures are ignored to avoid bricking `markMatured()`.
     function _deallocateAll() internal {
         IAllocationManager.AllocateParams[] memory params = new IAllocationManager.AllocateParams[](1);
         params[0].operatorSet = _operatorSet;
@@ -325,11 +325,14 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         params[0].newMagnitudes = new uint64[](1);
         params[0].newMagnitudes[0] = 0;
         // This call is best-effort: failures should not brick `markMatured()` and lock user funds.
-        try allocationManager.modifyAllocations(address(this), params) {} catch {}
+        // We use a low-level call instead of try/catch to avoid wallet gas-estimation pitfalls.
+        (bool success,) = address(allocationManager)
+            .call(abi.encodeWithSelector(IAllocationManagerActions.modifyAllocations.selector, address(this), params));
+        success; // suppress unused variable warning
     }
 
     /// @notice Deregisters the vault from its configured operator set.
-    /// @dev Best-effort: failures are caught to avoid bricking `markMatured()`.
+    /// @dev Best-effort: failures are ignored to avoid bricking `markMatured()`.
     function _deregisterFromOperatorSet() internal {
         IAllocationManager.DeregisterParams memory params;
         params.operator = address(this);
@@ -337,6 +340,9 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         params.operatorSetIds = new uint32[](1);
         params.operatorSetIds[0] = _operatorSet.id;
         // This call is best-effort: failures should not brick `markMatured()` and lock user funds.
-        try allocationManager.deregisterFromOperatorSets(params) {} catch {}
+        // We use a low-level call instead of try/catch to avoid wallet gas-estimation pitfalls.
+        (bool success,) = address(allocationManager)
+            .call(abi.encodeWithSelector(IAllocationManagerActions.deregisterFromOperatorSets.selector, params));
+        success; // suppress unused variable warning
     }
 }

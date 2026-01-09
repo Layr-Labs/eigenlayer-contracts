@@ -122,9 +122,20 @@ interface IDurationVaultStrategy is
     function lock() external;
 
     /// @notice Marks the vault as matured once the configured duration has elapsed.
-    /// @dev Transitions state from ALLOCATIONS to WITHDRAWALS. Deallocates from the operator set
-    /// and deregisters the vault. After maturation, withdrawals are permitted while deposits
-    /// remain disabled. Callable by anyone once the duration has elapsed.
+    /// @dev Transitions state from ALLOCATIONS to WITHDRAWALS.
+    ///
+    /// Best-effort operator cleanup:
+    /// - Attempts to deallocate from the configured operator set and deregister the vault as an operator.
+    /// - These external calls are intentionally best-effort so `markMatured()` cannot be bricked and user
+    ///   withdrawals cannot be indefinitely locked.
+    ///
+    /// Common reasons deallocation/deregistration can fail include:
+    /// - AllocationManager pausing allocations/deallocations or register/deregister operations.
+    /// - AVS-side registrar rejecting deregistration (e.g., operator removed/ejected from an operator set).
+    /// - AllocationManager state constraints (e.g., pending allocation modification preventing an update).
+    ///
+    /// After maturation, withdrawals are permitted while deposits remain disabled. Callable by anyone once
+    /// the duration has elapsed.
     function markMatured() external;
 
     /// @notice Updates the vault metadata URI.
