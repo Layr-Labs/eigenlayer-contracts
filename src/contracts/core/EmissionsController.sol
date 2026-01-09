@@ -158,12 +158,21 @@ contract EmissionsController is
         // Success flag for the distribution.
         bool success;
 
+        // Skip if the total amount is 0.
+        if (totalAmount == 0) return;
+
         if (distribution.distributionType != DistributionType.Manual) {
+            uint256 strategiesAndMultipliersLength = distribution.strategiesAndMultipliers.length;
+
+            // Skip cases where the below `amountPerSubmission` calculation would revert.
+            if (strategiesAndMultipliersLength > totalAmount) return;
+
             // Calculate the amount per submission.
-            uint256 amountPerSubmission = totalAmount / distribution.strategiesAndMultipliers.length;
+            uint256 amountPerSubmission = totalAmount / strategiesAndMultipliersLength;
+
             // Update the rewards submissions start timestamp, duration, and amount.
             IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
-                new IRewardsCoordinator.RewardsSubmission[](distribution.strategiesAndMultipliers.length);
+                new IRewardsCoordinator.RewardsSubmission[](strategiesAndMultipliersLength);
             for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
                 rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
                     strategiesAndMultipliers: distribution.strategiesAndMultipliers[i],
