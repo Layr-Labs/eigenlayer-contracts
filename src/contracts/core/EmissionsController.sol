@@ -9,6 +9,8 @@ import "../libraries/OperatorSetLib.sol";
 import "../permissions/Pausable.sol";
 import "./storage/EmissionsControllerStorage.sol";
 
+// TODO: Note in ELIP conditions surrounding UAM perms and opt in.
+
 contract EmissionsController is
     Initializable,
     OwnableUpgradeable,
@@ -211,7 +213,7 @@ contract EmissionsController is
         }
 
         // Emit an event for the processed distribution.
-        emit DistributionProcessed(distributionId, currentEpoch, distribution, success);
+        emit DistributionProcessed(distributionId, currentEpoch, distribution, success); // TODO: add fee amount
     }
 
     /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.

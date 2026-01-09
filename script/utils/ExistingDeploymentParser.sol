@@ -522,7 +522,8 @@ contract ExistingDeploymentParser is Script, Logger {
             0, // initialPausedStatus
             address(0), // rewardsUpdater
             0, // activationDelay
-            0 // defaultSplitBips
+            0, // defaultSplitBips
+            address(0) // feeRecipient
         );
         // DelegationManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));
