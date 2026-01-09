@@ -149,6 +149,25 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         assertFalse(durationVault.operatorSetRegistered(), "operator set should be deregistered");
     }
 
+    function testMarkMaturedBestEffortWhenAllocationManagerReverts() public {
+        durationVault.lock();
+        cheats.warp(block.timestamp + defaultDuration + 1);
+
+        allocationManagerMock.setRevertModifyAllocations(true);
+        allocationManagerMock.setRevertDeregisterFromOperatorSets(true);
+
+        // Should not revert even if AllocationManager refuses deallocation/deregistration.
+        durationVault.markMatured();
+
+        assertTrue(durationVault.withdrawalsOpen(), "withdrawals must open after maturity");
+        assertFalse(durationVault.allocationsActive(), "allocations should be inactive after maturity");
+        assertFalse(durationVault.operatorSetRegistered(), "operator set should be unregistered after maturity");
+
+        // Since the mock reverts before incrementing, only the initial lock allocation is recorded.
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), 1, "unexpected modifyAllocations count");
+        assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 0, "unexpected deregister count");
+    }
+
     // ===================== VAULT STATE TESTS =====================
 
     function testDepositsBlockedAfterLock() public {
