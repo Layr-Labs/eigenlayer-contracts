@@ -997,6 +997,28 @@ library TestUtils {
         taskMailbox.initialize(address(0), 0, address(0));
     }
 
+    /// core/
+    function validateEmissionsControllerInitialized(
+        EmissionsController emissionsController
+    ) internal {
+        vm.expectRevert(errInit);
+        emissionsController.initialize(address(0), address(0), 0);
+    }
+
+    function validateRewardsCoordinatorConstructor(
+        RewardsCoordinator rewardsCoordinator
+    ) internal view {
+        // Validate constructor immutables are correctly set
+        assertTrue(
+            address(rewardsCoordinator.delegationManager()) == address(Env.proxy.delegationManager()),
+            "RewardsCoordinator delegationManager incorrect"
+        );
+        assertTrue(
+            address(rewardsCoordinator.strategyManager()) == address(Env.proxy.strategyManager()),
+            "RewardsCoordinator strategyManager incorrect"
+        );
+    }
+
     ///
     ///                         VALIDATE PROTOCOL REGISTRY
     ///
