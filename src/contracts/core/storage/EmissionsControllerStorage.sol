@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.27;
+
+import "../../interfaces/IEmissionsController.sol";
+import "../../interfaces/IRewardsCoordinator.sol";
+
+abstract contract EmissionsControllerStorage is IEmissionsController {
+    // Constants
+
+    /// @inheritdoc IEmissionsController
+    uint256 public constant MAX_TOTAL_WEIGHT = 10_000;
+
+    /// @dev Index for flag that pauses pressing the button when set.
+    uint8 internal constant PAUSED_TOKEN_FLOWS = 0;
+
+    // Immutables
+
+    /// @dev The EIGEN token that will be minted for emissions.
+    IEigen public immutable override EIGEN;
+    /// @dev The backing Eigen token that will be minted for emissions.
+    IBackingEigen public immutable override BACKING_EIGEN;
+    /// @dev The AllocationManager contract for managing operator sets.
+    IAllocationManager public immutable override ALLOCATION_MANAGER;
+    /// @dev The RewardsCoordinator contract for submitting rewards.
+    IRewardsCoordinator public immutable override REWARDS_COORDINATOR;
+
+    /// @inheritdoc IEmissionsController
+    uint256 public immutable EMISSIONS_INFLATION_RATE;
+    /// @inheritdoc IEmissionsController
+    uint256 public immutable EMISSIONS_START_TIME;
+    /// @inheritdoc IEmissionsController
+    uint256 public immutable EMISSIONS_EPOCH_LENGTH;
+
+    // Mutatables
+
+    // Slot 0 (Packed)
+
+    /// @inheritdoc IEmissionsController
+    address public incentiveCouncil;
+    /// @inheritdoc IEmissionsController
+    uint16 public totalWeight;
+
+    /// @dev Returns an append-only array of distributions.
+    Distribution[] internal _distributions;
+    /// @dev Mapping from epoch number to epoch metadata.
+    mapping(uint256 epoch => Epoch) internal _epochs;
+
+    // Construction
+
+    constructor(
+        IEigen eigen,
+        IBackingEigen backingEigen,
+        IAllocationManager allocationManager,
+        IRewardsCoordinator rewardsCoordinator,
+        uint256 inflationRate,
+        uint256 startTime,
+        uint256 epochLength
+    ) {
+        uint256 calculationIntervalSeconds = rewardsCoordinator.CALCULATION_INTERVAL_SECONDS();
+
+        // Check if epochLength is aligned with CALCULATION_INTERVAL_SECONDS.
+        if (epochLength % calculationIntervalSeconds != 0) {
+            revert EpochLengthNotAlignedWithCalculationInterval();
+        }
+        // Check if startTime is aligned with CALCULATION_INTERVAL_SECONDS.
+        if (startTime % calculationIntervalSeconds != 0) {
+            revert StartTimeNotAlignedWithCalculationInterval();
+        }
+
+        EIGEN = eigen;
+        BACKING_EIGEN = backingEigen;
+        ALLOCATION_MANAGER = allocationManager;
+        REWARDS_COORDINATOR = rewardsCoordinator;
+
+        EMISSIONS_INFLATION_RATE = inflationRate;
+        EMISSIONS_START_TIME = startTime;
+        EMISSIONS_EPOCH_LENGTH = epochLength;
+    }
+
+    /// @dev This empty reserved space is put in place to allow future versions to add new
+    /// variables without shifting down storage in the inheritance chain.
+    /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+    uint256[47] private __gap;
+}
