@@ -126,8 +126,10 @@ contract EmissionsController is
             if (distribution.distributionType == DistributionType.Disabled) continue;
             // Skip distributions that haven't started yet...
             if (distribution.startEpoch > currentEpoch) continue;
-            // Skip distributions that have ended...
-            if (distribution.stopEpoch <= currentEpoch) continue;
+            // Skip distributions that have ended (0 means infinite)...
+            if (distribution.totalEpochs != 0) {
+                if (currentEpoch > distribution.startEpoch + distribution.totalEpochs) continue;
+            }
 
             _processDistribution({
                 distribution: distribution,

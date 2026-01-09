@@ -72,8 +72,8 @@ interface IEmissionsControllerTypes {
         uint64 weight;
         /// The configured start epoch.
         uint64 startEpoch;
-        /// The number of epochs to repeat the distribution (0 for infinite).
-        uint64 stopEpoch;
+        /// The number of epochs to repeat the distribution (0 for infinite, 1 for single epoch, N for N epochs).
+        uint64 totalEpochs;
         /// The type of distribution.
         DistributionType distributionType;
         /// The operator set (Required only for OperatorSetTotalStake and OperatorSetUniqueStake distribution types).

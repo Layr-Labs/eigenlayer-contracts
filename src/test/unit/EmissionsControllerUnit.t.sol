@@ -99,7 +99,7 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -124,7 +124,7 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -145,7 +145,7 @@ contract EmissionsControllerUnitTests_sweep is EmissionsControllerUnitTests {
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -181,7 +181,7 @@ contract EmissionsControllerUnitTests_sweep is EmissionsControllerUnitTests {
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -233,7 +233,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: testOperatorSet,
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -258,7 +258,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: testOperatorSet,
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -279,7 +279,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.EigenDA,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -300,7 +300,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.Manual,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: emptyStrategiesAndMultipliers() // Manual doesn't need submissions
@@ -329,7 +329,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: unregisteredOpSet,
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -349,7 +349,7 @@ contract EmissionsControllerUnitTests_pressButton_DistributionTypes is Emissions
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: unregisteredOpSet,
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -392,7 +392,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -407,7 +407,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.Disabled,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -422,7 +422,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: emptyStrategiesAndMultipliers()
@@ -438,7 +438,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -454,7 +454,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: uint64(weight),
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -469,7 +469,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 6000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -483,7 +483,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -506,7 +506,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         Distribution memory addedDistribution = Distribution({
             weight: uint64(weight),
             startEpoch: 0,
-            stopEpoch: 0,
+            totalEpochs: 0,
             distributionType: distributionType,
             operatorSet: emptyOperatorSet(),
             strategiesAndMultipliers: strategiesAndMultipliers
@@ -533,7 +533,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -553,7 +553,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 3000,
                 startEpoch: 1,
-                stopEpoch: 2,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -573,7 +573,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -589,7 +589,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 10_000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -603,7 +603,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -617,7 +617,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: emptyStrategiesAndMultipliers()
@@ -634,7 +634,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 6000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -647,7 +647,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -662,7 +662,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 0,
+                totalEpochs: 0,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -677,7 +677,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -698,7 +698,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
             Distribution({
                 weight: 3000,
                 startEpoch: 1,
-                stopEpoch: 2,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -749,7 +749,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -768,7 +768,7 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -868,7 +868,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -882,7 +882,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
             Distribution({
                 weight: 2000,
                 startEpoch: 0,
-                stopEpoch: 1,
+                totalEpochs: 1,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -900,7 +900,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 Distribution({
                     weight: 100,
                     startEpoch: 0,
-                    stopEpoch: 1,
+                    totalEpochs: 1,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
                     strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -925,7 +925,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 10,
+                totalEpochs: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -936,7 +936,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
         Distribution memory retrieved = emissionsController.getDistribution(distributionId);
         assertEq(retrieved.weight, 5000);
         assertEq(retrieved.startEpoch, 0);
-        assertEq(retrieved.stopEpoch, 10);
+        assertEq(retrieved.totalEpochs, 10);
         assertEq(uint8(retrieved.distributionType), uint8(DistributionType.RewardsForAllEarners));
     }
 
@@ -949,7 +949,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -961,7 +961,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 4000,
                 startEpoch: 1,
-                stopEpoch: 8,
+                totalEpochs: 7,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -972,14 +972,14 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
         Distribution memory retrieved0 = emissionsController.getDistribution(distributionId0);
         assertEq(retrieved0.weight, 3000);
         assertEq(retrieved0.startEpoch, 0);
-        assertEq(retrieved0.stopEpoch, 5);
+        assertEq(retrieved0.totalEpochs, 5);
         assertEq(uint8(retrieved0.distributionType), uint8(DistributionType.RewardsForAllEarners));
 
         // Verify second distribution
         Distribution memory retrieved1 = emissionsController.getDistribution(distributionId1);
         assertEq(retrieved1.weight, 4000);
         assertEq(retrieved1.startEpoch, 1);
-        assertEq(retrieved1.stopEpoch, 8);
+        assertEq(retrieved1.totalEpochs, 7);
         assertEq(uint8(retrieved1.distributionType), uint8(DistributionType.OperatorSetTotalStake));
     }
 
@@ -992,7 +992,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1006,7 +1006,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
             Distribution({
                 weight: 4000,
                 startEpoch: 2,
-                stopEpoch: 15,
+                totalEpochs: 13,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1017,7 +1017,7 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
         Distribution memory retrieved = emissionsController.getDistribution(distributionId);
         assertEq(retrieved.weight, 4000);
         assertEq(retrieved.startEpoch, 2);
-        assertEq(retrieved.stopEpoch, 15);
+        assertEq(retrieved.totalEpochs, 13);
         assertEq(uint8(retrieved.distributionType), uint8(DistributionType.OperatorSetUniqueStake));
     }
 }
@@ -1030,7 +1030,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1042,7 +1042,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 2000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1066,7 +1066,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1078,7 +1078,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 4000,
                 startEpoch: 1,
-                stopEpoch: 8,
+                totalEpochs: 7,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1090,7 +1090,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 2000,
                 startEpoch: 2,
-                stopEpoch: 10,
+                totalEpochs: 8,
                 distributionType: DistributionType.OperatorSetUniqueStake,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1114,7 +1114,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 Distribution({
                     weight: uint64(100 * (i + 1)),
                     startEpoch: 0,
-                    stopEpoch: 5,
+                    totalEpochs: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
                     strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1138,7 +1138,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1159,7 +1159,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 3000,
                 startEpoch: 0,
-                stopEpoch: 5,
+                totalEpochs: 5,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1171,7 +1171,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             Distribution({
                 weight: 4000,
                 startEpoch: 1,
-                stopEpoch: 8,
+                totalEpochs: 7,
                 distributionType: DistributionType.OperatorSetTotalStake,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1203,7 +1203,7 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
                 Distribution({
                     weight: uint64(100 * (i + 1)),
                     startEpoch: 0,
-                    stopEpoch: 5,
+                    totalEpochs: 5,
                     distributionType: DistributionType.RewardsForAllEarners,
                     operatorSet: emptyOperatorSet(),
                     strategiesAndMultipliers: defaultStrategiesAndMultipliers()
@@ -1235,7 +1235,7 @@ contract EmissionsControllerUnitTests_Pausable is EmissionsControllerUnitTests {
             Distribution({
                 weight: 5000,
                 startEpoch: 0,
-                stopEpoch: 10,
+                totalEpochs: 10,
                 distributionType: DistributionType.RewardsForAllEarners,
                 operatorSet: emptyOperatorSet(),
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
