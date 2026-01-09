@@ -56,6 +56,17 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
         uint256 startTime,
         uint256 epochLength
     ) {
+        uint256 calculationIntervalSeconds = rewardsCoordinator.CALCULATION_INTERVAL_SECONDS();
+
+        // Check if epochLength is aligned with CALCULATION_INTERVAL_SECONDS.
+        if (epochLength % calculationIntervalSeconds != 0) {
+            revert EpochLengthNotAlignedWithCalculationInterval();
+        }
+        // Check if startTime is aligned with CALCULATION_INTERVAL_SECONDS.
+        if (startTime % calculationIntervalSeconds != 0) {
+            revert StartTimeNotAlignedWithCalculationInterval();
+        }
+
         EIGEN = eigen;
         BACKING_EIGEN = backingEigen;
         ALLOCATION_MANAGER = allocationManager;

@@ -29,6 +29,10 @@ interface IEmissionsControllerErrors {
     error OperatorSetNotRegistered();
     /// @dev Thrown when emissions have not started yet.
     error EmissionsNotStarted();
+    /// @dev Thrown when epoch length is not aligned with CALCULATION_INTERVAL_SECONDS.
+    error EpochLengthNotAlignedWithCalculationInterval();
+    /// @dev Thrown when start time is not aligned with CALCULATION_INTERVAL_SECONDS.
+    error StartTimeNotAlignedWithCalculationInterval();
 }
 
 /// @title IEmissionsControllerTypes

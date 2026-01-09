@@ -9,7 +9,9 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
     using ArrayLib for *;
 
     uint EMISSIONS_INFLATION_RATE = 50;
-    uint EMISSIONS_START_TIME = block.timestamp + 1 weeks;
+    // Use a fixed start time that's aligned with CALCULATION_INTERVAL_SECONDS (1 day = 86400)
+    // 7 days from an aligned base ensures proper alignment
+    uint EMISSIONS_START_TIME = 7 days;
     uint EMISSIONS_EPOCH_LENGTH = 1 weeks;
 
     address owner = address(0x1);
