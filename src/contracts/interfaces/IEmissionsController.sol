@@ -17,8 +17,6 @@ interface IEmissionsControllerErrors {
     error TotalWeightExceedsMax();
     /// @dev Thrown when attempting to add a disabled distribution.
     error CannotAddDisabledDistribution();
-    /// @dev Thrown when attempting to update a disabled distribution.
-    error CannotDisableDistributionViaUpdate();
     /// @dev Thrown when all distributions have been processed for the current epoch.
     error AllDistributionsProcessed();
     /// @dev Thrown when not all distributions have been processed for the current epoch.
