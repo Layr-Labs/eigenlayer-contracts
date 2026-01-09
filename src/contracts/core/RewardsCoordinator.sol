@@ -178,26 +178,24 @@ contract RewardsCoordinator is
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) checkCanCall(avs) nonReentrant {
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
-            OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
+            OperatorDirectedRewardsSubmission memory operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
 
             uint256 nonce = submissionNonce[avs];
-            (
-                bytes32 operatorDirectedRewardsSubmissionHash,
-                uint256 amountBeforeFee,
-                uint256 amountAfterFee,
-                bool feeOn
-            ) = _validateOperatorDirectedRewardsSubmission(avs, nonce, operatorDirectedRewardsSubmission);
 
+            // First validate the operator directed submission.
+            // Validate the operator directed submission and deduct protocol fees upfront from each `operatorRewards.amount` if applicable.
+            // This ensures all amounts are net of fees before proceeding, avoiding redundant fee calculations later.
+            (bytes32 operatorDirectedRewardsSubmissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) =
+                _validateOperatorDirectedRewardsSubmission(avs, nonce, operatorDirectedRewardsSubmission);
+
+            // Then transfer the full amount to the contract.
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
-            uint256 feeAmount = amountBeforeFee - amountAfterFee;
-            if (feeOn) {
-                if (feeRecipient != address(0) && feeAmount != 0) {
-                    operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
-                }
-            }
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            _takeOperatorDirectedProtocolFee(operatorDirectedRewardsSubmission.token, amountBeforeFee, amountAfterFee);
 
+            // Last update storage.
             isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
             submissionNonce[avs] = nonce + 1;
 
@@ -223,26 +221,23 @@ contract RewardsCoordinator is
     {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
-            OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
+            OperatorDirectedRewardsSubmission memory operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
 
             uint256 nonce = submissionNonce[operatorSet.avs];
-            (
-                bytes32 operatorDirectedRewardsSubmissionHash,
-                uint256 amountBeforeFee,
-                uint256 amountAfterFee,
-                bool feeOn
-            ) = _validateOperatorDirectedRewardsSubmission(operatorSet.avs, nonce, operatorDirectedRewardsSubmission);
+            // First validate the operator directed submission.
+            // Validate the operator directed submission and deduct protocol fees upfront from each `operatorRewards.amount` if applicable.
+            // This ensures all amounts are net of fees before proceeding, avoiding redundant fee calculations later.
+            (bytes32 operatorDirectedRewardsSubmissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) =
+                _validateOperatorDirectedRewardsSubmission(operatorSet.avs, nonce, operatorDirectedRewardsSubmission);
 
+            // Then transfer the full amount to the contract.
             operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
 
-            uint256 feeAmount = amountBeforeFee - amountAfterFee;
-            if (feeOn) {
-                if (feeRecipient != address(0) && feeAmount != 0) {
-                    operatorDirectedRewardsSubmission.token.safeTransfer(feeRecipient, feeAmount);
-                }
-            }
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            _takeOperatorDirectedProtocolFee(operatorDirectedRewardsSubmission.token, amountBeforeFee, amountAfterFee);
 
+            // Last update storage.
             isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
                 true;
             submissionNonce[operatorSet.avs] = nonce + 1;
@@ -642,7 +637,7 @@ contract RewardsCoordinator is
         address submitter,
         uint256 nonce,
         OperatorDirectedRewardsSubmission memory submission
-    ) internal view returns (bytes32 submissionHash, uint256 amountBeforeFee, uint256 amountAfterFee, bool feeOn) {
+    ) internal view returns (bytes32 submissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) {
         _validateCommonRewardsSubmission(
             submission.strategiesAndMultipliers, submission.startTimestamp, submission.duration
         );
@@ -650,7 +645,7 @@ contract RewardsCoordinator is
         require(submission.operatorRewards.length > 0, InputArrayLengthZero());
         require(submission.startTimestamp + submission.duration < block.timestamp, SubmissionNotRetroactive());
 
-        feeOn = isOptedInForProtocolFee[submitter];
+        bool feeOn = isOptedInForProtocolFee[submitter];
 
         address lastOperator = address(0);
         uint256 length = submission.operatorRewards.length;
@@ -677,7 +672,7 @@ contract RewardsCoordinator is
 
         require(amountAfterFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
 
-        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee, feeOn);
+        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee);
     }
 
     function _checkClaim(
@@ -805,6 +800,23 @@ contract RewardsCoordinator is
             }
         }
         return amountBeforeFee;
+    }
+
+    /// @notice Internal helper to take protocol fees from a operator-directed rewards submission.
+    /// @param token The token to take the protocol fee from.
+    /// @param amountBeforeFee The amount before the protocol fee is taken.
+    /// @param amountAfterFee The amount after the protocol fee is taken.
+    function _takeOperatorDirectedProtocolFee(
+        IERC20 token,
+        uint256 amountBeforeFee,
+        uint256 amountAfterFee
+    ) internal {
+        if (amountAfterFee != amountBeforeFee) {
+            uint256 feeAmount = amountBeforeFee - amountAfterFee;
+            if (feeRecipient != address(0)) {
+                token.safeTransfer(feeRecipient, feeAmount);
+            }
+        }
     }
 
     /// -----------------------------------------------------------------------
