@@ -60,6 +60,17 @@ contract AllocationManagerMock is Test {
     uint public modifyAllocationsCallCount;
     uint public deregisterFromOperatorSetsCallCount;
 
+    bool public revertModifyAllocations;
+    bool public revertDeregisterFromOperatorSets;
+
+    function setRevertModifyAllocations(bool shouldRevert) external {
+        revertModifyAllocations = shouldRevert;
+    }
+
+    function setRevertDeregisterFromOperatorSets(bool shouldRevert) external {
+        revertDeregisterFromOperatorSets = shouldRevert;
+    }
+
     function getSlashCount(OperatorSet memory operatorSet) external view returns (uint) {
         return _getSlashCount[operatorSet.key()];
     }
@@ -211,6 +222,7 @@ contract AllocationManagerMock is Test {
     }
 
     function modifyAllocations(address operator, IAllocationManager.AllocateParams[] calldata params) external {
+        if (revertModifyAllocations) revert("AllocationManagerMock: modifyAllocations reverted");
         modifyAllocationsCallCount++;
         delete _lastAllocateCall;
         _lastAllocateCall.operator = operator;
@@ -241,6 +253,7 @@ contract AllocationManagerMock is Test {
     }
 
     function deregisterFromOperatorSets(IAllocationManager.DeregisterParams calldata params) external {
+        if (revertDeregisterFromOperatorSets) revert("AllocationManagerMock: deregisterFromOperatorSets reverted");
         deregisterFromOperatorSetsCallCount++;
         _lastDeregisterCall.operator = params.operator;
         _lastDeregisterCall.avs = params.avs;
@@ -260,5 +273,16 @@ contract AllocationManagerMock is Test {
         returns (IAllocationManagerTypes.Allocation memory)
     {
         return _allocations[operator][operatorSet.key()][strategy];
+    }
+
+    /// @notice Test helper to force-set an allocation record returned by `getAllocation`.
+    /// @dev Useful for simulating pending allocations via a non-zero `effectBlock`.
+    function setAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        IAllocationManagerTypes.Allocation memory alloc
+    ) external {
+        _allocations[operator][operatorSet.key()][strategy] = alloc;
     }
 }
