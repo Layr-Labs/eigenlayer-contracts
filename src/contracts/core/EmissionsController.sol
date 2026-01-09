@@ -80,17 +80,13 @@ contract EmissionsController is
 
         // Check if emissions have not started yet.
         // Prevents minting EIGEN before the first epoch has started.
-        if (currentEpoch == type(uint256).max) {
-            revert EmissionsNotStarted();
-        }
+        require(currentEpoch != type(uint256).max, EmissionsNotStarted());
 
         uint256 totalDistributions = getTotalDistributions();
         uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
         // Check if all distributions have already been processed.
-        if (nextDistributionId >= totalDistributions) {
-            revert AllDistributionsProcessed();
-        }
+        require(nextDistributionId < totalDistributions, AllDistributionsProcessed());
 
         // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
         if (!_epochs[currentEpoch].minted) {
@@ -262,9 +258,7 @@ contract EmissionsController is
         uint256 currentEpoch = getCurrentEpoch();
 
         // Check if the distribution is disabled.
-        if (distribution.distributionType == DistributionType.Disabled) {
-            revert CannotAddDisabledDistribution();
-        }
+        require(distribution.distributionType != DistributionType.Disabled, CannotAddDisabledDistribution());
 
         // Can only add/update distributions if all distributions have been processed for the current epoch.
         // Prevents pending weight changes from affecting the current epoch.
@@ -330,7 +324,7 @@ contract EmissionsController is
 
     function _checkOnlyIncentiveCouncil() internal view {
         // Check if the caller is the incentive council.
-        if (msg.sender != incentiveCouncil) revert CallerIsNotIncentiveCouncil();
+        require(msg.sender == incentiveCouncil, CallerIsNotIncentiveCouncil());
     }
 
     function _checkAllDistributionsProcessed(
@@ -339,9 +333,10 @@ contract EmissionsController is
         // Check if all distributions have been processed for the current epoch.
         // Same logic found in `isButtonPressable()`.
         // Skip check if emissions haven't started yet.
-        if (currentEpoch != type(uint256).max && _epochs[currentEpoch].totalProcessed < getTotalDistributions()) {
-            revert NotAllDistributionsProcessed();
-        }
+        require(
+            currentEpoch == type(uint256).max || _epochs[currentEpoch].totalProcessed >= getTotalDistributions(),
+            NotAllDistributionsProcessed()
+        );
     }
 
     function _checkDistribution(
@@ -354,34 +349,27 @@ contract EmissionsController is
             distribution.distributionType == DistributionType.OperatorSetTotalStake
                 || distribution.distributionType == DistributionType.OperatorSetUniqueStake
         ) {
-            if (!ALLOCATION_MANAGER.isOperatorSet(distribution.operatorSet)) {
-                revert OperatorSetNotRegistered();
-            }
+            require(ALLOCATION_MANAGER.isOperatorSet(distribution.operatorSet), OperatorSetNotRegistered());
         }
 
         // Check if the start epoch is in the future.
         // Prevents updating a distribution to a past or current epoch.
         if (currentEpoch != type(uint256).max) {
             // After emissions start - require future epochs only
-            if (distribution.startEpoch <= currentEpoch) {
-                revert StartEpochMustBeInTheFuture();
-            }
+            require(distribution.startEpoch > currentEpoch, StartEpochMustBeInTheFuture());
         }
 
         // Check if the new total weight of all distributions exceeds max total weight.
         // Prevents distributing more supply than inflation rate allows.
-        if (distribution.weight + totalWeightBefore > MAX_TOTAL_WEIGHT) {
-            revert TotalWeightExceedsMax();
-        }
+        require(distribution.weight + totalWeightBefore <= MAX_TOTAL_WEIGHT, TotalWeightExceedsMax());
 
         // Check if rewards submissions array is empty for non-Manual distributions.
         // Manual distributions handle rewards differently and don't require submissions.
-        if (
-            distribution.distributionType != DistributionType.Manual
-                && distribution.strategiesAndMultipliers.length == 0
-        ) {
-            revert RewardsSubmissionsCannotBeEmpty();
-        }
+        require(
+            distribution.distributionType == DistributionType.Manual
+                || distribution.strategiesAndMultipliers.length > 0,
+            RewardsSubmissionsCannotBeEmpty()
+        );
     }
 
     /// -----------------------------------------------------------------------
