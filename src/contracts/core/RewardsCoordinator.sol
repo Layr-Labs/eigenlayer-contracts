@@ -549,6 +549,7 @@ contract RewardsCoordinator is
     function _setFeeRecipient(
         address _feeRecipient
     ) internal {
+        require(_feeRecipient != address(0), InvalidAddressZero());
         emit FeeRecipientSet(feeRecipient, _feeRecipient);
         feeRecipient = _feeRecipient;
     }
@@ -662,7 +663,7 @@ contract RewardsCoordinator is
 
             // Take the protocol fee (if the submitter is opted in for protocol fees).
             uint256 feeAmount = submission.operatorRewards[i].amount * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-            if (feeOn && feeRecipient != address(0) && feeAmount != 0) {
+            if (feeOn && feeAmount != 0) {
                 submission.operatorRewards[i].amount -= feeAmount;
             }
 
@@ -794,7 +795,7 @@ contract RewardsCoordinator is
     ) internal returns (uint256 amountAfterFee) {
         uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
         if (isOptedInForProtocolFee[submitter]) {
-            if (feeRecipient != address(0) && feeAmount != 0) {
+            if (feeAmount != 0) {
                 token.safeTransfer(feeRecipient, feeAmount);
                 return amountBeforeFee - feeAmount;
             }
@@ -812,10 +813,7 @@ contract RewardsCoordinator is
         uint256 amountAfterFee
     ) internal {
         if (amountAfterFee != amountBeforeFee) {
-            uint256 feeAmount = amountBeforeFee - amountAfterFee;
-            if (feeRecipient != address(0)) {
-                token.safeTransfer(feeRecipient, feeAmount);
-            }
+            token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
         }
     }
 

@@ -445,6 +445,12 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
         cheats.expectRevert("Ownable: caller is not the owner");
         rewardsCoordinator.setFeeRecipient(newFeeRecipient);
     }
+
+    function test_setFeeRecipient_Revert_WhenAddressZero() public {
+        cheats.prank(rewardsCoordinator.owner());
+        cheats.expectRevert(InvalidAddressZero.selector);
+        rewardsCoordinator.setFeeRecipient(address(0));
+    }
 }
 
 contract RewardsCoordinatorUnitTests_setOptInForProtocolFee is RewardsCoordinatorUnitTests {
@@ -1538,61 +1544,6 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             assertEq(rewardToken.balanceOf(avs), avsBalanceBefore - amount, "AVS balance incorrect");
             assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + amount, "RC balance incorrect");
             assertEq(rewardToken.balanceOf(feeRecipient), feeBalanceBefore, "Fee recipient balance should not change");
-        }
-    }
-
-    /// @notice Test fee deduction when fee recipient is address(0)
-    function testFuzz_createAVSRewardsSubmission_WithProtocolFee_FeeRecipientZero(
-        address avs,
-        uint startTimestamp,
-        uint duration,
-        uint amount
-    ) public filterFuzzedAddressInputs(avs) {
-        cheats.assume(avs != address(0));
-
-        // 1. Set fee recipient to address(0)
-        cheats.prank(rewardsCoordinator.owner());
-        rewardsCoordinator.setFeeRecipient(address(0));
-
-        // 2. Bound fuzz inputs to valid ranges and amounts
-        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        amount = bound(amount, 1, mockTokenInitialSupply);
-        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
-        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-        startTimestamp = bound(
-            startTimestamp,
-            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
-                - 1,
-            block.timestamp + uint(MAX_FUTURE_LENGTH)
-        );
-        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
-
-        // 3. Opt in for protocol fees
-        cheats.prank(avs);
-        rewardsCoordinator.setOptInForProtocolFee(avs, true);
-
-        // 4. Create rewards submission and verify balances
-        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
-        rewardsSubmissions[0] = RewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: rewardToken,
-            amount: amount,
-            startTimestamp: uint32(startTimestamp),
-            duration: uint32(duration)
-        });
-
-        {
-            uint avsBalanceBefore = rewardToken.balanceOf(avs);
-            uint rcBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
-
-            cheats.startPrank(avs);
-            rewardToken.approve(address(rewardsCoordinator), amount);
-            rewardsCoordinator.createAVSRewardsSubmission(rewardsSubmissions);
-            cheats.stopPrank();
-
-            // Verify balances - no fee transferred when feeRecipient is address(0)
-            assertEq(rewardToken.balanceOf(avs), avsBalanceBefore - amount, "AVS balance incorrect");
-            assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + amount, "RC balance incorrect");
         }
     }
 }
