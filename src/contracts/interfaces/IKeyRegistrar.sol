@@ -56,15 +56,6 @@ interface IKeyRegistrarErrors {
     /// @dev Error code: 0x10702879
     /// @dev We prevent key deregistration while operators are slashable to avoid race conditions and ensure operators cannot escape slashing by deregistering keys
     error OperatorStillSlashable(OperatorSet operatorSet, address operator);
-
-    /// @notice Error thrown when a pending rotation already exists
-    /// @dev Error code: 0x7a6a3c5b
-    error PendingRotationExists();
-
-    /// @notice Error thrown when key rotation is disabled for an operator set
-    /// @dev Error code: 0x2052ff0e
-    /// @dev This occurs when the operator set's minimum rotation delay is set to the maximum value
-    error RotationDisabled();
 }
 
 interface IKeyRegistrarTypes {
@@ -78,12 +69,7 @@ interface IKeyRegistrarTypes {
     /// @dev Structure to store key information
     struct KeyInfo {
         bool isRegistered;
-        /// @dev The currently active key bytes (20 for ECDSA, 192 for BN254)
-        bytes currentKey;
-        /// @dev The pending key bytes (same format as currentKey). Empty when no rotation scheduled
-        bytes pendingKey;
-        /// @dev Activation timestamp for pendingKey. Zero when no rotation scheduled
-        uint64 pendingActivateAt;
+        bytes keyData; // Flexible storage for different curve types
     }
 }
 
@@ -92,22 +78,10 @@ interface IKeyRegistrarEvents is IKeyRegistrarTypes {
     event KeyRegistered(OperatorSet operatorSet, address indexed operator, CurveType curveType, bytes pubkey);
     /// @notice Emitted when a key is deregistered
     event KeyDeregistered(OperatorSet operatorSet, address indexed operator, CurveType curveType);
-    /// @notice Emitted when a key rotation is scheduled
-    event KeyRotationScheduled(
-        OperatorSet operatorSet,
-        address indexed operator,
-        CurveType curveType,
-        bytes oldPubkey,
-        bytes newPubkey,
-        uint64 activateAt
-    );
     /// @notice Emitted when the aggregate BN254 key is updated
     event AggregateBN254KeyUpdated(OperatorSet operatorSet, BN254.G1Point newAggregateKey);
     /// @notice Emitted when an operator set is configured
     event OperatorSetConfigured(OperatorSet operatorSet, CurveType curveType);
-
-    /// @notice Emitted when the minimum key rotation delay is set for an operator set
-    event MinKeyRotationDelaySet(OperatorSet operatorSet, uint64 minDelay);
 }
 
 /// @notice The `KeyRegistrar` is used by AVSs to set their key type and by operators to register and deregister keys to operatorSets

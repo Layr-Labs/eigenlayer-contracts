@@ -54,25 +54,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
 
         _operatorSetCurveTypes[operatorSet.key()] = curveType;
+
         emit OperatorSetConfigured(operatorSet, curveType);
-        _setMinRotationDelay(operatorSet, type(uint64).max);
-    }
-
-    /// @inheritdoc IKeyRegistrar
-    function configureOperatorSetWithMinDelay(
-        OperatorSet memory operatorSet,
-        CurveType curveType,
-        uint64 minDelaySeconds
-    ) external checkCanCall(operatorSet.avs) {
-        require(curveType == CurveType.ECDSA || curveType == CurveType.BN254, InvalidCurveType());
-
-        // Prevent overwriting existing configurations
-        CurveType _curveType = _operatorSetCurveTypes[operatorSet.key()];
-        require(_curveType == CurveType.NONE, ConfigurationAlreadySet());
-
-        _operatorSetCurveTypes[operatorSet.key()] = curveType;
-        emit OperatorSetConfigured(operatorSet, curveType);
-        _setMinRotationDelay(operatorSet, minDelaySeconds);
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -88,10 +71,14 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         // Check if the operator is already registered to the operatorSet
         require(!_operatorKeyInfo[operatorSet.key()][operator].isRegistered, OperatorAlreadyRegistered());
 
-        // Validate and reserve the key globally, then store
-        _validateAndReserveKey(operatorSet, operator, keyData, signature, curveType);
-        _operatorKeyInfo[operatorSet.key()][operator] =
-            KeyInfo({isRegistered: true, currentKey: keyData, pendingKey: bytes(""), pendingActivateAt: 0});
+        // Register key based on curve type - both now require signature verification
+        if (curveType == CurveType.ECDSA) {
+            _registerECDSAKey(operatorSet, operator, keyData, signature);
+        } else if (curveType == CurveType.BN254) {
+            _registerBN254Key(operatorSet, operator, keyData, signature);
+        } else {
+            revert InvalidCurveType();
+        }
 
         emit KeyRegistered(operatorSet, operator, curveType, keyData);
     }
@@ -134,17 +121,27 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         address operator,
         bytes calldata keyData,
         bytes calldata signature
-    ) internal view returns (bytes32) {
+    ) internal {
+        // Validate ECDSA address format
         require(keyData.length == 20, InvalidKeyFormat());
+
+        // Decode address from bytes
         address keyAddress = address(bytes20(keyData));
         require(keyAddress != address(0), ZeroPubkey());
 
+        // Calculate key hash using the address
         bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.ECDSA);
 
+        // Check global uniqueness
+        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
+
+        // Get the signable digest for the ECDSA key registration message
         bytes32 signableDigest = getECDSAKeyRegistrationMessageHash(operator, operatorSet, keyAddress);
+
         _checkIsValidSignatureNow(keyAddress, signableDigest, signature, type(uint256).max);
 
-        return keyHash;
+        // Store key data
+        _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
     /// @notice Validates and registers a BN254 public key with proper signature verification
@@ -158,29 +155,44 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         address operator,
         bytes calldata keyData,
         bytes calldata signature
-    ) internal view returns (bytes32) {
+    ) internal {
         require(keyData.length == 192, InvalidKeyFormat());
         require(signature.length == 64, InvalidSignature());
 
-        bytes32 signableDigest = getBN254KeyRegistrationMessageHash(operator, operatorSet, keyData);
+        BN254.G1Point memory g1Point;
+        BN254.G2Point memory g2Point;
 
-        bool pairingSuccessful;
         {
+            // Decode BN254 G1 and G2 points from the keyData bytes
             (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) =
                 abi.decode(keyData, (uint256, uint256, uint256[2], uint256[2]));
+
+            // Validate G1 point
+            g1Point = BN254.G1Point(g1X, g1Y);
             require(!(g1X == 0 && g1Y == 0), ZeroPubkey());
 
-            (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
-            BN254.G1Point memory signaturePoint = BN254.G1Point(sigX, sigY);
-            BN254.G1Point memory g1Point = BN254.G1Point(g1X, g1Y);
-            BN254.G2Point memory g2Point = BN254.G2Point(g2X, g2Y);
-
-            (, pairingSuccessful) =
-                BN254SignatureVerifier.verifySignature(signableDigest, signaturePoint, g1Point, g2Point, false, 0);
+            // Construct BN254 G2 point from coordinates
+            g2Point = BN254.G2Point(g2X, g2Y);
         }
+
+        // Create EIP-712 compliant message hash
+        bytes32 signableDigest = getBN254KeyRegistrationMessageHash(operator, operatorSet, keyData);
+
+        // Decode signature from bytes to G1 point
+        (uint256 sigX, uint256 sigY) = abi.decode(signature, (uint256, uint256));
+        BN254.G1Point memory signaturePoint = BN254.G1Point(sigX, sigY);
+
+        // Verify signature
+        (, bool pairingSuccessful) =
+            BN254SignatureVerifier.verifySignature(signableDigest, signaturePoint, g1Point, g2Point, false, 0);
         require(pairingSuccessful, InvalidSignature());
 
-        return _getKeyHashForKeyData(keyData, CurveType.BN254);
+        // Calculate key hash and check global uniqueness
+        bytes32 keyHash = _getKeyHashForKeyData(keyData, CurveType.BN254);
+        require(!_globalKeyRegistry[keyHash], KeyAlreadyRegistered());
+
+        // Store key data
+        _storeKeyData(operatorSet, operator, keyData, keyHash);
     }
 
     /// @notice Internal helper to store key data and update global registry
@@ -258,9 +270,8 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             return (BN254.G1Point(0, 0), BN254.G2Point(zeroArray, zeroArray));
         }
 
-        bytes memory active = _getActiveKey(keyInfo);
         (uint256 g1X, uint256 g1Y, uint256[2] memory g2X, uint256[2] memory g2Y) =
-            abi.decode(active, (uint256, uint256, uint256[2], uint256[2]));
+            abi.decode(keyInfo.keyData, (uint256, uint256, uint256[2], uint256[2]));
 
         return (BN254.G1Point(g1X, g1Y), BN254.G2Point(g2X, g2Y));
     }
@@ -275,10 +286,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
         require(curveType == CurveType.ECDSA, InvalidCurveType());
 
         KeyInfo memory keyInfo = _operatorKeyInfo[operatorSet.key()][operator];
-        if (!keyInfo.isRegistered) return bytes("");
-        bytes memory active = _getActiveKey(keyInfo);
-        // Note: this is a view; we don't mutate storage here. Use finalizeScheduledRotation or rotateKey to collapse.
-        return active; // 20-byte address as bytes
+        return keyInfo.keyData; // Returns the 20-byte address as bytes
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -308,8 +316,7 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
             return bytes32(0);
         }
 
-        bytes memory active = _getActiveKey(keyInfo);
-        return _getKeyHashForKeyData(active, curveType);
+        return _getKeyHashForKeyData(keyInfo.keyData, curveType);
     }
 
     /// @inheritdoc IKeyRegistrar
@@ -333,22 +340,6 @@ contract KeyRegistrar is KeyRegistrarStorage, PermissionControllerMixin, Signatu
 
         address operator = _keyHashToOperator[keyHash];
         return (operator, isRegistered(operatorSet, operator));
-    }
-
-    /**
-     * @notice Returns the active key based on current timestamp
-     * @dev Returns `pendingKey` if a rotation is scheduled and the activation time has passed.
-     *      Otherwise returns `currentKey`.
-     * @param keyInfo The key information to check
-     * @return The active key bytes
-     */
-    function _getActiveKey(
-        KeyInfo memory keyInfo
-    ) internal view returns (bytes memory) {
-        if (keyInfo.pendingActivateAt != 0 && block.timestamp >= keyInfo.pendingActivateAt) {
-            return keyInfo.pendingKey;
-        }
-        return keyInfo.currentKey;
     }
 
     /// @inheritdoc IKeyRegistrar

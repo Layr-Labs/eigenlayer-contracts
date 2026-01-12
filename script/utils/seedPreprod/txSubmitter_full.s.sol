@@ -906,6 +906,88 @@ contract MarketplaceStateInitializer is Script {
         vm.stopBroadcast();
     }
 
+    function createRewardsV22UniqueStakeSubmission() external parseState {
+        // Deploy token for the unique stake submission to AVS0/opset0
+        string memory name = "RewardsV22_UniqueStake";
+        string memory symbol = "RV22US";
+        IERC20 rewardToken = IERC20(_deployToken(name, symbol));
+
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmission =
+            new IRewardsCoordinator.RewardsSubmission[](1);
+
+        // Reuse the slashing strategies with equal multipliers
+        IRewardsCoordinator.StrategyAndMultiplier[] memory strategyAndMultipliers =
+            new IRewardsCoordinator.StrategyAndMultiplier[](strategyAddresses.length);
+        for (uint256 i = 0; i < strategyAddresses.length; i++) {
+            strategyAndMultipliers[i].multiplier = 1e18;
+        }
+        strategyAndMultipliers[0].strategy = IStrategy(strategyAddresses[2]);
+        strategyAndMultipliers[1].strategy = IStrategy(strategyAddresses[1]);
+        strategyAndMultipliers[2].strategy = IStrategy(strategyAddresses[0]);
+
+        // Format range
+        uint32 calculationIntervalSeconds = rewardsCoordinator.CALCULATION_INTERVAL_SECONDS();
+        uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % calculationIntervalSeconds);
+        uint32 startTimestamp = moddedCurrTimestamp - 4 days;
+        uint32 duration = 28 days;
+
+        rewardsSubmission[0].strategiesAndMultipliers = strategyAndMultipliers;
+        rewardsSubmission[0].token = rewardToken;
+        rewardsSubmission[0].amount = 100_000e18;
+        rewardsSubmission[0].startTimestamp = startTimestamp;
+        rewardsSubmission[0].duration = duration;
+
+        OperatorSet memory operatorSet = OperatorSet({avs: avsAddresses[0], id: 0});
+
+        _broadcastSuperAdmin();
+        for (uint256 i = 0; i < rewardsSubmission.length; i++) {
+            rewardsSubmission[i].token.approve(address(rewardsCoordinator), type(uint256).max);
+        }
+        rewardsCoordinator.createUniqueStakeRewardsSubmission(operatorSet, rewardsSubmission);
+        vm.stopBroadcast();
+    }
+
+    function createRewardsV22TotalStakeSubmission() external parseState {
+        // Deploy token for the total stake submission to AVS1/opset3
+        string memory name = "RewardsV22_TotalStake";
+        string memory symbol = "RV22TS";
+        IERC20 rewardToken = IERC20(_deployToken(name, symbol));
+
+        IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmission =
+            new IRewardsCoordinator.RewardsSubmission[](1);
+
+        // Reuse the slashing strategies with equal multipliers
+        IRewardsCoordinator.StrategyAndMultiplier[] memory strategyAndMultipliers =
+            new IRewardsCoordinator.StrategyAndMultiplier[](strategyAddresses.length);
+        for (uint256 i = 0; i < strategyAddresses.length; i++) {
+            strategyAndMultipliers[i].multiplier = 1e18;
+        }
+        strategyAndMultipliers[0].strategy = IStrategy(strategyAddresses[2]);
+        strategyAndMultipliers[1].strategy = IStrategy(strategyAddresses[1]);
+        strategyAndMultipliers[2].strategy = IStrategy(strategyAddresses[0]);
+
+        // Format range
+        uint32 calculationIntervalSeconds = rewardsCoordinator.CALCULATION_INTERVAL_SECONDS();
+        uint32 moddedCurrTimestamp = uint32(block.timestamp) - (uint32(block.timestamp) % calculationIntervalSeconds);
+        uint32 startTimestamp = moddedCurrTimestamp - 4 days;
+        uint32 duration = 28 days;
+
+        rewardsSubmission[0].strategiesAndMultipliers = strategyAndMultipliers;
+        rewardsSubmission[0].token = rewardToken;
+        rewardsSubmission[0].amount = 100_000e18;
+        rewardsSubmission[0].startTimestamp = startTimestamp;
+        rewardsSubmission[0].duration = duration;
+
+        OperatorSet memory operatorSet = OperatorSet({avs: avsAddresses[1], id: 3});
+
+        _broadcastSuperAdmin();
+        for (uint256 i = 0; i < rewardsSubmission.length; i++) {
+            rewardsSubmission[i].token.approve(address(rewardsCoordinator), type(uint256).max);
+        }
+        rewardsCoordinator.createTotalStakeRewardsSubmission(operatorSet, rewardsSubmission);
+        vm.stopBroadcast();
+    }
+
     function createPIRewardSubmission() external parseState {
         // Deploy token
         string memory name = "PI_Rewards_Test";
