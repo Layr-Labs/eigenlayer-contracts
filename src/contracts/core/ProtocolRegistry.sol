@@ -45,6 +45,8 @@ contract ProtocolRegistry is Initializable, AccessControlEnumerableUpgradeable, 
         for (uint256 i = 0; i < addresses.length; ++i) {
             // Validate no zero addresses
             require(addresses[i] != address(0), InputAddressZero());
+            // Validate no empty names
+            require(bytes(names[i]).length > 0, InputNameEmpty());
             // Append each provided
             _appendDeployment(addresses[i], configs[i], names[i]);
         }
