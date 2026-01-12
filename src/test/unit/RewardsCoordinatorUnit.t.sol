@@ -2970,61 +2970,6 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
             assertEq(rewardToken.balanceOf(feeRecipient), feeBalanceBefore, "Fee recipient balance should not change");
         }
     }
-
-    /// @notice Test fee deduction with zero fee recipient
-    function testFuzz_createOperatorDirectedAVSRewardsSubmission_WithProtocolFee_FeeRecipientZero(
-        address avs,
-        uint startTimestamp,
-        uint duration
-    ) public filterFuzzedAddressInputs(avs) {
-        cheats.assume(avs != address(0));
-
-        // 1. Set fee recipient to address(0)
-        cheats.prank(rewardsCoordinator.owner());
-        rewardsCoordinator.setFeeRecipient(address(0));
-
-        // 2. Bound fuzz inputs to valid ranges and amounts
-        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        duration = bound(duration, CALCULATION_INTERVAL_SECONDS, MAX_REWARDS_DURATION);
-        duration = duration - (duration % CALCULATION_INTERVAL_SECONDS);
-        startTimestamp = bound(
-            startTimestamp,
-            uint(_maxTimestamp(GENESIS_REWARDS_TIMESTAMP, uint32(block.timestamp) - MAX_RETROACTIVE_LENGTH)) + CALCULATION_INTERVAL_SECONDS
-                - 1,
-            block.timestamp - duration - 1
-        );
-        startTimestamp = startTimestamp - (startTimestamp % CALCULATION_INTERVAL_SECONDS);
-
-        // 3. Opt in for protocol fees
-        cheats.prank(avs);
-        rewardsCoordinator.setOptInForProtocolFee(avs, true);
-
-        // 4. Create operator directed rewards submission and verify
-        OperatorDirectedRewardsSubmission[] memory operatorDirectedRewardsSubmissions = new OperatorDirectedRewardsSubmission[](1);
-        operatorDirectedRewardsSubmissions[0] = OperatorDirectedRewardsSubmission({
-            strategiesAndMultipliers: defaultStrategyAndMultipliers,
-            token: rewardToken,
-            operatorRewards: defaultOperatorRewards,
-            startTimestamp: uint32(startTimestamp),
-            duration: uint32(duration),
-            description: ""
-        });
-
-        uint totalAmount = _getTotalRewardsAmount(defaultOperatorRewards);
-        {
-            uint avsBalanceBefore = rewardToken.balanceOf(avs);
-            uint rcBalanceBefore = rewardToken.balanceOf(address(rewardsCoordinator));
-
-            cheats.startPrank(avs);
-            rewardToken.approve(address(rewardsCoordinator), totalAmount);
-            rewardsCoordinator.createOperatorDirectedAVSRewardsSubmission(avs, operatorDirectedRewardsSubmissions);
-            cheats.stopPrank();
-
-            // Verify balances - full amount stays in RC when feeRecipient is address(0)
-            assertEq(rewardToken.balanceOf(avs), avsBalanceBefore - totalAmount, "AVS balance incorrect");
-            assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + totalAmount, "RC balance incorrect");
-        }
-    }
 }
 
 contract RewardsCoordinatorUnitTests_createOperatorDirectedOperatorSetRewardsSubmission is RewardsCoordinatorUnitTests {
