@@ -73,7 +73,7 @@ contract RewardsCoordinator is
         uint32 _activationDelay,
         uint16 _defaultSplitBips,
         address _feeRecipient
-    ) external initializer {
+    ) external reinitializer(2) {
         _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
