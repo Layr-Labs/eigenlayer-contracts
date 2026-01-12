@@ -202,8 +202,6 @@ contract EmissionsController is
                 success = _tryCallRewardsCoordinator(
                     abi.encodeCall(IRewardsCoordinator.createAVSRewardsSubmission, (rewardsSubmissions))
                 );
-            } else {
-                revert InvalidDistributionType(); // Only reachable if the distribution type is `Disabled`.
             }
         } else {
             (success,) =
