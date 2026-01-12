@@ -934,7 +934,7 @@ library TestUtils {
         RewardsCoordinator rewardsCoordinator
     ) internal {
         vm.expectRevert(errInit);
-        rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0);
+        rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0, address(0));
     }
 
     function validateStrategyManagerInitialized(

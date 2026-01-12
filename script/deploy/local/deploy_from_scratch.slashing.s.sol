@@ -219,9 +219,6 @@ contract DeployFromScratch is Script, Test {
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        allocationManagerView = AllocationManagerView(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -237,6 +234,9 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        // Deploy AllocationManagerView as a standalone implementation (not a proxy)
+        allocationManagerView =
+            new AllocationManagerView(delegation, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         delegationImplementation = new DelegationManager(
             strategyManager,
@@ -327,7 +327,8 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS
+                REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS,
+                executorMultisig // feeRecipient
             )
         );
 

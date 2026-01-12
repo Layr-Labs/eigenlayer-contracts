@@ -312,7 +312,8 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS
+                REWARDS_COORDINATOR_GLOBAL_OPERATOR_COMMISSION_BIPS,
+                executorMultisig // feeRecipient
             )
         );
 
