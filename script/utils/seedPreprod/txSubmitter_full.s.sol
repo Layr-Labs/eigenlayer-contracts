@@ -523,22 +523,15 @@ contract MarketplaceStateInitializer is Script {
 
     // Note is
     function allocateOperator1() external parseState {
-        OperatorSet memory opSet = OperatorSet({avs: avsAddresses[2], id: 5});
+        OperatorSet memory opSet = OperatorSet({avs: avsAddresses[0], id: 0});
 
-        IStrategy[] memory strategies = new IStrategy[](4);
-        for (uint256 i = 0; i < 5; i++) {
-            // Skip BC ETH
-            if (strategyAddresses[i] == address(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0)) {
-                break;
-            }
-            strategies[i] = IStrategy(strategyAddresses[i]);
-        }
-        strategies[3] = IStrategy(strategyAddresses[4]);
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(strategyAddresses[0]);
+        strategies[1] = IStrategy(strategyAddresses[1]);
 
-        uint64[] memory magnitudes = new uint64[](4);
+        uint64[] memory magnitudes = new uint64[](2);
         for (uint256 i = 0; i < magnitudes.length; i++) {
-            // magnitudes[i] = 10e16;
-            magnitudes[i] = 0;
+            magnitudes[i] = 1e18;
         }
 
         // Operator 1
@@ -553,14 +546,14 @@ contract MarketplaceStateInitializer is Script {
     }
 
     function allocateOperator2() external parseState {
-        OperatorSet memory opSet = OperatorSet({avs: avsAddresses[2], id: 5});
+        OperatorSet memory opSet = OperatorSet({avs: avsAddresses[0], id: 0});
 
-        IStrategy[] memory strategies = new IStrategy[](5);
-        for (uint256 i = 0; i < strategies.length; i++) {
-            strategies[i] = IStrategy(strategyAddresses[i]);
-        }
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = IStrategy(strategyAddresses[0]);
+        strategies[1] = IStrategy(strategyAddresses[1]);
 
-        uint64[] memory magnitudes = new uint64[](5);
+
+        uint64[] memory magnitudes = new uint64[](2);
         for (uint256 i = 0; i < magnitudes.length; i++) {
             magnitudes[i] = 25e16;
         }
