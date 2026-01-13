@@ -201,6 +201,50 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker should recover deposit");
     }
 
+    function test_durationVault_arbitrator_can_advance_to_withdrawals_early() public {
+        DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
+        User staker = new User("duration-arbitrator-staker");
+
+        uint depositAmount = 50 ether;
+        ctx.asset.transfer(address(staker), depositAmount);
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory tokenBalances = _singleAmountArray(depositAmount);
+        _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        // Arbitrator cannot advance before lock.
+        cheats.expectRevert(IDurationVaultStrategyErrors.VaultNotLocked.selector);
+        ctx.vault.advanceToWithdrawals();
+
+        ctx.vault.lock();
+        assertTrue(ctx.vault.allocationsActive(), "allocations should be active after lock");
+        assertFalse(ctx.vault.withdrawalsOpen(), "withdrawals should be closed while locked");
+
+        // Non-arbitrator cannot advance.
+        cheats.prank(address(0x1234));
+        cheats.expectRevert(IDurationVaultStrategyErrors.OnlyArbitrator.selector);
+        ctx.vault.advanceToWithdrawals();
+
+        // Arbitrator can advance after lock but before duration elapses.
+        cheats.warp(block.timestamp + 1);
+        ctx.vault.advanceToWithdrawals();
+
+        assertTrue(ctx.vault.withdrawalsOpen(), "withdrawals should open after arbitrator advance");
+        assertFalse(ctx.vault.allocationsActive(), "allocations should be inactive after arbitrator advance");
+        assertTrue(ctx.vault.isMatured(), "vault should be matured after arbitrator advance");
+
+        // Withdrawals should actually be possible in this early-advance path.
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, withdrawableShares);
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
+        assertEq(address(tokens[0]), address(ctx.asset), "unexpected token returned");
+        assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker should recover deposit after arbitrator advance");
+
+        // markMatured should be a noop after the state has already transitioned.
+        ctx.vault.markMatured();
+    }
+
     function test_durationVault_operatorIntegrationAndMetadataUpdate() public {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
 
@@ -396,6 +440,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         IDurationVaultStrategyTypes.VaultConfig memory config;
         config.underlyingToken = asset;
         config.vaultAdmin = address(this);
+        config.arbitrator = address(this);
         config.duration = DEFAULT_DURATION;
         config.maxPerDeposit = VAULT_MAX_PER_DEPOSIT;
         config.stakeCap = VAULT_STAKE_CAP;

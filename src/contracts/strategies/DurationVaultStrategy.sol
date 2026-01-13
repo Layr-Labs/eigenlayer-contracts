@@ -43,6 +43,12 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         _;
     }
 
+    /// @dev Restricts function access to the vault arbitrator.
+    modifier onlyArbitrator() {
+        require(msg.sender == arbitrator, OnlyArbitrator());
+        _;
+    }
+
     /// @param _strategyManager The StrategyManager contract.
     /// @param _pauserRegistry The PauserRegistry contract.
     /// @param _delegationManager The DelegationManager contract for operator registration.
@@ -75,11 +81,13 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         VaultConfig memory config
     ) public initializer {
         require(config.vaultAdmin != address(0), InvalidVaultAdmin());
+        require(config.arbitrator != address(0), InvalidArbitrator());
         require(config.duration != 0 && config.duration <= MAX_DURATION, InvalidDuration());
         _setTVLLimits(config.maxPerDeposit, config.stakeCap);
         _initializeStrategyBase(config.underlyingToken);
 
         vaultAdmin = config.vaultAdmin;
+        arbitrator = config.arbitrator;
         duration = config.duration;
         metadataURI = config.metadataURI;
 
@@ -122,6 +130,26 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         _state = VaultState.WITHDRAWALS;
         maturedAt = uint32(block.timestamp);
         emit VaultMatured(maturedAt);
+
+        _deallocateAll();
+        _deregisterFromOperatorSet();
+    }
+
+    /// @notice Advances the vault to withdrawals early, after lock but before duration elapses.
+    /// @dev Only callable by the configured arbitrator.
+    function advanceToWithdrawals() external override onlyArbitrator {
+        if (_state == VaultState.WITHDRAWALS) {
+            // already recorded; noop
+            return;
+        }
+        require(_state == VaultState.ALLOCATIONS, VaultNotLocked());
+        require(block.timestamp < unlockAt, DurationAlreadyElapsed());
+
+        _state = VaultState.WITHDRAWALS;
+        maturedAt = uint32(block.timestamp);
+
+        emit VaultMatured(maturedAt);
+        emit VaultAdvancedToWithdrawals(msg.sender, maturedAt);
 
         _deallocateAll();
         _deregisterFromOperatorSet();

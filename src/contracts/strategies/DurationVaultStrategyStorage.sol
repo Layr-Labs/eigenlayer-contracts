@@ -17,6 +17,9 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @notice Address empowered to configure and lock the vault.
     address public vaultAdmin;
 
+    /// @notice Address empowered to advance the vault to withdrawals early (after lock, before duration elapses).
+    address public arbitrator;
+
     /// @notice The enforced lock duration once `lock` is called.
     uint32 public duration;
 
@@ -46,8 +49,8 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
 
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
-    /// Storage slots used: vaultAdmin (1) + duration/lockedAt/unlockAt/maturedAt/_state (packed, 1) +
+    /// Storage slots used: vaultAdmin (1) + arbitrator (1) + duration/lockedAt/unlockAt/maturedAt/_state (packed, 1) +
     /// metadataURI (1) + _operatorSet (1) + maxPerDeposit (1) + maxTotalDeposits (1) = 6.
-    /// Gap: 50 - 6 = 44.
-    uint256[44] private __gap;
+    /// Gap: 50 - 7 = 43.
+    uint256[43] private __gap;
 }

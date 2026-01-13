@@ -57,6 +57,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
+            arbitrator: address(this),
             duration: defaultDuration,
             maxPerDeposit: maxPerDeposit,
             stakeCap: maxTotalDeposits,
@@ -166,6 +167,28 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         // Since the mock reverts before incrementing, only the initial lock allocation is recorded.
         assertEq(allocationManagerMock.modifyAllocationsCallCount(), 1, "unexpected modifyAllocations count");
         assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 0, "unexpected deregister count");
+    }
+
+    function testAdvanceToWithdrawals_onlyArbitrator_and_onlyBeforeUnlock() public {
+        // Cannot advance before lock (even as arbitrator).
+        cheats.expectRevert(IDurationVaultStrategyErrors.VaultNotLocked.selector);
+        durationVault.advanceToWithdrawals();
+
+        durationVault.lock();
+
+        // Non-arbitrator cannot advance.
+        cheats.prank(address(0xBEEF));
+        cheats.expectRevert(IDurationVaultStrategyErrors.OnlyArbitrator.selector);
+        durationVault.advanceToWithdrawals();
+
+        // After unlockAt, arbitrator advance is not allowed.
+        cheats.warp(block.timestamp + defaultDuration + 1);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DurationAlreadyElapsed.selector);
+        durationVault.advanceToWithdrawals();
+
+        // markMatured works once duration has elapsed.
+        durationVault.markMatured();
+        assertTrue(durationVault.withdrawalsOpen(), "withdrawals should open after maturity");
     }
 
     // ===================== VAULT STATE TESTS =====================

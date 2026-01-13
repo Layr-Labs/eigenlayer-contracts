@@ -151,6 +151,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
+            arbitrator: address(this),
             duration: uint32(30 days),
             maxPerDeposit: 10 ether,
             stakeCap: 100 ether,
@@ -176,6 +177,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: underlyingToken,
             vaultAdmin: address(this),
+            arbitrator: address(this),
             duration: uint32(7 days),
             maxPerDeposit: 5 ether,
             stakeCap: 50 ether,
