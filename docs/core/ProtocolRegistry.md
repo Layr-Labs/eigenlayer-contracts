@@ -74,6 +74,10 @@ Ships a new semantic version and batch-registers deployments:
 
 *Requirements*:
 * Caller must hold `DEFAULT_ADMIN_ROLE`.
+* `addresses`, `configs`, and `names` must have equal length.
+* For each address to ship: 
+    * Address must be non-zero
+    * Contract names must be non-empty strings.
 
 In practice, for upgrades that do not deploy net new contracts, only the `semanticVersion` parameter will be populated, with the rest left empty.
 
@@ -82,17 +86,19 @@ A contract name may be passed to this function repeatedly; each time, the previo
 ### `configure`
 
 ```solidity
-function configure(address addr, DeploymentConfig calldata config) external onlyRole(DEFAULT_ADMIN_ROLE)
+function configure(string calldata name, DeploymentConfig calldata config) external onlyRole(DEFAULT_ADMIN_ROLE)
 ```
 
 Updates the stored `DeploymentConfig` for a single deployment:
 
 *Effects*:
+* Looks up the address for `name` from `_deployments`.
 * Overwrites `_deploymentConfigs[addr]` with the supplied configuration.
 * Emits `DeploymentConfigured(addr, config)`.
 
 *Requirements*:
 * Caller must hold `DEFAULT_ADMIN_ROLE`.
+* `name` must have been previously shipped.
 
 ### `pauseAll`
 

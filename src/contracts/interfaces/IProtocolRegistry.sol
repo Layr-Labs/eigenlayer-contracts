@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.27;
 
-interface IProtocolRegistryErrors {}
+interface IProtocolRegistryErrors {
+    /// @notice Thrown when array lengths don't match in ship().
+    error ArrayLengthMismatch();
+
+    /// @notice Thrown when a zero address is provided.
+    error InputAddressZero();
+
+    /// @notice Thrown when trying to configure an address that hasn't been shipped.
+    error DeploymentNotShipped();
+
+    /// @notice Thrown when an empty contract name is provided.
+    error InputNameEmpty();
+}
 
 interface IProtocolRegistryTypes {
     /// @notice Configuration for a protocol deployment.
@@ -24,6 +36,10 @@ interface IProtocolRegistryEvents is IProtocolRegistryTypes {
     /// @param config The configuration for the deployment.
     event DeploymentConfigured(address indexed addr, DeploymentConfig config);
 
+    /// @notice Emitted when a deployment config is deleted due to name re-assignment.
+    /// @param addr The address whose config was deleted.
+    event DeploymentConfigDeleted(address indexed addr);
+
     /// @notice Emitted when the semantic version is updated.
     /// @param previousSemanticVersion The previous semantic version.
     /// @param semanticVersion The new semantic version.
@@ -41,13 +57,15 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
 
     /// @notice Ships a list of deployments.
     /// @dev Only callable by the admin.
-    /// @param addresses The addresses of the deployments to ship.
+    /// @param addresses The addresses of the deployments to ship. Must not contain zero addresses.
     /// @param configs The configurations of the deployments to ship.
     /// @param contractNames The names of the contracts to ship.
     /// @param semanticVersion The semantic version to ship.
     /// @dev Contract names can be passed in as type(contract).name, e.g. `type(AllocationManager).name`
     /// @dev Contract names must be <= 31 bytes
-    /// @dev Contract names can be overridden any number of times.
+    /// @dev Contract names can be re-shipped with a new address. When this happens,
+    ///      the old address's config is automatically deleted to prevent orphaned configs.
+    /// @dev All input arrays (`addresses`, `configs`, `names`) must have the same length.
     function ship(
         address[] calldata addresses,
         DeploymentConfig[] calldata configs,
@@ -56,16 +74,18 @@ interface IProtocolRegistry is IProtocolRegistryErrors, IProtocolRegistryEvents 
     ) external;
 
     /// @notice Configures a deployment.
-    /// @dev Only callable by the admin.
-    /// @param addr The address of the deployment to configure.
+    /// @dev Only callable by the admin. Name must have been previously shipped.
+    /// @param name The name of the deployment to configure.
     /// @param config The configuration to set.
     function configure(
-        address addr,
+        string calldata name,
         DeploymentConfig calldata config
     ) external;
 
     /// @notice Pauses all deployments that support pausing.
     /// @dev Loops over all deployments and attempts to invoke `pauseAll()` on each contract that is marked as pausable.
+    /// @dev WARNING: Reverts if any pausable deployment doesn't implement IPausable or if any pauseAll() call reverts.
+    ///      A single misconfigured deployment will block the entire protocol pause. Ensure registry is correctly configured.
     function pauseAll() external;
 
     /// @notice Returns the full semantic version string of the protocol (e.g. "1.2.3").

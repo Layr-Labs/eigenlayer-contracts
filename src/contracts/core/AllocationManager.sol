@@ -364,6 +364,8 @@ contract AllocationManager is
     }
 
     /// @inheritdoc IAllocationManagerActions
+    /// @dev WARNING: Gas cost is O(appointees) per operator set due to `PermissionController.getAppointees()` call.
+    ///      May exceed block gas limit for AVSs with large appointee sets. Consider batching operator sets if needed.
     function migrateSlashers(
         OperatorSet[] memory operatorSets
     ) external {
@@ -605,7 +607,9 @@ contract AllocationManager is
         /// If the caller is the delegationManager, the operator is newly registered
         /// This results in *newly-registered* operators in the core protocol to have their allocation delay effective immediately
         if (newlyRegistered) {
-            // The delay takes effect immediately
+            // Update delay and isSet immediately for storage consistency
+            info.delay = delay;
+            info.isSet = true;
             info.effectBlock = uint32(block.number);
         } else {
             // Wait the entire configuration delay before the delay takes effect
@@ -751,12 +755,19 @@ contract AllocationManager is
             params.slasher = params.pendingSlasher;
         }
 
+        // No-op if proposing the same pending slasher that hasn't taken effect yet
+        if (slasher == params.pendingSlasher && block.number < params.effectBlock) {
+            return;
+        }
+
         // Set the pending parameters
         params.pendingSlasher = slasher;
         if (instantEffectBlock) {
+            // Update slasher field immediately for storage consistency
+            params.slasher = slasher;
             params.effectBlock = uint32(block.number);
         } else {
-            params.effectBlock = uint32(block.number) + ALLOCATION_CONFIGURATION_DELAY + 1;
+            params.effectBlock = uint32(block.number) + SLASHER_CONFIGURATION_DELAY + 1;
         }
 
         _slashers[operatorSet.key()] = params;
