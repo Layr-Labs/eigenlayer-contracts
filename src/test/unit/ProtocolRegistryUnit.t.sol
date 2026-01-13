@@ -188,6 +188,23 @@ contract ProtocolRegistryUnitTests is EigenLayerUnitTestSetup, IProtocolRegistry
         protocolRegistry.ship(addresses, configs, names, "1.0.0");
     }
 
+    function test_ship_revert_emptyName() public {
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(0x1);
+        addresses[1] = address(0x2);
+
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+
+        string[] memory names = new string[](2);
+        names[0] = "ValidName";
+        names[1] = ""; // Empty name
+
+        cheats.expectRevert(InputNameEmpty.selector);
+        protocolRegistry.ship(addresses, configs, names, "1.0.0");
+    }
+
     function test_ship_overwriteName_deletesOldConfig() public {
         address oldAddr = address(0x111);
         address newAddr = address(0x222);

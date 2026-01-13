@@ -74,6 +74,10 @@ Ships a new semantic version and batch-registers deployments:
 
 *Requirements*:
 * Caller must hold `DEFAULT_ADMIN_ROLE`.
+* `addresses`, `configs`, and `names` must have equal length.
+* For each address to ship: 
+    * Address must be non-zero
+    * Contract names must be non-empty strings.
 
 In practice, for upgrades that do not deploy net new contracts, only the `semanticVersion` parameter will be populated, with the rest left empty.
 

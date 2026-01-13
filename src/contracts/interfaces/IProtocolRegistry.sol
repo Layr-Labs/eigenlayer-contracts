@@ -10,6 +10,9 @@ interface IProtocolRegistryErrors {
 
     /// @notice Thrown when trying to configure an address that hasn't been shipped.
     error DeploymentNotShipped();
+
+    /// @notice Thrown when an empty contract name is provided.
+    error InputNameEmpty();
 }
 
 interface IProtocolRegistryTypes {
