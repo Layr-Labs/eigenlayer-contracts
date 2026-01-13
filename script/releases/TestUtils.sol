@@ -217,10 +217,11 @@ library TestUtils {
 
             RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
             assertTrue(rewards.owner() == Env.opsMultisig(), "rc.owner invalid");
-            assertTrue(rewards.paused() == Env.REWARDS_PAUSE_STATUS(), "rc.paused invalid");
+            assertTrue(rewards.paused() == 0, "rc.paused invalid");
             assertTrue(rewards.rewardsUpdater() == Env.REWARDS_UPDATER(), "rc.updater invalid");
             assertTrue(rewards.activationDelay() == Env.ACTIVATION_DELAY(), "rc.activationDelay invalid");
             assertTrue(rewards.defaultOperatorSplitBips() == Env.DEFAULT_SPLIT_BIPS(), "rc.splitBips invalid");
+            assertTrue(rewards.feeRecipient() == Env.incentiveCouncilMultisig(), "rc.feeRecipient invalid");
 
             StrategyManager strategyManager = Env.proxy.strategyManager();
             assertTrue(strategyManager.owner() == Env.executorMultisig(), "sm.owner invalid");
@@ -606,10 +607,11 @@ library TestUtils {
             allocationManagerView.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManagerView ALLOCATION_CONFIGURATION_DELAY incorrect"
         );
-        assertTrue(
-            allocationManagerView.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-            "allocationManagerView SLASHER_CONFIGURATION_DELAY incorrect"
-        );
+        // TODO: Uncomment after this method exists.
+        // assertTrue(
+        //     allocationManagerView.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+        //     "allocationManagerView SLASHER_CONFIGURATION_DELAY incorrect"
+        // );
     }
 
     function validateAllocationManagerImmutables(
@@ -641,10 +643,10 @@ library TestUtils {
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManager ALLOCATION_CONFIGURATION_DELAY incorrect"
         );
-        assertTrue(
-            allocationManager.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-            "allocationManager SLASHER_CONFIGURATION_DELAY incorrect"
-        );
+        // assertTrue(
+        //     allocationManager.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+        //     "allocationManager SLASHER_CONFIGURATION_DELAY incorrect"
+        // );
     }
 
     function validateAVSDirectoryImmutables(
@@ -731,6 +733,42 @@ library TestUtils {
         assertTrue(
             rewardsCoordinator.GENESIS_REWARDS_TIMESTAMP() == Env.GENESIS_REWARDS_TIMESTAMP(),
             "rewardsCoordinator GENESIS_REWARDS_TIMESTAMP incorrect"
+        );
+    }
+
+    function validateEmissionsControllerImmutables(
+        EmissionsController emissionsController
+    ) internal view {
+        assertTrue(
+            address(emissionsController.EIGEN()) == address(Env.proxy.eigen()), "emissionsController EIGEN incorrect"
+        );
+        assertTrue(
+            address(emissionsController.BACKING_EIGEN()) == address(Env.proxy.beigen()),
+            "emissionsController BACKING_EIGEN incorrect"
+        );
+        assertTrue(
+            address(emissionsController.ALLOCATION_MANAGER()) == address(Env.proxy.allocationManager()),
+            "emissionsController ALLOCATION_MANAGER incorrect"
+        );
+        assertTrue(
+            address(emissionsController.REWARDS_COORDINATOR()) == address(Env.proxy.rewardsCoordinator()),
+            "emissionsController REWARDS_COORDINATOR incorrect"
+        );
+        assertTrue(
+            address(emissionsController.pauserRegistry()) == address(Env.impl.pauserRegistry()),
+            "emissionsController pauserRegistry incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_INFLATION_RATE() == Env.EMISSIONS_INFLATION_RATE(),
+            "emissionsController EMISSIONS_INFLATION_RATE incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_START_TIME() == Env.EMISSIONS_START_TIME(),
+            "emissionsController EMISSIONS_START_TIME incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_EPOCH_LENGTH() == Env.EMISSIONS_COOLDOWN_SECONDS(),
+            "emissionsController EMISSIONS_EPOCH_LENGTH incorrect"
         );
     }
 
@@ -1003,6 +1041,28 @@ library TestUtils {
     ) internal {
         vm.expectRevert(errInit);
         taskMailbox.initialize(address(0), 0, address(0));
+    }
+
+    /// core/
+    function validateEmissionsControllerInitialized(
+        EmissionsController emissionsController
+    ) internal {
+        vm.expectRevert(errInit);
+        emissionsController.initialize(address(0), address(0), 0);
+    }
+
+    function validateRewardsCoordinatorConstructor(
+        RewardsCoordinator rewardsCoordinator
+    ) internal view {
+        // Validate constructor immutables are correctly set
+        assertTrue(
+            address(rewardsCoordinator.delegationManager()) == address(Env.proxy.delegationManager()),
+            "RewardsCoordinator delegationManager incorrect"
+        );
+        assertTrue(
+            address(rewardsCoordinator.strategyManager()) == address(Env.proxy.strategyManager()),
+            "RewardsCoordinator strategyManager incorrect"
+        );
     }
 
     ///
