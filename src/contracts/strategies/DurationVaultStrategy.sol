@@ -322,6 +322,8 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         allocationManager.registerForOperatorSets(address(this), params);
 
         // Set operator splits to 0 (100% of rewards go to stakers).
+        // Note: rewards can be configured at the AVS-level and operatorSet-level, so we set both.
+        rewardsCoordinator.setOperatorAVSSplit(address(this), config.operatorSet.avs, 0);
         rewardsCoordinator.setOperatorSetSplit(address(this), config.operatorSet, 0);
         rewardsCoordinator.setOperatorPISplit(address(this), 0);
     }
