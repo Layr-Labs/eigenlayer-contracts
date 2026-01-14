@@ -17,6 +17,10 @@ interface IDurationVaultStrategyErrors {
     error InvalidDuration();
     /// @dev Thrown when attempting to mutate configuration from a non-admin.
     error OnlyVaultAdmin();
+    /// @dev Thrown when attempting to call arbitrator-only functionality from a non-arbitrator.
+    error OnlyArbitrator();
+    /// @dev Thrown when attempting to configure a zero-address arbitrator.
+    error InvalidArbitrator();
     /// @dev Thrown when attempting to lock an already locked vault.
     error VaultAlreadyLocked();
     /// @dev Thrown when attempting to deposit after the vault has been locked.
@@ -27,6 +31,10 @@ interface IDurationVaultStrategyErrors {
     error MustBeDelegatedToVaultOperator();
     /// @dev Thrown when attempting to mark the vault as matured before duration elapses.
     error DurationNotElapsed();
+    /// @dev Thrown when attempting to use the arbitrator early-advance after the duration has elapsed.
+    error DurationAlreadyElapsed();
+    /// @dev Thrown when attempting to use the arbitrator early-advance before the vault is locked.
+    error VaultNotLocked();
     /// @dev Thrown when operator integration inputs are missing or invalid.
     error OperatorIntegrationInvalid();
     /// @dev Thrown when attempting to deposit into a vault whose underlying token is blacklisted.
@@ -61,6 +69,7 @@ interface IDurationVaultStrategyTypes {
     struct VaultConfig {
         IERC20 underlyingToken;
         address vaultAdmin;
+        address arbitrator;
         uint32 duration;
         uint256 maxPerDeposit;
         uint256 stakeCap;
@@ -76,6 +85,7 @@ interface IDurationVaultStrategyTypes {
 interface IDurationVaultStrategyEvents {
     /// @notice Emitted when a vault is initialized with its configuration.
     /// @param vaultAdmin The address of the vault administrator.
+    /// @param arbitrator The address of the vault arbitrator.
     /// @param underlyingToken The ERC20 token used for deposits.
     /// @param duration The lock duration in seconds.
     /// @param maxPerDeposit Maximum deposit amount per transaction.
@@ -83,6 +93,7 @@ interface IDurationVaultStrategyEvents {
     /// @param metadataURI URI pointing to vault metadata.
     event VaultInitialized(
         address indexed vaultAdmin,
+        address indexed arbitrator,
         IERC20 indexed underlyingToken,
         uint32 duration,
         uint256 maxPerDeposit,
@@ -98,6 +109,11 @@ interface IDurationVaultStrategyEvents {
     /// @notice Emitted when the vault matures, transitioning to WITHDRAWALS state.
     /// @param maturedAt Timestamp when the vault matured.
     event VaultMatured(uint32 maturedAt);
+
+    /// @notice Emitted when the vault is advanced to WITHDRAWALS early by the arbitrator.
+    /// @param arbitrator The arbitrator that performed the early advance.
+    /// @param maturedAt Timestamp when the vault transitioned to WITHDRAWALS.
+    event VaultAdvancedToWithdrawals(address indexed arbitrator, uint32 maturedAt);
 
     /// @notice Emitted when the vault metadata URI is updated.
     /// @param newMetadataURI The new metadata URI.
@@ -138,6 +154,11 @@ interface IDurationVaultStrategy is
     /// the duration has elapsed.
     function markMatured() external;
 
+    /// @notice Advances the vault to WITHDRAWALS early, after lock but before duration elapses.
+    /// @dev Transitions state from ALLOCATIONS to WITHDRAWALS, and triggers the same best-effort operator cleanup
+    /// as `markMatured()`. Only callable by the configured arbitrator.
+    function advanceToWithdrawals() external;
+
     /// @notice Updates the vault metadata URI.
     /// @param newMetadataURI The new metadata URI to set.
     /// @dev Only callable by the vault admin.
@@ -156,6 +177,9 @@ interface IDurationVaultStrategy is
 
     /// @notice Returns the vault administrator address.
     function vaultAdmin() external view returns (address);
+
+    /// @notice Returns the arbitrator address.
+    function arbitrator() external view returns (address);
 
     /// @notice Returns the configured lock duration in seconds.
     function duration() external view returns (uint32);
