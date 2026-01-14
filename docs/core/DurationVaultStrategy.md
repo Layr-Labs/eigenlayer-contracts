@@ -83,7 +83,7 @@ flowchart TB
 
 ### Vault as Operator
 
-The vault registers itself as an EigenLayer operator on initialization. Stakers must delegate to the vault before depositing. The vault allocates its own magnitude to the configured AVS operator set and sets operator reward split to 0% so 100% of rewards goes to its stakers.
+The vault registers itself as an EigenLayer operator on initialization. Stakers must delegate to the vault before depositing. The vault allocates its own magnitude to the configured AVS operator set and sets operator reward splits (operator AVS split, operatorSet split, and PI split) to 0% so 100% of rewards goes to its stakers.
 
 ### Strategy Hooks
 

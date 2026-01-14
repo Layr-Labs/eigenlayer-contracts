@@ -106,6 +106,12 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         assertEq(address(durationVault.rewardsCoordinator()), address(rewardsCoordinatorMock), "rewards coordinator mismatch");
         assertTrue(durationVault.operatorSetRegistered(), "operator set should be registered");
 
+        // Verify operator AVS rewards split is set to 0 (100% to stakers).
+        RewardsCoordinatorMock.SetOperatorAVSSplitCall memory avsSplitCall = rewardsCoordinatorMock.lastSetOperatorAVSSplitCall();
+        assertEq(avsSplitCall.operator, address(durationVault), "avs split operator mismatch");
+        assertEq(avsSplitCall.avs, OPERATOR_SET_AVS, "avs split AVS mismatch");
+        assertEq(avsSplitCall.split, 0, "operator AVS split should be 0 for 100% to stakers");
+
         // Verify rewards split is set to 0 (100% to stakers).
         RewardsCoordinatorMock.SetOperatorSetSplitCall memory splitCall = rewardsCoordinatorMock.lastSetOperatorSetSplitCall();
         assertEq(splitCall.operator, address(durationVault), "split operator mismatch");
