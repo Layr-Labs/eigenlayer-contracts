@@ -85,6 +85,7 @@ interface IDurationVaultStrategyTypes {
 interface IDurationVaultStrategyEvents {
     /// @notice Emitted when a vault is initialized with its configuration.
     /// @param vaultAdmin The address of the vault administrator.
+    /// @param arbitrator The address of the vault arbitrator.
     /// @param underlyingToken The ERC20 token used for deposits.
     /// @param duration The lock duration in seconds.
     /// @param maxPerDeposit Maximum deposit amount per transaction.
@@ -92,6 +93,7 @@ interface IDurationVaultStrategyEvents {
     /// @param metadataURI URI pointing to vault metadata.
     event VaultInitialized(
         address indexed vaultAdmin,
+        address indexed arbitrator,
         IERC20 indexed underlyingToken,
         uint32 duration,
         uint256 maxPerDeposit,

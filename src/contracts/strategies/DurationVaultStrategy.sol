@@ -96,6 +96,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
         emit VaultInitialized(
             vaultAdmin,
+            arbitrator,
             config.underlyingToken,
             duration,
             config.maxPerDeposit,
