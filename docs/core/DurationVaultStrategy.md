@@ -31,7 +31,9 @@ The `DurationVaultStrategy` is a **time-bound, single-use EigenLayer strategy** 
 3. **Stakers deposit** during the open window, subject to per-deposit and total caps
 4. **Admin locks the vault** — deposits/withdrawal queuing blocked; full magnitude allocated to operator set
 5. **AVS submits rewards** — stakers can claim rewards via normal EigenLayer reward flow 
-6. **Duration elapses** — anyone calls `markMatured()` to deallocate and enable withdrawals
+6. **Vault exits lock**:
+   - **Normal exit**: duration elapses and anyone calls `markMatured()` to deallocate and enable withdrawals
+   - **Early exit**: arbitrator calls `advanceToWithdrawals()` after lock but before duration elapses
 7. **Stakers withdraw** — receive principal minus any slashing that occurred
 
 > **Note**: Duration vaults are **single-use**. Once matured, a vault cannot be re-locked. Deploy a new vault for new duration commitments.
@@ -46,7 +48,7 @@ The `DurationVaultStrategy` is a **time-bound, single-use EigenLayer strategy** 
 | [Configuration](#configuration) | [`updateTVLLimits`](#updatetvllimits), [`setTVLLimits`](#settvllimits), [`updateMetadataURI`](#updatemetadatauri) |
 | [State: DEPOSITS](#state-deposits) | [`beforeAddShares`](#beforeaddshares), [`beforeRemoveShares`](#beforeremoveshares) |
 | [State: ALLOCATIONS](#state-allocations) | [`lock`](#lock) |
-| [State: WITHDRAWALS](#state-withdrawals) | [`markMatured`](#markmatured) |
+| [State: WITHDRAWALS](#state-withdrawals) | [`markMatured`](#markmatured), [`advanceToWithdrawals`](#advancetowithdrawals) |
 
 ---
 
@@ -117,6 +119,7 @@ function deployDurationVaultStrategy(
 struct VaultConfig {
     IERC20 underlyingToken;              // Token stakers deposit
     address vaultAdmin;                   // Address that can lock the vault
+    address arbitrator;                  // Address that can advance to withdrawals early (after lock, pre-duration)
     uint32 duration;                      // Lock duration in seconds
     uint256 maxPerDeposit;               // Max deposit per transaction
     uint256 stakeCap;                    // Max total deposits (TVL cap)
@@ -139,6 +142,7 @@ struct VaultConfig {
 * Pause status MUST NOT be set: `PAUSED_NEW_STRATEGIES`
 * Token MUST NOT be blacklisted
 * `vaultAdmin` MUST NOT be zero address
+* `arbitrator` MUST NOT be zero address
 * `duration` MUST be non-zero and <= `MAX_DURATION` (2 years for now)
 * `maxPerDeposit` MUST be <= `stakeCap`
 * `operatorSet.avs` MUST NOT be zero address
@@ -220,6 +224,7 @@ stateDiagram-v2
     
     DEPOSITS --> ALLOCATIONS: lock()<br/>vaultAdmin only
     ALLOCATIONS --> WITHDRAWALS: markMatured()<br/>anyone, after duration
+    ALLOCATIONS --> WITHDRAWALS: advanceToWithdrawals()<br/>arbitrator only, before duration
     
     note right of DEPOSITS
         ✓ Deposits
@@ -248,7 +253,7 @@ _* Slashable after allocation delay passes. ** Slashable until deallocation dela
 |-------|:--------:|:-----------------:|:---------:|---------|-----|
 | `DEPOSITS` | ✓ | ✓ | ✗ | — | — |
 | `ALLOCATIONS` | ✗ | ✗ | ✓* | `lock()` | `vaultAdmin` |
-| `WITHDRAWALS` | ✗ | ✓ | ✓** | `markMatured()` | Anyone |
+| `WITHDRAWALS` | ✗ | ✓ | ✓** | `markMatured()` / `advanceToWithdrawals()` | Anyone / `arbitrator` |
 
 ---
 
@@ -354,6 +359,26 @@ Transitions the vault from `ALLOCATIONS` to `WITHDRAWALS`. Callable by anyone on
 
 > **NOTE**: Even after `markMatured()`, the vault **remains slashable** for `DEALLOCATION_DELAY` blocks until the deallocation takes effect on the `AllocationManager`. This is standard EigenLayer behavior for any deallocation.
 
+### `advanceToWithdrawals`
+
+```js
+function advanceToWithdrawals() external
+```
+
+Transitions the vault from `ALLOCATIONS` to `WITHDRAWALS` **early**, after lock but before `unlockAt`. This is intended for use cases where an external agreement is violated (e.g., premiums not paid) and the vault should allow stakers to exit before the duration elapses.
+
+*Effects*:
+* Sets `maturedAt` to current timestamp
+* Transitions state to `WITHDRAWALS`
+* Attempts to deallocate magnitude to 0 (best-effort)
+* Attempts to deregister from operator set (best-effort)
+* Emits `VaultAdvancedToWithdrawals(arbitrator, maturedAt)` (and `VaultMatured(maturedAt)`)
+
+*Requirements*:
+* Caller MUST be `arbitrator`
+* State MUST be `ALLOCATIONS` (i.e., vault must be locked)
+* `block.timestamp` MUST be < `unlockAt`
+
 ### Withdrawals
 
 After maturity, stakers can queue and complete withdrawals through the standard EigenLayer flow via `DelegationManager`. The `beforeRemoveShares` hook allows withdrawal queuing when state is `WITHDRAWALS`.
@@ -374,6 +399,7 @@ Rewards follow the standard EigenLayer flow:
 |----------|---------|
 | `state()` | Current `VaultState` enum |
 | `vaultAdmin()` | Vault administrator address |
+| `arbitrator()` | Vault arbitrator address |
 | `duration()` | Configured lock duration in seconds |
 | `lockedAt()` | Timestamp when vault was locked (0 if not locked) |
 | `unlockTimestamp()` | Timestamp when vault matures (0 if not locked) |
@@ -412,9 +438,10 @@ Rewards follow the standard EigenLayer flow:
 
 | Event | Description |
 |-------|-------------|
-| `VaultInitialized(vaultAdmin, underlyingToken, duration, maxPerDeposit, stakeCap, metadataURI)` | Vault initialized with configuration |
+| `VaultInitialized(vaultAdmin, arbitrator, underlyingToken, duration, maxPerDeposit, stakeCap, metadataURI)` | Vault initialized with configuration |
 | `VaultLocked(lockedAt, unlockAt)` | Vault transitioned to `ALLOCATIONS` |
 | `VaultMatured(maturedAt)` | Vault transitioned to `WITHDRAWALS` |
+| `VaultAdvancedToWithdrawals(arbitrator, maturedAt)` | Vault transitioned to `WITHDRAWALS` early by the arbitrator |
 | `MetadataURIUpdated(newMetadataURI)` | Metadata URI changed |
 | `MaxPerDepositUpdated(previousValue, newValue)` | Per-deposit cap changed |
 | `MaxTotalDepositsUpdated(previousValue, newValue)` | Total deposit cap changed |
@@ -426,13 +453,17 @@ Rewards follow the standard EigenLayer flow:
 | Error | When Thrown |
 |-------|-------------|
 | `InvalidVaultAdmin` | Zero-address vault admin in config |
+| `InvalidArbitrator` | Zero-address arbitrator in config |
 | `InvalidDuration` | Zero or excessive duration (> `MAX_DURATION`) in config |
 | `OnlyVaultAdmin` | Non-admin calls admin-only function |
+| `OnlyArbitrator` | Non-arbitrator calls arbitrator-only function |
 | `VaultAlreadyLocked` | Attempting to lock an already locked vault |
 | `DepositsLocked` | Deposit attempted after vault is locked |
 | `WithdrawalsLockedDuringAllocations` | Withdrawal queuing attempted during `ALLOCATIONS` state |
 | `MustBeDelegatedToVaultOperator` | Staker not delegated to vault before deposit |
 | `DurationNotElapsed` | `markMatured()` called before `unlockAt` timestamp |
+| `DurationAlreadyElapsed` | `advanceToWithdrawals()` called at/after `unlockAt` timestamp |
+| `VaultNotLocked` | `advanceToWithdrawals()` called before the vault is locked |
 | `OperatorIntegrationInvalid` | Invalid operator integration config (zero AVS address) |
 | `UnderlyingTokenBlacklisted` | Deposit attempted with blacklisted token |
 | `PendingAllocation` | `lock()` attempted with pending allocation modification |
