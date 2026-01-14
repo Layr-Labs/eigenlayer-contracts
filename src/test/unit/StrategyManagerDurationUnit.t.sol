@@ -73,6 +73,7 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
         IDurationVaultStrategyTypes.VaultConfig memory cfg = IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: IERC20(address(underlyingToken)),
             vaultAdmin: address(this),
+            arbitrator: address(this),
             duration: uint32(30 days),
             maxPerDeposit: 1_000_000 ether,
             stakeCap: 10_000_000 ether,
