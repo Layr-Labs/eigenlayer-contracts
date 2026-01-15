@@ -13,6 +13,11 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         // We don't use the prank modifier here, since we have to write to the env
         _startPrank(Env.multichainDeployerMultisig());
 
@@ -31,7 +36,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployed() || _areProxiesDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         execute();

@@ -18,6 +18,11 @@ contract QueueUpgrade is DeployCoreContracts {
     using CoreUpgradeQueueBuilder for MultisigCall[];
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -108,7 +113,7 @@ contract QueueUpgrade is DeployCoreContracts {
     }
 
     function testScript() public virtual override {
-        if (Env.isCoreProtocolDeployed()) {
+        if (Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
 

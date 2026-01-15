@@ -44,6 +44,11 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     using Env for *;
 
     function _runAsEOA() internal override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         vm.startBroadcast();
 
         /// pemissions/
@@ -83,7 +88,7 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         // Deploy protocol registry and initialize it
@@ -106,6 +111,7 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function _completeProtocolRegistryUpgrade() internal {
+        // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
             DeployProtocolRegistryProxy._runAsMultisig();
@@ -119,10 +125,8 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeployProtocolRegistryImpl._runAsEOA();
 
-        // 3. Upgrade the Protocol Registry Proxy, only if the admin is not already the proxyAdmin
-        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) != Env.proxyAdmin()) {
-            UpgradeProtocolRegistry._runAsMultisig();
-            _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
-        }
+        // 3. Upgrade the Protocol Registry Proxy
+        UpgradeProtocolRegistry._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
     }
 }

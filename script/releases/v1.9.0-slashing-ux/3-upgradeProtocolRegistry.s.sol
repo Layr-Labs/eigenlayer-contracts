@@ -15,6 +15,11 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override prank(Env.multichainDeployerMultisig()) {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         // Upgrade the proxies to point to the actual implementations
         ITransparentUpgradeableProxy protocolRegistryProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.protocolRegistry())));
@@ -25,10 +30,9 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
-
         // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
@@ -37,11 +41,6 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
         } else {
             // Since the proxies are already deployed, we need to update the env with the proper addresses
             _addContractsToEnv();
-        }
-
-        // If the proxy has been upgraded already, return
-        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()) {
-            return;
         }
 
         // 2. Deploy the Protocol Registry Implementation
