@@ -18,6 +18,11 @@ contract QueueUpgrade is DeployCoreContracts {
     using CoreUpgradeQueueBuilder for MultisigCall[];
 
     function _runAsMultisig() internal virtual override prank(Env.opsMultisig()) {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -72,18 +77,15 @@ contract QueueUpgrade is DeployCoreContracts {
         // Lastly, add the protocol registry as a pauser to the pauser registry
         executorCalls.append({
             to: address(Env.impl.pauserRegistry()),
-            data: abi.encodeWithSelector(
-                PauserRegistry.setIsPauser.selector, address(Env.proxy.protocolRegistry()), true
-            )
+            data: abi.encodeWithSelector(PauserRegistry.setIsPauser.selector, address(Env.proxy.protocolRegistry()), true)
         });
 
-        return Encode.gnosisSafe
-            .execTransaction({
-                from: address(Env.timelockController()),
-                to: Env.multiSendCallOnly(),
-                op: Encode.Operation.DelegateCall,
-                data: Encode.multiSend(executorCalls)
-            });
+        return Encode.gnosisSafe.execTransaction({
+            from: address(Env.timelockController()),
+            to: Env.multiSendCallOnly(),
+            op: Encode.Operation.DelegateCall,
+            data: Encode.multiSend(executorCalls)
+        });
     }
 
     function _appendProtocolRegistryUpgrade(
@@ -99,7 +101,9 @@ contract QueueUpgrade is DeployCoreContracts {
         IProtocolRegistryTypes.DeploymentConfig memory unpausableConfig =
             IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
 
-        /// permissions/
+        /**
+         * permissions/
+         */
         addresses[0] = address(Env.impl.pauserRegistry());
         configs[0] = unpausableConfig;
         names[0] = type(PauserRegistry).name;
@@ -112,7 +116,9 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[2] = unpausableConfig;
         names[2] = type(KeyRegistrar).name;
 
-        /// core/
+        /**
+         * core/
+         */
         addresses[3] = address(Env.proxy.allocationManager());
         configs[3] = pausableConfig;
         names[3] = type(AllocationManager).name;
@@ -141,7 +147,9 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[9] = pausableConfig;
         names[9] = type(StrategyManager).name;
 
-        /// pods/
+        /**
+         * pods/
+         */
         addresses[10] = address(Env.proxy.eigenPodManager());
         configs[10] = pausableConfig;
         names[10] = type(EigenPodManager).name;
@@ -150,7 +158,9 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[11] = unpausableConfig;
         names[11] = type(EigenPod).name;
 
-        /// strategies/
+        /**
+         * strategies/
+         */
         addresses[12] = address(Env.proxy.eigenStrategy());
         configs[12] = pausableConfig;
         names[12] = type(EigenStrategy).name;
@@ -163,7 +173,9 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[14] = pausableConfig;
         names[14] = type(StrategyFactory).name;
 
-        /// multichain/
+        /**
+         * multichain/
+         */
         addresses[15] = address(Env.proxy.bn254CertificateVerifier());
         configs[15] = unpausableConfig;
         names[15] = type(BN254CertificateVerifier).name;
@@ -180,12 +192,16 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[18] = pausableConfig;
         names[18] = type(OperatorTableUpdater).name;
 
-        /// avs/
+        /**
+         * avs/
+         */
         addresses[19] = address(Env.proxy.taskMailbox());
         configs[19] = unpausableConfig;
         names[19] = type(TaskMailbox).name;
 
-        /// token
+        /**
+         * token
+         */
         addresses[20] = address(Env.proxy.beigen());
         configs[20] = unpausableConfig;
         names[20] = type(BackingEigen).name;
@@ -197,9 +213,7 @@ contract QueueUpgrade is DeployCoreContracts {
         // Append to the multisig calls
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(
-                IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion()
-            )
+            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
         });
 
         // Now, if we have any strategy base TVLLimits, we need to add them to the protocol registry
@@ -218,18 +232,14 @@ contract QueueUpgrade is DeployCoreContracts {
             calls.append({
                 to: address(Env.proxy.protocolRegistry()),
                 data: abi.encodeWithSelector(
-                    IProtocolRegistry.ship.selector,
-                    strategyAddresses,
-                    strategyConfigs,
-                    strategyNames,
-                    Env.deployVersion()
+                    IProtocolRegistry.ship.selector, strategyAddresses, strategyConfigs, strategyNames, Env.deployVersion()
                 )
             });
         }
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         // Complete previous steps

@@ -9,12 +9,19 @@ import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/// Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
+/**
+ * Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
+ */
 contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     using Env for *;
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override prank(Env.multichainDeployerMultisig()) {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         // Upgrade the proxies to point to the actual implementations
         ITransparentUpgradeableProxy protocolRegistryProxy =
             ITransparentUpgradeableProxy(payable(address(Env.proxy.protocolRegistry())));
@@ -25,7 +32,7 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     }
 
     function testScript() public virtual override {
-        if (Env.isCoreProtocolDeployed()) {
+        if (Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         // 1. Deploy the Protocol Registry Proxy
@@ -36,11 +43,6 @@ contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
         } else {
             // Since the proxies are already deployed, we need to update the env with the proper addresses
             _addContractsToEnv();
-        }
-
-        // If the proxy has been upgraded already, return
-        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) == Env.proxyAdmin()) {
-            return;
         }
 
         // 2. Deploy the Protocol Registry Implementation

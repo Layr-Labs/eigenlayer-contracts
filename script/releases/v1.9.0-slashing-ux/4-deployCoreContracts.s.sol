@@ -13,44 +13,55 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/// Purpose: use an EOA to deploy all of the new contracts for this upgrade.
-/// Contracts deployed:
-/// /// Permissions
-/// - PermissionController
-/// - KeyRegistrar
-/// /// Core
-/// - AllocationManager
-/// - AVSDirectory
-/// - DelegationManager
-/// - ReleaseManager
-/// - RewardsCoordinator
-/// - StrategyManager
-/// /// Pods
-/// - EigenPod
-/// - EigenPodManager
-/// /// Strategies
-/// - EigenStrategy
-/// - StrategyBase
-/// - StrategyBaseTVLLimits
-/// - StrategyFactory
-/// /// Multichain
-/// - BN254CertificateVerifier
-/// - CrossChainRegistry
-/// - ECDSACertificateVerifier
-/// - OperatorTableUpdater
-/// /// AVS
-/// - TaskMailbox
+/**
+ * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
+ * Contracts deployed:
+ * /// Permissions
+ * - PermissionController
+ * - KeyRegistrar
+ * /// Core
+ * - AllocationManager
+ * - AVSDirectory
+ * - DelegationManager
+ * - ReleaseManager
+ * - RewardsCoordinator
+ * - StrategyManager
+ * /// Pods
+ * - EigenPod
+ * - EigenPodManager
+ * /// Strategies
+ * - EigenStrategy
+ * - StrategyBase
+ * - StrategyBaseTVLLimits
+ * - StrategyFactory
+ * /// Multichain
+ * - BN254CertificateVerifier
+ * - CrossChainRegistry
+ * - ECDSACertificateVerifier
+ * - OperatorTableUpdater
+ * /// AVS
+ * - TaskMailbox
+ */
 contract DeployCoreContracts is UpgradeProtocolRegistry {
     using Env for *;
 
     function _runAsEOA() internal override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         vm.startBroadcast();
 
-        /// pemissions/
+        /**
+         * pemissions/
+         */
         deployPermissionController();
         deployKeyRegistrar();
 
-        /// core/
+        /**
+         * core/
+         */
         deployAllocationManagerView();
         deployAllocationManager();
         deployAVSDirectory();
@@ -60,30 +71,38 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         deployRewardsCoordinator();
         deployStrategyManager();
 
-        /// pods/
+        /**
+         * pods/
+         */
         deployEigenPodManager();
         deployEigenPod();
 
-        /// strategies/
+        /**
+         * strategies/
+         */
         deployEigenStrategy();
         deployStrategyBase();
         deployStrategyBaseTVLLimits();
         deployStrategyFactory();
 
-        /// multichain/
+        /**
+         * multichain/
+         */
         deployBN254CertificateVerifier();
         deployCrossChainRegistry();
         deployECDSACertificateVerifier();
         deployOperatorTableUpdater();
 
-        /// avs/
+        /**
+         * avs/
+         */
         deployTaskMailbox();
 
         vm.stopBroadcast();
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         // Deploy protocol registry and initialize it
@@ -106,6 +125,7 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
     }
 
     function _completeProtocolRegistryUpgrade() internal {
+        // 1. Deploy the Protocol Registry Proxy
         // If proxies are not deployed, deploy them
         if (!_areProxiesDeployed()) {
             DeployProtocolRegistryProxy._runAsMultisig();
@@ -119,10 +139,8 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         _mode = OperationalMode.EOA; // Set to EOA mode so we can deploy the impls in the EOA script
         DeployProtocolRegistryImpl._runAsEOA();
 
-        // 3. Upgrade the Protocol Registry Proxy, only if the admin is not already the proxyAdmin
-        if (Env.getProxyAdminBySlot(address(Env.proxy.protocolRegistry())) != Env.proxyAdmin()) {
-            UpgradeProtocolRegistry._runAsMultisig();
-            _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
-        }
+        // 3. Upgrade the Protocol Registry Proxy
+        UpgradeProtocolRegistry._runAsMultisig();
+        _unsafeResetHasPranked(); // reset hasPranked so we can use in the future
     }
 }

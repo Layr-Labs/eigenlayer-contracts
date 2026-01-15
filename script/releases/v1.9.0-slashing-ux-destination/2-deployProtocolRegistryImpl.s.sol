@@ -7,11 +7,18 @@ import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/// Purpose: Deploy Protocol Registry implementation
+/**
+ * Purpose: Deploy Protocol Registry implementation
+ */
 contract DeployProtocolRegistryImpl is DeployProtocolRegistryProxy, CoreContractsDeployer {
     using Env for *;
 
     function _runAsEOA() internal virtual override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         vm.startBroadcast();
 
         // Deploy Protocol Registry implementation
@@ -21,7 +28,7 @@ contract DeployProtocolRegistryImpl is DeployProtocolRegistryProxy, CoreContract
     }
 
     function testScript() public virtual override {
-        if (Env.isCoreProtocolDeployed()) {
+        if (Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
 
