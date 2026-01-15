@@ -53,12 +53,13 @@ contract QueueUpgrade is DeployCoreContracts {
         // Add the protocol registry upgrade to the executor calls
         _appendProtocolRegistryUpgrade(executorCalls);
 
-        return Encode.gnosisSafe.execTransaction({
-            from: address(Env.timelockController()),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(executorCalls)
-        });
+        return Encode.gnosisSafe
+            .execTransaction({
+                from: address(Env.timelockController()),
+                to: Env.multiSendCallOnly(),
+                op: Encode.Operation.DelegateCall,
+                data: Encode.multiSend(executorCalls)
+            });
     }
 
     function _appendProtocolRegistryUpgrade(
@@ -74,23 +75,17 @@ contract QueueUpgrade is DeployCoreContracts {
         IProtocolRegistryTypes.DeploymentConfig memory unpausableConfig =
             IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
 
-        /**
-         * permissions/
-         */
+        /// permissions/
         addresses[0] = address(Env.impl.pauserRegistry());
         configs[0] = unpausableConfig;
         names[0] = type(PauserRegistry).name;
 
-        /**
-         * core/
-         */
+        /// core/
         addresses[1] = address(Env.proxy.protocolRegistry());
         configs[1] = unpausableConfig;
         names[1] = type(ProtocolRegistry).name;
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         addresses[2] = address(Env.proxy.bn254CertificateVerifier());
         configs[2] = unpausableConfig;
         names[2] = type(BN254CertificateVerifier).name;
@@ -103,9 +98,7 @@ contract QueueUpgrade is DeployCoreContracts {
         configs[4] = pausableConfig;
         names[4] = type(OperatorTableUpdater).name;
 
-        /**
-         * avs/
-         */
+        /// avs/
         addresses[5] = address(Env.proxy.taskMailbox());
         configs[5] = unpausableConfig;
         names[5] = type(TaskMailbox).name;
@@ -113,7 +106,9 @@ contract QueueUpgrade is DeployCoreContracts {
         // Lastly, append to the multisig calls
         calls.append({
             to: address(Env.proxy.protocolRegistry()),
-            data: abi.encodeWithSelector(IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion())
+            data: abi.encodeWithSelector(
+                IProtocolRegistry.ship.selector, addresses, configs, names, Env.deployVersion()
+            )
         });
     }
 

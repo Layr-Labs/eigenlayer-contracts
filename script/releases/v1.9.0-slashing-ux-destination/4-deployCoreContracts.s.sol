@@ -13,17 +13,15 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
- * Contracts deployed:
- * /// Multichain
- * - BN254CertificateVerifier
- * - CrossChainRegistry
- * - ECDSACertificateVerifier
- * - OperatorTableUpdater
- * /// AVS
- * - TaskMailbox
- */
+/// Purpose: use an EOA to deploy all of the new contracts for this upgrade.
+/// Contracts deployed:
+/// /// Multichain
+/// - BN254CertificateVerifier
+/// - CrossChainRegistry
+/// - ECDSACertificateVerifier
+/// - OperatorTableUpdater
+/// /// AVS
+/// - TaskMailbox
 contract DeployCoreContracts is UpgradeProtocolRegistry {
     using Env for *;
 
@@ -35,17 +33,13 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
 
         vm.startBroadcast();
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         deployBN254CertificateVerifier();
         // CrossChainRegistry only deployed on destination chain
         deployECDSACertificateVerifier();
         deployOperatorTableUpdater();
 
-        /**
-         * avs/
-         */
+        /// avs/
         deployTaskMailbox();
 
         vm.stopBroadcast();

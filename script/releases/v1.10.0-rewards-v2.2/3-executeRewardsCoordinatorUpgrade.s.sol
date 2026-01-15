@@ -6,14 +6,12 @@ import "../TestUtils.sol";
 import {QueueRewardsCoordinatorUpgrade} from "./2-queueRewardsCoordinatorUpgrade.s.sol";
 import {Encode} from "zeus-templates/utils/Encode.sol";
 
-/**
- * @title ExecuteRewardsCoordinatorUpgrade
- * @notice Execute the queued RewardsCoordinator upgrade after the timelock delay.
- *         This completes the upgrade to add Rewards v2.2 support:
- *         - Unique stake rewards (linear to allocated unique stake)
- *         - Total stake rewards (linear to total stake)
- *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
- */
+/// @title ExecuteRewardsCoordinatorUpgrade
+/// @notice Execute the queued RewardsCoordinator upgrade after the timelock delay.
+///         This completes the upgrade to add Rewards v2.2 support:
+///         - Unique stake rewards (linear to allocated unique stake)
+///         - Total stake rewards (linear to total stake)
+///         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
 contract ExecuteRewardsCoordinatorUpgrade is QueueRewardsCoordinatorUpgrade {
     using Env for *;
     using Encode for *;

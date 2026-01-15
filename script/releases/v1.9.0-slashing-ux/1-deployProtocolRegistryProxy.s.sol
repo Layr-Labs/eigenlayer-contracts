@@ -6,9 +6,7 @@ import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import "../Env.sol";
 import {CrosschainDeployLib} from "script/releases/CrosschainDeployLib.sol";
 
-/**
- * Purpose: Deploy the Protocol Registry contract
- */
+/// Purpose: Deploy the Protocol Registry contract
 contract DeployProtocolRegistryProxy is MultisigBuilder {
     using Env for *;
     using CrosschainDeployLib for *;
@@ -82,7 +80,10 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     /// @dev Compute the expected proxy address for a given name and empty contract
-    function _computeExpectedProxyAddress(string memory name, address emptyContract) internal view returns (address) {
+    function _computeExpectedProxyAddress(
+        string memory name,
+        address emptyContract
+    ) internal view returns (address) {
         return CrosschainDeployLib.computeCrosschainUpgradeableProxyAddress({
             adminAndDeployer: Env.multichainDeployerMultisig(),
             implementation: emptyContract,

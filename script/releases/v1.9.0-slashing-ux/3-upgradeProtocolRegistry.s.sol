@@ -9,9 +9,7 @@ import {CoreContractsDeployer} from "../CoreContractsDeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/**
- * Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
- */
+/// Purpose: Upgrade Protocol Registry Proxy to point to the implementation. Also transfer control to the ProxyAdmin.
 contract UpgradeProtocolRegistry is DeployProtocolRegistryImpl {
     using Env for *;
 

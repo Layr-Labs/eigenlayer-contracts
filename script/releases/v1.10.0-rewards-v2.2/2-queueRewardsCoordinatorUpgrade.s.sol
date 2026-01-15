@@ -10,14 +10,12 @@ import {MultisigCall, Encode} from "zeus-templates/utils/Encode.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-/**
- * @title QueueRewardsCoordinatorUpgrade
- * @notice Queue the RewardsCoordinator upgrade transaction in the Timelock via the Operations Multisig.
- *         This queues the upgrade to add Rewards v2.2 support:
- *         - Unique stake rewards (linear to allocated unique stake)
- *         - Total stake rewards (linear to total stake)
- *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
- */
+/// @title QueueRewardsCoordinatorUpgrade
+/// @notice Queue the RewardsCoordinator upgrade transaction in the Timelock via the Operations Multisig.
+///         This queues the upgrade to add Rewards v2.2 support:
+///         - Unique stake rewards (linear to allocated unique stake)
+///         - Total stake rewards (linear to total stake)
+///         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
 contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordinatorImpl {
     using Env for *;
     using Encode for *;
@@ -52,12 +50,13 @@ contract QueueRewardsCoordinatorUpgrade is MultisigBuilder, DeployRewardsCoordin
             })
         });
 
-        return Encode.gnosisSafe.execTransaction({
-            from: address(Env.timelockController()),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(executorCalls)
-        });
+        return Encode.gnosisSafe
+            .execTransaction({
+                from: address(Env.timelockController()),
+                to: Env.multiSendCallOnly(),
+                op: Encode.Operation.DelegateCall,
+                data: Encode.multiSend(executorCalls)
+            });
     }
 
     function testScript() public virtual override {

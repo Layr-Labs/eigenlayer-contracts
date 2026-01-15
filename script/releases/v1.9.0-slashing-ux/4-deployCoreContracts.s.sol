@@ -13,35 +13,33 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * Purpose: use an EOA to deploy all of the new contracts for this upgrade.
- * Contracts deployed:
- * /// Permissions
- * - PermissionController
- * - KeyRegistrar
- * /// Core
- * - AllocationManager
- * - AVSDirectory
- * - DelegationManager
- * - ReleaseManager
- * - RewardsCoordinator
- * - StrategyManager
- * /// Pods
- * - EigenPod
- * - EigenPodManager
- * /// Strategies
- * - EigenStrategy
- * - StrategyBase
- * - StrategyBaseTVLLimits
- * - StrategyFactory
- * /// Multichain
- * - BN254CertificateVerifier
- * - CrossChainRegistry
- * - ECDSACertificateVerifier
- * - OperatorTableUpdater
- * /// AVS
- * - TaskMailbox
- */
+/// Purpose: use an EOA to deploy all of the new contracts for this upgrade.
+/// Contracts deployed:
+/// /// Permissions
+/// - PermissionController
+/// - KeyRegistrar
+/// /// Core
+/// - AllocationManager
+/// - AVSDirectory
+/// - DelegationManager
+/// - ReleaseManager
+/// - RewardsCoordinator
+/// - StrategyManager
+/// /// Pods
+/// - EigenPod
+/// - EigenPodManager
+/// /// Strategies
+/// - EigenStrategy
+/// - StrategyBase
+/// - StrategyBaseTVLLimits
+/// - StrategyFactory
+/// /// Multichain
+/// - BN254CertificateVerifier
+/// - CrossChainRegistry
+/// - ECDSACertificateVerifier
+/// - OperatorTableUpdater
+/// /// AVS
+/// - TaskMailbox
 contract DeployCoreContracts is UpgradeProtocolRegistry {
     using Env for *;
 
@@ -53,15 +51,11 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
 
         vm.startBroadcast();
 
-        /**
-         * pemissions/
-         */
+        /// pemissions/
         deployPermissionController();
         deployKeyRegistrar();
 
-        /**
-         * core/
-         */
+        /// core/
         deployAllocationManagerView();
         deployAllocationManager();
         deployAVSDirectory();
@@ -71,31 +65,23 @@ contract DeployCoreContracts is UpgradeProtocolRegistry {
         deployRewardsCoordinator();
         deployStrategyManager();
 
-        /**
-         * pods/
-         */
+        /// pods/
         deployEigenPodManager();
         deployEigenPod();
 
-        /**
-         * strategies/
-         */
+        /// strategies/
         deployEigenStrategy();
         deployStrategyBase();
         deployStrategyBaseTVLLimits();
         deployStrategyFactory();
 
-        /**
-         * multichain/
-         */
+        /// multichain/
         deployBN254CertificateVerifier();
         deployCrossChainRegistry();
         deployECDSACertificateVerifier();
         deployOperatorTableUpdater();
 
-        /**
-         * avs/
-         */
+        /// avs/
         deployTaskMailbox();
 
         vm.stopBroadcast();

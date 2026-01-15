@@ -5,14 +5,12 @@ import {EOADeployer} from "zeus-templates/templates/EOADeployer.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/**
- * @title DeployRewardsCoordinatorImpl
- * @notice Deploy new RewardsCoordinator implementation with Rewards v2.2 support.
- *         This adds support for:
- *         - Unique stake rewards submissions (rewards linear to allocated unique stake)
- *         - Total stake rewards submissions (rewards linear to total stake)
- *         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
- */
+/// @title DeployRewardsCoordinatorImpl
+/// @notice Deploy new RewardsCoordinator implementation with Rewards v2.2 support.
+///         This adds support for:
+///         - Unique stake rewards submissions (rewards linear to allocated unique stake)
+///         - Total stake rewards submissions (rewards linear to total stake)
+///         - Updated MAX_REWARDS_DURATION to 730 days (63072000 seconds)
 contract DeployRewardsCoordinatorImpl is EOADeployer {
     using Env for *;
     using TestUtils for *;
