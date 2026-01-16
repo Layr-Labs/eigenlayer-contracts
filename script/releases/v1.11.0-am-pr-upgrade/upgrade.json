@@ -1,0 +1,19 @@
+{
+    "name": "allocation-manager-protocol-registry-upgrade",
+    "from": ">=1.11.0",
+    "to": "1.11.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployCoreContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-completeUpgrade.s.sol"
+        }
+    ]
+}
