@@ -13,6 +13,11 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
     /// @dev Index for flag that pauses pressing the button when set.
     uint8 internal constant PAUSED_TOKEN_FLOWS = 0;
 
+    /// @dev Returns the hash of the reentrancy error from OZ 4.9.0 ReentrancyGuard.
+    /// Used to detect griefing attacks.
+    bytes32 internal constant REENTRANCY_ERROR_HASH =
+        keccak256(abi.encodeWithSignature("Error(string)", "ReentrancyGuard: reentrant call"));
+
     // Immutables
 
     /// @dev The EIGEN token that will be minted for emissions.
@@ -54,10 +59,9 @@ abstract contract EmissionsControllerStorage is IEmissionsController {
         IRewardsCoordinator rewardsCoordinator,
         uint256 inflationRate,
         uint256 startTime,
-        uint256 epochLength
+        uint256 epochLength,
+        uint256 calculationIntervalSeconds
     ) {
-        uint256 calculationIntervalSeconds = rewardsCoordinator.CALCULATION_INTERVAL_SECONDS();
-
         // Check if epochLength is aligned with CALCULATION_INTERVAL_SECONDS.
         if (epochLength % calculationIntervalSeconds != 0) {
             revert EpochLengthNotAlignedWithCalculationInterval();

@@ -31,6 +31,9 @@ import "../../src/test/mocks/EmptyContract.sol";
 import "../../src/contracts/interfaces/IBackingEigen.sol";
 import "../../src/contracts/interfaces/IEigen.sol";
 
+// contracts
+import "../../src/contracts/core/EmissionsController.sol";
+
 import "forge-std/Script.sol";
 
 import "src/test/utils/Logger.t.sol";
@@ -95,6 +98,12 @@ contract ExistingDeploymentParser is Script, Logger {
     uint256 STRATEGY_MAX_PER_DEPOSIT;
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
+    /// @dev EmissionsController
+    uint256 EMISSIONS_CONTROLLER_INFLATION_RATE;
+    uint256 EMISSIONS_CONTROLLER_START_TIME;
+    uint256 EMISSIONS_CONTROLLER_EPOCH_LENGTH;
+    address EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL;
+
     /// -----------------------------------------------------------------------
     /// EigenLayer Contracts
     /// -----------------------------------------------------------------------
@@ -152,6 +161,10 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev Multichain
     KeyRegistrar public keyRegistrar;
     KeyRegistrar public keyRegistrarImplementation;
+
+    /// @dev EmissionsController
+    EmissionsController public emissionsController;
+    EmissionsController public emissionsControllerImplementation;
 
     /// -----------------------------------------------------------------------
     /// Storage

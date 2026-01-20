@@ -25,6 +25,9 @@ import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
 
+import "src/contracts/token/Eigen.sol";
+import "src/contracts/token/BackingEigen.sol";
+
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
 
@@ -167,6 +170,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy mocks
         emptyContract = new EmptyContract();
 
+        // Deploy EIGEN and bEIGEN token proxies (handle circular dependency)
+        tokenProxyAdmin = new ProxyAdmin();
+        EIGEN = IEigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
+        bEIGEN = IBackingEigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
+
+        // Deploy token implementations
+        EIGENImpl = IEigen(address(new Eigen(IERC20(address(bEIGEN)), version)));
+        bEIGENImpl = IBackingEigen(address(new BackingEigen(IERC20(address(EIGEN)))));
+
+        // Upgrade token proxies to implementations
+        tokenProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(EIGEN))), address(EIGENImpl));
+        tokenProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
+
+        // Initialize tokens (cast to concrete types to access initialize)
+        address[] memory minters = new address[](0);
+        uint[] memory mintingAllowances = new uint[](0);
+        uint[] memory mintAllowedAfters = new uint[](0);
+        Eigen(address(EIGEN)).initialize(executorMultisig, minters, mintingAllowances, mintAllowedAfters);
+        BackingEigen(address(bEIGEN)).initialize(executorMultisig);
+
         // Matching parameters to testnet
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
@@ -177,6 +200,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+
+        // EmissionsController parameters (set after GENESIS_REWARDS_TIMESTAMP)
+        EMISSIONS_CONTROLLER_INFLATION_RATE = 2.3e24; // 2.3M EIGEN per epoch
+        EMISSIONS_CONTROLLER_EPOCH_LENGTH = 1 weeks;
+        // Ensure start time is aligned to day boundaries (divisible by calculation interval)
+        EMISSIONS_CONTROLLER_START_TIME = (REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 1 weeks)
+            / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+        EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL = vm.addr(0xC041C11);
 
         _deployProxies();
         _deployImplementations();
@@ -317,6 +348,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         if (address(keyRegistrar) == address(0)) {
             keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
+        if (address(emissionsController) == address(0)) {
+            emissionsController =
+                EmissionsController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
     }
 
     /// Deploy an implementation contract for each contract in the system
@@ -376,6 +411,17 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         // multichain
         keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
+        emissionsControllerImplementation = new EmissionsController({
+            eigen: EIGEN,
+            backingEigen: bEIGEN,
+            allocationManager: allocationManager,
+            rewardsCoordinator: rewardsCoordinator,
+            pauserRegistry: eigenLayerPauserReg,
+            inflationRate: EMISSIONS_CONTROLLER_INFLATION_RATE,
+            startTime: EMISSIONS_CONTROLLER_START_TIME,
+            cooldownSeconds: EMISSIONS_CONTROLLER_EPOCH_LENGTH,
+            calculationIntervalSeconds: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS
+        });
     }
 
     function _upgradeProxies() public noTracing {
@@ -438,6 +484,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
         );
+
+        // EmissionsController
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(emissionsController))), address(emissionsControllerImplementation)
+        );
     }
 
     function _initializeProxies() public noTracing {
@@ -456,6 +507,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         allocationManager.initialize({initialPausedStatus: 0});
 
         strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+
+        emissionsController.initialize({
+            initialOwner: executorMultisig,
+            initialIncentiveCouncil: EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL,
+            initialPausedStatus: 0
+        });
+
+        // Grant EmissionsController permission to mint bEIGEN tokens (only for local tests)
+        if (forkType == LOCAL) {
+            cheats.startPrank(executorMultisig);
+            bEIGEN.setIsMinter(address(emissionsController), true);
+            // Disable transfer restrictions for EIGEN token
+            EIGEN.disableTransferRestrictions();
+            cheats.stopPrank();
+        }
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist
