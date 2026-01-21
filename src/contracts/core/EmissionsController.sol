@@ -35,10 +35,18 @@ contract EmissionsController is
         IPauserRegistry pauserRegistry,
         uint256 inflationRate,
         uint256 startTime,
-        uint256 cooldownSeconds
+        uint256 cooldownSeconds,
+        uint256 calculationIntervalSeconds
     )
         EmissionsControllerStorage(
-            eigen, backingEigen, allocationManager, rewardsCoordinator, inflationRate, startTime, cooldownSeconds
+            eigen,
+            backingEigen,
+            allocationManager,
+            rewardsCoordinator,
+            inflationRate,
+            startTime,
+            cooldownSeconds,
+            calculationIntervalSeconds
         )
         Pausable(pauserRegistry)
     {
@@ -82,11 +90,11 @@ contract EmissionsController is
         // Prevents minting EIGEN before the first epoch has started.
         require(currentEpoch != type(uint256).max, EmissionsNotStarted());
 
-        uint256 totalDistributions = getTotalDistributions();
+        uint256 totalProcessable = getTotalProcessableDistributions();
         uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
 
         // Check if all distributions have already been processed.
-        require(nextDistributionId < totalDistributions, AllDistributionsProcessed());
+        require(nextDistributionId < totalProcessable, AllDistributionsProcessed());
 
         // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
         if (!_epochs[currentEpoch].minted) {
@@ -112,7 +120,7 @@ contract EmissionsController is
         uint256 lastIndex = nextDistributionId + length;
 
         // If length exceeds total distributions, set last index to total distributions (exclusive upper bound).
-        if (lastIndex > totalDistributions) lastIndex = totalDistributions;
+        if (lastIndex > totalProcessable) lastIndex = totalProcessable;
 
         // Process distributions starting from the next one to process...
         for (uint256 distributionId = nextDistributionId; distributionId < lastIndex; ++distributionId) {
@@ -124,7 +132,7 @@ contract EmissionsController is
             if (distribution.startEpoch > currentEpoch) continue;
             // Skip distributions that have ended (0 means infinite)...
             if (distribution.totalEpochs != 0) {
-                if (currentEpoch > distribution.startEpoch + distribution.totalEpochs) continue;
+                if (currentEpoch >= distribution.startEpoch + distribution.totalEpochs) continue;
             }
 
             _processDistribution({
@@ -214,12 +222,27 @@ contract EmissionsController is
 
     /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.
     /// This is needed as using try/catch requires decoding the calldata, which can revert preventing further distributions.
+    /// Also checks for reentrancy attacks by verifying the return data is not the reentrancy error thrown by OZ 4.9.0 ReentrancyGuard.
+    /// Also checks for OOG (Out Of Gas) panics by verifying the return data is not empty.
     /// @param abiEncodedCall The ABI encoded call to the RewardsCoordinator.
     /// @return success True if the function call was successful, false otherwise.
     function _tryCallRewardsCoordinator(
         bytes memory abiEncodedCall
     ) internal returns (bool success) {
-        (success,) = address(REWARDS_COORDINATOR).call(abiEncodedCall);
+        bytes memory returnData;
+        (success, returnData) = address(REWARDS_COORDINATOR).call(abiEncodedCall);
+        if (!success) require(!_isDisallowedError(returnData), MaliciousCallDetected());
+    }
+
+    /// @dev Internal helper that checks if the error is a disallowed error (reentrancy or OOG).
+    /// @param returnData The return data from the failed call.
+    /// @return True if the error is disallowed, false otherwise.
+    function _isDisallowedError(
+        bytes memory returnData
+    ) internal pure returns (bool) {
+        if (keccak256(returnData) == REENTRANCY_ERROR_HASH) return true; // prevent reentrancy attacks
+        if (returnData.length == 0) return true; // prevent OOG errors
+        return false;
     }
 
     /// -----------------------------------------------------------------------
@@ -237,6 +260,8 @@ contract EmissionsController is
     function _setIncentiveCouncil(
         address newIncentiveCouncil
     ) internal {
+        // Check that new incentive council is not the zero address to prevent lost funds.
+        require(newIncentiveCouncil != address(0), InputAddressZero());
         // Set the new incentive council.
         incentiveCouncil = newIncentiveCouncil;
         // Emit an event for the updated incentive council.
@@ -329,12 +354,7 @@ contract EmissionsController is
         uint256 currentEpoch
     ) internal view {
         // Check if all distributions have been processed for the current epoch.
-        // Same logic found in `isButtonPressable()`.
-        // Skip check if emissions haven't started yet.
-        require(
-            currentEpoch == type(uint256).max || _epochs[currentEpoch].totalProcessed >= getTotalDistributions(),
-            NotAllDistributionsProcessed()
-        );
+        require(!_isButtonPressable(currentEpoch), AllDistributionsMustBeProcessed());
     }
 
     function _checkDistribution(
@@ -370,6 +390,19 @@ contract EmissionsController is
         );
     }
 
+    /// @dev Internal helper to check if the button is pressable.
+    /// @param currentEpoch The current epoch.
+    /// @return True if the button is pressable, false otherwise.
+    function _isButtonPressable(
+        uint256 currentEpoch
+    ) internal view returns (bool) {
+        // If emissions haven't started yet, button is not pressable.
+        if (currentEpoch == type(uint256).max) return false;
+
+        // Return true if there are any unprocessed distributions for the current epoch.
+        return _epochs[currentEpoch].totalProcessed < getTotalProcessableDistributions();
+    }
+
     /// -----------------------------------------------------------------------
     /// View
     /// -----------------------------------------------------------------------
@@ -384,21 +417,33 @@ contract EmissionsController is
 
     /// @inheritdoc IEmissionsController
     function isButtonPressable() public view returns (bool) {
-        return _epochs[getCurrentEpoch()].totalProcessed < getTotalDistributions();
+        return _isButtonPressable(getCurrentEpoch());
     }
 
     /// @inheritdoc IEmissionsController
     function nextTimeButtonPressable() external view returns (uint256) {
-        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * (getCurrentEpoch() + 1);
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // If emissions haven't started yet, return the start time.
+        if (currentEpoch == type(uint256).max) return EMISSIONS_START_TIME;
+
+        // Return the start time of the next epoch.
+        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * (currentEpoch + 1);
     }
 
     /// @inheritdoc IEmissionsController
-    function lastTimeButtonPressable() public view returns (uint256) {
-        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * getCurrentEpoch();
+    function lastTimeButtonPressable() external view returns (uint256) {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // If emissions haven't started yet, return the max uint256.
+        if (currentEpoch == type(uint256).max) return type(uint256).max;
+
+        // Return the start time of the current epoch.
+        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
     }
 
     /// @inheritdoc IEmissionsController
-    function getTotalDistributions() public view returns (uint256) {
+    function getTotalProcessableDistributions() public view returns (uint256) {
         uint256 currentEpoch = getCurrentEpoch();
         // Before emissions start, return the full count since distributions added
         // before emissions are not tracked as "added in current epoch"
@@ -420,6 +465,9 @@ contract EmissionsController is
         uint256 start,
         uint256 length
     ) external view returns (Distribution[] memory distributions) {
+        // Avoid out-of-bounds error.
+        uint256 actualLength = _distributions.length;
+        if (start + length > actualLength) length = actualLength - start;
         // Create a new array in memory with the given length.
         distributions = new Distribution[](length);
         // Copy the specified subset of distributions from the storage array to the memory array.

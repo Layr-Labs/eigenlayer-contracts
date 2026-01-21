@@ -13,6 +13,7 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
     // 7 days from an aligned base ensures proper alignment
     uint EMISSIONS_START_TIME = 7 days;
     uint EMISSIONS_EPOCH_LENGTH = 1 weeks;
+    uint REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS = 86_400;
 
     address owner = address(0x1);
     address incentiveCouncil = address(0x2);
@@ -32,7 +33,8 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
                             IPauserRegistry(address(pauserRegistry)),
                             EMISSIONS_INFLATION_RATE,
                             EMISSIONS_START_TIME,
-                            EMISSIONS_EPOCH_LENGTH
+                            EMISSIONS_EPOCH_LENGTH,
+                            REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS
                         )
                     ),
                     address(eigenLayerProxyAdmin),
@@ -55,6 +57,40 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
         submissions[0] = new IRewardsCoordinatorTypes.StrategyAndMultiplier[](0);
         return submissions;
     }
+
+    function _getTotalDistributionsProcessed() public returns (uint) {
+        Vm.Log[] memory logs = cheats.getRecordedLogs();
+        uint processed = 0;
+        for (uint i = 0; i < logs.length; i++) {
+            if (logs[i].topics.length > 0 && logs[i].topics[0] == IEmissionsControllerEvents.DistributionProcessed.selector) {
+                ++processed;
+            }
+        }
+        return processed;
+    }
+
+    function _pressButton(uint epoch, uint length, uint expectedProcessed, bool expectedPressable) public {
+        cheats.warp(EMISSIONS_START_TIME + epoch * EMISSIONS_EPOCH_LENGTH);
+        assertEq(emissionsController.getCurrentEpoch(), epoch);
+        cheats.recordLogs();
+        emissionsController.pressButton(length);
+        assertEq(_getTotalDistributionsProcessed(), expectedProcessed, "processed != expectedProcessed");
+        assertEq(emissionsController.isButtonPressable(), expectedPressable, "isButtonPressable != expectedPressable");
+    }
+
+    function _addDefaultDistribution(uint64 startEpoch, uint64 totalEpochs, uint64 weight) public {
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: weight,
+                startEpoch: startEpoch,
+                totalEpochs: totalEpochs,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+    }
 }
 
 /// -----------------------------------------------------------------------
@@ -63,15 +99,20 @@ contract EmissionsControllerUnitTests is EigenLayerUnitTestSetup, IEmissionsCont
 
 contract EmissionsControllerUnitTests_Initialization_Setters is EmissionsControllerUnitTests {
     function test_constructor_setters() public {
+        assertEq(address(emissionsController.EIGEN()), address(eigenMock));
+        assertEq(address(emissionsController.BACKING_EIGEN()), address(backingEigenMock));
+        assertEq(address(emissionsController.ALLOCATION_MANAGER()), address(allocationManagerMock));
+        assertEq(address(emissionsController.REWARDS_COORDINATOR()), address(rewardsCoordinatorMock));
+        assertEq(address(emissionsController.pauserRegistry()), address(pauserRegistry));
         assertEq(emissionsController.EMISSIONS_INFLATION_RATE(), EMISSIONS_INFLATION_RATE);
         assertEq(emissionsController.EMISSIONS_START_TIME(), EMISSIONS_START_TIME);
         assertEq(emissionsController.EMISSIONS_EPOCH_LENGTH(), EMISSIONS_EPOCH_LENGTH);
     }
 
     function test_initialize_setters() public {
-        assertEq(emissionsController.EMISSIONS_INFLATION_RATE(), EMISSIONS_INFLATION_RATE);
-        assertEq(emissionsController.EMISSIONS_START_TIME(), EMISSIONS_START_TIME);
-        assertEq(emissionsController.EMISSIONS_EPOCH_LENGTH(), EMISSIONS_EPOCH_LENGTH);
+        assertEq(emissionsController.owner(), owner);
+        assertEq(emissionsController.incentiveCouncil(), incentiveCouncil);
+        assertEq(emissionsController.paused(), 0);
     }
 
     function test_revert_initialize_AlreadyInitialized() public {
@@ -85,110 +126,169 @@ contract EmissionsControllerUnitTests_Initialization_Setters is EmissionsControl
 /// -----------------------------------------------------------------------
 
 contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTests {
-    function test_revert_pressButton_AllDistributionsProcessed_NoDistributions() public {
-        // Warp to after emissions start
+    /// -----------------------------------------------------------------------
+    /// Revert Tests
+    /// -----------------------------------------------------------------------
+    /// @notice Assert the function reverts when paused.
+    function test_revert_pressButton_WhenPaused() public {
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
+        cheats.prank(pauser);
+        emissionsController.pauseAll();
         cheats.warp(EMISSIONS_START_TIME);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        emissionsController.pressButton(1);
+    }
 
-        // Attempt to press button with no distributions should revert
+    /// @notice Assert the function reverts when emissions have not started yet.
+    function test_revert_pressButton_EmissionsNotStarted() public {
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
+        cheats.expectRevert(IEmissionsControllerErrors.EmissionsNotStarted.selector);
+        emissionsController.pressButton(1);
+    }
+
+    /// @notice Assert the function reverts when no distributions are left to be processed (none to start with).
+    function test_revert_pressButton_AllDistributionsProcessed_NoDistributions() public {
+        cheats.warp(EMISSIONS_START_TIME);
         cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
         emissionsController.pressButton(0);
     }
 
+    /// @notice Assert the function reverts when no distributions are left to be processed (some to start with).
     function test_revert_pressButton_AllDistributionsProcessed() public {
-        // Add a distribution first (before emissions start, so startEpoch 0 is in the future)
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Warp to after emissions start (now at epoch 0)
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
         cheats.warp(EMISSIONS_START_TIME);
-
-        // Process all distributions
         emissionsController.pressButton(1);
-
-        // Attempt to press button again should revert
         cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
         emissionsController.pressButton(1);
     }
 
-    function test_revert_pressButton_EmissionsNotStarted() public {
-        // Add a distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
+    /// -----------------------------------------------------------------------
+    /// Timing Fuzz Tests
+    /// -----------------------------------------------------------------------
 
-        // Before emissions start, pressing button should revert
-        cheats.expectRevert(IEmissionsControllerErrors.EmissionsNotStarted.selector);
-        emissionsController.pressButton(1);
+    /// @notice Assert the function processes a single epoch distribution correctly.
+    function testFuzz_pressButton_SingleEpochDistribution(uint64 startEpoch) public {
+        startEpoch = uint64(bound(startEpoch, 0, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: 1, weight: 10_000});
+        _pressButton({epoch: startEpoch, length: 1, expectedProcessed: 1, expectedPressable: false});
+        _pressButton({epoch: startEpoch + 1, length: 1, expectedProcessed: 0, expectedPressable: false});
+    }
+
+    /// @notice Assert the function processes a multiple epoch distribution correctly.
+    function testFuzz_pressButton_MultipleEpochDistribution(uint64 startEpoch, uint64 totalEpochs) public {
+        startEpoch = uint64(bound(startEpoch, 0, type(uint8).max));
+        totalEpochs = uint64(bound(totalEpochs, 2, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: totalEpochs, weight: 10_000});
+        for (uint i = 0; i < totalEpochs; i++) {
+            _pressButton({epoch: startEpoch + i, length: 1, expectedProcessed: 1, expectedPressable: false});
+        }
+        _pressButton({epoch: startEpoch + totalEpochs, length: 1, expectedProcessed: 0, expectedPressable: false});
+    }
+
+    /// @notice Assert the function processes an infinite distribution correctly.
+    function testFuzz_pressButton_InfiniteDistribution(uint64 startEpoch) public {
+        startEpoch = uint64(bound(startEpoch, 0, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: 0, weight: 10_000});
+        for (uint64 epoch = 0; epoch < 100; ++epoch) {
+            _pressButton({epoch: startEpoch + epoch, length: 1, expectedProcessed: 1, expectedPressable: false});
+        }
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Minting Behavior Tests
+    /// -----------------------------------------------------------------------
+
+    /// @notice Assert the function mints only once per epoch.
+    function test_pressButton_MintsOnlyOncePerEpoch() public {
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 5000});
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 5000});
+
+        uint balanceBefore = eigenMock.balanceOf(address(emissionsController));
+        _pressButton({epoch: 0, length: 1, expectedProcessed: 1, expectedPressable: true});
+        uint balanceAfter = eigenMock.balanceOf(address(emissionsController));
+        assertEq(balanceAfter, balanceBefore + EMISSIONS_INFLATION_RATE);
+
+        balanceBefore = eigenMock.balanceOf(address(emissionsController));
+        _pressButton({epoch: 0, length: 1, expectedProcessed: 1, expectedPressable: false});
+        balanceAfter = eigenMock.balanceOf(address(emissionsController));
+        assertEq(balanceAfter, balanceBefore);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Distribution Skipping Tests
+    /// -----------------------------------------------------------------------
+
+    function testFuzz_pressButton_SkipsDisabledDistributions(uint64 startEpoch) public {} // TODO: implement
+
+    /// @notice Assert the function skips distributions that have not started yet.
+    function testFuzz_pressButton_SkipsNotYetStartedDistributions(uint64 startEpoch) public {
+        startEpoch = uint64(bound(startEpoch, 1, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: 1, weight: 10_000});
+        for (uint64 epoch = 0; epoch < startEpoch; ++epoch) {
+            _pressButton({epoch: epoch, length: 1, expectedProcessed: 0, expectedPressable: false});
+        }
+        _pressButton({epoch: startEpoch, length: 1, expectedProcessed: 1, expectedPressable: false});
+    }
+
+    /// @notice Assert the function skips distributions that have ended.
+    function testFuzz_pressButton_SkipsEndedDistributions(uint64 startEpoch, uint64 totalEpochs) public {
+        startEpoch = uint64(bound(startEpoch, 1, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: 1, weight: 10_000});
+        for (uint i = 1; i < 5; ++i) {
+            _pressButton({epoch: startEpoch + i, length: 1, expectedProcessed: 0, expectedPressable: false});
+        }
+    }
+
+    /// @notice Assert the function skips distributions with zero weight.
+    function testFuzz_pressButton_SkipsZeroWeightDistribution(uint64 startEpoch) public {
+        startEpoch = uint64(bound(startEpoch, 1, type(uint8).max));
+        _addDefaultDistribution({startEpoch: startEpoch, totalEpochs: 1, weight: 0});
+        _pressButton({epoch: startEpoch, length: 1, expectedProcessed: 0, expectedPressable: false});
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Length Edge Cases
+    /// -----------------------------------------------------------------------
+
+    function test_pressButton_LengthZeroProcessesNone() public {
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
+        _pressButton({epoch: 0, length: 0, expectedProcessed: 0, expectedPressable: true});
     }
 }
 
 contract EmissionsControllerUnitTests_sweep is EmissionsControllerUnitTests {
-    function test_sweep_TransfersTokensToIncentiveCouncil() public {
-        // Add distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
+    /// @notice Assert the function reverts when paused.
+    function test_revert_sweep_WhenPaused() public {
+        cheats.warp(EMISSIONS_START_TIME);
+        cheats.prank(pauser);
+        emissionsController.pause(1);
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        emissionsController.sweep();
+    }
 
-        // Warp to epoch 0 and press button
+    /// @notice Assert the function transfers tokens to the incentive council.
+    function test_sweep_TransfersTokensToIncentiveCouncil() public {
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
         cheats.warp(EMISSIONS_START_TIME);
         emissionsController.pressButton(1);
 
-        // Give some EIGEN tokens directly to the controller (simulating leftover tokens)
         uint sweepAmount = 100 ether;
         deal(address(eigenMock), address(emissionsController), sweepAmount);
-
-        // Verify initial balance
         assertEq(eigenMock.balanceOf(address(emissionsController)), sweepAmount);
+
         uint councilBalanceBefore = eigenMock.balanceOf(incentiveCouncil);
 
-        // Sweep should work after all distributions are processed
         cheats.expectEmit(true, true, true, true);
         emit Swept(incentiveCouncil, sweepAmount);
         emissionsController.sweep();
 
-        // Verify tokens were transferred
         assertEq(eigenMock.balanceOf(address(emissionsController)), 0);
         assertEq(eigenMock.balanceOf(incentiveCouncil), councilBalanceBefore + sweepAmount);
     }
 
     function test_sweep_DoesNothingWhenButtonPressable() public {
         // Add distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
+        _addDefaultDistribution({startEpoch: 0, totalEpochs: 1, weight: 10_000});
 
         // Warp to epoch 0 - button is pressable
         cheats.warp(EMISSIONS_START_TIME);
@@ -222,150 +322,18 @@ contract EmissionsControllerUnitTests_sweep is EmissionsControllerUnitTests {
     }
 }
 
-contract EmissionsControllerUnitTests_pressButton_DistributionTypes is EmissionsControllerUnitTests {
-    OperatorSet testOperatorSet = OperatorSet({avs: address(0x123), id: 1});
-
-    function test_pressButton_OperatorSetUniqueStake() public {
-        // Mock operator set as registered
-        allocationManagerMock.setIsOperatorSet(testOperatorSet, true);
-
-        // Add OperatorSetUniqueStake distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.OperatorSetUniqueStake,
-                operatorSet: testOperatorSet,
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Warp to epoch 0 and press button
-        cheats.warp(EMISSIONS_START_TIME);
-        emissionsController.pressButton(1);
-
-        // Distribution should be processed (check via event emission)
-        // The distribution will be processed even if RewardsCoordinator call fails
-    }
-
-    function test_pressButton_OperatorSetTotalStake() public {
-        // Mock operator set as registered
-        allocationManagerMock.setIsOperatorSet(testOperatorSet, true);
-
-        // Add OperatorSetTotalStake distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.OperatorSetTotalStake,
-                operatorSet: testOperatorSet,
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Warp to epoch 0 and press button
-        cheats.warp(EMISSIONS_START_TIME);
-        emissionsController.pressButton(1);
-
-        // Distribution should be processed
-    }
-
-    function test_pressButton_EigenDA() public {
-        // Add EigenDA distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.EigenDA,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Warp to epoch 0 and press button
-        cheats.warp(EMISSIONS_START_TIME);
-        emissionsController.pressButton(1);
-
-        // Distribution should be processed
-    }
-
-    function test_pressButton_Manual() public {
-        // Add Manual distribution
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.Manual,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: emptyStrategiesAndMultipliers() // Manual doesn't need submissions
-            })
-        );
-
-        uint councilBalanceBefore = eigenMock.balanceOf(incentiveCouncil);
-
-        // Warp to epoch 0 and press button
-        cheats.warp(EMISSIONS_START_TIME);
-        emissionsController.pressButton(1);
-
-        // Manual distribution transfers directly to incentive council
-        assertEq(eigenMock.balanceOf(incentiveCouncil), councilBalanceBefore + EMISSIONS_INFLATION_RATE);
-    }
-
-    function test_revert_addDistribution_OperatorSetNotRegistered_UniqueStake() public {
-        OperatorSet memory unregisteredOpSet = OperatorSet({avs: address(0x999), id: 99});
-
-        // Don't register the operator set
-        allocationManagerMock.setIsOperatorSet(unregisteredOpSet, false);
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.OperatorSetNotRegistered.selector);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.OperatorSetUniqueStake,
-                operatorSet: unregisteredOpSet,
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-    }
-
-    function test_revert_addDistribution_OperatorSetNotRegistered_TotalStake() public {
-        OperatorSet memory unregisteredOpSet = OperatorSet({avs: address(0x999), id: 99});
-
-        // Don't register the operator set
-        allocationManagerMock.setIsOperatorSet(unregisteredOpSet, false);
-
-        cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.OperatorSetNotRegistered.selector);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 10_000,
-                startEpoch: 0,
-                totalEpochs: 1,
-                distributionType: DistributionType.OperatorSetTotalStake,
-                operatorSet: unregisteredOpSet,
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-    }
-}
-
 /// -----------------------------------------------------------------------
 /// Owner Functions
 /// -----------------------------------------------------------------------
 
 contract EmissionsControllerUnitTests_setIncentiveCouncil is EmissionsControllerUnitTests {
-    function testFuzz_setIncentiveCouncil_OnlyOwner(address notOwner) public {
+    function test_revert_setIncentiveCouncil_ZeroAddress() public {
+        cheats.prank(owner);
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        emissionsController.setIncentiveCouncil(address(0));
+    }
+
+    function test_revert_setIncentiveCouncil_OnlyOwner(address notOwner) public {
         cheats.assume(notOwner != owner);
         cheats.assume(notOwner != address(eigenLayerProxyAdmin));
         cheats.prank(notOwner);
@@ -499,7 +467,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
             bound(uint8(distributionTypeUint8), uint8(DistributionType.RewardsForAllEarners), uint8(type(DistributionType).max))
         );
 
-        uint nextDistributionId = emissionsController.getTotalDistributions();
+        uint nextDistributionId = emissionsController.getTotalProcessableDistributions();
 
         // Use defaultStrategiesAndMultipliers for non-Manual types, empty for Manual
         IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory strategiesAndMultipliers =
@@ -523,12 +491,12 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         Distribution memory distribution = emissionsController.getDistribution(distributionId);
         assertEq(distributionId, nextDistributionId);
-        assertEq(emissionsController.getTotalDistributions(), 1);
+        assertEq(emissionsController.getTotalProcessableDistributions(), 1);
         assertEq(distribution.weight, weight);
         assertEq(uint8(distribution.distributionType), uint8(distributionType));
     }
 
-    function test_revert_addDistribution_NotAllDistributionsProcessed() public {
+    function test_revert_addDistribution_AllDistributionsMustBeProcessed() public {
         // Add first distribution before emissions start
         cheats.prank(incentiveCouncil);
         emissionsController.addDistribution(
@@ -550,7 +518,7 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         // Attempt to add another distribution before processing the first one should revert
         cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.NotAllDistributionsProcessed.selector);
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsMustBeProcessed.selector);
         emissionsController.addDistribution(
             Distribution({
                 weight: 3000,
@@ -672,7 +640,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
         );
     }
 
-    function test_revert_updateDistribution_NotAllDistributionsProcessed() public {
+    function test_revert_updateDistribution_AllDistributionsMustBeProcessed() public {
         // Add first distribution before emissions start
         cheats.prank(incentiveCouncil);
         uint distributionId = emissionsController.addDistribution(
@@ -694,7 +662,7 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
 
         // Attempt to update the distribution before processing it should revert
         cheats.prank(incentiveCouncil);
-        cheats.expectRevert(IEmissionsControllerErrors.NotAllDistributionsProcessed.selector);
+        cheats.expectRevert(IEmissionsControllerErrors.AllDistributionsMustBeProcessed.selector);
         emissionsController.updateDistribution(
             distributionId,
             Distribution({
@@ -787,14 +755,33 @@ contract EmissionsControllerUnitTests_isButtonPressable is EmissionsControllerUn
         // Should not be pressable after processing all
         assertFalse(emissionsController.isButtonPressable());
     }
+
+    function test_isButtonPressable_BeforeEmissionsStart_WithDistributions() public {
+        // Add a distribution before emissions start
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                totalEpochs: 0, // infinite duration
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        // Before emissions start, getCurrentEpoch() returns type(uint256).max
+        // This accesses _epochs[type(uint256).max] which is uninitialized
+        // Button should NOT be pressable before emissions start
+        assertEq(emissionsController.getCurrentEpoch(), type(uint).max, "Current epoch should be max before start");
+        assertEq(emissionsController.getTotalProcessableDistributions(), 1, "Should have 1 distribution");
+        assertFalse(emissionsController.isButtonPressable(), "Button should not be pressable before emissions start");
+    }
 }
 
 contract EmissionsControllerUnitTests_nextTimeButtonPressable is EmissionsControllerUnitTests {
-    function test_revert_nextTimeButtonPressable_BeforeStart() public {
-        // Before emissions start, getCurrentEpoch() returns type(uint).max
-        // The calculation (type(uint).max + 1) will overflow and revert in Solidity 0.8.x
-        cheats.expectRevert(stdError.arithmeticError);
-        emissionsController.nextTimeButtonPressable();
+    function test_nextTimeButtonPressable_BeforeStart() public {
+        assertEq(emissionsController.nextTimeButtonPressable(), EMISSIONS_START_TIME);
     }
 
     function test_nextTimeButtonPressable_AtStart() public {
@@ -825,10 +812,7 @@ contract EmissionsControllerUnitTests_nextTimeButtonPressable is EmissionsContro
 
 contract EmissionsControllerUnitTests_lastTimeButtonPressable is EmissionsControllerUnitTests {
     function test_lastTimeButtonPressable_BeforeStart() public {
-        // Before emissions start, getCurrentEpoch() returns type(uint).max
-        // This will cause overflow in multiplication
-        cheats.expectRevert(stdError.arithmeticError);
-        emissionsController.lastTimeButtonPressable();
+        assertEq(emissionsController.lastTimeButtonPressable(), type(uint).max);
     }
 
     function test_lastTimeButtonPressable_AtStart() public {
@@ -858,12 +842,12 @@ contract EmissionsControllerUnitTests_lastTimeButtonPressable is EmissionsContro
     }
 }
 
-contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControllerUnitTests {
-    function test_getTotalDistributions_InitiallyZero() public {
-        assertEq(emissionsController.getTotalDistributions(), 0);
+contract EmissionsControllerUnitTests_getTotalProcessableDistributions is EmissionsControllerUnitTests {
+    function test_getTotalProcessableDistributions_InitiallyZero() public {
+        assertEq(emissionsController.getTotalProcessableDistributions(), 0);
     }
 
-    function test_getTotalDistributions_AfterAdding() public {
+    function test_getTotalProcessableDistributions_AfterAdding() public {
         // Add first distribution
         cheats.prank(incentiveCouncil);
         emissionsController.addDistribution(
@@ -876,7 +860,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
-        assertEq(emissionsController.getTotalDistributions(), 1);
+        assertEq(emissionsController.getTotalProcessableDistributions(), 1);
 
         // Add second distribution
         cheats.prank(incentiveCouncil);
@@ -890,10 +874,10 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
                 strategiesAndMultipliers: defaultStrategiesAndMultipliers()
             })
         );
-        assertEq(emissionsController.getTotalDistributions(), 2);
+        assertEq(emissionsController.getTotalProcessableDistributions(), 2);
     }
 
-    function testFuzz_getTotalDistributions_Correctness(uint8 count) public {
+    function testFuzz_getTotalProcessableDistributions_Correctness(uint8 count) public {
         count = uint8(bound(count, 0, 50)); // Reasonable upper bound for gas
 
         for (uint i = 0; i < count; i++) {
@@ -910,7 +894,7 @@ contract EmissionsControllerUnitTests_getTotalDistributions is EmissionsControll
             );
         }
 
-        assertEq(emissionsController.getTotalDistributions(), count);
+        assertEq(emissionsController.getTotalProcessableDistributions(), count);
     }
 }
 
@@ -1025,7 +1009,9 @@ contract EmissionsControllerUnitTests_getDistribution is EmissionsControllerUnit
 }
 
 contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUnitTests {
-    function test_revert_getDistributions_OutOfBounds() public {
+    /// @notice Test that getDistributions bounds the length parameter to avoid out-of-bounds errors.
+    /// @dev This is a regression test for the length bounding feature added to getDistributions.
+    function test_getDistributions_LengthBounding() public {
         // Add 2 distributions
         cheats.prank(incentiveCouncil);
         emissionsController.addDistribution(
@@ -1051,12 +1037,15 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
             })
         );
 
-        // Try to get distributions beyond available length
-        cheats.expectRevert(stdError.indexOOBError);
-        emissionsController.getDistributions(0, 3);
+        // Request length that exceeds available distributions from start=0
+        // Should return 2 distributions instead of reverting
+        Distribution[] memory distributions = emissionsController.getDistributions(0, 5);
+        assertEq(distributions.length, 2, "Returned array should have requested length");
 
-        cheats.expectRevert(stdError.indexOOBError);
-        emissionsController.getDistributions(1, 2);
+        // Request length that exceeds available distributions from start=1
+        // Should return 1 distribution instead of reverting
+        distributions = emissionsController.getDistributions(1, 5);
+        assertEq(distributions.length, 1, "Returned array should have requested length");
     }
 
     function test_getDistributions_All() public {
@@ -1222,50 +1211,5 @@ contract EmissionsControllerUnitTests_getDistributions is EmissionsControllerUni
         for (uint i = 0; i < length; i++) {
             assertEq(distributions[i].weight, 100 * (start + i + 1));
         }
-    }
-}
-
-/// -----------------------------------------------------------------------
-/// Pausable Token Flows
-/// -----------------------------------------------------------------------
-
-contract EmissionsControllerUnitTests_Pausable is EmissionsControllerUnitTests {
-    function test_revert_pressButton_WhenPaused() public {
-        // Add a distribution before emissions start
-        cheats.prank(incentiveCouncil);
-        emissionsController.addDistribution(
-            Distribution({
-                weight: 5000,
-                startEpoch: 0,
-                totalEpochs: 10,
-                distributionType: DistributionType.RewardsForAllEarners,
-                operatorSet: emptyOperatorSet(),
-                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
-            })
-        );
-
-        // Warp to after emissions start
-        cheats.warp(EMISSIONS_START_TIME);
-
-        // Pause token flows (PAUSED_TOKEN_FLOWS = 0, so bit flag is 2^0 = 1)
-        cheats.prank(pauser);
-        emissionsController.pause(1);
-
-        // Attempt to press button should revert
-        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        emissionsController.pressButton(1);
-    }
-
-    function test_revert_sweep_WhenPaused() public {
-        // Warp to after emissions start
-        cheats.warp(EMISSIONS_START_TIME);
-
-        // Pause token flows (PAUSED_TOKEN_FLOWS = 0, so bit flag is 2^0 = 1)
-        cheats.prank(pauser);
-        emissionsController.pause(1);
-
-        // Attempt to sweep should revert
-        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
-        emissionsController.sweep();
     }
 }

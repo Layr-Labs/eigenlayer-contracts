@@ -9,6 +9,8 @@ import "./IPausable.sol";
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.
 interface IEmissionsControllerErrors {
+    /// @dev Thrown when a reentrancy attack is detected.
+    error MaliciousCallDetected();
     /// @dev Thrown when caller is not the incentive council.
     error CallerIsNotIncentiveCouncil();
     /// @dev Thrown when the start epoch is the current or past epoch.
@@ -20,7 +22,7 @@ interface IEmissionsControllerErrors {
     /// @dev Thrown when all distributions have been processed for the current epoch.
     error AllDistributionsProcessed();
     /// @dev Thrown when not all distributions have been processed for the current epoch.
-    error NotAllDistributionsProcessed();
+    error AllDistributionsMustBeProcessed();
     /// @dev Thrown when the distribution type is invalid. Should be unreachable.
     error InvalidDistributionType();
     /// @dev Thrown when rewards submissions array is empty for a distribution that requires it.
@@ -220,6 +222,7 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     ///      The distribution's weight is added to totalWeight, which must not exceed MAX_TOTAL_WEIGHT.
     ///      The startEpoch must be in the future to prevent immediate processing.
     ///      Cannot add distributions with DistributionType.Disabled.
+    ///      Strategies must be in ascending order.
     /// @param distribution The distribution to add.
     /// @return distributionId The id of the added distribution.
     function addDistribution(
@@ -232,6 +235,7 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
     ///      Adjusts totalWeight by subtracting the old weight and adding the new weight.
     ///      Set `disabled` to true to disable the distribution.
     ///      Set `disabled` to false to re-enable the distribution.
+    ///      Strategies must be in ascending order.
     /// @param distributionId The id of the distribution to update.
     /// @param distribution The new distribution parameters.
     function updateDistribution(
@@ -269,7 +273,7 @@ interface IEmissionsController is IEmissionsControllerErrors, IEmissionsControll
 
     /// @notice Returns the total number of distributions.
     /// @return The total number of distributions.
-    function getTotalDistributions() external view returns (uint256);
+    function getTotalProcessableDistributions() external view returns (uint256);
 
     /// @notice Returns a distribution by index.
     /// @param distributionId The id of the distribution.
