@@ -262,9 +262,10 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // These are not yet deployed on mainnet, so we need to set them for testing
         EMISSIONS_CONTROLLER_INFLATION_RATE = 2.3e24; // 2.3M EIGEN per epoch
         EMISSIONS_CONTROLLER_EPOCH_LENGTH = 1 weeks;
+        // For fork tests, set start time relative to current block time to avoid past epoch issues
         // Ensure start time is aligned to day boundaries (divisible by calculation interval)
-        EMISSIONS_CONTROLLER_START_TIME = (REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 1 weeks)
-            / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+        EMISSIONS_CONTROLLER_START_TIME = (block.timestamp + 1 weeks) / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS
+            * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
         EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL = vm.addr(0xC041C11);
 
         // Place native ETH first in `allStrats`
@@ -315,6 +316,21 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
+
+        // Initialize EmissionsController if it's a new proxy
+        // Use try-catch in case it's already initialized
+        try emissionsController.initialize({
+            initialOwner: executorMultisig,
+            initialIncentiveCouncil: EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL,
+            initialPausedStatus: 0
+        }) {}
+            catch {}
+
+        // Grant EmissionsController permission to mint bEIGEN tokens
+        bEIGEN.setIsMinter(address(emissionsController), true);
+        // Disable transfer restrictions for EIGEN token (use try-catch in case already disabled)
+        try EIGEN.disableTransferRestrictions() {} catch {}
+
         cheats.stopPrank();
     }
 
