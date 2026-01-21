@@ -62,4 +62,9 @@ interface IBackingEigen is IERC20 {
     /// Has been overridden to inform callers that this contract uses timestamps instead of block numbers, to match `clock()`
     // solhint-disable-next-line func-name-mixedcase
     function CLOCK_MODE() external pure returns (string memory);
+
+    /// @notice Returns whether an address is allowed to mint new tokens.
+    function isMinter(
+        address who
+    ) external view returns (bool);
 }

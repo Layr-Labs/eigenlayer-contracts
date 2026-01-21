@@ -20,6 +20,8 @@ import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/core/ProtocolRegistry.sol";
+import "src/contracts/core/EmissionsController.sol";
+import "src/contracts/interfaces/IEmissionsController.sol";
 
 /// pemissions/
 import "src/contracts/permissions/PauserRegistry.sol";
@@ -109,8 +111,16 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function incentiveCouncilMultisig() internal view returns (address) {
+        return _envAddress("incentiveCouncilMultisig");
+    }
+
     function multichainDeployerMultisig() internal view returns (address) {
         return _envAddress("multichainDeployerMultisig");
+    }
+
+    function legacyTokenHopper() internal view returns (address) {
+        return _envAddress("legacyTokenHopper");
     }
 
     function createX() internal view returns (address) {
@@ -175,6 +185,18 @@ library Env {
 
     function REWARDS_PAUSE_STATUS() internal view returns (uint256) {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
+    }
+
+    function EMISSIONS_INFLATION_RATE() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_INFLATION_RATE");
+    }
+
+    function EMISSIONS_START_TIME() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_START_TIME");
+    }
+
+    function EMISSIONS_COOLDOWN_SECONDS() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_EPOCH_LENGTH");
     }
 
     function SLASH_ESCROW_DELAY() internal view returns (uint32) {
@@ -291,6 +313,18 @@ library Env {
         DeployedImpl
     ) internal view returns (ProtocolRegistry) {
         return ProtocolRegistry(_deployedImpl(type(ProtocolRegistry).name));
+    }
+
+    function emissionsController(
+        DeployedProxy
+    ) internal view returns (EmissionsController) {
+        return EmissionsController(_deployedProxy(type(EmissionsController).name));
+    }
+
+    function emissionsController(
+        DeployedImpl
+    ) internal view returns (EmissionsController) {
+        return EmissionsController(_deployedImpl(type(EmissionsController).name));
     }
 
     /// permissions/
@@ -592,8 +626,17 @@ library Env {
     ) internal view returns (address) {
         // https://eips.ethereum.org/EIPS/eip-1967
         bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
-        return admin;
+        return address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
+    }
+
+    /// @dev Get the implementation address for a proxy
+    function getProxyImplementationBySlot(
+        address _proxy
+    ) internal view returns (address) {
+        // https://eips.ethereum.org/EIPS/eip-1967
+        bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        address implAddr = address(uint160(uint256(vm.load(address(_proxy), implSlot))));
+        return implAddr;
     }
 
     ///
