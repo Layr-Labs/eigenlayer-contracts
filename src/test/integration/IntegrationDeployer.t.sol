@@ -258,6 +258,15 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         string memory existingDeploymentParams = "script/configs/mainnet.json";
         _parseParamsForIntegrationUpgrade(existingDeploymentParams);
 
+        // EmissionsController parameters (set after GENESIS_REWARDS_TIMESTAMP)
+        // These are not yet deployed on mainnet, so we need to set them for testing
+        EMISSIONS_CONTROLLER_INFLATION_RATE = 2.3e24; // 2.3M EIGEN per epoch
+        EMISSIONS_CONTROLLER_EPOCH_LENGTH = 1 weeks;
+        // Ensure start time is aligned to day boundaries (divisible by calculation interval)
+        EMISSIONS_CONTROLLER_START_TIME = (REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 1 weeks)
+            / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+        EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL = vm.addr(0xC041C11);
+
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
         // have beacon chain ETH
