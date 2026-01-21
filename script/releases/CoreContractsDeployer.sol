@@ -124,7 +124,8 @@ abstract contract CoreContractsDeployer is EOADeployer {
             pauserRegistry: Env.impl.pauserRegistry(),
             inflationRate: Env.EMISSIONS_INFLATION_RATE(),
             startTime: Env.EMISSIONS_START_TIME(),
-            cooldownSeconds: Env.EMISSIONS_COOLDOWN_SECONDS()
+            cooldownSeconds: Env.EMISSIONS_COOLDOWN_SECONDS(),
+            calculationIntervalSeconds: Env.CALCULATION_INTERVAL_SECONDS()
         });
         deployImpl({name: type(EmissionsController).name, deployedTo: address(deployed)});
     }
