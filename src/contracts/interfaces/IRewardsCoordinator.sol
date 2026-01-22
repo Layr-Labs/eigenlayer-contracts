@@ -451,7 +451,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Creates a new rewards submission on behalf of the Eigen DA AVS, to be split amongst the
     /// set of stakers delegated to operators who are registered to the `avs`
     /// @param rewardsSubmissions The rewards submissions being created
-    /// @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+    /// @dev Expected to be called by the EmissionsController behalf of the Eigen DA AVS of which the submission is being made
     /// @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
     /// @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
     /// @dev The tokens are sent to the `RewardsCoordinator` contract
