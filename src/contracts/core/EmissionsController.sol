@@ -208,7 +208,10 @@ contract EmissionsController is
                 );
             } else if (distribution.distributionType == DistributionType.EigenDA) {
                 success = _tryCallRewardsCoordinator(
-                    abi.encodeCall(IRewardsCoordinator.createAVSRewardsSubmission, (rewardsSubmissions))
+                    abi.encodeCall(
+                        IRewardsCoordinator.createEigenDARewardsSubmission,
+                        (distribution.operatorSet.avs, rewardsSubmissions)
+                    )
                 );
             }
         } else {

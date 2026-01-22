@@ -62,6 +62,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;
 
+    /// @notice The RewardsCoordinator contract for EigenLayer
+    IEmissionsController public immutable emissionsController;
+
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 day
     uint32 public immutable CALCULATION_INTERVAL_SECONDS;
@@ -150,6 +153,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
         IAllocationManager _allocationManager,
+        IEmissionsController _emissionsController,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -163,6 +167,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         allocationManager = _allocationManager;
+        emissionsController = _emissionsController;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;

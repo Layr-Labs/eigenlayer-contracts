@@ -117,6 +117,7 @@ contract RewardsCoordinatorUnitTests is EigenLayerUnitTestSetup, IRewardsCoordin
                 delegationManager: IDelegationManager(address(delegationManagerMock)),
                 strategyManager: IStrategyManager(address(strategyManagerMock)),
                 allocationManager: IAllocationManager(address(allocationManagerMock)),
+                emissionsController: IEmissionsController(address(vm.addr(0x123123ff))),
                 pauserRegistry: pauserRegistry,
                 permissionController: IPermissionController(address(permissionController)),
                 CALCULATION_INTERVAL_SECONDS: CALCULATION_INTERVAL_SECONDS,
@@ -1545,6 +1546,49 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
             assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), rcBalanceBefore + amount, "RC balance incorrect");
             assertEq(rewardToken.balanceOf(feeRecipient), feeBalanceBefore, "Fee recipient balance should not change");
         }
+    }
+}
+
+contract RewardsCoordinatorUnitTests_createEigenDARewardsSubmission is RewardsCoordinatorUnitTests {
+    // Revert when not called by emissionsController
+    function testFuzz_Revert_WhenNotEmissionsController(address unauthorizedCaller) public filterFuzzedAddressInputs(unauthorizedCaller) {
+        address emissionsController = address(vm.addr(0x123123ff));
+        cheats.assume(unauthorizedCaller != emissionsController);
+
+        cheats.prank(unauthorizedCaller);
+        cheats.expectRevert(UnauthorizedCaller.selector);
+        RewardsSubmission[] memory rewardsSubmissions;
+        rewardsCoordinator.createEigenDARewardsSubmission(address(defaultAVS), rewardsSubmissions);
+    }
+
+    // Test that emissionsController can successfully call
+    function test_EmissionsControllerCanCall() public {
+        address emissionsController = address(vm.addr(0x123123ff));
+        address avs = defaultAVS;
+
+        // Setup token and approval - AVS needs to have the tokens since it's the one submitting rewards
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        uint amount = 1e18;
+
+        RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
+        rewardsSubmissions[0] = RewardsSubmission({
+            strategiesAndMultipliers: defaultStrategyAndMultipliers,
+            token: rewardToken,
+            amount: amount,
+            startTimestamp: uint32(block.timestamp),
+            duration: CALCULATION_INTERVAL_SECONDS
+        });
+
+        // AVS approves the token transfer
+        cheats.prank(avs);
+        rewardToken.approve(address(rewardsCoordinator), amount);
+
+        // Call from emissionsController should succeed
+        cheats.prank(emissionsController);
+        rewardsCoordinator.createEigenDARewardsSubmission(avs, rewardsSubmissions);
+
+        // Verify the rewards submission was created
+        assertEq(rewardToken.balanceOf(address(rewardsCoordinator)), amount);
     }
 }
 

@@ -51,6 +51,7 @@ contract RewardsCoordinator is
             params.delegationManager,
             params.strategyManager,
             params.allocationManager,
+            params.emissionsController,
             params.CALCULATION_INTERVAL_SECONDS,
             params.MAX_REWARDS_DURATION,
             params.MAX_RETROACTIVE_LENGTH,
@@ -87,30 +88,19 @@ contract RewardsCoordinator is
     /// -----------------------------------------------------------------------
 
     /// @inheritdoc IRewardsCoordinator
+    function createEigenDARewardsSubmission(
+        address avs,
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
+        require(msg.sender == address(emissionsController), UnauthorizedCaller());
+        _createAVSRewardsSubmission(avs, rewardsSubmissions);
+    }
+
+    /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
-            uint256 nonce = submissionNonce[msg.sender];
-            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
-
-            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
-            submissionNonce[msg.sender] = nonce + 1;
-
-            emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
-        }
+        _createAVSRewardsSubmission(msg.sender, rewardsSubmissions);
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -468,6 +458,36 @@ contract RewardsCoordinator is
     /// -----------------------------------------------------------------------
     /// Internal Helper Functions
     /// -----------------------------------------------------------------------
+
+    /// @notice Internal helper to create AVS rewards submissions.
+    /// @param avs The address of the AVS submitting the rewards.
+    /// @param rewardsSubmissions The RewardsSubmissions to be created.
+    function _createAVSRewardsSubmission(
+        address avs,
+        RewardsSubmission[] calldata rewardsSubmissions
+    ) internal {
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
+
+            // First validate the submission.
+            _validateRewardsSubmission(rewardsSubmission);
+
+            // Then transfer the full amount to the contract.
+            rewardsSubmission.token.safeTransferFrom(avs, address(this), rewardsSubmission.amount);
+
+            // Then take the protocol fee (if the submitter is opted in for protocol fees).
+            rewardsSubmission.amount = _takeProtocolFee(avs, rewardsSubmission.token, rewardsSubmission.amount);
+
+            // Last update storage.
+            uint256 nonce = submissionNonce[avs];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, nonce, rewardsSubmission));
+
+            isAVSRewardsSubmissionHash[avs][rewardsSubmissionHash] = true;
+            submissionNonce[avs] = nonce + 1;
+
+            emit AVSRewardsSubmissionCreated(avs, nonce, rewardsSubmissionHash, rewardsSubmission);
+        }
+    }
 
     /// @notice Internal helper to process reward claims.
     /// @param claim The RewardsMerkleClaims to be processed.

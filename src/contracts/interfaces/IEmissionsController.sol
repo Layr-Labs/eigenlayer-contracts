@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity >=0.5.0;
 
+import "./IAllocationManager.sol";
 import "./IRewardsCoordinator.sol";
 import "./IEigen.sol";
 import "./IBackingEigen.sol";
 import "./IPausable.sol";
+import {OperatorSet} from "../libraries/OperatorSetLib.sol";
 
 /// @title IEmissionsControllerErrors
 /// @notice Errors for the IEmissionsController contract.

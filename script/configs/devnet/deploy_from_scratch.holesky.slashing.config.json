@@ -36,7 +36,8 @@
          "calculation_interval_seconds": 604800,
          "global_operator_commission_bips": 1000,
          "OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP": 1720656000,
-         "OPERATOR_SET_MAX_RETROACTIVE_LENGTH": 2592000
+         "OPERATOR_SET_MAX_RETROACTIVE_LENGTH": 2592000,
+         "emissions_controller_address": "0x0000000000000000000000000000000000000000"
     },
     "allocationManager": {
       "init_paused_status": 0,
