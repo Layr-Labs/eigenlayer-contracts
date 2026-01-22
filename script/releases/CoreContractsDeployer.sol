@@ -93,6 +93,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
                 delegationManager: Env.proxy.delegationManager(),
                 strategyManager: Env.proxy.strategyManager(),
                 allocationManager: Env.proxy.allocationManager(),
+                emissionsController: Env.proxy.emissionsController(),
                 pauserRegistry: Env.impl.pauserRegistry(),
                 permissionController: Env.proxy.permissionController(),
                 CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
@@ -113,6 +114,21 @@ abstract contract CoreContractsDeployer is EOADeployer {
             _version: Env.deployVersion()
         });
         deployImpl({name: type(StrategyManager).name, deployedTo: address(deployed)});
+    }
+
+    function deployEmissionsController() internal onlyEOA returns (EmissionsController deployed) {
+        deployed = new EmissionsController({
+            eigen: IEigen(address(Env.proxy.eigen())),
+            backingEigen: Env.proxy.beigen(),
+            allocationManager: Env.proxy.allocationManager(),
+            rewardsCoordinator: Env.proxy.rewardsCoordinator(),
+            pauserRegistry: Env.impl.pauserRegistry(),
+            inflationRate: Env.EMISSIONS_INFLATION_RATE(),
+            startTime: Env.EMISSIONS_START_TIME(),
+            cooldownSeconds: Env.EMISSIONS_COOLDOWN_SECONDS(),
+            calculationIntervalSeconds: Env.CALCULATION_INTERVAL_SECONDS()
+        });
+        deployImpl({name: type(EmissionsController).name, deployedTo: address(deployed)});
     }
 
     /// pods/

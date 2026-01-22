@@ -3133,4 +3133,320 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         (Withdrawal[] memory withdrawals,) = delegationManager.getQueuedWithdrawals(address(staker));
         return withdrawals;
     }
+
+    ///
+    ///                         EMISSIONS CONTROLLER HELPERS
+    ///
+
+    function _getTotalProcessableDistributions() internal view returns (uint) {
+        return emissionsController.getTotalProcessableDistributions();
+    }
+
+    function _getPrevTotalProcessableDistributions() internal timewarp returns (uint) {
+        return _getTotalProcessableDistributions();
+    }
+
+    function _getEmissionsControllerEigenBalance() internal view returns (uint) {
+        return EIGEN.balanceOf(address(emissionsController));
+    }
+
+    function _getPrevEmissionsControllerEigenBalance() internal timewarp returns (uint) {
+        return _getEmissionsControllerEigenBalance();
+    }
+
+    function _getIncentiveCouncilEigenBalance(address incentiveCouncil) internal view returns (uint) {
+        return EIGEN.balanceOf(incentiveCouncil);
+    }
+
+    function _getPrevIncentiveCouncilEigenBalance(address incentiveCouncil) internal timewarp returns (uint) {
+        return _getIncentiveCouncilEigenBalance(incentiveCouncil);
+    }
+
+    function _getTotalWeight() internal view returns (uint16) {
+        return emissionsController.totalWeight();
+    }
+
+    function _getPrevTotalWeight() internal timewarp returns (uint16) {
+        return _getTotalWeight();
+    }
+
+    function _getCurrentEpoch() internal view returns (uint) {
+        return emissionsController.getCurrentEpoch();
+    }
+
+    function _getPrevCurrentEpoch() internal timewarp returns (uint) {
+        return _getCurrentEpoch();
+    }
+
+    function _getDistribution(uint distributionId) internal view returns (IEmissionsControllerTypes.Distribution memory) {
+        return emissionsController.getDistribution(distributionId);
+    }
+
+    function _getPrevDistribution(uint distributionId) internal timewarp returns (IEmissionsControllerTypes.Distribution memory) {
+        return _getDistribution(distributionId);
+    }
+
+    function _getIsButtonPressable() internal view returns (bool) {
+        return emissionsController.isButtonPressable();
+    }
+
+    function _getPrevIsButtonPressable() internal timewarp returns (bool) {
+        return _getIsButtonPressable();
+    }
+
+    // ========================================
+    // EmissionsController Storage Slot Helpers
+    // ========================================
+    // These functions use vm.load() to read internal EmissionsController state directly from storage.
+    //
+    // Storage Layout for EmissionsController (from `forge inspect EmissionsController storageLayout`):
+    // - Slot 201: incentiveCouncil (address) + totalWeight (uint16)
+    // - Slot 202: _distributions (dynamic array)
+    // - Slot 203: _epochs mapping (mapping(uint256 => Epoch))
+    //
+    // For mappings: keccak256(abi.encode(key, slot))
+    // For the Epoch struct at the mapping location:
+    //   Solidity packs from lowest-order bytes (right-to-left):
+    //   - Byte 0 (rightmost): bool minted (1 byte)
+    //   - Bytes 1-8: uint64 totalProcessed (8 bytes)
+    //   - Bytes 9-16: uint64 totalAdded (8 bytes)
+    //   - Bytes 17-31: unused
+    //   All packed into a single 32-byte slot
+    // ========================================
+
+    /// @dev Storage slot for _epochs mapping in EmissionsController (slot 203)
+    uint private constant EPOCHS_MAPPING_SLOT = 203;
+
+    /// @dev Reads the Epoch struct from storage for a given epoch number
+    function _getEpochFromStorage(uint epoch) internal view returns (bool minted, uint64 totalProcessed, uint64 totalAdded) {
+        // Calculate storage slot for _epochs[epoch]
+        bytes32 slot = keccak256(abi.encode(epoch, EPOCHS_MAPPING_SLOT));
+
+        // Read the packed slot
+        bytes32 data = vm.load(address(emissionsController), slot);
+        uint rawData = uint(data);
+
+        // Extract fields from packed storage (right-to-left layout)
+        // minted: byte 0 (rightmost 8 bits)
+        // totalProcessed: bytes 1-8 (next 64 bits, shift right 8 bits)
+        // totalAdded: bytes 9-16 (next 64 bits, shift right 72 bits)
+
+        minted = (rawData & 0xFF) != 0;
+        totalProcessed = uint64((rawData >> 8) & 0xFFFFFFFFFFFFFFFF);
+        totalAdded = uint64((rawData >> 72) & 0xFFFFFFFFFFFFFFFF);
+
+        return (minted, totalProcessed, totalAdded);
+    }
+
+    /// @dev Helper to get total number of distributions (both processable and added this epoch)
+    /// NOTE: This calculates the length based on EmissionsController logic:
+    /// - Before emissions start: totalDistributions = totalProcessable
+    /// - After emissions start: totalDistributions = totalProcessable + totalAdded
+    function _getTotalDistributions() internal view returns (uint) {
+        uint currentEpoch = _getCurrentEpoch();
+        if (currentEpoch == type(uint).max) return _getTotalProcessableDistributions();
+        // After emissions start: _distributions.length = totalProcessable + totalAdded
+        uint totalProcessable = _getTotalProcessableDistributions();
+        uint totalAdded = _getEpochTotalAdded(currentEpoch);
+        return totalProcessable + totalAdded;
+    }
+
+    function _getPrevTotalDistributions() internal timewarp returns (uint) {
+        return _getTotalDistributions();
+    }
+
+    function _getEpochTotalAdded(uint epoch) internal view returns (uint) {
+        (,, uint64 totalAdded) = _getEpochFromStorage(epoch);
+        return uint(totalAdded);
+    }
+
+    function _getEpochTotalProcessed(uint epoch) internal view returns (uint) {
+        (, uint64 totalProcessed,) = _getEpochFromStorage(epoch);
+        return uint(totalProcessed);
+    }
+
+    function _getPrevEpochTotalProcessed(uint epoch) internal timewarp returns (uint) {
+        return _getEpochTotalProcessed(epoch);
+    }
+
+    function _getEpochMinted(uint epoch) internal view returns (bool) {
+        (bool minted,,) = _getEpochFromStorage(epoch);
+        return minted;
+    }
+
+    function _getPrevEpochMinted(uint epoch) internal timewarp returns (bool) {
+        return _getEpochMinted(epoch);
+    }
+
+    /// Assertions
+
+    function assert_Snap_Added_TotalProcessableDistributions(uint added, string memory err) internal {
+        uint prev = _getPrevTotalProcessableDistributions();
+        uint cur = _getTotalProcessableDistributions();
+        assertEq(prev + added, cur, err);
+    }
+
+    function assert_Snap_Unchanged_TotalProcessableDistributions(string memory err) internal {
+        uint prev = _getPrevTotalProcessableDistributions();
+        uint cur = _getTotalProcessableDistributions();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Added_EmissionsController_EigenBalance(uint added, string memory err) internal {
+        uint prev = _getPrevEmissionsControllerEigenBalance();
+        uint cur = _getEmissionsControllerEigenBalance();
+        assertApproxEqAbs(prev + added, cur, 100, err);
+    }
+
+    function assert_Snap_Removed_EmissionsController_EigenBalance(uint removed, string memory err) internal {
+        uint prev = _getPrevEmissionsControllerEigenBalance();
+        uint cur = _getEmissionsControllerEigenBalance();
+        assertApproxEqAbs(prev - removed, cur, 100, err);
+    }
+
+    function assert_Snap_Unchanged_EmissionsController_EigenBalance(string memory err) internal {
+        uint prev = _getPrevEmissionsControllerEigenBalance();
+        uint cur = _getEmissionsControllerEigenBalance();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Added_IncentiveCouncil_EigenBalance(address incentiveCouncil, uint added, string memory err) internal {
+        uint prev = _getPrevIncentiveCouncilEigenBalance(incentiveCouncil);
+        uint cur = _getIncentiveCouncilEigenBalance(incentiveCouncil);
+        assertApproxEqAbs(prev + added, cur, 100, err);
+    }
+
+    function assert_Snap_Unchanged_IncentiveCouncil_EigenBalance(address incentiveCouncil, string memory err) internal {
+        uint prev = _getPrevIncentiveCouncilEigenBalance(incentiveCouncil);
+        uint cur = _getIncentiveCouncilEigenBalance(incentiveCouncil);
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Added_TotalWeight(uint16 added, string memory err) internal {
+        uint16 prev = _getPrevTotalWeight();
+        uint16 cur = _getTotalWeight();
+        assertEq(prev + added, cur, err);
+    }
+
+    function assert_Snap_Updated_TotalWeight(uint16 expected, string memory err) internal {
+        uint16 cur = _getTotalWeight();
+        assertEq(cur, expected, err);
+    }
+
+    function assert_Snap_Unchanged_TotalWeight(string memory err) internal {
+        uint16 prev = _getPrevTotalWeight();
+        uint16 cur = _getTotalWeight();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Created_Distribution(uint distributionId, string memory err) internal {
+        uint prevCount = _getPrevTotalProcessableDistributions();
+        uint curCount = _getTotalProcessableDistributions();
+        assertTrue(curCount > prevCount, err);
+        assertTrue(distributionId < curCount, err);
+    }
+
+    function assert_Snap_Updated_Distribution(
+        uint distributionId,
+        IEmissionsControllerTypes.Distribution memory expectedDistribution,
+        string memory err
+    ) internal {
+        IEmissionsControllerTypes.Distribution memory storedDistribution = _getDistribution(distributionId);
+        assertEq(uint8(storedDistribution.distributionType), uint8(expectedDistribution.distributionType), err);
+        assertEq(storedDistribution.weight, expectedDistribution.weight, err);
+        assertEq(storedDistribution.startEpoch, expectedDistribution.startEpoch, err);
+        assertEq(storedDistribution.totalEpochs, expectedDistribution.totalEpochs, err);
+    }
+
+    function assert_Snap_ButtonPressed(string memory err) internal {
+        bool prevPressable = _getPrevIsButtonPressable();
+        bool curPressable = _getIsButtonPressable();
+
+        // If button was pressable before, pressing it should either:
+        // - Keep it pressable (if there are more distributions to process), or
+        // - Make it not pressable (if all distributions processed)
+        assertTrue(prevPressable, string.concat(err, ": button should have been pressable before pressing"));
+    }
+
+    function assert_Snap_Unchanged_CurrentEpoch(string memory err) internal {
+        uint prev = _getPrevCurrentEpoch();
+        uint cur = _getCurrentEpoch();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Updated_CurrentEpoch(uint expected, string memory err) internal {
+        uint cur = _getCurrentEpoch();
+        assertEq(cur, expected, err);
+    }
+
+    function assert_Snap_Added_TotalDistributions(uint added, string memory err) internal {
+        uint prev = _getPrevTotalDistributions();
+        uint cur = _getTotalDistributions();
+        assertEq(prev + added, cur, err);
+    }
+
+    function assert_Snap_Unchanged_TotalDistributions(string memory err) internal {
+        uint prev = _getPrevTotalDistributions();
+        uint cur = _getTotalDistributions();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_Snap_Unchanged_ButtonPressability(string memory err) internal {
+        bool prev = _getPrevIsButtonPressable();
+        bool cur = _getIsButtonPressable();
+        assertEq(prev, cur, err);
+    }
+
+    function assert_TotalWeight_LTE_MaxWeight(string memory err) internal view {
+        uint16 totalWeight = _getTotalWeight();
+        assertTrue(totalWeight <= emissionsController.MAX_TOTAL_WEIGHT(), err);
+    }
+
+    function assert_Snap_Updated_EpochTotalProcessed(uint epoch, uint expected, string memory err) internal {
+        uint cur = _getEpochTotalProcessed(epoch);
+        assertEq(cur, expected, err);
+    }
+
+    function assert_Snap_Increased_EpochTotalProcessed(uint epoch, string memory err) internal {
+        uint prev = _getPrevEpochTotalProcessed(epoch);
+        uint cur = _getEpochTotalProcessed(epoch);
+        assertTrue(cur > prev, err);
+    }
+
+    function assert_Snap_EpochMinted(uint epoch, bool expected, string memory err) internal {
+        bool cur = _getEpochMinted(epoch);
+        assertEq(cur, expected, err);
+    }
+
+    function assert_Distribution_StoredCorrectly(
+        uint distributionId,
+        IEmissionsControllerTypes.Distribution memory expected,
+        string memory err
+    ) internal view {
+        IEmissionsControllerTypes.Distribution memory stored = _getDistribution(distributionId);
+        assertEq(uint8(stored.distributionType), uint8(expected.distributionType), string.concat(err, ": distributionType"));
+        assertEq(stored.weight, expected.weight, string.concat(err, ": weight"));
+        assertEq(stored.startEpoch, expected.startEpoch, string.concat(err, ": startEpoch"));
+        assertEq(stored.totalEpochs, expected.totalEpochs, string.concat(err, ": totalEpochs"));
+        assertEq(stored.operatorSet.avs, expected.operatorSet.avs, string.concat(err, ": operatorSet.avs"));
+        assertEq(stored.operatorSet.id, expected.operatorSet.id, string.concat(err, ": operatorSet.operatorSetId"));
+        assertEq(
+            stored.strategiesAndMultipliers.length,
+            expected.strategiesAndMultipliers.length,
+            string.concat(err, ": strategiesAndMultipliers.length")
+        );
+    }
+
+    function assert_Distributions_Match_Expected(
+        uint[] memory distributionIds,
+        IEmissionsControllerTypes.Distribution[] memory expectedDistributions,
+        string memory err
+    ) internal view {
+        assertEq(distributionIds.length, expectedDistributions.length, string.concat(err, ": array length mismatch"));
+        for (uint i = 0; i < distributionIds.length; ++i) {
+            assert_Distribution_StoredCorrectly(
+                distributionIds[i], expectedDistributions[i], string.concat(err, ": dist[", vm.toString(i), "]")
+            );
+        }
+    }
 }
