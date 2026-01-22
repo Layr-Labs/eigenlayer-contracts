@@ -1568,7 +1568,7 @@ contract RewardsCoordinatorUnitTests_createEigenDARewardsSubmission is RewardsCo
 
         // Setup token and approval - AVS needs to have the tokens since it's the one submitting rewards
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
-        uint256 amount = 1e18;
+        uint amount = 1e18;
 
         RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
         rewardsSubmissions[0] = RewardsSubmission({
