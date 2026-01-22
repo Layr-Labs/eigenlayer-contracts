@@ -10,6 +10,7 @@ import "./IStrategyManager.sol";
 import "./IPauserRegistry.sol";
 import "./IPermissionController.sol";
 import "./IStrategy.sol";
+import "./IEmissionsController.sol";
 
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
@@ -244,6 +245,7 @@ interface IRewardsCoordinatorTypes {
         IDelegationManager delegationManager;
         IStrategyManager strategyManager;
         IAllocationManager allocationManager;
+        IEmissionsController emissionsController;
         IPauserRegistry pauserRegistry;
         IPermissionController permissionController;
         uint32 CALCULATION_INTERVAL_SECONDS;
@@ -444,6 +446,21 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         uint32 _activationDelay,
         uint16 _defaultSplitBips,
         address _feeRecipient
+    ) external;
+
+    /// @notice Creates a new rewards submission on behalf of the Eigen DA AVS, to be split amongst the
+    /// set of stakers delegated to operators who are registered to the `avs`
+    /// @param rewardsSubmissions The rewards submissions being created
+    /// @dev Expected to be called by the ServiceManager of the AVS on behalf of which the submission is being made
+    /// @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+    /// @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
+    /// @dev The tokens are sent to the `RewardsCoordinator` contract
+    /// @dev Strategies must be in ascending order of addresses to check for duplicates
+    /// @dev This function will revert if the `rewardsSubmission` is malformed,
+    /// e.g. if the `strategies` and `weights` arrays are of non-equal lengths
+    function createEigenDARewardsSubmission(
+        address avs,
+        RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 
     /// @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the

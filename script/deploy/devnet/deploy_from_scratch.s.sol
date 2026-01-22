@@ -106,6 +106,8 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
+    address REWARDS_COORDINATOR_EMISSIONS_CONTROLLER;
+
     // AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
 
@@ -171,6 +173,9 @@ contract DeployFromScratch is Script, Test {
 
         require(executorMultisig != address(0), "executorMultisig address not configured correctly!");
         require(operationsMultisig != address(0), "operationsMultisig address not configured correctly!");
+
+        REWARDS_COORDINATOR_EMISSIONS_CONTROLLER =
+            stdJson.readAddress(config_data, ".rewardsCoordinator.emissions_controller_address");
 
         // START RECORDING TRANSACTIONS FOR DEPLOYMENT
         vm.startBroadcast();
@@ -249,6 +254,7 @@ contract DeployFromScratch is Script, Test {
                 delegation,
                 strategyManager,
                 IAllocationManager(address(allocationManager)),
+                IEmissionsController(address(REWARDS_COORDINATOR_EMISSIONS_CONTROLLER)),
                 eigenLayerPauserReg,
                 permissionController,
                 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,

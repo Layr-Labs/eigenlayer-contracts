@@ -93,6 +93,7 @@ abstract contract CoreContractsDeployer is EOADeployer {
                 delegationManager: Env.proxy.delegationManager(),
                 strategyManager: Env.proxy.strategyManager(),
                 allocationManager: Env.proxy.allocationManager(),
+                emissionsController: Env.proxy.emissionsController(),
                 pauserRegistry: Env.impl.pauserRegistry(),
                 permissionController: Env.proxy.permissionController(),
                 CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),

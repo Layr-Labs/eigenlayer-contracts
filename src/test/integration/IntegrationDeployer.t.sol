@@ -414,6 +414,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 delegationManager: delegationManager,
                 strategyManager: strategyManager,
                 allocationManager: allocationManager,
+                emissionsController: emissionsController,
                 pauserRegistry: eigenLayerPauserReg,
                 permissionController: permissionController,
                 CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,

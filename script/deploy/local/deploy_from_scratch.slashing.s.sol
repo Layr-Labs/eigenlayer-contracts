@@ -111,6 +111,8 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
+    address REWARDS_COORDINATOR_EMISSIONS_CONTROLLER;
+
     // AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
 
@@ -159,6 +161,9 @@ contract DeployFromScratch is Script, Test {
             uint32(stdJson.readUint(config_data, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP"));
         REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH =
             uint32(stdJson.readUint(config_data, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
+
+        REWARDS_COORDINATOR_EMISSIONS_CONTROLLER =
+            stdJson.readAddress(config_data, ".rewardsCoordinator.emissions_controller_address");
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS =
             uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
@@ -258,6 +263,7 @@ contract DeployFromScratch is Script, Test {
                 delegation,
                 strategyManager,
                 IAllocationManager(address(allocationManager)),
+                IEmissionsController(address(REWARDS_COORDINATOR_EMISSIONS_CONTROLLER)),
                 eigenLayerPauserReg,
                 permissionController,
                 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
