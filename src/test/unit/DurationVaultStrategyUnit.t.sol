@@ -324,4 +324,222 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         cheats.expectRevert(IDurationVaultStrategyErrors.DepositsLocked.selector);
         durationVault.updateTVLLimits(1e18, 10e18);
     }
+
+    function _deployWithConfig(
+        IDurationVaultStrategyTypes.VaultConfig memory config
+    ) internal returns (DurationVaultStrategy newVault) {
+        newVault = DurationVaultStrategy(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(durationVaultImplementation),
+                    address(proxyAdmin),
+                    abi.encodeWithSelector(DurationVaultStrategy.initialize.selector, config)
+                )
+            )
+        );
+    }
+
+    function testInitializeRevertsWithInvalidVaultAdmin() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(0),
+            duration: defaultDuration,
+            maxPerDeposit: maxPerDeposit,
+            stakeCap: maxTotalDeposits,
+            metadataURI: "ipfs://duration-vault",
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
+
+        cheats.expectRevert(IDurationVaultStrategyErrors.InvalidVaultAdmin.selector);
+        _deployWithConfig(config);
+    }
+
+    function testInitializeRevertsWithInvalidDuration() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            duration: 0,
+            maxPerDeposit: maxPerDeposit,
+            stakeCap: maxTotalDeposits,
+            metadataURI: "ipfs://duration-vault",
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
+
+        cheats.expectRevert(IDurationVaultStrategyErrors.InvalidDuration.selector);
+        _deployWithConfig(config);
+    }
+
+    function testInitializeRevertsWithDurationExceedingMax() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            duration: uint32(2 * 365 days) + 1,
+            maxPerDeposit: maxPerDeposit,
+            stakeCap: maxTotalDeposits,
+            metadataURI: "ipfs://duration-vault",
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
+
+        cheats.expectRevert(IDurationVaultStrategyErrors.InvalidDuration.selector);
+        _deployWithConfig(config);
+    }
+
+    function testInitializeRevertsWithInvalidOperatorIntegration() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            duration: defaultDuration,
+            maxPerDeposit: maxPerDeposit,
+            stakeCap: maxTotalDeposits,
+            metadataURI: "ipfs://duration-vault",
+            operatorSet: OperatorSet({avs: address(0), id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
+
+        cheats.expectRevert(IDurationVaultStrategyErrors.OperatorIntegrationInvalid.selector);
+        _deployWithConfig(config);
+    }
+
+    function testInitializeRevertsIfMaxPerDepositExceedsStakeCap() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config = IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: underlyingToken,
+            vaultAdmin: address(this),
+            duration: defaultDuration,
+            maxPerDeposit: maxTotalDeposits + 1,
+            stakeCap: maxTotalDeposits,
+            metadataURI: "ipfs://duration-vault",
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
+
+        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
+        _deployWithConfig(config);
+    }
+
+    function testBeforeAddSharesRevertsIfNotDelegatedToVault() public {
+        address staker = address(0xBEEF);
+        uint depositAmount = 1e18;
+        underlyingToken.transfer(address(durationVault), depositAmount);
+
+        cheats.startPrank(address(strategyManager));
+        uint shares = durationVault.deposit(underlyingToken, depositAmount);
+        cheats.expectRevert(IDurationVaultStrategyErrors.MustBeDelegatedToVaultOperator.selector);
+        durationVault.beforeAddShares(staker, shares);
+        cheats.stopPrank();
+    }
+
+    function testBeforeAddSharesRevertsIfUnderlyingTokenBlacklisted() public {
+        address staker = address(0xBEEF);
+        ISignatureUtilsMixinTypes.SignatureWithExpiry memory emptySig;
+        cheats.prank(staker);
+        delegationManagerMock.delegateTo(address(durationVault), emptySig, bytes32(0));
+
+        strategyFactoryMock.setIsBlacklisted(underlyingToken, true);
+
+        uint depositAmount = 1e18;
+        underlyingToken.transfer(address(durationVault), depositAmount);
+
+        cheats.startPrank(address(strategyManager));
+        uint shares = durationVault.deposit(underlyingToken, depositAmount);
+        cheats.expectRevert(IDurationVaultStrategyErrors.UnderlyingTokenBlacklisted.selector);
+        durationVault.beforeAddShares(staker, shares);
+        cheats.stopPrank();
+    }
+
+    function testLockRevertsIfNotVaultAdmin() public {
+        cheats.prank(address(0xBAD));
+        cheats.expectRevert(IDurationVaultStrategyErrors.OnlyVaultAdmin.selector);
+        durationVault.lock();
+    }
+
+    function testUpdateMetadataURIRevertsIfNotVaultAdmin() public {
+        cheats.prank(address(0xBAD));
+        cheats.expectRevert(IDurationVaultStrategyErrors.OnlyVaultAdmin.selector);
+        durationVault.updateMetadataURI("ipfs://nope");
+    }
+
+    function testUpdateTVLLimitsRevertsIfNotVaultAdmin() public {
+        cheats.prank(address(0xBAD));
+        cheats.expectRevert(IDurationVaultStrategyErrors.OnlyVaultAdmin.selector);
+        durationVault.updateTVLLimits(1e18, 2e18);
+    }
+
+    function testLockRevertsIfAlreadyLocked() public {
+        durationVault.lock();
+        cheats.expectRevert(IDurationVaultStrategyErrors.VaultAlreadyLocked.selector);
+        durationVault.lock();
+    }
+
+    function testLockEmitsAndSetsTimestamps() public {
+        uint32 pre = uint32(block.timestamp);
+        cheats.expectEmit(false, false, false, true, address(durationVault));
+        emit IDurationVaultStrategyEvents.VaultLocked(pre, pre + defaultDuration);
+        durationVault.lock();
+        assertEq(durationVault.lockedAt(), pre, "lockedAt mismatch");
+        assertEq(durationVault.unlockTimestamp(), pre + defaultDuration, "unlockAt mismatch");
+    }
+
+    function testMarkMaturedRevertsIfCalledBeforeLock() public {
+        cheats.expectRevert(IDurationVaultStrategyErrors.DurationNotElapsed.selector);
+        durationVault.markMatured();
+    }
+
+    function testMarkMaturedRevertsIfDurationNotElapsed() public {
+        durationVault.lock();
+        // keep time strictly before unlockAt
+        cheats.warp(block.timestamp + defaultDuration - 1);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DurationNotElapsed.selector);
+        durationVault.markMatured();
+    }
+
+    function testMarkMaturedIsIdempotent() public {
+        durationVault.lock();
+        cheats.warp(block.timestamp + defaultDuration + 1);
+        durationVault.markMatured();
+
+        uint modifyCalls = allocationManagerMock.modifyAllocationsCallCount();
+        uint deregisterCalls = allocationManagerMock.deregisterFromOperatorSetsCallCount();
+
+        // second call should be a noop
+        durationVault.markMatured();
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), modifyCalls, "markMatured should not re-deallocate");
+        assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), deregisterCalls, "markMatured should not re-deregister");
+    }
+
+    function testLockRevertsIfPendingAllocationExists() public {
+        // Simulate a pending allocation modification by setting a non-zero effectBlock.
+        IAllocationManagerTypes.Allocation memory alloc =
+            IAllocationManagerTypes.Allocation({currentMagnitude: 0, pendingDiff: 0, effectBlock: 1});
+        allocationManagerMock.setAllocation(address(durationVault), OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}), IStrategy(address(durationVault)), alloc);
+
+        cheats.expectRevert(DurationVaultStrategy.PendingAllocation.selector);
+        durationVault.lock();
+    }
+
+    function testMarkMaturedDoesNotRevertIfDeallocateOrDeregisterFails() public {
+        durationVault.lock();
+
+        // Ensure `markMatured` sees time elapsed.
+        cheats.warp(block.timestamp + defaultDuration + 1);
+
+        // Force the external calls to revert; they are best-effort and should not brick `markMatured`.
+        allocationManagerMock.setRevertModifyAllocations(true);
+        allocationManagerMock.setRevertDeregisterFromOperatorSets(true);
+
+        durationVault.markMatured();
+        assertTrue(durationVault.isMatured(), "vault should be matured even if external calls fail");
+    }
 }

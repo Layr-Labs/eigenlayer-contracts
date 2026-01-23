@@ -274,4 +274,15 @@ contract AllocationManagerMock is Test {
     {
         return _allocations[operator][operatorSet.key()][strategy];
     }
+
+    /// @notice Test helper to force-set an allocation record returned by `getAllocation`.
+    /// @dev Useful for simulating pending allocations via a non-zero `effectBlock`.
+    function setAllocation(
+        address operator,
+        OperatorSet memory operatorSet,
+        IStrategy strategy,
+        IAllocationManagerTypes.Allocation memory alloc
+    ) external {
+        _allocations[operator][operatorSet.key()][strategy] = alloc;
+    }
 }
