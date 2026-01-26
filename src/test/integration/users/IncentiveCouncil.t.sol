@@ -82,10 +82,44 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
     ) public createSnapshot returns (uint[] memory distributionIds, Distribution[] memory distributions) {
         print.method("addDistributions");
 
+        // Generate random distribution types
+        DistributionType[] memory distributionTypes = new DistributionType[](numDistributions);
+        for (uint i = 0; i < numDistributions; ++i) {
+            distributionTypes[i] = _randomDistributionType({allowDisabled: false});
+        }
+
+        (distributionIds, distributions) = _addDistributionsInternal(operatorSets, strategies, distributionTypes, startEpoch, totalWeight);
+
+        print.gasUsed();
+        return (distributionIds, distributions);
+    }
+
+    function addDistributionsWithTypes(
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies,
+        DistributionType[] memory distributionTypes,
+        uint64 startEpoch,
+        uint16 totalWeight
+    ) public createSnapshot returns (uint[] memory distributionIds, Distribution[] memory distributions) {
+        print.method("addDistributionsWithTypes");
+
+        (distributionIds, distributions) = _addDistributionsInternal(operatorSets, strategies, distributionTypes, startEpoch, totalWeight);
+
+        print.gasUsed();
+        return (distributionIds, distributions);
+    }
+
+    function _addDistributionsInternal(
+        OperatorSet[] memory operatorSets,
+        IStrategy[] memory strategies,
+        DistributionType[] memory distributionTypes,
+        uint64 startEpoch,
+        uint16 totalWeight
+    ) internal returns (uint[] memory distributionIds, Distribution[] memory distributions) {
+        uint numDistributions = distributionTypes.length;
         distributionIds = new uint[](numDistributions);
         distributions = new Distribution[](numDistributions);
 
-        uint currentEpoch = emissionsController.getCurrentEpoch();
         uint16 weightLeft = totalWeight;
 
         for (uint i = 0; i < numDistributions; ++i) {
@@ -109,15 +143,15 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
                 weightLeft = 0;
             }
 
-            DistributionType distributionType = _randomDistributionType({allowDisabled: false});
+            DistributionType distributionType = distributionTypes[i];
 
             distributions[i] = Distribution({
                 weight: weight,
                 startEpoch: startEpoch,
                 totalEpochs: 1,
                 distributionType: distributionType,
-                operatorSet: distributionType == DistributionType.OperatorSetTotalStake
-                    || distributionType == DistributionType.OperatorSetUniqueStake
+                operatorSet: (distributionType == DistributionType.OperatorSetTotalStake
+                        || distributionType == DistributionType.OperatorSetUniqueStake || distributionType == DistributionType.EigenDA)
                     ? _randomOperatorSet(operatorSets)
                     : OperatorSet({avs: address(0), id: 0}),
                 strategiesAndMultipliers: _randomStrategiesAndMultipliers(strategies)
@@ -126,7 +160,7 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
             vm.prank(incentiveCouncil);
             distributionIds[i] = emissionsController.addDistribution(distributions[i]);
         }
-        print.gasUsed();
+
         return (distributionIds, distributions);
     }
 
