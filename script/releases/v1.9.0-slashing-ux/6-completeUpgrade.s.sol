@@ -12,6 +12,11 @@ contract ExecuteUpgrade is QueueUpgrade {
     using Env for *;
 
     function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -25,7 +30,7 @@ contract ExecuteUpgrade is QueueUpgrade {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
         // Complete previous steps

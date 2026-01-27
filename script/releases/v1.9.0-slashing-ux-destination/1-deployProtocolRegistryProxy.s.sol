@@ -13,6 +13,11 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
 
     /// forgefmt: disable-next-item
     function _runAsMultisig() internal virtual override {
+        // Only execute on version 1.8.1
+        if (!Env._strEq(Env.envVersion(), "1.8.1")) {
+            return;
+        }
+
         // We don't use the prank modifier here, since we have to write to the env
         _startPrank(Env.multichainDeployerMultisig());
 
@@ -31,7 +36,7 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
     }
 
     function testScript() public virtual {
-        if (Env.isCoreProtocolDeployed() || _areProxiesDeployed()) {
+        if (Env.isCoreProtocolDeployed() || !Env._strEq(Env.envVersion(), "1.8.1")) {
             return;
         }
 
@@ -59,12 +64,12 @@ contract DeployProtocolRegistryProxy is MultisigBuilder {
         assertTrue(expectedProxy == actualProxy, "protocolRegistry proxy address mismatch");
     }
 
-    /// @dev Check if the proxies are deployed by checking if the protocol registry proxy is deployed
+    /// @dev Check if the proxies are deployed by checking if the empty contract is deployed
     function _areProxiesDeployed() internal view returns (bool) {
         address expectedProtocolRegistry =
             _computeExpectedProxyAddress(type(ProtocolRegistry).name, address(Env.impl.emptyContract()));
 
-        // If the protocol registry proxy is deployed, then the proxies are deployed
+        // If the empty contract is deployed, then the proxies are deployed
         return expectedProtocolRegistry.code.length > 0;
     }
 
