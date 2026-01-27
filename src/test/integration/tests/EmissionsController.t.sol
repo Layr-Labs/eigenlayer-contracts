@@ -324,7 +324,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     /// Invariants for pressButton
     /// -----------------------------------------------------------------------
 
-    /// @dev Assert that all distributions should succeed given valid inputs.
+    /// @dev Assert that all distributions succeed given valid inputs.
     function testFuzz_addDists_pressButton_allDistributionTypes(uint24 r) public rand(r) {
         (uint64 startEpoch, uint16 totalWeight,) = _genRandParams();
 
@@ -353,25 +353,212 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         ic.pressButton(types.length);
     }
 
-    // /// @dev Assert that the function skips disabled distributions.
-    // function testFuzz_addDists_pressButton_skipsDisabledDistributions(uint24 r) public rand(r) {}
+    /// @dev Assert that the function skips disabled distributions.
+    function testFuzz_addDists_pressButton_skipsDisabledDistributions(uint24 r) public rand(r) {
+        (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
+        numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
 
-    // /// @dev Assert that the function skips distributions that have not started yet.
-    // function testFuzz_addDists_pressButton_skipsNotYetStartedDistributions(uint24 r) public rand(r) {}
+        // Create distribution types (all enabled initially)
+        DistributionType[] memory types = new DistributionType[](numDistributions);
+        uint numToDisable = _randUint({min: 1, max: numDistributions - 1}); // At least 1 disabled, at least 1 enabled
 
-    // /// @dev Assert that the function skips distributions that have ended.
-    // function testFuzz_addDists_pressButton_skipsEndedDistributions(uint24 r) public rand(r) {}
+        for (uint i = 0; i < numDistributions; ++i) {
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5}))); // Non-disabled types
+        }
 
-    // /// @dev Assert that the function skips distributions with zero weight.
-    // function testFuzz_addDists_pressButton_skipsZeroWeightDistributions(uint24 r) public rand(r) {}
+        // 1. Add distributions (all enabled)
+        (uint[] memory distributionIds, Distribution[] memory distributions) =
+            ic.addDistributionsWithTypes(operatorSets, strategies, types, startEpoch, totalWeight);
+        check_addDists_State(distributionIds, distributions, totalWeight);
 
-    // /// @dev Assert that the function processes zero distributions when length is zero.
-    // function testFuzz_addDists_pressButtonLengthZero_NoneProcessed(uint24 r) public rand(r) {}
+        // 2. Update some distributions to disabled
+        for (uint i = 0; i < numToDisable; ++i) {
+            distributions[i].distributionType = DistributionType.Disabled;
+            cheats.prank(incentiveCouncil);
+            emissionsController.updateDistribution(distributionIds[i], distributions[i]);
+        }
+
+        // Note: Disabling distributions doesn't change totalWeight - it just affects processing
+        check_addDists_State(distributionIds, distributions, totalWeight);
+
+        // 3. Warp to start epoch
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 4. Press button - should only process non-disabled distributions
+        uint processed = ic.pressButton(numDistributions);
+        uint expectedProcessed = numDistributions - numToDisable;
+        assertEq(processed, expectedProcessed, "Should skip disabled distributions");
+    }
+
+    /// @dev Assert that the function skips distributions that have not started yet.
+    function testFuzz_addDists_pressButton_skipsNotYetStartedDistributions(uint24 r) public rand(r) {
+        (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
+        numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        startEpoch = uint64(_randUint({min: 2, max: 2**12 - 1})); // Ensure startEpoch > 0
+
+        // Generate random distribution types (non-disabled)
+        DistributionType[] memory types = new DistributionType[](numDistributions);
+        for (uint i = 0; i < numDistributions; ++i) {
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+        }
+
+        // 1. Add distributions with staggered start epochs
+        (uint[] memory distributionIds, Distribution[] memory distributions) =
+            ic.addDistributionsWithTypes(operatorSets, strategies, types, startEpoch, totalWeight);
+
+        // Manually update some distributions to have later start epochs
+        uint numLaterStart = _randUint({min: 1, max: numDistributions - 1});
+        for (uint i = 0; i < numLaterStart; ++i) {
+            distributions[i].startEpoch = startEpoch + 1; // Start one epoch later
+            cheats.prank(incentiveCouncil);
+            emissionsController.updateDistribution(distributionIds[i], distributions[i]);
+        }
+        check_addDists_State(distributionIds, distributions, totalWeight);
+
+        // 2. Warp to start epoch (some distributions haven't started yet)
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 3. Press button - should only process distributions that have started
+        uint processed = ic.pressButton(numDistributions);
+        uint expectedProcessed = numDistributions - numLaterStart;
+        assertEq(processed, expectedProcessed, "Should skip distributions that haven't started");
+    }
+
+    /// @dev Assert that the function skips distributions that have ended.
+    function testFuzz_addDists_pressButton_skipsEndedDistributions(uint24 r) public rand(r) {
+        (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
+        numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        startEpoch = uint64(_randUint({min: 1, max: 100})); // Keep epochs reasonable
+
+        // Generate random distribution types (non-disabled)
+        DistributionType[] memory types = new DistributionType[](numDistributions);
+        for (uint i = 0; i < numDistributions; ++i) {
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+        }
+
+        // 1. Add distributions (all have totalEpochs = 1 by default, meaning they end after first epoch)
+        (uint[] memory distributionIds, Distribution[] memory distributions) =
+            ic.addDistributionsWithTypes(operatorSets, strategies, types, startEpoch, totalWeight);
+
+        // Update some distributions to have totalEpochs = 0 (infinite, so they DON'T end)
+        // The rest keep totalEpochs = 1 (end after startEpoch)
+        uint numInfinite = _randUint({min: 1, max: numDistributions - 1});
+        for (uint i = 0; i < numInfinite; ++i) {
+            distributions[i].totalEpochs = 0; // Infinite - will be active in all epochs
+            cheats.prank(incentiveCouncil);
+            emissionsController.updateDistribution(distributionIds[i], distributions[i]);
+        }
+        uint numTimeLimited = numDistributions - numInfinite;
+        check_addDists_State(distributionIds, distributions, totalWeight);
+
+        // 2. Warp to the first epoch where time-limited distributions are active
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 3. Press button - all distributions should be processed
+        uint processed = ic.pressButton(numDistributions);
+        assertEq(processed, numDistributions, "All distributions should be processed in their start epoch");
+
+        // 4. Verify button is not pressable (all distributions processed for this epoch)
+        assertFalse(emissionsController.isButtonPressable(), "Button should not be pressable after all distributions processed");
+
+        // 5. Warp to the next epoch where time-limited distributions have ended
+        // Distributions with totalEpochs = 1 end when currentEpoch >= startEpoch + totalEpochs
+        // i.e., currentEpoch >= startEpoch + 1
+        ic.warpToEpoch(startEpoch + 1);
+        check_warpToEpoch_State(startEpoch + 1);
+
+        // 6. Press button - should skip ended distributions
+        // In the new epoch, only infinite distributions (totalEpochs = 0) should be processed
+        // Time-limited distributions (totalEpochs = 1) have ended
+        processed = ic.pressButton(numDistributions);
+        assertEq(processed, numInfinite, "Should skip ended distributions and only process infinite ones");
+    }
+
+    /// @dev Assert that the function skips distributions with zero weight.
+    function testFuzz_addDists_pressButton_skipsZeroWeightDistributions(uint24 r) public rand(r) {
+        (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
+        numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+
+        // Generate random distribution types (non-disabled)
+        DistributionType[] memory types = new DistributionType[](numDistributions);
+        for (uint i = 0; i < numDistributions; ++i) {
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+        }
+
+        // 1. Add distributions
+        (uint[] memory distributionIds, Distribution[] memory distributions) =
+            ic.addDistributionsWithTypes(operatorSets, strategies, types, startEpoch, totalWeight);
+
+        // Update some distributions to have zero weight
+        uint numZeroWeight = _randUint({min: 1, max: numDistributions - 1});
+        for (uint i = 0; i < numZeroWeight; ++i) {
+            distributions[i].weight = 0;
+            cheats.prank(incentiveCouncil);
+            emissionsController.updateDistribution(distributionIds[i], distributions[i]);
+        }
+
+        // Recalculate expected totalWeight after zero-weight updates
+        uint16 expectedTotalWeight = 0;
+        for (uint i = 0; i < distributions.length; ++i) {
+            expectedTotalWeight += uint16(distributions[i].weight);
+        }
+        check_addDists_State(distributionIds, distributions, expectedTotalWeight);
+
+        // 2. Warp to start epoch
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 3. Press button - should skip zero-weight distributions
+        // Note: Zero-weight distributions don't emit DistributionProcessed events
+        uint processed = ic.pressButton(numDistributions);
+        uint expectedProcessed = numDistributions - numZeroWeight;
+        assertEq(processed, expectedProcessed, "Should skip zero-weight distributions");
+    }
+
+    /// @dev Assert that the function processes zero distributions when length is zero.
+    function testFuzz_addDists_pressButtonLengthZero_NoneProcessed(uint24 r) public rand(r) {
+        (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
+
+        // 1. Add distributions
+        (uint[] memory distributionIds, Distribution[] memory distributions) =
+            ic.addDistributions(operatorSets, strategies, numDistributions, startEpoch, totalWeight);
+        check_addDists_State(distributionIds, distributions, totalWeight);
+
+        // 2. Warp to start epoch
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 3. Press button with length 0 - should process zero distributions
+        uint processed = ic.pressButton(0);
+        assertEq(processed, 0, "Should process zero distributions when length is zero");
+
+        // 4. Button should still be pressable since distributions remain
+        assertTrue(emissionsController.isButtonPressable(), "Button should still be pressable");
+    }
 
     /// -----------------------------------------------------------------------
     /// Edge cases
     /// -----------------------------------------------------------------------
 
-    // /// @dev Assert that the function processes zero distributions when there are no distributions.
-    // function testFuzz_noDistributions_pressButton_NoneProcessed_sweep_AllEmissionsShouldBeSwept(uint24 r) public rand(r) {}
+    /// @dev Assert that sweep returns false when there are no distributions and no emissions minted.
+    function testFuzz_noDistributions_pressButton_NoneProcessed_sweep_AllEmissionsShouldBeSwept(uint24 r) public rand(r) {
+        uint64 startEpoch = uint64(_randUint({min: 0, max: 100}));
+
+        // 1. Warp to start epoch (no distributions added)
+        ic.warpToEpoch(startEpoch);
+        check_warpToEpoch_State(startEpoch);
+
+        // 2. When there are no distributions, pressButton should revert with AllDistributionsProcessed
+        // because totalProcessable = 0 and totalProcessed = 0 (i.e., all 0 distributions are "processed")
+        vm.expectRevert(IEmissionsControllerErrors.AllDistributionsProcessed.selector);
+        ic.pressButton(1);
+
+        // 3. Sweep - since pressButton was never successfully called, no emissions were minted,
+        // so sweep should return false (nothing to sweep)
+        bool swept = ic.sweep();
+        assertFalse(swept, "Should not sweep when no emissions were minted");
+    }
 }
