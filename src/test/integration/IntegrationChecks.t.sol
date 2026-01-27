@@ -1458,11 +1458,12 @@ contract IntegrationCheckUtils is IntegrationBase {
         // 1. Current epoch matches target epoch
         assertEq(epoch, emissionsController.getCurrentEpoch(), "check_warpToEpoch_State: epoch != current epoch");
 
-        // 2. Block timestamp is at the start of the target epoch
-        assertEq(
-            block.timestamp,
-            emissionsController.EMISSIONS_START_TIME() + (epoch * emissionsController.EMISSIONS_EPOCH_LENGTH()),
-            "check_warpToEpoch_State: block.timestamp != expected timestamp"
+        // 2. Block timestamp is within the target epoch's range
+        uint epochStart = emissionsController.EMISSIONS_START_TIME() + (epoch * emissionsController.EMISSIONS_EPOCH_LENGTH());
+        uint epochEnd = epochStart + emissionsController.EMISSIONS_EPOCH_LENGTH();
+        assertTrue(
+            block.timestamp >= epochStart && block.timestamp < epochEnd,
+            "check_warpToEpoch_State: block.timestamp not within expected epoch range"
         );
 
         // === State Invariants ===

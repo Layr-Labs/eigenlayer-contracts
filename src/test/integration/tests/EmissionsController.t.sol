@@ -353,9 +353,6 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         ic.pressButton(types.length);
     }
 
-    // /// @dev Assert that the function mints only once per epoch.
-    // function testFuzz_addDists_pressButton_onlyMintedOncePerEpoch(uint24 r) public rand(r) {}
-
     // /// @dev Assert that the function skips disabled distributions.
     // function testFuzz_addDists_pressButton_skipsDisabledDistributions(uint24 r) public rand(r) {}
 
@@ -370,9 +367,6 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
 
     // /// @dev Assert that the function processes zero distributions when length is zero.
     // function testFuzz_addDists_pressButtonLengthZero_NoneProcessed(uint24 r) public rand(r) {}
-
-    // /// @dev Assert that the function can be called at any time within an epoch.
-    // function testFuzz_addDists_pressButton_canPressButtonAtAnyTimeWithinEpoch(uint24 r) public rand(r) {}
 
     /// -----------------------------------------------------------------------
     /// Edge cases

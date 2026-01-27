@@ -232,10 +232,12 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
         return false;
     }
 
-    /// @dev Warps the chain to a specific epoch.
+    /// @dev Warps the chain to a random timestamp within an epoch.
     /// @param epoch The epoch to warp to.
     function warpToEpoch(uint epoch) public createSnapshot {
         print.method("warpToEpoch");
-        cheats.warp(emissionsController.EMISSIONS_START_TIME() + (epoch * emissionsController.EMISSIONS_EPOCH_LENGTH()));
+        uint epochLength = emissionsController.EMISSIONS_EPOCH_LENGTH();
+        uint randomExcess = vm.randomUint({min: 0, max: epochLength - 1}); // random time wtihin the epoch
+        cheats.warp(emissionsController.EMISSIONS_START_TIME() + (epoch * epochLength) + randomExcess);
     }
 }
