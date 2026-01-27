@@ -166,6 +166,31 @@ interface IDurationVaultStrategy is
         string calldata newMetadataURI
     ) external;
 
+    /// @notice Updates the delegation approver used for operator delegation approvals.
+    /// @param newDelegationApprover The new delegation approver (0x0 for open delegation).
+    /// @dev Only callable by the vault admin.
+    function updateDelegationApprover(
+        address newDelegationApprover
+    ) external;
+
+    /// @notice Updates the operator metadata URI emitted by the DelegationManager.
+    /// @param newOperatorMetadataURI The new operator metadata URI.
+    /// @dev Only callable by the vault admin.
+    function updateOperatorMetadataURI(
+        string calldata newOperatorMetadataURI
+    ) external;
+
+    /// @notice Sets the claimer for operator rewards accrued to the vault.
+    /// @param claimer The address authorized to claim rewards for the vault.
+    /// @dev Only callable by the vault admin.
+    function setRewardsClaimer(
+        address claimer
+    ) external;
+
+    /// @notice Retries best-effort deallocation/deregistration after maturity.
+    /// @dev Callable by anyone once the vault is in WITHDRAWALS.
+    function retryOperatorCleanup() external;
+
     /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
     /// @param newMaxPerDeposit New maximum deposit amount per transaction.
     /// @param newStakeCap New maximum total deposits allowed.

@@ -47,10 +47,16 @@ abstract contract DurationVaultStrategyStorage is IDurationVaultStrategy {
     /// @notice The maximum deposits (in underlyingToken) that this strategy will hold.
     uint256 public maxTotalDeposits;
 
+    /// @dev Indicates whether a deallocation retry is still needed after maturity.
+    bool internal _pendingDeallocation;
+
+    /// @dev Indicates whether a deregistration retry is still needed after maturity.
+    bool internal _pendingDeregistration;
+
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// Storage slots used: vaultAdmin (1) + arbitrator (1) + duration/lockedAt/unlockAt/maturedAt/_state (packed, 1) +
-    /// metadataURI (1) + _operatorSet (1) + maxPerDeposit (1) + maxTotalDeposits (1) = 6.
-    /// Gap: 50 - 7 = 43.
-    uint256[43] private __gap;
+    /// metadataURI (1) + _operatorSet (1) + maxPerDeposit (1) + maxTotalDeposits (1) + pending flags (1) = 7.
+    /// Gap: 50 - 8 = 42.
+    uint256[42] private __gap;
 }
