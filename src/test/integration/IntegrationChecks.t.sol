@@ -1193,56 +1193,67 @@ contract IntegrationCheckUtils is IntegrationBase {
         uint16 expectedTotalWeight
     ) internal {
         // === Input Validation ===
-        assertEq(distributionIds.length, distributions.length, "check_addDists_State: length mismatch");
+        assertEq(distributionIds.length, distributions.length, "length mismatch");
 
         // === State Invariants ===
 
-        // 1. Total weight updated correctly
-        assert_Snap_Updated_TotalWeight(expectedTotalWeight, "check_addDists_State: total weight != expected total weight");
+        uint currentEpoch = emissionsController.getCurrentEpoch();
 
-        // 2. Total weight never exceeds maximum
-        assert_TotalWeight_LTE_MaxWeight("check_addDists_State: total weight exceeds MAX_TOTAL_WEIGHT");
+        // 1. Check that total weight was updated correctly.
+        assert_Snap_Updated_TotalWeight(expectedTotalWeight, "total weight != expected total weight");
 
-        // 3. Total distributions increased by number of additions
-        assert_Snap_Added_TotalDistributions(distributionIds.length, "check_addDists_State: total distributions should increase");
+        // 2. Check that all checks (found in `EmissionsController._checkDistribution`) were passed before adding.
+        //     2a) If the distribution type requires an operator set, check that the operator set was registered before adding.
+        //     2b) If emissions have started, check that the start epoch is in the future (we allow adding before emissions start).
+        //     2c) Check that the total weight after adding and ensuring it does not exceed the maximum total weight (100%).
+        //     2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+        // 3. Check that the distributions were stored correctly.
+        // 4. Check that N distributions were added.
+        // 5. Check that the total processable, emissions controller balance, incentive council balance, current epoch, and button pressability were unchanged.
+        uint totalWeightBefore = _getTotalWeight();
+        uint totalWeightAdded = 0;
+        for (uint i = 0; i < distributionIds.length; ++i) {
+            IEmissionsControllerTypes.Distribution memory distribution = distributions[i];
 
-        // 4. EmissionsController EIGEN balance unchanged (no minting/transfers on add)
-        assert_Snap_Unchanged_EmissionsController_EigenBalance("check_addDists_State: EC balance should be unchanged");
+            // 2a) If the distribution type requires an operator set, check that the operator set was registered before adding.
+            if (
+                distribution.distributionType == IEmissionsControllerTypes.DistributionType.OperatorSetTotalStake
+                    || distribution.distributionType == IEmissionsControllerTypes.DistributionType.OperatorSetUniqueStake
+            ) assert_Snap_OperatorSetRegistered(distribution.operatorSet, "operator set must be registered");
 
-        // 5. IncentiveCouncil balance unchanged
-        assert_Snap_Unchanged_IncentiveCouncil_EigenBalance(
-            emissionsController.incentiveCouncil(), "check_addDists_State: incentive council balance should be unchanged"
-        );
+            // 2b) If emissions have started, check that the start epoch is in the future (we allow adding before emissions start).
+            if (currentEpoch != type(uint).max) assertGt(distribution.startEpoch, currentEpoch, "start epoch must be in the future");
 
-        // 6. Current epoch unchanged (adding distributions doesn't advance time)
-        assert_Snap_Unchanged_CurrentEpoch("check_addDists_State: current epoch should be unchanged");
+            // 2c) Check that the total weight after adding and ensuring it does not exceed the maximum total weight (100%).
+            totalWeightAdded += distribution.weight; // Check after the loop.
 
-        // 7. Button pressability unchanged (can only add when all processed, so stays not pressable or stays pressable)
-        assert_Snap_Unchanged_ButtonPressability("check_addDists_State: button pressability should be unchanged");
+            // 2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+            if (distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual) {
+                assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty for non-Manual distributions");
+            }
 
-        // 8. Total processable behavior depends on whether emissions have started
-        // Before emissions start, total processable increases with each added distribution
-        // After emissions start, total processable stays the same (because both _distributions.length
-        // and _epochs[currentEpoch].totalAdded increase by the same amount)
-        if (emissionsController.getCurrentEpoch() == type(uint).max) {
+            // 3. Check that the distributions were stored correctly.
+            assert_Distribution_StoredCorrectly(distributionIds[i], distribution, "state should be updated");
+        }
+        // 2c) Check that the total weight was updated correctly.
+        assert_Snap_Added_TotalWeight(totalWeightAdded, "total weight must be added correctly");
+        assert_TotalWeight_LTE_MaxWeight("total weight must not exceed the maximum total weight");
+
+        // 4. Check that the total distributions were increased by the number of additions.
+        assert_Snap_Added_TotalDistributions(distributionIds.length, "total distributions must be added correctly");
+
+        // 5. Check that the total processable, emissions controller balance, incentive council balance, current epoch, and button pressability were unchanged.
+        if (currentEpoch == type(uint).max) {
             assert_Snap_Added_TotalProcessableDistributions(
-                distributionIds.length, "check_addDists_State: total processable should increase before emissions start"
+                distributionIds.length, "total processable should increase before emissions start"
             );
         } else {
-            assert_Snap_Unchanged_TotalProcessableDistributions(
-                "check_addDists_State: total processable should be unchanged after emissions start"
-            );
+            assert_Snap_Unchanged_TotalProcessableDistributions("total processable should be unchanged after emissions start");
         }
-
-        // === Storage Verification ===
-
-        // 9. All distributions stored correctly with expected values
-        assert_Distributions_Match_Expected(distributionIds, distributions, "check_addDists_State");
-
-        // 10. Each distribution ID is valid (less than total distributions)
-        for (uint i = 0; i < distributionIds.length; ++i) {
-            assertTrue(distributionIds[i] < _getTotalDistributions(), "check_addDists_State: distribution ID should be valid");
-        }
+        assert_Snap_Unchanged_EmissionsController_EigenBalance("EC balance should be unchanged");
+        assert_Snap_Unchanged_IncentiveCouncil_EigenBalance(emissionsController.incentiveCouncil(), "IC balance should be unchanged");
+        assert_Snap_Unchanged_CurrentEpoch("current epoch should be unchanged");
+        assert_Snap_Unchanged_ButtonPressability("button pressability should be unchanged");
     }
 
     function check_updateDists_State(
@@ -1251,10 +1262,14 @@ contract IntegrationCheckUtils is IntegrationBase {
         IEmissionsControllerTypes.Distribution[] memory newDists
     ) internal {
         // === Input Validation ===
-        assertEq(distributionIds.length, oldDists.length, "check_updateDists_State: oldDists length mismatch");
-        assertEq(distributionIds.length, newDists.length, "check_updateDists_State: newDists length mismatch");
+        assertEq(distributionIds.length, oldDists.length, "oldDists length mismatch");
+        assertEq(distributionIds.length, newDists.length, "newDists length mismatch");
 
-        // === Calculate Expected Weight Change ===
+        // === State Invariants ===
+
+        uint currentEpoch = emissionsController.getCurrentEpoch();
+
+        // 1. Check that total weight was updated correctly (old weights removed, new weights added).
         uint16 totalOldWeight = 0;
         uint16 totalNewWeight = 0;
         for (uint i = 0; i < distributionIds.length; ++i) {
@@ -1263,44 +1278,54 @@ contract IntegrationCheckUtils is IntegrationBase {
         }
         uint16 prevTotalWeight = _getPrevTotalWeight();
         uint16 expectedTotalWeight = prevTotalWeight - totalOldWeight + totalNewWeight;
+        assert_Snap_Updated_TotalWeight(expectedTotalWeight, "total weight != expected total weight");
 
-        // === State Invariants ===
-
-        // 1. Total weight updated correctly (old weights removed, new weights added)
-        assert_Snap_Updated_TotalWeight(expectedTotalWeight, "check_updateDists_State: total weight != expected");
-
-        // 2. Total weight never exceeds maximum
-        assert_TotalWeight_LTE_MaxWeight("check_updateDists_State: total weight exceeds MAX_TOTAL_WEIGHT");
-
-        // 3. Total distributions unchanged (update doesn't add/remove, just modifies)
-        assert_Snap_Unchanged_TotalDistributions("check_updateDists_State: total distributions should be unchanged");
-
-        // 4. Total processable unchanged (update doesn't affect processability)
-        assert_Snap_Unchanged_TotalProcessableDistributions("check_updateDists_State: total processable should be unchanged");
-
-        // 5. EmissionsController EIGEN balance unchanged
-        assert_Snap_Unchanged_EmissionsController_EigenBalance("check_updateDists_State: EC balance should be unchanged");
-
-        // 6. IncentiveCouncil balance unchanged
-        assert_Snap_Unchanged_IncentiveCouncil_EigenBalance(
-            emissionsController.incentiveCouncil(), "check_updateDists_State: incentive council balance should be unchanged"
-        );
-
-        // 7. Current epoch unchanged
-        assert_Snap_Unchanged_CurrentEpoch("check_updateDists_State: current epoch should be unchanged");
-
-        // 8. Button pressability unchanged (can only update when all processed)
-        assert_Snap_Unchanged_ButtonPressability("check_updateDists_State: button pressability should be unchanged");
-
-        // === Storage Verification ===
-
-        // 9. All distributions updated correctly with new values
-        assert_Distributions_Match_Expected(distributionIds, newDists, "check_updateDists_State");
-
-        // 10. Distribution IDs remain valid
+        // 2. Check that all checks (found in `EmissionsController._checkDistribution`) were passed before updating.
+        //     2a) If the distribution type requires an operator set, check that the operator set was registered before updating.
+        //     2b) If emissions have started, check that the start epoch is in the future (we allow updating before emissions start).
+        //     2c) Check that the total weight after updating and ensuring it does not exceed the maximum total weight (100%).
+        //     2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+        // 3. Check that the distributions were updated correctly in storage.
+        // 4. Check that distribution IDs remain valid.
+        // 5. Check that N distributions remain (no addition or removal).
+        // 6. Check that the total processable, emissions controller balance, incentive council balance, current epoch, and button pressability were unchanged.
         for (uint i = 0; i < distributionIds.length; ++i) {
-            assertTrue(distributionIds[i] < _getTotalDistributions(), "check_updateDists_State: distribution ID should be valid");
+            IEmissionsControllerTypes.Distribution memory distribution = newDists[i];
+
+            // 2a) If the distribution type requires an operator set, check that the operator set was registered before updating.
+            if (
+                distribution.distributionType == IEmissionsControllerTypes.DistributionType.OperatorSetTotalStake
+                    || distribution.distributionType == IEmissionsControllerTypes.DistributionType.OperatorSetUniqueStake
+            ) assert_Snap_OperatorSetRegistered(distribution.operatorSet, "operator set must be registered");
+
+            // 2b) If emissions have started, check that the start epoch is in the future (we allow updating before emissions start).
+            if (currentEpoch != type(uint).max) assertGt(distribution.startEpoch, currentEpoch, "start epoch must be in the future");
+
+            // 2c) Already checked above after the loop (total weight check).
+
+            // 2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+            if (distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual) {
+                assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty for non-Manual distributions");
+            }
+
+            // 3. Check that the distributions were updated correctly in storage.
+            assert_Distribution_StoredCorrectly(distributionIds[i], distribution, "distribution should be stored correctly");
+
+            // 4. Check that distribution IDs remain valid.
+            assertTrue(distributionIds[i] < _getTotalDistributions(), "distribution ID should be valid");
         }
+        // 2c) Check that the total weight does not exceed the maximum total weight.
+        assert_TotalWeight_LTE_MaxWeight("total weight must not exceed the maximum total weight");
+
+        // 5. Check that the total distributions were unchanged (update doesn't add/remove, just modifies).
+        assert_Snap_Unchanged_TotalDistributions("total distributions must be unchanged");
+
+        // 6. Check that the total processable, emissions controller balance, incentive council balance, current epoch, and button pressability were unchanged.
+        assert_Snap_Unchanged_TotalProcessableDistributions("total processable should be unchanged");
+        assert_Snap_Unchanged_EmissionsController_EigenBalance("EC balance should be unchanged");
+        assert_Snap_Unchanged_IncentiveCouncil_EigenBalance(emissionsController.incentiveCouncil(), "IC balance should be unchanged");
+        assert_Snap_Unchanged_CurrentEpoch("current epoch should be unchanged");
+        assert_Snap_Unchanged_ButtonPressability("button pressability should be unchanged");
     }
 
     function check_sweep_State(

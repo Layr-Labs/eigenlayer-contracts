@@ -1204,6 +1204,11 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         }
     }
 
+    function assert_Snap_OperatorSetRegistered(OperatorSet memory operatorSet, string memory err) internal {
+        assertTrue(_getPrevOperatorSetRegistered(operatorSet), err);
+        assertTrue(_getOperatorSetRegistered(operatorSet), err);
+    }
+
     ///
     ///                 SNAPSHOT ASSERTIONS: BEACON CHAIN AND AVS SLASHING
     ///
@@ -2724,6 +2729,14 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         (operatorSets, allocations) = allocationManager.getStrategyAllocations(operator, strategy);
     }
 
+    function _getPrevOperatorSetRegistered(OperatorSet memory operatorSet) internal timewarp returns (bool) {
+        return _getOperatorSetRegistered(operatorSet);
+    }
+
+    function _getOperatorSetRegistered(OperatorSet memory operatorSet) internal view returns (bool) {
+        return allocationManager.isOperatorSet(operatorSet);
+    }
+
     function _getPrevIsSlashable(User operator, OperatorSet memory operatorSet) internal timewarp returns (bool) {
         return _getIsSlashable(operator, operatorSet);
     }
@@ -3322,20 +3335,20 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         assertEq(prev, cur, err);
     }
 
-    function assert_Snap_Added_TotalWeight(uint16 added, string memory err) internal {
-        uint16 prev = _getPrevTotalWeight();
-        uint16 cur = _getTotalWeight();
+    function assert_Snap_Added_TotalWeight(uint added, string memory err) internal {
+        uint prev = _getPrevTotalWeight();
+        uint cur = _getTotalWeight();
         assertEq(prev + added, cur, err);
     }
 
-    function assert_Snap_Updated_TotalWeight(uint16 expected, string memory err) internal {
-        uint16 cur = _getTotalWeight();
+    function assert_Snap_Updated_TotalWeight(uint64 expected, string memory err) internal {
+        uint cur = _getTotalWeight();
         assertEq(cur, expected, err);
     }
 
     function assert_Snap_Unchanged_TotalWeight(string memory err) internal {
-        uint16 prev = _getPrevTotalWeight();
-        uint16 cur = _getTotalWeight();
+        uint prev = _getPrevTotalWeight();
+        uint64 cur = _getTotalWeight();
         assertEq(prev, cur, err);
     }
 
@@ -3398,8 +3411,8 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
     }
 
     function assert_TotalWeight_LTE_MaxWeight(string memory err) internal view {
-        uint16 totalWeight = _getTotalWeight();
-        assertTrue(totalWeight <= emissionsController.MAX_TOTAL_WEIGHT(), err);
+        uint16 cur = _getTotalWeight();
+        assertTrue(cur <= emissionsController.MAX_TOTAL_WEIGHT(), err);
     }
 
     function assert_Snap_Updated_EpochTotalProcessed(uint epoch, uint expected, string memory err) internal {
