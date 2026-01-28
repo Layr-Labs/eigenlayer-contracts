@@ -27,6 +27,21 @@ contract DelegationManagerMock is Test {
     RegisterAsOperatorCall internal _lastRegisterAsOperatorCall;
     uint public registerAsOperatorCallCount;
 
+    struct ModifyOperatorDetailsCall {
+        address operator;
+        address newDelegationApprover;
+    }
+
+    struct UpdateOperatorMetadataURICall {
+        address operator;
+        string metadataURI;
+    }
+
+    ModifyOperatorDetailsCall internal _lastModifyOperatorDetailsCall;
+    UpdateOperatorMetadataURICall internal _lastUpdateOperatorMetadataURICall;
+    uint public modifyOperatorDetailsCallCount;
+    uint public updateOperatorMetadataURICallCount;
+
     function getDelegatableShares(address staker) external view returns (IStrategy[] memory, uint[] memory) {}
 
     function setMinWithdrawalDelayBlocks(uint32 newMinWithdrawalDelayBlocks) external {
@@ -96,8 +111,26 @@ contract DelegationManagerMock is Test {
         });
     }
 
+    function modifyOperatorDetails(address operator, address newDelegationApprover) external {
+        modifyOperatorDetailsCallCount++;
+        _lastModifyOperatorDetailsCall = ModifyOperatorDetailsCall({operator: operator, newDelegationApprover: newDelegationApprover});
+    }
+
+    function updateOperatorMetadataURI(address operator, string calldata metadataURI) external {
+        updateOperatorMetadataURICallCount++;
+        _lastUpdateOperatorMetadataURICall = UpdateOperatorMetadataURICall({operator: operator, metadataURI: metadataURI});
+    }
+
     function lastRegisterAsOperatorCall() external view returns (RegisterAsOperatorCall memory) {
         return _lastRegisterAsOperatorCall;
+    }
+
+    function lastModifyOperatorDetailsCall() external view returns (ModifyOperatorDetailsCall memory) {
+        return _lastModifyOperatorDetailsCall;
+    }
+
+    function lastUpdateOperatorMetadataURICall() external view returns (UpdateOperatorMetadataURICall memory) {
+        return _lastUpdateOperatorMetadataURICall;
     }
 
     function undelegate(address staker) external returns (bytes32[] memory withdrawalRoot) {
