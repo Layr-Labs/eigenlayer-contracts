@@ -242,7 +242,7 @@ contract RewardsCoordinator is
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
 
             // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
 
             // Last update storage.
             uint256 nonce = submissionNonce[operatorSet.avs];
@@ -277,7 +277,7 @@ contract RewardsCoordinator is
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
 
             // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
 
             // Last update storage.
             uint256 nonce = submissionNonce[operatorSet.avs];
@@ -476,7 +476,7 @@ contract RewardsCoordinator is
             rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
 
             // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
+            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
 
             // Last update storage.
             uint256 nonce = submissionNonce[avs];
@@ -650,7 +650,7 @@ contract RewardsCoordinator is
         require(submission.operatorRewards.length > 0, InputArrayLengthZero());
         require(submission.startTimestamp + submission.duration < block.timestamp, SubmissionNotRetroactive());
 
-        bool feeOn = isOptedInForProtocolFee[submitter];
+        bool feeOn = isOptedInForProtocolFee[msg.sender];
 
         address lastOperator = address(0);
         uint256 length = submission.operatorRewards.length;
@@ -788,17 +788,15 @@ contract RewardsCoordinator is
     }
 
     /// @notice Internal helper to take protocol fees from a submission.
-    /// @param submitter The address of the submitter.
     /// @param token The token to take the protocol fee from.
     /// @param amountBeforeFee The amount before the protocol fee is taken.
     /// @return amountAfterFee The amount after the protocol fee is taken.
     function _takeProtocolFee(
-        address submitter,
         IERC20 token,
         uint256 amountBeforeFee
     ) internal returns (uint256 amountAfterFee) {
         uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-        if (isOptedInForProtocolFee[submitter]) {
+        if (isOptedInForProtocolFee[msg.sender]) {
             if (feeAmount != 0) {
                 token.safeTransfer(feeRecipient, feeAmount);
                 return amountBeforeFee - feeAmount;
