@@ -675,7 +675,7 @@ contract RewardsCoordinator is
             lastOperator = submission.operatorRewards[i].operator;
         }
 
-        require(amountAfterFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(amountBeforeFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
 
         return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee);
     }
