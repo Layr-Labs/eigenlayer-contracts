@@ -175,7 +175,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 0, "unexpected deregister count");
     }
 
-    function testMarkMaturedRetryOperatorCleanup() public {
+    function testMarkMaturedCanRetryOperatorCleanup() public {
         durationVault.lock();
         cheats.warp(block.timestamp + defaultDuration + 1);
 
@@ -188,7 +188,8 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
         allocationManagerMock.setRevertModifyAllocations(false);
         allocationManagerMock.setRevertDeregisterFromOperatorSets(false);
 
-        durationVault.retryOperatorCleanup();
+        // markMatured is a permissionless retry path once in WITHDRAWALS.
+        durationVault.markMatured();
 
         assertEq(allocationManagerMock.modifyAllocationsCallCount(), 2, "deallocation should be retried");
         assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 1, "deregistration should be retried");

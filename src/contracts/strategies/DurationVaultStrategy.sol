@@ -132,8 +132,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         maturedAt = uint32(block.timestamp);
         emit VaultMatured(maturedAt);
 
-        _pendingDeallocation = true;
-        _pendingDeregistration = true;
         _attemptOperatorCleanup();
     }
 
@@ -153,8 +151,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         emit VaultMatured(maturedAt);
         emit VaultAdvancedToWithdrawals(msg.sender, maturedAt);
 
-        _pendingDeallocation = true;
-        _pendingDeregistration = true;
         _attemptOperatorCleanup();
     }
 
@@ -185,12 +181,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         address claimer
     ) external override onlyVaultAdmin {
         rewardsCoordinator.setClaimerFor(address(this), claimer);
-    }
-
-    /// @notice Retries best-effort operator cleanup after maturity.
-    function retryOperatorCleanup() external override {
-        require(_state == VaultState.WITHDRAWALS, DurationNotElapsed());
-        _attemptOperatorCleanup();
     }
 
     /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
@@ -420,11 +410,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
     /// @notice Best-effort cleanup after maturity, with retry tracking.
     function _attemptOperatorCleanup() internal {
-        if (_pendingDeallocation) {
-            _pendingDeallocation = !_deallocateAll();
-        }
-        if (_pendingDeregistration) {
-            _pendingDeregistration = !_deregisterFromOperatorSet();
-        }
+        _deallocateAll();
+        _deregisterFromOperatorSet();
     }
 }

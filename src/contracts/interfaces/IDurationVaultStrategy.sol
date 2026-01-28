@@ -187,10 +187,6 @@ interface IDurationVaultStrategy is
         address claimer
     ) external;
 
-    /// @notice Retries best-effort deallocation/deregistration after maturity.
-    /// @dev Callable by anyone once the vault is in WITHDRAWALS.
-    function retryOperatorCleanup() external;
-
     /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
     /// @param newMaxPerDeposit New maximum deposit amount per transaction.
     /// @param newStakeCap New maximum total deposits allowed.
