@@ -1,5 +1,5 @@
 {
-    "lastUpdated": "v1.4.1-mainnet-prooftra",
+    "lastUpdated": "v1.9.0-slashing-ux-improvements",
     "addresses": {
         "allocationManager": "0x948a420b8CC1d6BFd0B6087C2E7c344a2CD0bc39",
         "allocationManagerImplementation": "0x740058839A1668Af5700e5d7B062007275e77D25",
@@ -79,7 +79,7 @@
         "executorMultisig": "0x369e6F597e22EaB55fFb173C6d9cD234BD699111",
         "operationsMultisig": "0xBE1685C81aA44FF9FB319dD389addd9374383e90",
         "pauserMultisig": "0x5050389572f2d220ad927CcbeA0D406831012390",
-        "timelock": "0xA6Db1A8C5a981d1536266D2a393c5F8dDb210EAF",
+        "timelock": "0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d",
         "semver": "v1.4.1"
     }
 }
