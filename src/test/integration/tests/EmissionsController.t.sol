@@ -46,8 +46,9 @@ contract Integration_EmissionsController_Base is IntegrationCheckUtils, IEmissio
 
     function _genRandParams() internal returns (uint64 startEpoch, uint16 totalWeight, uint numDistributions) {
         startEpoch = uint64(_randUint({min: 0, max: 2**12 - 1}));
-        totalWeight = uint16(_randUint({min: 1, max: 10_000})); // 0.01-100% (bips)
         numDistributions = _randUint({min: 1, max: 32});
+        // Ensure totalWeight is at least numDistributions (each distribution needs at least 1 weight)
+        totalWeight = uint16(_randUint({min: numDistributions, max: 10_000})); // 0.01-100% (bips)
         return (startEpoch, totalWeight, numDistributions);
     }
 }
