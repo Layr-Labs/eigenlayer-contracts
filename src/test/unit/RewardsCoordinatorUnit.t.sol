@@ -1567,7 +1567,7 @@ contract RewardsCoordinatorUnitTests_createEigenDARewardsSubmission is RewardsCo
         address avs = defaultAVS;
 
         // Setup token and approval - AVS needs to have the tokens since it's the one submitting rewards
-        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
+        IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, emissionsController);
         uint amount = 1e18;
 
         RewardsSubmission[] memory rewardsSubmissions = new RewardsSubmission[](1);
@@ -1579,8 +1579,9 @@ contract RewardsCoordinatorUnitTests_createEigenDARewardsSubmission is RewardsCo
             duration: CALCULATION_INTERVAL_SECONDS
         });
 
-        // AVS approves the token transfer
-        cheats.prank(avs);
+        // EmissionsController approves the rewards coordinator on each processed distribution.
+        // We mock that here.
+        cheats.prank(emissionsController);
         rewardToken.approve(address(rewardsCoordinator), amount);
 
         // Call from emissionsController should succeed

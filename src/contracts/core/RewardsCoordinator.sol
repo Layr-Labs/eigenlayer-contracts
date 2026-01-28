@@ -460,7 +460,7 @@ contract RewardsCoordinator is
     /// -----------------------------------------------------------------------
 
     /// @notice Internal helper to create AVS rewards submissions.
-    /// @param avs The address of the AVS submitting the rewards.
+    /// @param avs The address of the AVS to submit rewards for.
     /// @param rewardsSubmissions The RewardsSubmissions to be created.
     function _createAVSRewardsSubmission(
         address avs,
@@ -473,10 +473,10 @@ contract RewardsCoordinator is
             _validateRewardsSubmission(rewardsSubmission);
 
             // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(avs, address(this), rewardsSubmission.amount);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
 
             // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(avs, rewardsSubmission.token, rewardsSubmission.amount);
+            rewardsSubmission.amount = _takeProtocolFee(msg.sender, rewardsSubmission.token, rewardsSubmission.amount);
 
             // Last update storage.
             uint256 nonce = submissionNonce[avs];
