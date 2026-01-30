@@ -466,7 +466,7 @@ rule addChainIDsToWhitelist_revert_conditions(env e) {
  *
  * Must revert if:
  * 1) Paused bit for whitelist is set
- * 2) Any chainIDs[i] is not whitelisted in the pre-state
+ * 2) msg.sender is not the owner
  * 3) Any duplicate chain ID appears in the input (i != j && chainIDs[i] == chainIDs[j])
  *
  * Empty arrays are allowed and should NOT revert.

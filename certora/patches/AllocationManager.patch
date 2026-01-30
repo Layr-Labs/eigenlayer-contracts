@@ -1,0 +1,1112 @@
+diff --git a/src/contracts/core/AllocationManager.sol b/src/contracts/core/AllocationManager.sol
+index 92726b91..8c4ba446 100644
+--- a/src/contracts/core/AllocationManager.sol
++++ b/src/contracts/core/AllocationManager.sol
+@@ -10,6 +10,7 @@ import "../permissions/Pausable.sol";
+ import "../libraries/SlashingLib.sol";
+ import "../libraries/OperatorSetLib.sol";
+ import "./storage/AllocationManagerStorage.sol";
++import "./AllocationManagerView.sol";
+ 
+ contract AllocationManager is
+     Initializable,
+@@ -872,206 +873,274 @@ contract AllocationManager is
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getOperatorSetCount(
+-        address
+-    ) external view returns (uint256 count) {
+-        _delegateView(viewImplementation);
+-        count;
++        address avs
++    ) external returns (uint256) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getOperatorSetCount_view(address)", avs)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint256));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocatedSets(
+-        address
+-    ) external view returns (OperatorSet[] memory operatorSets) {
+-        _delegateView(viewImplementation);
+-        operatorSets;
++        address operator
++    ) external returns (OperatorSet[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocatedSets_view(address)", operator)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (OperatorSet[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocatedStrategies(
+-        address,
+-        OperatorSet memory
+-    ) external view returns (IStrategy[] memory strategies) {
+-        _delegateView(viewImplementation);
+-        strategies;
++        address operator,
++        OperatorSet memory operatorSet
++    ) external returns (IStrategy[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocatedStrategies_view(address,(address,uint32))", operator, operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (IStrategy[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocation(
+-        address,
+-        OperatorSet memory,
+-        IStrategy
+-    ) external view returns (Allocation memory allocation) {
+-        _delegateView(viewImplementation);
+-        allocation;
++        address operator,
++        OperatorSet memory operatorSet,
++        IStrategy strategy
++    ) external returns (Allocation memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocation_view(address,(address,uint32),address)", operator, operatorSet, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (Allocation));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocations(
+-        address[] memory,
+-        OperatorSet memory,
+-        IStrategy
+-    ) external view returns (Allocation[] memory allocations) {
+-        _delegateView(viewImplementation);
+-        allocations;
++        address[] memory operators,
++        OperatorSet memory operatorSet,
++        IStrategy strategy
++    ) external returns (Allocation[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocations_view(address[],(address,uint32),address)", operators, operatorSet, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (Allocation[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getStrategyAllocations(
+-        address,
+-        IStrategy
+-    ) external view returns (OperatorSet[] memory operatorSets, Allocation[] memory allocations) {
+-        _delegateView(viewImplementation);
+-        operatorSets;
+-        allocations;
++        address operator,
++        IStrategy strategy
++    ) external returns (OperatorSet[] memory, Allocation[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getStrategyAllocations_view(address,address)", operator, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (OperatorSet[], Allocation[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getEncumberedMagnitude(
+-        address,
+-        IStrategy
+-    ) external view returns (uint64 encumberedMagnitude) {
+-        _delegateView(viewImplementation);
+-        encumberedMagnitude;
++        address operator,
++        IStrategy strategy
++    ) external returns (uint64) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getEncumberedMagnitude_view(address,address)", operator, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocatableMagnitude(
+-        address,
+-        IStrategy
+-    ) external view returns (uint64 allocatableMagnitude) {
+-        _delegateView(viewImplementation);
+-        allocatableMagnitude;
++        address operator,
++        IStrategy strategy
++    ) external returns (uint64) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocatableMagnitude_view(address,address)", operator, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMaxMagnitude(
+-        address,
+-        IStrategy
+-    ) external view returns (uint64 maxMagnitude) {
+-        _delegateView(viewImplementation);
+-        maxMagnitude;
++        address operator,
++        IStrategy strategy
++    ) external returns (uint64) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMaxMagnitude_view(address,address)", operator, strategy)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMaxMagnitudes(
+-        address,
+-        IStrategy[] calldata
+-    ) external view returns (uint64[] memory maxMagnitudes) {
+-        _delegateView(viewImplementation);
+-        maxMagnitudes;
++        address operator,
++        IStrategy[] calldata strategies
++    ) external returns (uint64[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMaxMagnitudes_view2(address,address[])", operator, strategies)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMaxMagnitudes(
+-        address[] calldata,
+-        IStrategy
+-    ) external view returns (uint64[] memory maxMagnitudes) {
+-        _delegateView(viewImplementation);
+-        maxMagnitudes;
++        address[] calldata addr,
++        IStrategy addr1
++    ) external returns (uint64[] memory maxMagnitudes) {
++        // Explicitly delegatecall to renamed function in AllocationManagerView to avoid Certora recursion
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMaxMagnitudes_view(address[],address)", addr, addr1)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMaxMagnitudesAtBlock(
+-        address,
+-        IStrategy[] calldata,
+-        uint32
+-    ) external view returns (uint64[] memory maxMagnitudes) {
+-        _delegateView(viewImplementation);
+-        maxMagnitudes;
++        address operator,
++        IStrategy[] calldata strategies,
++        uint32 blockNumber
++    ) external returns (uint64[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMaxMagnitudesAtBlock_view(address,address[],uint32)", operator, strategies, blockNumber)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint64[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getRegisteredSets(
+-        address
+-    ) external view returns (OperatorSet[] memory operatorSets) {
+-        _delegateView(viewImplementation);
+-        operatorSets;
++        address operator
++    ) external returns (OperatorSet[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getRegisteredSets_view(address)", operator)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (OperatorSet[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function isMemberOfOperatorSet(
+-        address,
+-        OperatorSet memory
+-    ) external view returns (bool result) {
+-        _delegateView(viewImplementation);
+-        result;
++        address operator,
++        OperatorSet memory operatorSet
++    ) external returns (bool) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("isMemberOfOperatorSet_view(address,(address,uint32))", operator, operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (bool));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function isOperatorSet(
+-        OperatorSet memory
+-    ) external view returns (bool result) {
+-        _delegateView(viewImplementation);
+-        result;
++        OperatorSet memory operatorSet
++    ) external returns (bool) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("isOperatorSet_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (bool));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMembers(
+-        OperatorSet memory
+-    ) external view returns (address[] memory operators) {
+-        _delegateView(viewImplementation);
+-        operators;
++        OperatorSet memory operatorSet
++    ) external returns (address[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMembers_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (address[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMemberCount(
+-        OperatorSet memory
+-    ) external view returns (uint256 memberCount) {
+-        _delegateView(viewImplementation);
+-        memberCount;
++        OperatorSet memory operatorSet
++    ) external returns (uint256) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMemberCount_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint256));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getStrategiesInOperatorSet(
+-        OperatorSet memory
+-    ) external view returns (IStrategy[] memory strategies) {
+-        _delegateView(viewImplementation);
+-        strategies;
++        OperatorSet memory operatorSet
++    ) external returns (IStrategy[] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getStrategiesInOperatorSet_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (IStrategy[]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getMinimumSlashableStake(
+-        OperatorSet memory,
+-        address[] memory,
+-        IStrategy[] memory,
+-        uint32
+-    ) external view returns (uint256[][] memory slashableStake) {
+-        _delegateView(viewImplementation);
+-        slashableStake;
++        OperatorSet memory operatorSet,
++        address[] memory operators,
++        IStrategy[] memory strategies,
++        uint32 futureBlock
++    ) external returns (uint256[][] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getMinimumSlashableStake_view((address,uint32),address[],address[],uint32)", operatorSet, operators, strategies, futureBlock)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint256[][]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getAllocatedStake(
+-        OperatorSet memory,
+-        address[] memory,
+-        IStrategy[] memory
+-    ) external view returns (uint256[][] memory slashableStake) {
+-        _delegateView(viewImplementation);
+-        slashableStake;
++        OperatorSet memory operatorSet,
++        address[] memory operators,
++        IStrategy[] memory strategies
++    ) external returns (uint256[][] memory) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getAllocatedStake_view((address,uint32),address[],address[])", operatorSet, operators, strategies)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint256[][]));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getPendingSlasher(
+-        OperatorSet memory
+-    ) external view returns (address pendingSlasher, uint32 effectBlock) {
+-        _delegateView(viewImplementation);
+-        pendingSlasher;
+-        effectBlock;
++        OperatorSet memory operatorSet
++    ) external returns (address pendingSlasher, uint32 effectBlock) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getPendingSlasher_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (address, uint32));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function getSlashCount(
+-        OperatorSet memory
+-    ) external view returns (uint256 slashCount) {
+-        _delegateView(viewImplementation);
+-        slashCount;
++        OperatorSet memory operatorSet
++    ) external returns (uint256 slashCount) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("getSlashCount_view((address,uint32))", operatorSet)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (uint256));
+     }
+ 
+     /// @inheritdoc IAllocationManagerView
+     function isOperatorRedistributable(
+-        address
+-    ) external view returns (bool result) {
+-        _delegateView(viewImplementation);
+-        result;
++        address operator
++    ) external returns (bool result) {
++        (bool success, bytes memory returnData) = viewImplementation.delegatecall(
++            abi.encodeWithSignature("isOperatorRedistributable_view(address)", operator)
++        );
++        require(success, "delegatecall failed");
++        return abi.decode(returnData, (bool));
+     }
+ }
+diff --git a/src/contracts/core/AllocationManagerView.sol b/src/contracts/core/AllocationManagerView.sol
+index deb4e62c..32c14b1d 100644
+--- a/src/contracts/core/AllocationManagerView.sol
++++ b/src/contracts/core/AllocationManagerView.sol
+@@ -16,7 +16,7 @@ import "./storage/AllocationManagerStorage.sol";
+ ///      Since `AllocationManagerView` only needs access to the storage variables from
+ ///      `AllocationManagerStorage` (without the other mixins), it uses `layout at 151` to
+ ///      align its storage layout with the main `AllocationManager` contract.
+-contract AllocationManagerView layout at 151 is IAllocationManagerView, AllocationManagerStorage {
++contract AllocationManagerView layout at 151 is AllocationManagerStorage {
+     using DoubleEndedQueue for DoubleEndedQueue.Bytes32Deque;
+     using Snapshots for Snapshots.DefaultWadHistory;
+     using OperatorSetLib for OperatorSet;
+@@ -107,7 +107,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+                     continue;
+                 }
+ 
+-                Allocation memory alloc = getAllocation(operator, operatorSet, strategy);
++                Allocation memory alloc = getAllocation_view(operator, operatorSet, strategy);
+ 
+                 // If the pending change takes effect before `futureBlock`, include it in `currentMagnitude`
+                 // However, ONLY include the pending change if it is a deallocation, since this method
+@@ -139,7 +139,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         OperatorSet[] memory operatorSets
+     ) internal view returns (bool) {
+         for (uint256 i = 0; i < operatorSets.length; ++i) {
+-            if (isOperatorSlashable(operator, operatorSets[i]) && isRedistributingOperatorSet(operatorSets[i])) {
++            if (isOperatorSlashable_view(operator, operatorSets[i]) && isRedistributingOperatorSet_view(operatorSets[i])) {
+                 return true;
+             }
+         }
+@@ -150,15 +150,15 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+     ///                         VIEW FUNCTIONS
+     ///
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getOperatorSetCount(
++    // /// @inheritdoc IAllocationManagerView
++    function getOperatorSetCount_view(
+         address avs
+     ) external view returns (uint256) {
+         return _operatorSets[avs].length();
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocatedSets(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocatedSets_view(
+         address operator
+     ) public view returns (OperatorSet[] memory) {
+         uint256 length = allocatedSets[operator].length();
+@@ -171,8 +171,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return operatorSets;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocatedStrategies(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocatedStrategies_view(
+         address operator,
+         OperatorSet memory operatorSet
+     ) external view returns (IStrategy[] memory) {
+@@ -186,8 +186,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return strategies;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocation(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocation_view(
+         address operator,
+         OperatorSet memory operatorSet,
+         IStrategy strategy
+@@ -197,8 +197,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return allocation;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocations(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocations_view(
+         address[] memory operators,
+         OperatorSet memory operatorSet,
+         IStrategy strategy
+@@ -206,14 +206,14 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         Allocation[] memory _allocations = new Allocation[](operators.length);
+ 
+         for (uint256 i = 0; i < operators.length; i++) {
+-            _allocations[i] = getAllocation(operators[i], operatorSet, strategy);
++            _allocations[i] = getAllocation_view(operators[i], operatorSet, strategy);
+         }
+ 
+         return _allocations;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getStrategyAllocations(
++    // /// @inheritdoc IAllocationManagerView
++    function getStrategyAllocations_view(
+         address operator,
+         IStrategy strategy
+     ) external view returns (OperatorSet[] memory, Allocation[] memory) {
+@@ -226,14 +226,14 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+             OperatorSet memory operatorSet = OperatorSetLib.decode(allocatedSets[operator].at(i));
+ 
+             operatorSets[i] = operatorSet;
+-            _allocations[i] = getAllocation(operator, operatorSet, strategy);
++            _allocations[i] = getAllocation_view(operator, operatorSet, strategy);
+         }
+ 
+         return (operatorSets, _allocations);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getEncumberedMagnitude(
++    // /// @inheritdoc IAllocationManagerView
++    function getEncumberedMagnitude_view(
+         address operator,
+         IStrategy strategy
+     ) external view returns (uint64) {
+@@ -241,8 +241,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return curEncumberedMagnitude;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocatableMagnitude(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocatableMagnitude_view(
+         address operator,
+         IStrategy strategy
+     ) external view returns (uint64) {
+@@ -286,44 +286,45 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return (curEncumberedMagnitude, curAllocatableMagnitude);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMaxMagnitude(
++    // /// @inheritdoc IAllocationManagerView
++    function getMaxMagnitude_view(
+         address operator,
+         IStrategy strategy
+     ) public view returns (uint64) {
+         return _maxMagnitudeHistory[operator][strategy].latest();
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMaxMagnitudes(
++    // /// @inheritdoc IAllocationManagerView
++    function getMaxMagnitudes_view2(
+         address operator,
+         IStrategy[] memory strategies
+     ) external view returns (uint64[] memory) {
+         uint64[] memory maxMagnitudes = new uint64[](strategies.length);
+ 
+         for (uint256 i = 0; i < strategies.length; ++i) {
+-            maxMagnitudes[i] = getMaxMagnitude(operator, strategies[i]);
++            maxMagnitudes[i] = getMaxMagnitude_view(operator, strategies[i]);
+         }
+ 
+         return maxMagnitudes;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMaxMagnitudes(
++    // /// @inheritdoc IAllocationManagerView
++    // Renamed to avoid recursion in Certora - called via explicit delegatecall from AllocationManager
++    function getMaxMagnitudes_view(
+         address[] memory operators,
+         IStrategy strategy
+     ) external view returns (uint64[] memory) {
+         uint64[] memory maxMagnitudes = new uint64[](operators.length);
+ 
+         for (uint256 i = 0; i < operators.length; ++i) {
+-            maxMagnitudes[i] = getMaxMagnitude(operators[i], strategy);
++            maxMagnitudes[i] = getMaxMagnitude_view(operators[i], strategy);
+         }
+ 
+         return maxMagnitudes;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMaxMagnitudesAtBlock(
++    // /// @inheritdoc IAllocationManagerView
++    function getMaxMagnitudesAtBlock_view(
+         address operator,
+         IStrategy[] memory strategies,
+         uint32 blockNumber
+@@ -337,7 +338,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return maxMagnitudes;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
++    // /// @inheritdoc IAllocationManagerView
+     function getAllocationDelay(
+         address operator
+     ) public view returns (bool, uint32) {
+@@ -355,8 +356,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return (isSet, delay);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getRegisteredSets(
++    // /// @inheritdoc IAllocationManagerView
++    function getRegisteredSets_view(
+         address operator
+     ) public view returns (OperatorSet[] memory) {
+         uint256 length = registeredSets[operator].length();
+@@ -369,36 +370,36 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return operatorSets;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function isMemberOfOperatorSet(
++    // /// @inheritdoc IAllocationManagerView
++    function isMemberOfOperatorSet_view(
+         address operator,
+         OperatorSet memory operatorSet
+     ) public view returns (bool) {
+         return _operatorSetMembers[operatorSet.key()].contains(operator);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function isOperatorSet(
++    // /// @inheritdoc IAllocationManagerView
++    function isOperatorSet_view(
+         OperatorSet memory operatorSet
+     ) external view returns (bool) {
+         return _operatorSets[operatorSet.avs].contains(operatorSet.id);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMembers(
++    // /// @inheritdoc IAllocationManagerView
++    function getMembers_view(
+         OperatorSet memory operatorSet
+     ) external view returns (address[] memory) {
+         return _operatorSetMembers[operatorSet.key()].values();
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMemberCount(
++    // /// @inheritdoc IAllocationManagerView
++    function getMemberCount_view(
+         OperatorSet memory operatorSet
+     ) external view returns (uint256) {
+         return _operatorSetMembers[operatorSet.key()].length();
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
++    // /// @inheritdoc IAllocationManagerView
+     function getAVSRegistrar(
+         address avs
+     ) public view returns (IAVSRegistrar) {
+@@ -407,8 +408,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return address(registrar) == address(0) ? IAVSRegistrar(avs) : registrar;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getStrategiesInOperatorSet(
++    // /// @inheritdoc IAllocationManagerView
++    function getStrategiesInOperatorSet_view(
+         OperatorSet memory operatorSet
+     ) external view returns (IStrategy[] memory) {
+         address[] memory values = _operatorSetStrategies[operatorSet.key()].values();
+@@ -421,8 +422,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return strategies;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getMinimumSlashableStake(
++    // /// @inheritdoc IAllocationManagerView
++    function getMinimumSlashableStake_view(
+         OperatorSet memory operatorSet,
+         address[] memory operators,
+         IStrategy[] memory strategies,
+@@ -432,7 +433,7 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+ 
+         for (uint256 i = 0; i < operators.length; i++) {
+             // If the operator is not slashable by the opSet, all strategies should have a slashable stake of 0
+-            if (!isOperatorSlashable(operators[i], operatorSet)) {
++            if (!isOperatorSlashable_view(operators[i], operatorSet)) {
+                 for (uint256 j = 0; j < strategies.length; j++) {
+                     slashableStake[i][j] = 0;
+                 }
+@@ -440,8 +441,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         }
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getAllocatedStake(
++    // /// @inheritdoc IAllocationManagerView
++    function getAllocatedStake_view(
+         OperatorSet memory operatorSet,
+         address[] memory operators,
+         IStrategy[] memory strategies
+@@ -451,8 +452,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return _getMinimumAllocatedStake(operatorSet, operators, strategies, uint32(block.number));
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function isOperatorSlashable(
++    // /// @inheritdoc IAllocationManagerView
++    function isOperatorSlashable_view(
+         address operator,
+         OperatorSet memory operatorSet
+     ) public view returns (bool) {
+@@ -463,8 +464,8 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return status.registered || block.number <= status.slashableUntil;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getRedistributionRecipient(
++    // /// @inheritdoc IAllocationManagerView
++    function getRedistributionRecipient_view(
+         OperatorSet memory operatorSet
+     ) public view returns (address) {
+         // Load the redistribution recipient and return it if set, otherwise return the default burn address.
+@@ -472,39 +473,39 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return redistributionRecipient == address(0) ? DEFAULT_BURN_ADDRESS : redistributionRecipient;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function isRedistributingOperatorSet(
++    // /// @inheritdoc IAllocationManagerView
++    function isRedistributingOperatorSet_view(
+         OperatorSet memory operatorSet
+     ) public view returns (bool) {
+-        return getRedistributionRecipient(operatorSet) != DEFAULT_BURN_ADDRESS;
++        return getRedistributionRecipient_view(operatorSet) != DEFAULT_BURN_ADDRESS;
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function getSlashCount(
++    // /// @inheritdoc IAllocationManagerView
++    function getSlashCount_view(
+         OperatorSet memory operatorSet
+     ) external view returns (uint256) {
+         return _slashIds[operatorSet.key()];
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
+-    function isOperatorRedistributable(
++    // /// @inheritdoc IAllocationManagerView
++    function isOperatorRedistributable_view(
+         address operator
+     ) external view returns (bool) {
+         // Get the registered and allocated sets for the operator.
+         // We get both sets, since:
+         //    - Upon registration the operator allocation will be pending to a redistributing operator set, and as such not yet in RegisteredSets.
+         //    - Upon deregistration the operator is removed from RegisteredSets, but is still allocated.
+-        OperatorSet[] memory registeredSets = getRegisteredSets(operator);
+-        OperatorSet[] memory allocatedSets = getAllocatedSets(operator);
++        OperatorSet[] memory registeredSets = getRegisteredSets_view(operator);
++        OperatorSet[] memory allocatedSets = getAllocatedSets_view(operator);
+ 
+         // Check if the operator is redistributable from any of the registered or allocated sets
+         return
+             _isOperatorRedistributable(operator, registeredSets) || _isOperatorRedistributable(operator, allocatedSets);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
++    // /// @inheritdoc IAllocationManagerView
+     /// @dev Returns (address(0), 0) for non-existent operator sets or when no pending slasher change exists.
+-    function getPendingSlasher(
++    function getPendingSlasher_view(
+         OperatorSet memory operatorSet
+     ) external view returns (address, uint32) {
+         // Initialize the pending slasher and effect block to the address(0) and 0 respectively
+@@ -521,9 +522,9 @@ contract AllocationManagerView layout at 151 is IAllocationManagerView, Allocati
+         return (pendingSlasher, effectBlock);
+     }
+ 
+-    /// @inheritdoc IAllocationManagerView
++    // /// @inheritdoc IAllocationManagerView
+     /// @dev Returns address(0) for non-existent operator sets.
+-    function getSlasher(
++    function getSlasher_view(
+         OperatorSet memory operatorSet
+     ) public view returns (address) {
+         SlasherParams memory params = _slashers[operatorSet.key()];
+diff --git a/src/contracts/core/DelegationManager.sol b/src/contracts/core/DelegationManager.sol
+index e873eb5d..923b95cc 100644
+--- a/src/contracts/core/DelegationManager.sol
++++ b/src/contracts/core/DelegationManager.sol
+@@ -719,7 +719,7 @@ contract DelegationManager is
+         address staker,
+         address operator,
+         IStrategy[] memory strategies
+-    ) internal view returns (uint256[] memory) {
++    ) internal returns (uint256[] memory) {
+         uint256[] memory slashingFactors = new uint256[](strategies.length);
+         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudes(operator, strategies);
+ 
+@@ -737,7 +737,7 @@ contract DelegationManager is
+         address operator,
+         IStrategy[] memory strategies,
+         uint32 blockNumber
+-    ) internal view returns (uint256[] memory) {
++    ) internal returns (uint256[] memory) {
+         uint256[] memory slashingFactors = new uint256[](strategies.length);
+         uint64[] memory maxMagnitudes = allocationManager.getMaxMagnitudesAtBlock({
+             operator: operator,
+@@ -821,7 +821,7 @@ contract DelegationManager is
+     /// @dev Get the shares from a queued withdrawal.
+     function _getSharesByWithdrawalRoot(
+         bytes32 withdrawalRoot
+-    ) internal view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
++    ) internal returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+         withdrawal = _queuedWithdrawals[withdrawalRoot];
+         shares = new uint256[](withdrawal.strategies.length);
+ 
+@@ -922,7 +922,7 @@ contract DelegationManager is
+     function getSlashableSharesInQueue(
+         address operator,
+         IStrategy strategy
+-    ) public view returns (uint256) {
++    ) public returns (uint256) {
+         uint64 maxMagnitude = allocationManager.getMaxMagnitude(operator, strategy);
+ 
+         // Return amount of slashable scaled shares remaining
+@@ -938,7 +938,7 @@ contract DelegationManager is
+     function getWithdrawableShares(
+         address staker,
+         IStrategy[] memory strategies
+-    ) public view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
++    ) public returns (uint256[] memory withdrawableShares, uint256[] memory depositShares) {
+         withdrawableShares = new uint256[](strategies.length);
+         depositShares = new uint256[](strategies.length);
+ 
+@@ -997,14 +997,14 @@ contract DelegationManager is
+     /// @inheritdoc IDelegationManager
+     function getQueuedWithdrawal(
+         bytes32 withdrawalRoot
+-    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares) {
++    ) external returns (Withdrawal memory withdrawal, uint256[] memory shares) {
+         (withdrawal, shares) = _getSharesByWithdrawalRoot(withdrawalRoot);
+     }
+ 
+     /// @inheritdoc IDelegationManager
+     function getQueuedWithdrawals(
+         address staker
+-    ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
++    ) external returns (Withdrawal[] memory withdrawals, uint256[][] memory shares) {
+         bytes32[] memory withdrawalRoots = getQueuedWithdrawalRoots(staker);
+ 
+         uint256 totalQueued = withdrawalRoots.length;
+@@ -1028,7 +1028,7 @@ contract DelegationManager is
+         address staker,
+         IStrategy[] memory strategies,
+         uint256[] memory withdrawableShares
+-    ) external view returns (uint256[] memory) {
++    ) external returns (uint256[] memory) {
+         // Get the slashing factors for the staker/operator/strategies
+         address operator = delegatedTo[staker];
+         uint256[] memory slashingFactors = _getSlashingFactors(staker, operator, strategies);
+diff --git a/src/contracts/interfaces/IAllocationManager.sol b/src/contracts/interfaces/IAllocationManager.sol
+index 40c172ab..f32cf836 100644
+--- a/src/contracts/interfaces/IAllocationManager.sol
++++ b/src/contracts/interfaces/IAllocationManager.sol
+@@ -513,14 +513,14 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     /// @param avs the AVS to query
+     function getOperatorSetCount(
+         address avs
+-    ) external view returns (uint256);
++    ) external returns (uint256);
+ 
+     /// @notice Returns the list of operator sets the operator has current or pending allocations/deallocations in
+     /// @param operator the operator to query
+     /// @return the list of operator sets the operator has current or pending allocations/deallocations in
+     function getAllocatedSets(
+         address operator
+-    ) external view returns (OperatorSet[] memory);
++    ) external returns (OperatorSet[] memory);
+ 
+     /// @notice Returns the list of strategies an operator has current or pending allocations/deallocations from
+     /// given a specific operator set.
+@@ -530,7 +530,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getAllocatedStrategies(
+         address operator,
+         OperatorSet memory operatorSet
+-    ) external view returns (IStrategy[] memory);
++    ) external returns (IStrategy[] memory);
+ 
+     /// @notice Returns the current/pending stake allocation an operator has from a strategy to an operator set
+     /// @param operator the operator to query
+@@ -541,7 +541,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+         address operator,
+         OperatorSet memory operatorSet,
+         IStrategy strategy
+-    ) external view returns (Allocation memory);
++    ) external returns (Allocation memory);
+ 
+     /// @notice Returns the current/pending stake allocations for multiple operators from a strategy to an operator set
+     /// @param operators the operators to query
+@@ -552,7 +552,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+         address[] memory operators,
+         OperatorSet memory operatorSet,
+         IStrategy strategy
+-    ) external view returns (Allocation[] memory);
++    ) external returns (Allocation[] memory);
+ 
+     /// @notice Given a strategy, returns a list of operator sets and corresponding stake allocations.
+     /// @dev Note that this returns a list of ALL operator sets the operator has allocations in. This means
+@@ -564,7 +564,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getStrategyAllocations(
+         address operator,
+         IStrategy strategy
+-    ) external view returns (OperatorSet[] memory, Allocation[] memory);
++    ) external returns (OperatorSet[] memory, Allocation[] memory);
+ 
+     /// @notice For a strategy, get the amount of magnitude that is allocated across one or more operator sets
+     /// @param operator the operator to query
+@@ -573,7 +573,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getEncumberedMagnitude(
+         address operator,
+         IStrategy strategy
+-    ) external view returns (uint64);
++    ) external returns (uint64);
+ 
+     /// @notice For a strategy, get the amount of magnitude not currently allocated to any operator set
+     /// @param operator the operator to query
+@@ -582,7 +582,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getAllocatableMagnitude(
+         address operator,
+         IStrategy strategy
+-    ) external view returns (uint64);
++    ) external returns (uint64);
+ 
+     /// @notice Returns the maximum magnitude an operator can allocate for the given strategy
+     /// @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+@@ -593,7 +593,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getMaxMagnitude(
+         address operator,
+         IStrategy strategy
+-    ) external view returns (uint64);
++    ) external returns (uint64);
+ 
+     /// @notice Returns the maximum magnitude an operator can allocate for the given strategies
+     /// @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+@@ -604,7 +604,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getMaxMagnitudes(
+         address operator,
+         IStrategy[] calldata strategies
+-    ) external view returns (uint64[] memory);
++    ) external returns (uint64[] memory);
+ 
+     /// @notice Returns the maximum magnitudes each operator can allocate for the given strategy
+     /// @dev The max magnitude of an operator starts at WAD (1e18), and is decreased anytime
+@@ -615,7 +615,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function getMaxMagnitudes(
+         address[] calldata operators,
+         IStrategy strategy
+-    ) external view returns (uint64[] memory);
++    ) external returns (uint64[] memory);
+ 
+     /// @notice Returns the maximum magnitude an operator can allocate for the given strategies
+     /// at a given block number
+@@ -629,7 +629,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+         address operator,
+         IStrategy[] calldata strategies,
+         uint32 blockNumber
+-    ) external view returns (uint64[] memory);
++    ) external returns (uint64[] memory);
+ 
+     /// @notice Returns the time in blocks between an operator allocating slashable magnitude
+     /// and the magnitude becoming slashable. If the delay has not been set, `isSet` will be false.
+@@ -639,13 +639,13 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     /// @return delay The time in blocks between allocating magnitude and magnitude becoming slashable
+     function getAllocationDelay(
+         address operator
+-    ) external view returns (bool isSet, uint32 delay);
++    ) external returns (bool isSet, uint32 delay);
+ 
+     /// @notice Returns a list of all operator sets the operator is registered for
+     /// @param operator The operator address to query.
+     function getRegisteredSets(
+         address operator
+-    ) external view returns (OperatorSet[] memory operatorSets);
++    ) external returns (OperatorSet[] memory operatorSets);
+ 
+     /// @notice Returns whether the operator is registered for the operator set
+     /// @param operator The operator to query
+@@ -653,24 +653,24 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     function isMemberOfOperatorSet(
+         address operator,
+         OperatorSet memory operatorSet
+-    ) external view returns (bool);
++    ) external returns (bool);
+ 
+     /// @notice Returns whether the operator set exists
+     function isOperatorSet(
+         OperatorSet memory operatorSet
+-    ) external view returns (bool);
++    ) external returns (bool);
+ 
+     /// @notice Returns all the operators registered to an operator set
+     /// @param operatorSet The operatorSet to query.
+     function getMembers(
+         OperatorSet memory operatorSet
+-    ) external view returns (address[] memory operators);
++    ) external returns (address[] memory operators);
+ 
+     /// @notice Returns the number of operators registered to an operatorSet.
+     /// @param operatorSet The operatorSet to get the member count for
+     function getMemberCount(
+         OperatorSet memory operatorSet
+-    ) external view returns (uint256);
++    ) external returns (uint256);
+ 
+     /// @notice Returns the address that handles registration/deregistration for the AVS
+     /// If not set, defaults to the input address (`avs`)
+@@ -682,7 +682,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     /// @param operatorSet The operatorSet to query.
+     function getStrategiesInOperatorSet(
+         OperatorSet memory operatorSet
+-    ) external view returns (IStrategy[] memory strategies);
++    ) external returns (IStrategy[] memory strategies);
+ 
+     /// @notice Returns the minimum amount of stake that will be slashable as of some future block,
+     /// according to each operator's allocation from each strategy to the operator set. Note that this function
+@@ -705,7 +705,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+         address[] memory operators,
+         IStrategy[] memory strategies,
+         uint32 futureBlock
+-    ) external view returns (uint256[][] memory slashableStake);
++    ) external returns (uint256[][] memory slashableStake);
+ 
+     /// @notice Returns the current allocated stake, irrespective of the operator's slashable status for the operatorSet.
+     /// @param operatorSet the operator set to query
+@@ -715,7 +715,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+         OperatorSet memory operatorSet,
+         address[] memory operators,
+         IStrategy[] memory strategies
+-    ) external view returns (uint256[][] memory slashableStake);
++    ) external returns (uint256[][] memory slashableStake);
+ 
+     /// @notice Returns whether an operator is slashable by an operator set.
+     /// This returns true if the operator is registered or their slashableUntil block has not passed.
+@@ -741,7 +741,7 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     /// @return effectBlock The block at which the pending slasher will take effect. Returns `0` if there is no pending slasher or the operator set doesn't exist.
+     function getPendingSlasher(
+         OperatorSet memory operatorSet
+-    ) external view returns (address pendingSlasher, uint32 effectBlock);
++    ) external returns (address pendingSlasher, uint32 effectBlock);
+ 
+     /// @notice Returns the address where slashed funds will be sent for a given operator set.
+     /// @param operatorSet The Operator Set to query.
+@@ -765,13 +765,13 @@ interface IAllocationManagerView is IAllocationManagerErrors, IAllocationManager
+     /// @return The number of slashes for the operator set.
+     function getSlashCount(
+         OperatorSet memory operatorSet
+-    ) external view returns (uint256);
++    ) external returns (uint256);
+ 
+     /// @notice Returns whether an operator is slashable by a redistributing operator set.
+     /// @param operator The operator to query.
+     function isOperatorRedistributable(
+         address operator
+-    ) external view returns (bool);
++    ) external returns (bool);
+ }
+ 
+ interface IAllocationManager is IAllocationManagerActions, IAllocationManagerView, IPausable {}
+diff --git a/src/contracts/interfaces/IDelegationManager.sol b/src/contracts/interfaces/IDelegationManager.sol
+index ef2eef48..beb6ef74 100644
+--- a/src/contracts/interfaces/IDelegationManager.sol
++++ b/src/contracts/interfaces/IDelegationManager.sol
+@@ -408,7 +408,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors,
+     function getSlashableSharesInQueue(
+         address operator,
+         IStrategy strategy
+-    ) external view returns (uint256);
++    ) external returns (uint256);
+ 
+     /// @notice Given a staker and a set of strategies, return the shares they can queue for withdrawal and the
+     /// corresponding depositShares.
+@@ -418,7 +418,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors,
+     function getWithdrawableShares(
+         address staker,
+         IStrategy[] memory strategies
+-    ) external view returns (uint256[] memory withdrawableShares, uint256[] memory depositShares);
++    ) external returns (uint256[] memory withdrawableShares, uint256[] memory depositShares);
+ 
+     /// @notice Returns the number of shares in storage for a staker and all their strategies
+     function getDepositedShares(
+@@ -446,7 +446,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors,
+     /// @dev Withdrawals queued before the slashing release cannot be queried with this method
+     function getQueuedWithdrawal(
+         bytes32 withdrawalRoot
+-    ) external view returns (Withdrawal memory withdrawal, uint256[] memory shares);
++    ) external returns (Withdrawal memory withdrawal, uint256[] memory shares);
+ 
+     /// @notice Returns all queued withdrawals and their corresponding shares for a staker.
+     /// @param staker The address of the staker to query withdrawals for.
+@@ -455,7 +455,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors,
+     /// @dev The shares are what a user would receive from completing a queued withdrawal, assuming all slashings are applied.
+     function getQueuedWithdrawals(
+         address staker
+-    ) external view returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
++    ) external returns (Withdrawal[] memory withdrawals, uint256[][] memory shares);
+ 
+     /// @notice Returns a list of queued withdrawal roots for the `staker`.
+     /// NOTE that this only returns withdrawals queued AFTER the slashing release.
+@@ -474,7 +474,7 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors,
+         address staker,
+         IStrategy[] memory strategies,
+         uint256[] memory withdrawableShares
+-    ) external view returns (uint256[] memory);
++    ) external returns (uint256[] memory);
+ 
+     /// @notice Returns the keccak256 hash of `withdrawal`.
+     function calculateWithdrawalRoot(
