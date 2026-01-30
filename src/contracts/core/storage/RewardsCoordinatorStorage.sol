@@ -10,7 +10,7 @@ import "../../interfaces/IRewardsCoordinator.sol";
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     // Constants
 
-    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
+    /// @dev Index for flag that pauses calling createAVSRewardsSubmission and createEigenDARewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
     /// @dev Index for flag that pauses calling createRewardsForAllSubmission
     uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
