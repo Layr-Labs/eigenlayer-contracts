@@ -18,7 +18,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
-    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
+    /// @dev Index for flag that pauses calling createRewardsForAllEarners
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
     /// @dev Index for flag that pauses calling createOperatorDirectedAVSRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION = 5;
@@ -28,9 +28,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
     /// @dev Index for flag that pauses calling setOperatorSetSplit
     uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
-    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
+    /// @dev Index for flag that pauses calling createOperatorDirectedOperatorSetRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
-    /// @dev Index for flag that pauses calling createOperatorSetRewardsSubmission
+    /// @dev Index for flag that pauses calling createUniqueStakeRewardsSubmission
     uint8 internal constant PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION = 10;
     /// @dev Index for flag that pauses calling createTotalStakeRewardsSubmission
     uint8 internal constant PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION = 11;

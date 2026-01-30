@@ -488,7 +488,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Creates a new rewards submission for all earners across all AVSs.
     /// Earners in this case indicating all operators and their delegated stakers. Undelegated stake
     /// is not rewarded from this RewardsSubmission. This interface is only callable
-    /// by the token hopper contract from the Eigen Foundation
+    /// by authorized rewardsForAllSubmitters, primarily the EmissionsController
     /// @param rewardsSubmissions The rewards submissions being created
     function createRewardsForAllEarners(
         RewardsSubmission[] calldata rewardsSubmissions
