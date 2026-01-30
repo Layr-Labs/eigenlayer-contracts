@@ -9,7 +9,7 @@ contract CertoraAVSRegistrar is IAVSRegistrar {
 
     function supportsAVS(
         address
-    ) external view returns (bool) {
+    ) external pure returns (bool) {
         return true;
     }
 }

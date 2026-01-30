@@ -2,6 +2,7 @@ import "../optimizations.spec";
 import "../ptaHelpers.spec";
 
 using AllocationManagerHarness as AllocationManager;
+using AllocationManagerView as AllocationManagerView;
 
 methods {
 
@@ -10,7 +11,23 @@ methods {
     function getOperatorSetFromKey(bytes32) external returns (AllocationManagerHarness.OperatorSet) envfree;
 
     function AllocationManager.DEALLOCATION_DELAY() external returns(uint32) envfree;
-    function AllocationManager.getMaxMagnitude(address,address) external returns (uint64) envfree;
+    function _.getMaxMagnitude(address,address) external => DISPATCHER(true);
+    function _.getStrategyAllocations(address,address) external => DISPATCHER(true);
+    function _.getAllocatableMagnitude(address,address) external => DISPATCHER(true);
+    function _.getEncumberedMagnitude(address,address) external => DISPATCHER(true);
+    function _.getAllocation(address,OperatorSetLib.OperatorSet,address) external => DISPATCHER(true);
+    function _.getOperatorSetCount(address) external => DISPATCHER(true); 
+    function _.getRegisteredSets(address) external => DISPATCHER(true);
+    function _.isOperatorRedistributable(address) external => DISPATCHER(true);
+    function _.getMemberCount(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.getAllocatedSets(address) external => DISPATCHER(true);
+    function _.getAllocatedStrategies(address,OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.getSlashCount(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.getPendingSlasher(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.isMemberOfOperatorSet(address,OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.isOperatorSet(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.getMembers(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
+    function _.getStrategiesInOperatorSet(OperatorSetLib.OperatorSet) external => DISPATCHER(true);
 
     // external calls to AVSRegistrar.  Note that the source does not have a proper implementation, the one available always reverts
     function _.registerOperator(address,address,uint32[],bytes) external => DISPATCHER(true);
@@ -596,8 +613,8 @@ invariant encumberedMagnitudeEqSumOfCurrentMagnitudesAndPositivePending()
 
 /// @title For each operator and strategy tuple, max magnitude is greater or equal to the encumbered magnitude.
 /// @property Magnitudes Solvency
-invariant maxMagnitudeGEencumberedMagnitude(address operator, address strategy)
-   AllocationManager.getMaxMagnitude(operator, strategy) >= encumberedMagnitudeMirror[operator][strategy] 
+invariant maxMagnitudeGEencumberedMagnitude(env eInv, address operator, address strategy)
+   getMaxMagnitude(eInv, operator, strategy) >= encumberedMagnitudeMirror[operator][strategy] 
         {
             preserved with (env e) {
                 requireValidState();
@@ -761,19 +778,19 @@ invariant noPositivePendingDiffInDeallocationQ()
         }
     }
 
-invariant maxMagnitudeGECurrentMagnitude(bytes32 operatorKey, address operator, address strategy)
-    currentContract.allocations[operator][operatorKey][strategy].currentMagnitude <= getMaxMagnitude(operator, strategy)
+invariant maxMagnitudeGECurrentMagnitude(env eInv, bytes32 operatorKey, address operator, address strategy)
+    currentContract.allocations[operator][operatorKey][strategy].currentMagnitude <= getMaxMagnitude(eInv, operator, strategy)
     {
         preserved with (env e) {
             requireValidState();
             SumTrackingSetup();
             requireNoOverflow(e);
             // magnitudes cannot go beyond 1e18
-            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant maxMagnitudeLeqWAD(e, operator, strategy);
             requireInvariant currentMagnitudeLeqWAD(operatorKey, operator, strategy);
             requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
             requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
-            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
         }
         preserved slashOperator(
@@ -787,18 +804,18 @@ invariant maxMagnitudeGECurrentMagnitude(bytes32 operatorKey, address operator, 
             SumTrackingSetup();
             requireNoOverflow(e);
             // magnitudes cannot go beyond 1e18
-            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant maxMagnitudeLeqWAD(e, operator, strategy);
             requireInvariant currentMagnitudeLeqWAD(operatorKey, operator, strategy);
             requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
             requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
 
-            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
         } 
     }
 
-invariant maxMagnitudeLeqWAD(address operator, address strategy)
-    getMaxMagnitude(operator, strategy) <= WAD();
+invariant maxMagnitudeLeqWAD(env eInv, address operator, address strategy)
+    getMaxMagnitude(eInv, operator, strategy) <= WAD();
 
 invariant currentMagnitudeLeqWAD(bytes32 operatorKey, address operator, address strategy)
     currentContract.allocations[operator][operatorKey][strategy].currentMagnitude <= WAD() {
@@ -806,9 +823,9 @@ invariant currentMagnitudeLeqWAD(bytes32 operatorKey, address operator, address 
             SumTrackingSetup();
             requireValidState();
             requireNoOverflow(e);
-            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant maxMagnitudeLeqWAD(e, operator, strategy);
             requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
-            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, operator, strategy);
             require (e.block.number < currentContract.allocations[operator][operatorKey][strategy].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
         }
@@ -817,11 +834,11 @@ invariant currentMagnitudeLeqWAD(bytes32 operatorKey, address operator, address 
 invariant encumberedMagnitudeLeqWAD(env e, address operator, address strategy)
     getEncumberedMagnitude(e, operator, strategy) <= WAD() {
         preserved {
-            requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+            requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             SumTrackingSetup();
             requireValidState();
             requireNoOverflow(e);
-            requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+            requireInvariant maxMagnitudeLeqWAD(e, operator, strategy);
         }
     }
 
@@ -831,9 +848,9 @@ invariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(bytes32 operatorKey, addre
                 SumTrackingSetup();
                 requireValidState();
                 requireNoOverflow(e);
-                requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+                requireInvariant maxMagnitudeLeqWAD(e, operator, strategy);
                 requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
-                requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+                requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             }
             preserved modifyAllocations(
                 address op,
@@ -850,8 +867,8 @@ invariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(bytes32 operatorKey, addre
                 SumTrackingSetup();
                 requireValidState();
                 requireNoOverflow(e);
-                requireInvariant maxMagnitudeLeqWAD(operator, strategy);
+                requireInvariant maxMagnitudeLeqWAD(e,operator, strategy);
                 requireInvariant encumberedMagnitudeLeqWAD(e, operator, strategy);
-                requireInvariant maxMagnitudeGEencumberedMagnitude(operator, strategy);
+                requireInvariant maxMagnitudeGEencumberedMagnitude(e, operator, strategy);
             }
         }

@@ -16,21 +16,18 @@ contract CrossChainRegistryHarness is CrossChainRegistry {
      * @param _keyRegistrar Address of the key registrar contract
      * @param _permissionController Address of the permission controller contract
      * @param _pauserRegistry Address of the pauser registry contract
-     * @param _version Semantic version string
      */
     constructor(
         IAllocationManager _allocationManager,
         IKeyRegistrar _keyRegistrar,
         IPermissionController _permissionController,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
+        IPauserRegistry _pauserRegistry
     )
         CrossChainRegistry(
             _allocationManager,
             _keyRegistrar,
             _permissionController,
-            _pauserRegistry,
-            _version
+            _pauserRegistry
         )
     {}
 
