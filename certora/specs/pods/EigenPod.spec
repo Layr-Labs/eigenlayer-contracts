@@ -142,18 +142,6 @@ invariant withdrawnValidatorsHaveZeroRestakedGwei(bytes32 pubkeyHash)
         (get_restakedBalanceGwei(pubkeyHash) == 0);
 
 
-ghost mathint sumOfActiveValidatorBalanceGwei {
-    init_state axiom sumOfActiveValidatorBalanceGwei == 0;
-    axiom sumOfActiveValidatorBalanceGwei >= 0; // not negative
-}
-
-// hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].prev uint64 newValue (uint64 oldValue) {
-//     if (validatorStatus(pubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE) {
-//         sumOfActiveValidatorPrevBalanceGwei = sumOfActiveValidatorPrevBalanceGwei + to_mathint(newValue) - to_mathint(oldValue);
-//     }
-// }
-
-
 // // TODO: see if this draft rule can be salvaged
 // // draft rule to capture the following behavior (or at least most of it):
 // // The core invariant that ought to be maintained across the EPM and the EPs is that
@@ -180,65 +168,55 @@ hook Sstore _validatorPubkeyHashToInfo[KEY bytes32 validatorPubkeyHash].restaked
         to_mathint(newValue) * 1000000000 -
         to_mathint(oldValue) * 1000000000
     );
-
-    // TODO
-    // if (validatorStatus(validatorPubkeyHash) == IEigenPod.VALIDATOR_STATUS.ACTIVE && _validatorPubkeyHashToInfo[validatorPubkeyHash].lastCheckpointedAt < currentContract.currentCheckpointTimestamp) {
-    //     sumOfActiveValidatorBalanceGwei = sumOfActiveValidatorBalanceGwei + to_mathint(newValue) - to_mathint(oldValue);
-    // }
 }
 
-// TODO
-// invariant sumOfActiveValidatorsIsPrevBeaconGwei()
-//     sumOfActiveValidatorBalanceGwei == currentContract._currentCheckpoint.prevBeaconBalanceGwei;
+rule consistentAccounting() {
+    // fetch info before call
+    int256 podOwnerSharesBefore = get_podOwnerShares();
+    uint256 withdrawableRestakedExecutionLayerGweiBefore = get_withdrawableRestakedExecutionLayerGwei();
+    uint256 eigenPodBalanceBefore = get_ETH_Balance();
+    // filter down to valid pre-states
+    require(sumOfValidatorRestakedbalancesWei ==
+        to_mathint(podOwnerSharesBefore) - to_mathint(withdrawableRestakedExecutionLayerGweiBefore));
 
-// TODO
-// rule consistentAccounting() {
-//     // fetch info before call
-//     int256 podOwnerSharesBefore = get_podOwnerShares();
-//     uint256 withdrawableRestakedExecutionLayerGweiBefore = get_withdrawableRestakedExecutionLayerGwei();
-//     uint256 eigenPodBalanceBefore = get_ETH_Balance();
-//     // filter down to valid pre-states
-//     require(sumOfValidatorRestakedbalancesWei ==
-//         to_mathint(podOwnerSharesBefore) - to_mathint(withdrawableRestakedExecutionLayerGweiBefore));
+    // perform arbitrary function call
+    method f;
+    env e;
+    calldataarg args;
+    f(e,args);
 
-//     // perform arbitrary function call
-//     method f;
-//     env e;
-//     calldataarg args;
-//     f(e,args);
-
-//     // fetch info after call
-//     int256 podOwnerSharesAfter = get_podOwnerShares();
-//     uint256 withdrawableRestakedExecutionLayerGweiAfter = get_withdrawableRestakedExecutionLayerGwei();
-//     uint256 eigenPodBalanceAfter = get_ETH_Balance();
-//     /**
-//      * handling for weird, unrealistic edge case where calling `initialize` causes the pod owner to change, so the 
-//      * call to `get_podOwnerShares` queries the shares for a different address.
-//      * calling `initialize` should *not* change user shares, so it is unrealistic to simulate it doing so.
-//      */
-//     if (f.selector == sig:initialize(address).selector) {
-//         podOwnerSharesAfter = podOwnerSharesBefore;
-//     }
-//     // check post-state
-//     // TODO: this check is still broken for `withdrawRestakedBeaconChainETH` since it does a low-level call to transfer the ETH, which triggers optimistic fallback dispatching
-//     // special handling for one function
-//     if (f.selector == sig:withdrawRestakedBeaconChainETH(address,uint256).selector) {
-//         /* TODO: un-comment this once the dispatching is handled correctly
-//         assert(sumOfValidatorRestakedbalancesWei ==
-//             to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter)
-//             // adjustment term for the ETH balance of the contract changing
-//             + to_mathint(eigenPodBalanceBefore) - to_mathint(eigenPodBalanceAfter),
-//             "invalid post-state");
-//         */
-//         // TODO: delete this once the above is salvaged (was added since CVL forbids empty blocks)
-//         assert(true);
-//     // outside of special case, we don't need the adjustment term
-//     } else {
-//         assert(sumOfValidatorRestakedbalancesWei ==
-//             to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter),
-//             "invalid post-state");
-//     }
-// }
+    // fetch info after call
+    int256 podOwnerSharesAfter = get_podOwnerShares();
+    uint256 withdrawableRestakedExecutionLayerGweiAfter = get_withdrawableRestakedExecutionLayerGwei();
+    uint256 eigenPodBalanceAfter = get_ETH_Balance();
+    /**
+     * handling for weird, unrealistic edge case where calling `initialize` causes the pod owner to change, so the 
+     * call to `get_podOwnerShares` queries the shares for a different address.
+     * calling `initialize` should *not* change user shares, so it is unrealistic to simulate it doing so.
+     */
+    if (f.selector == sig:initialize(address).selector) {
+        podOwnerSharesAfter = podOwnerSharesBefore;
+    }
+    // check post-state
+    // TODO: this check is still broken for `withdrawRestakedBeaconChainETH` since it does a low-level call to transfer the ETH, which triggers optimistic fallback dispatching
+    // special handling for one function
+    if (f.selector == sig:withdrawRestakedBeaconChainETH(address,uint256).selector) {
+        /* TODO: un-comment this once the dispatching is handled correctly
+        assert(sumOfValidatorRestakedbalancesWei ==
+            to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter)
+            // adjustment term for the ETH balance of the contract changing
+            + to_mathint(eigenPodBalanceBefore) - to_mathint(eigenPodBalanceAfter),
+            "invalid post-state");
+        */
+        // TODO: delete this once the above is salvaged (was added since CVL forbids empty blocks)
+        assert(true);
+    // outside of special case, we don't need the adjustment term
+    } else {
+        assert(sumOfValidatorRestakedbalancesWei ==
+            to_mathint(podOwnerSharesAfter) - to_mathint(withdrawableRestakedExecutionLayerGweiAfter),
+            "invalid post-state");
+    }
+}
 
 /*
 rule baseInvariant() {
