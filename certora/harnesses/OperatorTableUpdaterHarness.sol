@@ -9,13 +9,11 @@ contract OperatorTableUpdaterHarness is OperatorTableUpdater {
     constructor(
         IBN254CertificateVerifier _bn254CertificateVerifier,
         IECDSACertificateVerifier _ecdsaCertificateVerifier,
-        IPauserRegistry _pauserRegistry,
-        string memory _version
+        IPauserRegistry _pauserRegistry
     ) OperatorTableUpdater(
         _bn254CertificateVerifier,
         _ecdsaCertificateVerifier,
-        _pauserRegistry,
-        _version
+        _pauserRegistry
     ) {}
 
     /// @notice Decodes operator table bytes and returns the latest reference timestamp

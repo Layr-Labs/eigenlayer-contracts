@@ -4,22 +4,22 @@ pragma solidity ^0.8.27;
 import "../../src/contracts/core/AllocationManager.sol";
 contract AllocationManagerHarness is AllocationManager {
     constructor(
+        IAllocationManagerView _allocationManagerView,
         IDelegationManager _delegation,
         IStrategy _eigenStrategy,
         IPauserRegistry _pauserRegistry,
         IPermissionController _permissionController,
         uint32 _DEALLOCATION_DELAY,
-        uint32 _ALLOCATION_CONFIGURATION_DELAY,
-        string memory _version
+        uint32 _ALLOCATION_CONFIGURATION_DELAY
     ) AllocationManager(
-            _delegation,
-            _eigenStrategy,
-            _pauserRegistry,
-            _permissionController,
-            _DEALLOCATION_DELAY,
-            _ALLOCATION_CONFIGURATION_DELAY,
-            _version
-        ) {}
+        _allocationManagerView,
+        _delegation,
+        _eigenStrategy,
+        _pauserRegistry,
+        _permissionController,
+        _DEALLOCATION_DELAY,
+        _ALLOCATION_CONFIGURATION_DELAY
+    ) {}
 
     function getOperatorKey(address avs, uint32 operatorSetId) external view returns (bytes32) {
         return OperatorSetLib.key(OperatorSet(avs, operatorSetId));
