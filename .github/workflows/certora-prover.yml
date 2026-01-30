@@ -1,6 +1,7 @@
 on:
   # Run when PRs are merged into main and touch relevant code paths
   pull_request:
+    types: [closed]
     branches:
       - main
     paths:
@@ -29,14 +30,12 @@ jobs:
     # 2. It's a push to a certora/* branch
     # 3. It's a scheduled run
     # 4. It's a manually triggered run
-    if: >
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.merged == true) ||
-      (github.event_name == 'push' &&
-       startsWith(github.ref, 'refs/heads/certora/')) ||
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/certora/')) ||
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch'
-    
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
