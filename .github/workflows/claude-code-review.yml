@@ -36,12 +36,12 @@ jobs:
       id-token: write
       actions: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
           additional_permissions: "actions: read"
@@ -122,12 +122,12 @@ jobs:
           fi
 
       # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         if: steps.fork-check.outputs.is_fork != 'true'
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
         if: steps.fork-check.outputs.is_fork != 'true'
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
@@ -170,11 +170,11 @@ jobs:
       actions: read
     steps:
       # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
           additional_permissions: "actions: read"
