@@ -16,15 +16,6 @@ import "../libraries/OperatorSetLib.sol";
 contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     using OperatorSetLib for OperatorSet;
 
-    /// @dev Thrown when attempting to allocate while a pending allocation modification already exists.
-    error PendingAllocation();
-
-    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`.
-    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`.
-    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
-
     /// @notice Delegation manager reference used to register the vault as an operator.
     IDelegationManager public immutable override delegationManager;
 
@@ -108,6 +99,17 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Locks the vault, preventing new deposits and withdrawals until maturity.
     function lock() external override onlyVaultAdmin {
         require(depositsOpen(), VaultAlreadyLocked());
+
+        // Verify this strategy is supported by the operator set before allocating.
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(_operatorSet);
+        bool supported = false;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] == IStrategy(address(this))) {
+                supported = true;
+                break;
+            }
+        }
+        require(supported, StrategyNotSupportedByOperatorSet());
 
         uint32 currentTimestamp = uint32(block.timestamp);
         lockedAt = currentTimestamp;
@@ -255,7 +257,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
         // Enforce per-deposit cap using the minted shares as proxy for underlying.
         uint256 amountUnderlying = sharesToUnderlyingView(shares);
-        require(amountUnderlying <= maxPerDeposit, MaxPerDepositExceedsMax());
+        require(amountUnderlying <= maxPerDeposit, DepositExceedsMaxPerDeposit());
 
         // Enforce total cap using operatorShares (active, non-queued shares).
         // At this point, operatorShares hasn't been updated yet, so we add the new shares.
@@ -410,7 +412,10 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
     /// @notice Best-effort cleanup after maturity, with retry tracking.
     function _attemptOperatorCleanup() internal {
-        _deallocateAll();
-        _deregisterFromOperatorSet();
+        bool deallocateSuccess = _deallocateAll();
+        emit DeallocateAttempted(deallocateSuccess);
+
+        bool deregisterSuccess = _deregisterFromOperatorSet();
+        emit DeregisterAttempted(deregisterSuccess);
     }
 }

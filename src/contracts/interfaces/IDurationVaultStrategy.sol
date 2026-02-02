@@ -39,6 +39,15 @@ interface IDurationVaultStrategyErrors {
     error OperatorIntegrationInvalid();
     /// @dev Thrown when attempting to deposit into a vault whose underlying token is blacklisted.
     error UnderlyingTokenBlacklisted();
+
+    /// @dev Thrown when a deposit exceeds the configured `maxPerDeposit` limit.
+    error DepositExceedsMaxPerDeposit();
+
+    /// @dev Thrown when attempting to lock with an operator set that doesn't include this strategy.
+    error StrategyNotSupportedByOperatorSet();
+
+    /// @dev Thrown when attempting to allocate while a pending allocation modification already exists.
+    error PendingAllocation();
 }
 
 /// @title Types for IDurationVaultStrategy
@@ -118,6 +127,20 @@ interface IDurationVaultStrategyEvents {
     /// @notice Emitted when the vault metadata URI is updated.
     /// @param newMetadataURI The new metadata URI.
     event MetadataURIUpdated(string newMetadataURI);
+
+    /// @notice Emitted when deallocation from the operator set is attempted.
+    /// @param success Whether the deallocation call succeeded.
+    event DeallocateAttempted(bool success);
+
+    /// @notice Emitted when deregistration from the operator set is attempted.
+    /// @param success Whether the deregistration call succeeded.
+    event DeregisterAttempted(bool success);
+
+    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`.
+    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`.
+    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 }
 
 /// @title Interface for time-bound EigenLayer vault strategies.

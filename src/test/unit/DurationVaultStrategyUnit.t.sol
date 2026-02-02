@@ -80,6 +80,11 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         // Set the strategy for inherited tests
         strategy = StrategyBase(address(durationVault));
+
+        // Configure the mock to return the vault as a supported strategy in the operator set
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(address(durationVault));
+        allocationManagerMock.setStrategiesInOperatorSet(OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}), strategies);
     }
 
     // ===================== OPERATOR INTEGRATION TESTS =====================
@@ -328,7 +333,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         cheats.startPrank(address(strategyManager));
         uint shares = durationVault.deposit(underlyingToken, depositAmount);
-        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositExceedsMaxPerDeposit.selector);
         durationVault.beforeAddShares(staker, shares);
         cheats.stopPrank();
     }
