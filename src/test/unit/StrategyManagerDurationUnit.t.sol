@@ -94,6 +94,11 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
             )
         );
 
+        // Configure the mock to return the vault as a supported strategy in the operator set
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(address(durationVault));
+        allocationManagerMock.setStrategiesInOperatorSet(OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}), strategies);
+
         IStrategy[] memory whitelist = new IStrategy[](1);
         whitelist[0] = IStrategy(address(durationVault));
 
