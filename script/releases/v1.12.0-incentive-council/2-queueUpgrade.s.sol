@@ -111,6 +111,10 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     }
 
     function testScript() public virtual override {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
