@@ -17,9 +17,9 @@ contract DeployImplementations is CoreContractsDeployer {
     function _runAsEOA() internal virtual override {
         vm.startBroadcast();
 
-        deployRewardsCoordinator();
-        deployEmissionsController();
         deployEmissionsControllerProxy();
+        deployEmissionsController();
+        deployRewardsCoordinator();
 
         vm.stopBroadcast();
     }
