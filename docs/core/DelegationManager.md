@@ -675,7 +675,7 @@ _See [Shares Accounting - Slashing](https://github.com/Layr-Labs/eigenlayer-cont
 
 This method is called by the `AllocationManager` when processing an AVS's slash of an operator. Slashing occurs instantly, with this method directly reducing the operator's delegated shares proportional to the slash.
 
-Additionally, any _slashable shares_ in the withdrawal queue are marked for burn or redistribution according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrateyManager`) is called, increasing the burn or redistributable shares for that operatorSet, slashId, and strategy combination. 
+Additionally, any _slashable shares_ in the withdrawal queue are marked for burn or redistribution according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrategyManager`) is called, increasing the burn or redistributable shares for that operatorSet, slashId, and strategy combination. 
 
 **Note**: native ETH does not currently possess a burn/redistribution mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
 
