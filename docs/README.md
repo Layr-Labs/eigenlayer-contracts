@@ -106,7 +106,7 @@ For more information on AVS contracts, see the [middleware repo][middleware-repo
 | -------- | -------- | -------- |
 | [`AllocationManager.sol`](../src/contracts/core/AllocationManager.sol) | Singleton | Transparent proxy |
 
-The `AllocationManager` is replaces the AVSDirectory with the introduction of _operator sets_ and slashing. It handles several use cases:
+The `AllocationManager` replaces the AVSDirectory with the introduction of _operator sets_ and slashing. It handles several use cases:
 * AVSs can create operator sets and can define the EigenLayer Strategies within them
 * Operators can register to or deregister from an AVS's operator sets
 * Operators can make slashable security commitments to an operator set by allocating a proportion of their total delegated stake for a Strategy to be slashable. Ex. As an operator, I can allocate 50% of my delegated stETH to be slashable by a specific operator set
