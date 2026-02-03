@@ -40,7 +40,7 @@ contract DeployImplementations is CoreContractsDeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployedMinusSepolia()) {
+        if (!Env.isCoreProtocolDeployed()) {
             return;
         }
 
