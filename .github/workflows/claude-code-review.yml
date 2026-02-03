@@ -3,7 +3,6 @@
 # - Responds to @claude mentions from org members only
 # - Uses OIDC auth with Claude GitHub App (id-token: write)
 
-
 name: Claude review
 
 on:
@@ -36,12 +35,13 @@ jobs:
       id-token: write
       actions: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
+      # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
+      # This avoids CodeQL "checkout of untrusted code in trusted context" warning
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
+      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
           additional_permissions: "actions: read"
@@ -83,16 +83,39 @@ jobs:
             --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
             --max-turns 15
 
-  # Job 2: @claude in PR conversation comments (members only)
-  mention-pr-comment:
+  # Job 2: @claude mentions in any PR comment (members only)
+  # - issue_comment: PR conversation comments (no fork info available, member-check is sufficient)
+  # - pull_request_review_comment: inline review comments (fork check added)
+  # - pull_request_review: review submissions (fork check added)
+  mention-response:
     if: |
-      github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '@claude') &&
       (
-        github.event.comment.author_association == 'MEMBER' ||
-        github.event.comment.author_association == 'COLLABORATOR' ||
-        github.event.comment.author_association == 'OWNER'
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '@claude') &&
+        (
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR' ||
+          github.event.comment.author_association == 'OWNER'
+        )
+      ) ||
+      (
+        github.event_name == 'pull_request_review_comment' &&
+        contains(github.event.comment.body, '@claude') &&
+        (
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR' ||
+          github.event.comment.author_association == 'OWNER'
+        )
+      ) ||
+      (
+        github.event_name == 'pull_request_review' &&
+        contains(github.event.review.body, '@claude') &&
+        (
+          github.event.review.author_association == 'MEMBER' ||
+          github.event.review.author_association == 'COLLABORATOR' ||
+          github.event.review.author_association == 'OWNER'
+        )
       )
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -103,78 +126,11 @@ jobs:
       id-token: write
       actions: read
     steps:
-      # Verify this is not a fork PR (issue_comment doesn't have fork info in payload)
-      - name: Check if fork PR
-        id: fork-check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! IS_FORK=$(gh pr view ${{ github.event.issue.number }} --json isCrossRepository -q '.isCrossRepository'); then
-            echo "Unable to determine fork status; skipping."
-            echo "is_fork=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if [ "$IS_FORK" = "true" ]; then
-            echo "Skipping fork PR"
-            echo "is_fork=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_fork=false" >> $GITHUB_OUTPUT
-          fi
-
-      # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
-        if: steps.fork-check.outputs.is_fork != 'true'
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 1
 
-      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
-        if: steps.fork-check.outputs.is_fork != 'true'
-        with:
-          anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
-          additional_permissions: "actions: read"
-          claude_args: |
-            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
-            --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
-            --max-turns 10
-
-  # Job 3: @claude in review comments/reviews (members only)
-  mention-review:
-    if: |
-      !github.event.pull_request.head.repo.fork &&
-      (
-        (
-          github.event_name == 'pull_request_review_comment' &&
-          contains(github.event.comment.body, '@claude') &&
-          (
-            github.event.comment.author_association == 'MEMBER' ||
-            github.event.comment.author_association == 'COLLABORATOR' ||
-            github.event.comment.author_association == 'OWNER'
-          )
-        ) ||
-        (
-          github.event_name == 'pull_request_review' &&
-          contains(github.event.review.body, '@claude') &&
-          (
-            github.event.review.author_association == 'MEMBER' ||
-            github.event.review.author_association == 'COLLABORATOR' ||
-            github.event.review.author_association == 'OWNER'
-          )
-        )
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      pull-requests: write
-      id-token: write
-      actions: read
-    steps:
-      # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
-        with:
-          fetch-depth: 1
-
-      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 
+      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
           additional_permissions: "actions: read"
