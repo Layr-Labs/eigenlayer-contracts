@@ -67,9 +67,14 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             )
         });
         // 2. Upgrade RewardsCoordinator to the new implementation.
-        // Check if RewardsCoordinator has already been reinitialized (feeRecipient is only set in reinitializer(2))
+        // Check if RewardsCoordinator has already been reinitialized by reading _initialized from storage.
+        // Slot 0 contains: _initialized (uint8 at offset 0) and _initializing (bool at offset 1)
+        // If _initialized >= 2, reinitializer(2) has already been called.
         RewardsCoordinator rc = Env.proxy.rewardsCoordinator();
-        if (rc.feeRecipient() == address(0)) {
+        bytes32 slot0 = vm.load(address(rc), bytes32(uint256(0)));
+        uint8 initializedVersion = uint8(uint256(slot0) & 0xFF); // Mask to get only the first byte
+
+        if (initializedVersion < 2) {
             // Not yet reinitialized - perform upgrade with reinitialization
             executorCalls.upgradeAndReinitializeRewardsCoordinator({
                 initialOwner: Env.opsMultisig(),
