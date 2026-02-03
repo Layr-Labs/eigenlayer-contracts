@@ -144,17 +144,21 @@ jobs:
           set -euo pipefail
 
           # Determine whether the PR is from a fork (cross-repo). If it is, do NOT checkout PR code.
-          is_fork="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isCrossRepository -q '.isCrossRepository')"
+          pr_json="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isCrossRepository,headRefOid)"
+          is_fork="$(printf '%s' "$pr_json" | jq -r '.isCrossRepository')"
+          head_sha="$(printf '%s' "$pr_json" | jq -r '.headRefOid')"
+
           echo "is_fork=$is_fork" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
 
           if [ "$is_fork" = "true" ]; then
             echo "Fork PR detected; skipping PR head checkout and skipping Claude run."
             exit 0
           fi
 
-          # Fetch PR head ref into a predictable remote-tracking ref and checkout.
-          git fetch origin "pull/$PR_NUMBER/head:refs/remotes/origin/pr/$PR_NUMBER"
-          git checkout "refs/remotes/origin/pr/$PR_NUMBER"
+          # Fetch and checkout the immutable PR head SHA to avoid TOCTOU on mutable refs.
+          git fetch origin "$head_sha"
+          git checkout "$head_sha"
 
       # If this is a fork PR, leave a friendly note explaining why Claude doesn't run.
       # Avoid duplicates by checking for a marker we include in the comment body.
