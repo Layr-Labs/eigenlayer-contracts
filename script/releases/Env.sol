@@ -649,6 +649,10 @@ library Env {
         return _isMainnet() || _isSepolia() || _isHoodi() || _isPreprod();
     }
 
+    function isCoreProtocolDeployedMinusSepolia() internal view returns (bool) {
+        return _isMainnet() || _isHoodi() || _isPreprod();
+    }
+
     function supportsEigenPods() internal view returns (bool) {
         return _isMainnet() || _isHoodi() || _isPreprod();
     }

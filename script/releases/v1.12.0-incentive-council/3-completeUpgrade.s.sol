@@ -35,7 +35,7 @@ contract ExecuteUpgrade is QueueUpgrade {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployedMinusSepolia()) {
             return;
         }
 
