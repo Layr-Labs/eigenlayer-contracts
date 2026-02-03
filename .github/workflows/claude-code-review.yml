@@ -39,7 +39,7 @@ jobs:
       # This avoids CodeQL "checkout of untrusted code in trusted context" warning
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: 1
+          fetch-depth: 20
 
       - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
         with:
@@ -79,7 +79,7 @@ jobs:
             Use top-level comment for summary only.
 
           claude_args: |
-            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git fetch:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
             --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
             --max-turns 15
 
@@ -126,15 +126,73 @@ jobs:
       id-token: write
       actions: read
     steps:
+      # Checkout base (trusted) for mention triggers
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: 1
+          fetch-depth: 20
+
+      # For issue_comment events, explicitly checkout the PR head SHA
+      # to avoid "file not found / SHA unknown" when running on comments.
+      - name: Checkout PR head (issue_comment)
+        id: prhead
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Determine whether the PR is from a fork (cross-repo). If it is, do NOT checkout PR code.
+          is_fork="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json isCrossRepository -q '.isCrossRepository')"
+          echo "is_fork=$is_fork" >> "$GITHUB_OUTPUT"
+
+          if [ "$is_fork" = "true" ]; then
+            echo "Fork PR detected; skipping PR head checkout and skipping Claude run."
+            exit 0
+          fi
+
+          # Fetch PR head ref into a predictable remote-tracking ref and checkout.
+          git fetch origin "pull/$PR_NUMBER/head:refs/remotes/origin/pr/$PR_NUMBER"
+          git checkout "refs/remotes/origin/pr/$PR_NUMBER"
+
+      # If this is a fork PR, leave a friendly note explaining why Claude doesn't run.
+      # Avoid duplicates by checking for a marker we include in the comment body.
+      - name: Explain fork PR limitation (issue_comment)
+        if: github.event_name == 'issue_comment' && steps.prhead.outputs.is_fork == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          MARKER="<!-- claude-fork-skip -->"
+
+          # Check existing PR (issue) comments for the marker to avoid posting duplicates.
+          if gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq '.[].body' | grep -Fq "$MARKER"; then
+            echo "Fork explanation already posted; skipping."
+            exit 0
+          fi
+
+          gh pr comment "$PR_NUMBER" --repo "$REPO" --body "$(
+            printf '%s\n' \
+              "$MARKER" \
+              '' \
+              '👋 I saw the **@claude** request, but this PR appears to come from a **fork**.' \
+              '' \
+              'For security reasons, this workflow is configured to **skip running on fork PRs** (so repository secrets and write permissions are not exposed to untrusted code).' \
+              '' \
+              'If you would like Claude to review this change, please open the PR from a **branch in this repository** (non-fork) or ask a maintainer to push your branch into the main repo and re-open the PR.'
+          )"
 
       - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
+        # If this is an issue_comment on a fork PR, `Checkout PR head` sets prhead.is_fork=true; skip Claude entirely.
+        if: github.event_name != 'issue_comment' || steps.prhead.outputs.is_fork != 'true'
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
           additional_permissions: "actions: read"
           claude_args: |
-            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
+            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git fetch:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
             --system-prompt "Follow CLAUDE.md for context. For issues found, provide a diff block showing the fix. If you inspect CI logs, summarize only - never paste raw logs. Redact any tokens, keys, or credentials."
             --max-turns 10
