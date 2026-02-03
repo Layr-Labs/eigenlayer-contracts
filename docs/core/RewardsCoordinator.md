@@ -250,7 +250,7 @@ AVS may make Rewards v2 submissions by calling `createOperatorDirectedAVSRewards
       * `currOperatorAddress < operatorReward.operator`
       * `operatorReward.amount > 0`
     * `totalAmount <= MAX_REWARDS_AMOUNT`, where `totalAmount` is the sum of every `operatorReward.amount`
-    * `operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration < block.timestamp`, enforcing strictly retoractive rewards submissions
+    * `operatorDirectedRewardsSubmission.startTimestamp + operatorDirectedRewardsSubmission.duration < block.timestamp`, enforcing strictly retroactive rewards submissions
   * `transferFrom` MUST succeed in transferring `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
 
 #### `createOperatorDirectedOperatorSetRewardsSubmission`
