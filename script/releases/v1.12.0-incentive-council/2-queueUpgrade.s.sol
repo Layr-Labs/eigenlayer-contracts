@@ -21,7 +21,7 @@ import {IBackingEigen} from "src/contracts/interfaces/IBackingEigen.sol";
 
 /// Steps:
 /// 1. Queue EmissionsController upgrade and initialization.
-/// 2. Queue RewardsCoordinator upgrade and reinitialization.
+/// 2. Queue RewardsCoordinator upgrade (with conditional reinitialization based on current state).
 /// 3. Queue add EmissionsController to protocol registry.
 /// 4. Queue remove minting rights from old hopper.
 /// 5. Queue grant minting rights to EmissionsController.
@@ -66,15 +66,23 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
                 )
             )
         });
-        // 2. Upgrade RewardsCoordinator to the new implementation and reinitialize.
-        executorCalls.upgradeAndReinitializeRewardsCoordinator({
-            initialOwner: Env.opsMultisig(),
-            initialPausedStatus: 0,
-            rewardsUpdater: Env.REWARDS_UPDATER(),
-            activationDelay: Env.ACTIVATION_DELAY(),
-            defaultSplitBips: Env.DEFAULT_SPLIT_BIPS(),
-            feeRecipient: Env.incentiveCouncilMultisig()
-        });
+        // 2. Upgrade RewardsCoordinator to the new implementation.
+        // Check if RewardsCoordinator has already been reinitialized (feeRecipient is only set in reinitializer(2))
+        RewardsCoordinator rc = Env.proxy.rewardsCoordinator();
+        if (rc.feeRecipient() == address(0)) {
+            // Not yet reinitialized - perform upgrade with reinitialization
+            executorCalls.upgradeAndReinitializeRewardsCoordinator({
+                initialOwner: Env.opsMultisig(),
+                initialPausedStatus: 0,
+                rewardsUpdater: Env.REWARDS_UPDATER(),
+                activationDelay: Env.ACTIVATION_DELAY(),
+                defaultSplitBips: Env.DEFAULT_SPLIT_BIPS(),
+                feeRecipient: Env.incentiveCouncilMultisig()
+            });
+        } else {
+            // Already reinitialized - just upgrade without calling initialize
+            executorCalls.upgradeRewardsCoordinator();
+        }
         // 3. Add EmissionsController to the protocol registry.
         address[] memory addresses = new address[](1);
         addresses[0] = address(Env.proxy.emissionsController());
