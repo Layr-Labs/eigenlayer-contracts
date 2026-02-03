@@ -239,7 +239,7 @@ mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultZeroH
 Prior to the slashing release, withdrawals were only stored as hashes in the `pendingWithdrawals` mapping. 
 
 With the slashing release, withdrawals are now stored entirely in state, and two new mappings have been added to support this:
-* `_stakedQueuedWithdrawalRoots`: a list of all the currently-queued withdrawal hashes belonging to a staker
+* `_stakerQueuedWithdrawalRoots`: a list of all the currently-queued withdrawal hashes belonging to a staker
 * `queuedWithdrawals`: maps queued withdrawal hash to `Withdrawal` struct
 
 Legacy withdrawals remain completable using the same methods as new withdrawals. The primary difference between the two is that it is not possible to query the corresponding `Withdrawal` struct for a legacy withdrawal hash. When determining what `Withdrawal` struct to supply to the contract to complete a legacy withdrawal, the caller will need to derive the original `Withdrawal` struct generated when the withdrawal was queued.
