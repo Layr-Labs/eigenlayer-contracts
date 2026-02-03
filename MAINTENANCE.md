@@ -79,12 +79,12 @@ This can be achieved by either merge commit each `release-dev/*` branch into `ma
 
 ### Auto Remove Stale Branches
 
-Many stale branches lives in the repo and never got cleaned up. to balance developer convenience vs being organized/legible, we have implemented a CI workflow to identify and remove stable branches.
+Many stale branches live in the repo and never get cleaned up. To balance developer convenience vs being organized/legible, we have implemented a CI workflow to identify and remove stale branches.
 
 The CI workflow will:
 
-- scan stale branches that not hv new commits since 90 days ago, and notify owner if there's one
-- if still no changes coming in, delete the stable branch 7 days later
+- scan stale branches that have not had new commits since 90 days ago, and notify owner if there's one
+- if still no changes coming in, delete the stale branch 7 days later
 
 Following branches and regex are excluded
 
@@ -193,7 +193,7 @@ Primary Release Manager is responsible for
     - create and manage corresponding release branches `Vx.y.z`
     - author and publish release notes and changelog
     - author and publish release blog with PM and marketing team
-    - lead communication with marketing and BD team to inform stakerholders for preparation
+    - lead communication with marketing and BD team to inform stakeholders for preparation
     - lead deployment to env network
 - Mentoring and knowledge sharing
     - mentor and train secondary release manager, who will be the primary manager for next release
