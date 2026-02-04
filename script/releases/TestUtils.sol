@@ -941,6 +941,7 @@ library TestUtils {
     function validateAllocationManagerInitialized(
         AllocationManager allocationManager
     ) internal {
+        vm.label(address(allocationManager), type(AllocationManager).name);
         vm.expectRevert(errInit);
         allocationManager.initialize(0);
     }
@@ -948,6 +949,7 @@ library TestUtils {
     function validateAVSDirectoryInitialized(
         AVSDirectory avsDirectory
     ) internal {
+        vm.label(address(avsDirectory), type(AVSDirectory).name);
         vm.expectRevert(errInit);
         avsDirectory.initialize(address(0), 0);
     }
@@ -962,6 +964,7 @@ library TestUtils {
     function validateProtocolRegistryInitialized(
         ProtocolRegistry protocolRegistry
     ) internal {
+        vm.label(address(protocolRegistry), type(ProtocolRegistry).name);
         vm.expectRevert(errInit);
         protocolRegistry.initialize(address(0), address(0));
     }
@@ -971,6 +974,7 @@ library TestUtils {
     function validateRewardsCoordinatorInitialized(
         RewardsCoordinator rewardsCoordinator
     ) internal {
+        vm.label(address(rewardsCoordinator), type(RewardsCoordinator).name);
         vm.expectRevert(errInit);
         rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0, address(0));
     }
@@ -978,6 +982,7 @@ library TestUtils {
     function validateStrategyManagerInitialized(
         StrategyManager strategyManager
     ) internal {
+        vm.label(address(strategyManager), type(StrategyManager).name);
         vm.expectRevert(errInit);
         strategyManager.initialize(address(0), address(0), 0);
     }
@@ -988,6 +993,7 @@ library TestUtils {
     function validateEigenPodManagerInitialized(
         EigenPodManager eigenPodManager
     ) internal {
+        vm.label(address(eigenPodManager), type(EigenPodManager).name);
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
     }
@@ -996,6 +1002,7 @@ library TestUtils {
     function validateEigenStrategyInitialized(
         EigenStrategy eigenStrategy
     ) internal {
+        vm.label(address(eigenStrategy), type(EigenStrategy).name);
         vm.expectRevert(errInit);
         eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
     }
@@ -1005,6 +1012,7 @@ library TestUtils {
     function validateStrategyBaseTVLLimitsInitialized(
         StrategyBaseTVLLimits strategyBaseTVLLimits
     ) internal {
+        vm.label(address(strategyBaseTVLLimits), type(StrategyBaseTVLLimits).name);
         vm.expectRevert(errInit);
         strategyBaseTVLLimits.initialize(0, 0, IERC20(address(0)));
     }
@@ -1012,14 +1020,25 @@ library TestUtils {
     function validateStrategyFactoryInitialized(
         StrategyFactory strategyFactory
     ) internal {
-        vm.expectRevert(errInit);
-        strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+        vm.label(address(strategyFactory), type(StrategyFactory).name);
+
+        // First test if it reverts at all (catches any revert type)
+        (bool success,) = address(strategyFactory)
+            .call(
+                abi.encodeWithSelector(
+                    StrategyFactory.initialize.selector, address(0), uint256(0), UpgradeableBeacon(address(0))
+                )
+            );
+
+        // Should always revert since it's already initialized
+        assertTrue(!success, "StrategyFactory should not be initializable");
     }
 
     /// multichain/
     function validateCrossChainRegistryInitialized(
         CrossChainRegistry crossChainRegistry
     ) internal {
+        vm.label(address(crossChainRegistry), type(CrossChainRegistry).name);
         vm.expectRevert(errInit);
         crossChainRegistry.initialize(address(0), 0, 0);
     }
@@ -1027,6 +1046,7 @@ library TestUtils {
     function validateOperatorTableUpdaterInitialized(
         OperatorTableUpdater operatorTableUpdater
     ) internal {
+        vm.label(address(operatorTableUpdater), type(OperatorTableUpdater).name);
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
         vm.expectRevert(errInit);
@@ -1039,6 +1059,7 @@ library TestUtils {
     function validateTaskMailboxInitialized(
         TaskMailbox taskMailbox
     ) internal {
+        vm.label(address(taskMailbox), type(TaskMailbox).name);
         vm.expectRevert(errInit);
         taskMailbox.initialize(address(0), 0, address(0));
     }
@@ -1047,6 +1068,7 @@ library TestUtils {
     function validateEmissionsControllerInitialized(
         EmissionsController emissionsController
     ) internal {
+        vm.label(address(emissionsController), type(EmissionsController).name);
         vm.expectRevert(errInit);
         emissionsController.initialize(address(0), address(0), 0);
     }

@@ -315,24 +315,16 @@ library Env {
         return ProtocolRegistry(_deployedImpl(type(ProtocolRegistry).name));
     }
 
-    /// @notice Returns EmissionsController proxy address or EmptyContract if not deployed.
-    /// FIXME EmissionsController was added in v1.12.0. Older releases (v1.9.0, etc.) don't have it.
-    /// Returns EmptyContract (address(0) equivalent) for backward compatibility so that shared
-    /// deployment infrastructure (CoreContractsDeployer) can work across all release versions.
     function emissionsController(
         DeployedProxy
     ) internal view returns (EmissionsController) {
-        return EmissionsController(_deployedProxyOr(type(EmissionsController).name, address(Env.executorMultisig())));
+        return EmissionsController(_deployedProxy(type(EmissionsController).name));
     }
 
-    /// @notice Returns EmissionsController implementation address or EmptyContract if not deployed.
-    /// FIXME EmissionsController was added in v1.12.0. Older releases (v1.9.0, etc.) don't have it.
-    /// Returns EmptyContract (address(0) equivalent) for backward compatibility so that shared
-    /// deployment infrastructure (CoreContractsDeployer) can work across all release versions.
     function emissionsController(
         DeployedImpl
     ) internal view returns (EmissionsController) {
-        return EmissionsController(_deployedImplOr(type(EmissionsController).name, address(Env.executorMultisig())));
+        return EmissionsController(_deployedImpl(type(EmissionsController).name));
     }
 
     /// permissions/
@@ -581,14 +573,6 @@ library Env {
         string memory name
     ) private view returns (address) {
         return ZEnvHelpers.state().deployedImpl(name);
-    }
-
-    function _deployedImplOr(
-        string memory name,
-        address defaultValue
-    ) private view returns (address) {
-        string memory envvar = string.concat("ZEUS_DEPLOYED_", name, "_Impl");
-        return vm.envOr(envvar, defaultValue);
     }
 
     function _envAddress(
