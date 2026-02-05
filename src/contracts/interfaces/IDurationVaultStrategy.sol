@@ -67,6 +67,7 @@ interface IDurationVaultStrategyTypes {
     /// @notice Configuration parameters for initializing a duration vault.
     /// @param underlyingToken The ERC20 token that stakers deposit into this vault.
     /// @param vaultAdmin The address authorized to manage vault configuration.
+    /// @param arbitrator The address authorized to call `advanceToWithdrawals` for early maturity.
     /// @param duration The lock period in seconds after which the vault matures.
     /// @param maxPerDeposit Maximum amount of underlying tokens accepted per deposit.
     /// @param stakeCap Maximum total underlying tokens the vault will accept.
