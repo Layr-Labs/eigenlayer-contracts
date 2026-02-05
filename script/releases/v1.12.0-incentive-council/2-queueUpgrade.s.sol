@@ -48,24 +48,38 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
 
         // 1. Upgrade EmissionsController proxy to the new implementation and initialize
-        executorCalls.append({
-            to: Env.proxyAdmin(),
-            data: abi.encodeCall(
-                IProxyAdmin.upgradeAndCall,
-                (
-                    ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
-                    address(Env.impl.emissionsController()),
-                    abi.encodeCall(
-                        EmissionsController.initialize,
-                        (
-                            Env.opsMultisig(), // initialOwner
-                            Env.incentiveCouncilMultisig(), // initialIncentiveCouncil
-                            0 // initialPausedStatus
+        // Preprod needs to be upgraded, not redeployed.
+        if (Env._strEq(Env.envVersion(), "1.12.0")) {
+            executorCalls.append({
+                to: Env.proxyAdmin(),
+                data: abi.encodeCall(
+                    IProxyAdmin.upgrade,
+                    (
+                        ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
+                        address(Env.impl.emissionsController())
+                    )
+                )
+            });
+        } else {
+            executorCalls.append({
+                to: Env.proxyAdmin(),
+                data: abi.encodeCall(
+                    IProxyAdmin.upgradeAndCall,
+                    (
+                        ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
+                        address(Env.impl.emissionsController()),
+                        abi.encodeCall(
+                            EmissionsController.initialize,
+                            (
+                                Env.opsMultisig(), // initialOwner
+                                Env.incentiveCouncilMultisig(), // initialIncentiveCouncil
+                                0 // initialPausedStatus
+                            )
                         )
                     )
                 )
-            )
-        });
+            });
+        }
         // 2. Upgrade RewardsCoordinator to the new implementation.
         // Check if RewardsCoordinator has already been reinitialized by reading _initialized from storage.
         // Slot 0 contains: _initialized (uint8 at offset 0) and _initializing (bool at offset 1)
@@ -168,10 +182,13 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             require(beigen.isMinter(Env.legacyTokenHopper()), "Old hopper should have minting rights before upgrade");
         }
         // Ensure EmissionsController does NOT have minting rights yet
-        require(
-            !beigen.isMinter(address(Env.proxy.emissionsController())),
-            "EmissionsController should NOT have minting rights before upgrade"
-        );
+        // Skip check if we are on preprod, as the EmissionsController is already deployed.
+        if (!Env._strEq(Env.envVersion(), "1.12.0")) {
+            require(
+                !beigen.isMinter(address(Env.proxy.emissionsController())),
+                "EmissionsController should NOT have minting rights before upgrade"
+            );
+        }
     }
 }
 
