@@ -22,10 +22,17 @@ contract RewardsCoordinatorMock is Test {
         uint16 split;
     }
 
+    struct SetClaimerForCall {
+        address earner;
+        address claimer;
+    }
+
     SetOperatorAVSSplitCall internal _lastSetOperatorAVSSplitCall;
     SetOperatorSetSplitCall internal _lastSetOperatorSetSplitCall;
+    SetClaimerForCall internal _lastSetClaimerForCall;
     uint public setOperatorAVSSplitCallCount;
     uint public setOperatorSetSplitCallCount;
+    uint public setClaimerForCallCount;
 
     function setOperatorAVSSplit(address operator, address avs, uint16 split) external {
         setOperatorAVSSplitCallCount++;
@@ -37,11 +44,20 @@ contract RewardsCoordinatorMock is Test {
         _lastSetOperatorSetSplitCall = SetOperatorSetSplitCall({operator: operator, operatorSet: operatorSet, split: split});
     }
 
+    function setClaimerFor(address earner, address claimer) external {
+        setClaimerForCallCount++;
+        _lastSetClaimerForCall = SetClaimerForCall({earner: earner, claimer: claimer});
+    }
+
     function lastSetOperatorAVSSplitCall() external view returns (SetOperatorAVSSplitCall memory) {
         return _lastSetOperatorAVSSplitCall;
     }
 
     function lastSetOperatorSetSplitCall() external view returns (SetOperatorSetSplitCall memory) {
         return _lastSetOperatorSetSplitCall;
+    }
+
+    function lastSetClaimerForCall() external view returns (SetClaimerForCall memory) {
+        return _lastSetClaimerForCall;
     }
 }

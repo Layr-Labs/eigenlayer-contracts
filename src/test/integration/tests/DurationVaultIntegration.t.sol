@@ -281,7 +281,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         uint[] memory amounts = _singleAmountArray(60 ether);
         ctx.asset.transfer(address(staker), amounts[0]);
         _delegateToVault(staker, ctx.vault);
-        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositExceedsMaxPerDeposit.selector);
         staker.depositIntoEigenlayer(strategies, amounts);
 
         // Deposit within limits.

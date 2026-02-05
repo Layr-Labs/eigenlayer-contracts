@@ -39,6 +39,15 @@ interface IDurationVaultStrategyErrors {
     error OperatorIntegrationInvalid();
     /// @dev Thrown when attempting to deposit into a vault whose underlying token is blacklisted.
     error UnderlyingTokenBlacklisted();
+
+    /// @dev Thrown when a deposit exceeds the configured `maxPerDeposit` limit.
+    error DepositExceedsMaxPerDeposit();
+
+    /// @dev Thrown when attempting to lock with an operator set that doesn't include this strategy.
+    error StrategyNotSupportedByOperatorSet();
+
+    /// @dev Thrown when attempting to allocate while a pending allocation modification already exists.
+    error PendingAllocation();
 }
 
 /// @title Types for IDurationVaultStrategy
@@ -58,6 +67,7 @@ interface IDurationVaultStrategyTypes {
     /// @notice Configuration parameters for initializing a duration vault.
     /// @param underlyingToken The ERC20 token that stakers deposit into this vault.
     /// @param vaultAdmin The address authorized to manage vault configuration.
+    /// @param arbitrator The address authorized to call `advanceToWithdrawals` for early maturity.
     /// @param duration The lock period in seconds after which the vault matures.
     /// @param maxPerDeposit Maximum amount of underlying tokens accepted per deposit.
     /// @param stakeCap Maximum total underlying tokens the vault will accept.
@@ -118,6 +128,20 @@ interface IDurationVaultStrategyEvents {
     /// @notice Emitted when the vault metadata URI is updated.
     /// @param newMetadataURI The new metadata URI.
     event MetadataURIUpdated(string newMetadataURI);
+
+    /// @notice Emitted when deallocation from the operator set is attempted.
+    /// @param success Whether the deallocation call succeeded.
+    event DeallocateAttempted(bool success);
+
+    /// @notice Emitted when deregistration from the operator set is attempted.
+    /// @param success Whether the deregistration call succeeded.
+    event DeregisterAttempted(bool success);
+
+    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`.
+    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
+
+    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`.
+    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
 }
 
 /// @title Interface for time-bound EigenLayer vault strategies.
@@ -164,6 +188,27 @@ interface IDurationVaultStrategy is
     /// @dev Only callable by the vault admin.
     function updateMetadataURI(
         string calldata newMetadataURI
+    ) external;
+
+    /// @notice Updates the delegation approver used for operator delegation approvals.
+    /// @param newDelegationApprover The new delegation approver (0x0 for open delegation).
+    /// @dev Only callable by the vault admin.
+    function updateDelegationApprover(
+        address newDelegationApprover
+    ) external;
+
+    /// @notice Updates the operator metadata URI emitted by the DelegationManager.
+    /// @param newOperatorMetadataURI The new operator metadata URI.
+    /// @dev Only callable by the vault admin.
+    function updateOperatorMetadataURI(
+        string calldata newOperatorMetadataURI
+    ) external;
+
+    /// @notice Sets the claimer for operator rewards accrued to the vault.
+    /// @param claimer The address authorized to claim rewards for the vault.
+    /// @dev Only callable by the vault admin.
+    function setRewardsClaimer(
+        address claimer
     ) external;
 
     /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.

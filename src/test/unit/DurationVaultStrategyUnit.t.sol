@@ -80,6 +80,11 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         // Set the strategy for inherited tests
         strategy = StrategyBase(address(durationVault));
+
+        // Configure the mock to return the vault as a supported strategy in the operator set
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = IStrategy(address(durationVault));
+        allocationManagerMock.setStrategiesInOperatorSet(OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}), strategies);
     }
 
     // ===================== OPERATOR INTEGRATION TESTS =====================
@@ -168,11 +173,59 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         assertTrue(durationVault.withdrawalsOpen(), "withdrawals must open after maturity");
         assertFalse(durationVault.allocationsActive(), "allocations should be inactive after maturity");
-        assertFalse(durationVault.operatorSetRegistered(), "operator set should be unregistered after maturity");
+        assertTrue(durationVault.operatorSetRegistered(), "operator set should remain registered on failure");
 
         // Since the mock reverts before incrementing, only the initial lock allocation is recorded.
         assertEq(allocationManagerMock.modifyAllocationsCallCount(), 1, "unexpected modifyAllocations count");
         assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 0, "unexpected deregister count");
+    }
+
+    function testMarkMaturedCanRetryOperatorCleanup() public {
+        durationVault.lock();
+        cheats.warp(block.timestamp + defaultDuration + 1);
+
+        allocationManagerMock.setRevertModifyAllocations(true);
+        allocationManagerMock.setRevertDeregisterFromOperatorSets(true);
+
+        durationVault.markMatured();
+        assertTrue(durationVault.operatorSetRegistered(), "operator set should remain registered after failure");
+
+        allocationManagerMock.setRevertModifyAllocations(false);
+        allocationManagerMock.setRevertDeregisterFromOperatorSets(false);
+
+        // markMatured is a permissionless retry path once in WITHDRAWALS.
+        durationVault.markMatured();
+
+        assertEq(allocationManagerMock.modifyAllocationsCallCount(), 2, "deallocation should be retried");
+        assertEq(allocationManagerMock.deregisterFromOperatorSetsCallCount(), 1, "deregistration should be retried");
+        assertFalse(durationVault.operatorSetRegistered(), "operator set should be deregistered after retry");
+    }
+
+    function testUpdateDelegationApprover() public {
+        address newApprover = address(0xDE1E6A7E);
+        durationVault.updateDelegationApprover(newApprover);
+
+        DelegationManagerMock.ModifyOperatorDetailsCall memory callDetails = delegationManagerMock.lastModifyOperatorDetailsCall();
+        assertEq(callDetails.operator, address(durationVault), "operator mismatch");
+        assertEq(callDetails.newDelegationApprover, newApprover, "delegation approver mismatch");
+    }
+
+    function testUpdateOperatorMetadataURI() public {
+        string memory newURI = "ipfs://updated-operator-metadata";
+        durationVault.updateOperatorMetadataURI(newURI);
+
+        DelegationManagerMock.UpdateOperatorMetadataURICall memory callDetails = delegationManagerMock.lastUpdateOperatorMetadataURICall();
+        assertEq(callDetails.operator, address(durationVault), "operator mismatch");
+        assertEq(callDetails.metadataURI, newURI, "metadata URI mismatch");
+    }
+
+    function testSetRewardsClaimer() public {
+        address claimer = address(0xC1A1A3);
+        durationVault.setRewardsClaimer(claimer);
+
+        RewardsCoordinatorMock.SetClaimerForCall memory callDetails = rewardsCoordinatorMock.lastSetClaimerForCall();
+        assertEq(callDetails.earner, address(durationVault), "earner mismatch");
+        assertEq(callDetails.claimer, claimer, "claimer mismatch");
     }
 
     function testAdvanceToWithdrawals_onlyArbitrator_and_onlyBeforeUnlock() public {
@@ -280,7 +333,7 @@ contract DurationVaultStrategyUnitTests is StrategyBaseUnitTests {
 
         cheats.startPrank(address(strategyManager));
         uint shares = durationVault.deposit(underlyingToken, depositAmount);
-        cheats.expectRevert(IStrategyErrors.MaxPerDepositExceedsMax.selector);
+        cheats.expectRevert(IDurationVaultStrategyErrors.DepositExceedsMaxPerDeposit.selector);
         durationVault.beforeAddShares(staker, shares);
         cheats.stopPrank();
     }

@@ -30,6 +30,7 @@ contract AllocationManagerMock is Test {
     mapping(bytes32 operatorSetKey => mapping(address operator => bool)) internal _isOperatorSlashable;
     mapping(address operator => mapping(bytes32 operatorSetKey => mapping(IStrategy strategy => IAllocationManagerTypes.Allocation)))
         internal _allocations;
+    mapping(bytes32 operatorSetKey => mapping(address operator => bool)) internal _isMemberOfOperatorSet;
 
     struct RegisterCall {
         address operator;
@@ -99,6 +100,10 @@ contract AllocationManagerMock is Test {
 
     function isOperatorSet(OperatorSet memory operatorSet) external view returns (bool) {
         return _isOperatorSet[operatorSet.key()];
+    }
+
+    function isMemberOfOperatorSet(address operator, OperatorSet memory operatorSet) external view returns (bool) {
+        return _isMemberOfOperatorSet[operatorSet.key()][operator];
     }
 
     function setMaxMagnitudes(address operator, IStrategy[] calldata strategies, uint64[] calldata maxMagnitudes) external {
@@ -213,6 +218,7 @@ contract AllocationManagerMock is Test {
         delete _lastRegisterCall.operatorSetIds;
         for (uint i = 0; i < params.operatorSetIds.length; ++i) {
             _lastRegisterCall.operatorSetIds.push(params.operatorSetIds[i]);
+            _isMemberOfOperatorSet[OperatorSet({avs: params.avs, id: params.operatorSetIds[i]}).key()][operator] = true;
         }
         _lastRegisterCall.data = params.data;
     }
@@ -260,6 +266,7 @@ contract AllocationManagerMock is Test {
         delete _lastDeregisterCall.operatorSetIds;
         for (uint i = 0; i < params.operatorSetIds.length; ++i) {
             _lastDeregisterCall.operatorSetIds.push(params.operatorSetIds[i]);
+            _isMemberOfOperatorSet[OperatorSet({avs: params.avs, id: params.operatorSetIds[i]}).key()][params.operator] = false;
         }
     }
 

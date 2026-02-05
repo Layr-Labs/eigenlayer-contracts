@@ -16,15 +16,6 @@ import "../libraries/OperatorSetLib.sol";
 contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     using OperatorSetLib for OperatorSet;
 
-    /// @dev Thrown when attempting to allocate while a pending allocation modification already exists.
-    error PendingAllocation();
-
-    /// @notice Emitted when `maxPerDeposit` value is updated from `previousValue` to `newValue`.
-    event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue);
-
-    /// @notice Emitted when `maxTotalDeposits` value is updated from `previousValue` to `newValue`.
-    event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue);
-
     /// @notice Delegation manager reference used to register the vault as an operator.
     IDelegationManager public immutable override delegationManager;
 
@@ -109,6 +100,17 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     function lock() external override onlyVaultAdmin {
         require(depositsOpen(), VaultAlreadyLocked());
 
+        // Verify this strategy is supported by the operator set before allocating.
+        IStrategy[] memory strategies = allocationManager.getStrategiesInOperatorSet(_operatorSet);
+        bool supported = false;
+        for (uint256 i = 0; i < strategies.length; ++i) {
+            if (strategies[i] == IStrategy(address(this))) {
+                supported = true;
+                break;
+            }
+        }
+        require(supported, StrategyNotSupportedByOperatorSet());
+
         uint32 currentTimestamp = uint32(block.timestamp);
         lockedAt = currentTimestamp;
         unlockAt = currentTimestamp + duration;
@@ -123,7 +125,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Marks the vault as matured once the configured duration elapses. Callable by anyone.
     function markMatured() external override {
         if (_state == VaultState.WITHDRAWALS) {
-            // already recorded; noop
+            _attemptOperatorCleanup();
             return;
         }
         require(_state == VaultState.ALLOCATIONS, DurationNotElapsed());
@@ -132,15 +134,14 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         maturedAt = uint32(block.timestamp);
         emit VaultMatured(maturedAt);
 
-        _deallocateAll();
-        _deregisterFromOperatorSet();
+        _attemptOperatorCleanup();
     }
 
     /// @notice Advances the vault to withdrawals early, after lock but before duration elapses.
     /// @dev Only callable by the configured arbitrator.
     function advanceToWithdrawals() external override onlyArbitrator {
         if (_state == VaultState.WITHDRAWALS) {
-            // already recorded; noop
+            _attemptOperatorCleanup();
             return;
         }
         require(_state == VaultState.ALLOCATIONS, VaultNotLocked());
@@ -152,8 +153,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         emit VaultMatured(maturedAt);
         emit VaultAdvancedToWithdrawals(msg.sender, maturedAt);
 
-        _deallocateAll();
-        _deregisterFromOperatorSet();
+        _attemptOperatorCleanup();
     }
 
     /// @notice Updates the metadata URI describing the vault.
@@ -162,6 +162,27 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     ) external override onlyVaultAdmin {
         metadataURI = newMetadataURI;
         emit MetadataURIUpdated(newMetadataURI);
+    }
+
+    /// @notice Updates the delegation approver used for operator delegation approvals.
+    function updateDelegationApprover(
+        address newDelegationApprover
+    ) external override onlyVaultAdmin {
+        delegationManager.modifyOperatorDetails(address(this), newDelegationApprover);
+    }
+
+    /// @notice Updates the operator metadata URI emitted by the DelegationManager.
+    function updateOperatorMetadataURI(
+        string calldata newOperatorMetadataURI
+    ) external override onlyVaultAdmin {
+        delegationManager.updateOperatorMetadataURI(address(this), newOperatorMetadataURI);
+    }
+
+    /// @notice Sets the claimer for operator rewards accrued to the vault.
+    function setRewardsClaimer(
+        address claimer
+    ) external override onlyVaultAdmin {
+        rewardsCoordinator.setClaimerFor(address(this), claimer);
     }
 
     /// @notice Updates the TVL limits for max deposit per transaction and total stake cap.
@@ -236,7 +257,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
         // Enforce per-deposit cap using the minted shares as proxy for underlying.
         uint256 amountUnderlying = sharesToUnderlyingView(shares);
-        require(amountUnderlying <= maxPerDeposit, MaxPerDepositExceedsMax());
+        require(amountUnderlying <= maxPerDeposit, DepositExceedsMaxPerDeposit());
 
         // Enforce total cap using operatorShares (active, non-queued shares).
         // At this point, operatorShares hasn't been updated yet, so we add the new shares.
@@ -283,7 +304,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
 
     /// @inheritdoc IDurationVaultStrategy
     function operatorSetRegistered() public view override returns (bool) {
-        return _state == VaultState.DEPOSITS || _state == VaultState.ALLOCATIONS;
+        return allocationManager.isMemberOfOperatorSet(address(this), _operatorSet);
     }
 
     /// @inheritdoc IDurationVaultStrategy
@@ -346,9 +367,18 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         allocationManager.modifyAllocations(address(this), params);
     }
 
-    /// @notice Deallocates all magnitude from the configured operator set.
+    /// @notice Attempts to deallocate all magnitude from the configured operator set.
     /// @dev Best-effort: failures are ignored to avoid bricking `markMatured()`.
-    function _deallocateAll() internal {
+    function _deallocateAll() internal returns (bool) {
+        IAllocationManager.Allocation memory alloc =
+            allocationManager.getAllocation(address(this), _operatorSet, IStrategy(address(this)));
+        if (alloc.currentMagnitude == 0 && alloc.pendingDiff == 0) {
+            return true;
+        }
+        // If an allocation modification is pending, wait until it clears.
+        if (alloc.effectBlock != 0) {
+            return false;
+        }
         IAllocationManager.AllocateParams[] memory params = new IAllocationManager.AllocateParams[](1);
         params[0].operatorSet = _operatorSet;
         params[0].strategies = new IStrategy[](1);
@@ -359,12 +389,15 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         // We use a low-level call instead of try/catch to avoid wallet gas-estimation pitfalls.
         (bool success,) = address(allocationManager)
             .call(abi.encodeWithSelector(IAllocationManagerActions.modifyAllocations.selector, address(this), params));
-        success; // suppress unused variable warning
+        return success;
     }
 
-    /// @notice Deregisters the vault from its configured operator set.
+    /// @notice Attempts to deregister the vault from its configured operator set.
     /// @dev Best-effort: failures are ignored to avoid bricking `markMatured()`.
-    function _deregisterFromOperatorSet() internal {
+    function _deregisterFromOperatorSet() internal returns (bool) {
+        if (!allocationManager.isMemberOfOperatorSet(address(this), _operatorSet)) {
+            return true;
+        }
         IAllocationManager.DeregisterParams memory params;
         params.operator = address(this);
         params.avs = _operatorSet.avs;
@@ -374,6 +407,15 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         // We use a low-level call instead of try/catch to avoid wallet gas-estimation pitfalls.
         (bool success,) = address(allocationManager)
             .call(abi.encodeWithSelector(IAllocationManagerActions.deregisterFromOperatorSets.selector, params));
-        success; // suppress unused variable warning
+        return success;
+    }
+
+    /// @notice Best-effort cleanup after maturity, with retry tracking.
+    function _attemptOperatorCleanup() internal {
+        bool deallocateSuccess = _deallocateAll();
+        emit DeallocateAttempted(deallocateSuccess);
+
+        bool deregisterSuccess = _deregisterFromOperatorSet();
+        emit DeregisterAttempted(deregisterSuccess);
     }
 }
