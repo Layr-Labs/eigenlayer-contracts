@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   remove-stale-branches:
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64]
     steps:
       - uses: fpicalausa/remove-stale-branches@v1.6.0
         with:
