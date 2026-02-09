@@ -36,7 +36,7 @@ jobs:
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch'
 
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       statuses: write
@@ -46,6 +46,12 @@ jobs:
       - uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911
         with:
           egress-policy: audit
+
+      - name: Install Python
+        run: |
+          if ! command -v python3 &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv
+          fi
 
       # Checkout the repository with submodules
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
