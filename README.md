@@ -82,8 +82,8 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/Eigen.sol) | [`0xec53bf9167f50cdeb3ae105f56099aaab9061f83`](https://etherscan.io/address/0xec53bf9167f50cdeb3ae105f56099aaab9061f83) | [`0x2C4A...2E50`](https://etherscan.io/address/0x2C4A81e257381F87F5A5C4bd525116466D972E50) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/BackingEigen.sol) | [`0x83E9115d334D248Ce39a6f36144aEaB5b3456e75`](https://etherscan.io/address/0x83E9115d334D248Ce39a6f36144aEaB5b3456e75) | [`0xF2b2...9b17`](https://etherscan.io/address/0xF2b225815F70c9b327DC9db758A36c92A4279b17) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/Eigen.sol) | [`0xec53bf9167f50cdeb3ae105f56099aaab9061f83`](https://etherscan.io/address/0xec53bf9167f50cdeb3ae105f56099aaab9061f83) | [`0x2C4A...2E50`](https://etherscan.io/address/0x2C4A81e257381F87F5A5C4bd525116466D972E50) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/BackingEigen.sol) | [`0x83E9115d334D248Ce39a6f36144aEaB5b3456e75`](https://etherscan.io/address/0x83E9115d334D248Ce39a6f36144aEaB5b3456e75) | [`0xF2b2...9b17`](https://etherscan.io/address/0xF2b225815F70c9b327DC9db758A36c92A4279b17) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 | [`SignedDistributor`](https://etherscan.io/address/0x035bdAeaB85E47710C27EdA7FD754bA80aD4ad02#code) | - | [`0x035b...ad02`](https://etherscan.io/address/0x035bdAeaB85E47710C27EdA7FD754bA80aD4ad02) | - |
 
 ###### AVS
@@ -116,7 +116,7 @@ The multichain protocol expects AVSs to register on the source chain. AVS's stak
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0xB876...2806`](https://etherscan.io/address/0xB8765ed72235d279c3Fb53936E4606db0Ef12806) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0xB876...2806`](https://etherscan.io/address/0xB8765ed72235d279c3Fb53936E4606db0Ef12806) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xC06F...Aa2d`](https://etherscan.io/address/0xC06Fd4F821eaC1fF1ae8067b36342899b57BAa2d) | |
 | [`OZ: TimelockController (BEIGEN)`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x7381...bc53`](https://etherscan.io/address/0x738130BC8eADe1Bc65A9c056DEa636835896bc53) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x8b95...2444`](https://etherscan.io/address/0x8b9566AdA63B64d1E1dcF1418b43fd1433b72444) | |
@@ -166,7 +166,7 @@ The following contracts are used by AVSs.
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0xb175...6ea`](https://basescan.org/address/0xb1754226917e866c1701f1d9F9E135D88f2e86ea) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0xb175...6ea`](https://basescan.org/address/0xb1754226917e866c1701f1d9F9E135D88f2e86ea) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xE48D...ABd`](https://basescan.org/address/0xE48D7CaeC1790b293667e4bB2dE1E00536F2bABd) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xDb00...9CE`](https://basescan.org/address/0xDb0052E272D1D126617c36A9D6d65C801d1549CE) | |
 | [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x1a051eF1524cbaEa57Ca04319ef93fE78903D5E6`](https://basescan.org/address/0x1a051eF1524cbaEa57Ca04319ef93fE78903D5E6) | - | |
@@ -232,8 +232,8 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/Eigen.sol) | [`0x0011FA2c512063C495f77296Af8d195F33A8Dd38`](https://sepolia.etherscan.io/address/0x0011FA2c512063C495f77296Af8d195F33A8Dd38) | [`0x7ec6...BD6F`](https://sepolia.etherscan.io/address/0x7ec6a02235Bf8d8a1fDB894AD2E1573192bfBD6F) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/BackingEigen.sol) | [`0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c`](https://sepolia.etherscan.io/address/0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c) | [`0x1298...3173`](https://sepolia.etherscan.io/address/0x12988B679AA497C30A8D1850eCC4Dc7700383173) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/Eigen.sol) | [`0x0011FA2c512063C495f77296Af8d195F33A8Dd38`](https://sepolia.etherscan.io/address/0x0011FA2c512063C495f77296Af8d195F33A8Dd38) | [`0x7ec6...BD6F`](https://sepolia.etherscan.io/address/0x7ec6a02235Bf8d8a1fDB894AD2E1573192bfBD6F) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/BackingEigen.sol) | [`0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c`](https://sepolia.etherscan.io/address/0xc5B857A92245f64e9D90cCc5b096Db82eB77eB5c) | [`0x1298...3173`](https://sepolia.etherscan.io/address/0x12988B679AA497C30A8D1850eCC4Dc7700383173) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### AVS
 
@@ -264,7 +264,7 @@ The multichain protocol expects AVSs to register on the source chain. AVS's stak
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x63AA...20f3`](https://sepolia.etherscan.io/address/0x63AAe451780090f50Ad323aAEF155F63a29D20f3) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x63AA...20f3`](https://sepolia.etherscan.io/address/0x63AAe451780090f50Ad323aAEF155F63a29D20f3) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0x1BEF...1b5B`](https://sepolia.etherscan.io/address/0x1BEF05C7303d44e0E2FCD2A19d993eDEd4c51b5B) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.7.1/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0x56E8...6Fa1`](https://sepolia.etherscan.io/address/0x56E88cb4f0136fC27D95499dE4BE2acf47946Fa1) | |
 | [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x0B415f75980D863872C3eb8caa76E6eC8Bc81536`](https://sepolia.etherscan.io/address/0x0B415f75980D863872C3eb8caa76E6eC8Bc81536) | [`0x4167...461a`](https://sepolia.etherscan.io/address/0xd9db270c1b5e3bd161e8c8503c55ceabee709552) | Proxy: [`Gnosis@1.3.0`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/proxies/GnosisSafeProxy.sol) |
@@ -326,14 +326,14 @@ The following strategies differ significantly from the other strategies deployed
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/Eigen.sol) | [`0x8ae2520954db7D80D66835cB71E692835bbA45bf`](https://hoodi.etherscan.io/address/0x8ae2520954db7D80D66835cB71E692835bbA45bf) | [`0x68F3...2FE9`](https://hoodi.etherscan.io/address/0x68F3E0B02b15F96B50aC73d7680F020B646D2FE9) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
-| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/token/BackingEigen.sol) | [`0x6e60888132Cc7e637488379B4B40c42b3751f63a`](https://hoodi.etherscan.io/address/0x6e60888132Cc7e637488379B4B40c42b3751f63a) | [`0x43e4...1C4`](https://hoodi.etherscan.io/address/0x43e4940aCeb1C1F5a57e307EEB212007F0f6a1C4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/Eigen.sol) | [`0x8ae2520954db7D80D66835cB71E692835bbA45bf`](https://hoodi.etherscan.io/address/0x8ae2520954db7D80D66835cB71E692835bbA45bf) | [`0x68F3...2FE9`](https://hoodi.etherscan.io/address/0x68F3E0B02b15F96B50aC73d7680F020B646D2FE9) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
+| [`Backing Eigen`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/token/BackingEigen.sol) | [`0x6e60888132Cc7e637488379B4B40c42b3751f63a`](https://hoodi.etherscan.io/address/0x6e60888132Cc7e637488379B4B40c42b3751f63a) | [`0x43e4...1C4`](https://hoodi.etherscan.io/address/0x43e4940aCeb1C1F5a57e307EEB212007F0f6a1C4) | Proxy: [`TUP@4.9.0`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol) |
 
 ###### Multisigs
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x64D7...c13D`](https://hoodi.etherscan.io/address/0x64D78399B0fa32EA72959f33edCF313159F3c13D) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x64D7...c13D`](https://hoodi.etherscan.io/address/0x64D78399B0fa32EA72959f33edCF313159F3c13D) | |
 | [`OZ: TimelockController`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/release-v4.7/contracts/governance/TimelockController.sol) | - | [`0xE332...2d15`](https://hoodi.etherscan.io/address/0xE3328cb5068924119d6170496c4AB2dD12c12d15) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xE7f4...2257`](https://hoodi.etherscan.io/address/0xE7f4E30D2619273468afe9EC0Acf805E55532257) | |
 
@@ -373,7 +373,7 @@ The following contracts are used by AVSs.
 
 | Name | Proxy | Implementation | Notes |
 | -------- | -------- | -------- | -------- | 
-| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.9.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x6ffE...672B`](https://sepolia.basescan.org/address/0x6ffE77C321a773e2A27B0B0a31C5e1bBda83672B) | |
+| [`PauserRegistry`](https://github.com/Layr-Labs/eigenlayer-contracts/blob/v1.3.0/src/contracts/permissions/PauserRegistry.sol) | - | [`0x6ffE...672B`](https://sepolia.basescan.org/address/0x6ffE77C321a773e2A27B0B0a31C5e1bBda83672B) | |
 | [`OZ: Proxy Admin`](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/proxy/transparent/ProxyAdmin.sol) | - | [`0xbe2F...0b5`](https://sepolia.basescan.org/address/0xbe2F96Efff467c6773Dc91eA62Ab34C73195a0b5) | |
 | [`Pauser Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x2DD9BDDf299C846f61C0105905f9a60ee99242d6`](https://sepolia.basescan.org/address/0x2DD9BDDf299C846f61C0105905f9a60ee99242d6) | - | |
 | [`Operations Multisig`](https://github.com/safe-global/safe-contracts/blob/v1.3.0/contracts/GnosisSafe.sol) | [`0x4ACA7e09eF90612941A9185A6690Dbe9e39aae8f`](https://sepolia.basescan.org/address/0x4ACA7e09eF90612941A9185A6690Dbe9e39aae8f) | - | |
