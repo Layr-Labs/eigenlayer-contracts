@@ -28,7 +28,7 @@ contract DeployContracts is CoreContractsDeployer {
         /// core/
         // Update the MAX_REWARDS_DURATION environment variable before deploying RewardsCoordinator
         // 63072000s = 730 days = 2 years
-        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63072000);
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63_072_000);
         deployRewardsCoordinator();
         deployStrategyManager();
 
@@ -79,8 +79,7 @@ contract DeployContracts is CoreContractsDeployer {
 
         // Validate RewardsCoordinator
         assertTrue(
-            address(Env.impl.rewardsCoordinator()) != address(0),
-            "RewardsCoordinator implementation should be deployed"
+            address(Env.impl.rewardsCoordinator()) != address(0), "RewardsCoordinator implementation should be deployed"
         );
         assertTrue(
             address(Env.impl.rewardsCoordinator().delegationManager()) == address(Env.proxy.delegationManager()),

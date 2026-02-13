@@ -276,7 +276,9 @@ contract DurationVaultHoodiE2E is Script {
     ) internal returns (E2EContext memory) {
         IAllocationManagerTypes.CreateSetParamsV2[] memory sets = new IAllocationManagerTypes.CreateSetParamsV2[](1);
         sets[0] = IAllocationManagerTypes.CreateSetParamsV2({
-            operatorSetId: ctx.operatorSetId, strategies: new IStrategy[](0), slasher: ctx.eoa
+            operatorSetId: ctx.operatorSetId,
+            strategies: new IStrategy[](0),
+            slasher: ctx.eoa
         });
         address[] memory recipients = new address[](1);
         recipients[0] = ctx.insuranceRecipient;
