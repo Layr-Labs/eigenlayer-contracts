@@ -7,9 +7,10 @@ import "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/// Purpose: use an EOA to deploy all of the new/updated contracts for the Duration Vault feature.
+/// Purpose: use an EOA to deploy all of the new/updated contracts for Rewards v2.2 and Duration Vault features.
 /// Contracts deployed:
 /// /// Core
+/// - RewardsCoordinator (updated with unique/total stake rewards, MAX_REWARDS_DURATION 730 days)
 /// - StrategyManager (updated with beforeAddShares/beforeRemoveShares hooks)
 /// /// Strategies
 /// - EigenStrategy (inherits from updated StrategyBase)
@@ -25,6 +26,10 @@ contract DeployContracts is CoreContractsDeployer {
         vm.startBroadcast();
 
         /// core/
+        // Update the MAX_REWARDS_DURATION environment variable before deploying RewardsCoordinator
+        // 63072000s = 730 days = 2 years
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63_072_000);
+        deployRewardsCoordinator();
         deployStrategyManager();
 
         /// strategies/
@@ -57,7 +62,7 @@ contract DeployContracts is CoreContractsDeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._versionGte(Env.envVersion(), "1.10.0")) {
+        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._strEq(Env.envVersion(), "1.9.0")) {
             return;
         }
 
@@ -70,7 +75,25 @@ contract DeployContracts is CoreContractsDeployer {
 
     function _validateDeployedContracts() internal view {
         // Verify expected number of deployments
-        assertEq(deploys().length, 7, "Expected 7 deployed contracts");
+        assertEq(deploys().length, 8, "Expected 8 deployed contracts");
+
+        // Validate RewardsCoordinator
+        assertTrue(
+            address(Env.impl.rewardsCoordinator()) != address(0), "RewardsCoordinator implementation should be deployed"
+        );
+        assertTrue(
+            address(Env.impl.rewardsCoordinator().delegationManager()) == address(Env.proxy.delegationManager()),
+            "RewardsCoordinator: delegationManager mismatch"
+        );
+        assertTrue(
+            address(Env.impl.rewardsCoordinator().strategyManager()) == address(Env.proxy.strategyManager()),
+            "RewardsCoordinator: strategyManager mismatch"
+        );
+        assertEq(
+            Env.impl.rewardsCoordinator().MAX_REWARDS_DURATION(),
+            63_072_000,
+            "RewardsCoordinator: MAX_REWARDS_DURATION should be 730 days (63072000 seconds)"
+        );
 
         // Validate StrategyManager
         assertTrue(

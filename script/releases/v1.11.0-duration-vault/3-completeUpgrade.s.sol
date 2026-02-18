@@ -7,7 +7,7 @@ import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/// Purpose: Execute the queued upgrade for Duration Vault feature.
+/// Purpose: Execute the queued upgrade for Rewards v2.2 and Duration Vault features.
 contract ExecuteUpgrade is QueueUpgrade {
     using Env for *;
 
@@ -25,7 +25,7 @@ contract ExecuteUpgrade is QueueUpgrade {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._versionGte(Env.envVersion(), "1.10.0")) {
+        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._strEq(Env.envVersion(), "1.9.0")) {
             return;
         }
 

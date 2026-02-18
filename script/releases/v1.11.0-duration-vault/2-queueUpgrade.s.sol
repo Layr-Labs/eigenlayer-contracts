@@ -9,8 +9,9 @@ import {IProtocolRegistry, IProtocolRegistryTypes} from "src/contracts/interface
 import "../Env.sol";
 import "../TestUtils.sol";
 
-/// Purpose: Queue the upgrade for Duration Vault feature.
+/// Purpose: Queue the upgrade for Rewards v2.2 and Duration Vault features.
 /// This script queues upgrades to:
+/// - RewardsCoordinator proxy (Rewards v2.2: unique/total stake rewards, updated MAX_REWARDS_DURATION)
 /// - StrategyManager proxy
 /// - EigenStrategy proxy
 /// - StrategyBase beacon
@@ -41,6 +42,7 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
 
         /// core/
+        executorCalls.upgradeRewardsCoordinator();
         executorCalls.upgradeStrategyManager();
 
         /// strategies/
@@ -88,7 +90,7 @@ contract QueueUpgrade is DeployContracts, MultisigBuilder {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._versionGte(Env.envVersion(), "1.10.0")) {
+        if (!Env.isCoreProtocolDeployed() || !Env.isSource() || !Env._strEq(Env.envVersion(), "1.9.0")) {
             return;
         }
 
