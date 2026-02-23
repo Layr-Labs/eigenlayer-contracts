@@ -448,6 +448,7 @@ contract RewardsCoordinator is
     function _setDefaultOperatorSplit(
         uint16 split
     ) internal {
+        require(split <= ONE_HUNDRED_IN_BIPS, SplitExceedsMax());
         emit DefaultOperatorSplitBipsSet(defaultOperatorSplitBips, split);
         defaultOperatorSplitBips = split;
     }

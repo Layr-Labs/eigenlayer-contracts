@@ -369,12 +369,21 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
     }
 
     function testFuzz_setDefaultOperatorSplit(uint16 defaultSplitBips) public {
+        defaultSplitBips = uint16(bound(defaultSplitBips, 0, ONE_HUNDRED_IN_BIPS));
         cheats.startPrank(rewardsCoordinator.owner());
+        uint16 oldDefaultSplitBips = rewardsCoordinator.defaultOperatorSplitBips();
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
-        emit DefaultOperatorSplitBipsSet(rewardsCoordinator.defaultOperatorSplitBips(), defaultSplitBips);
+        emit DefaultOperatorSplitBipsSet(oldDefaultSplitBips, defaultSplitBips);
         rewardsCoordinator.setDefaultOperatorSplit(defaultSplitBips);
         assertEq(defaultSplitBips, rewardsCoordinator.defaultOperatorSplitBips(), "defaultOperatorSplitBips not set");
         cheats.stopPrank();
+    }
+
+    function testFuzz_setDefaultOperatorSplit_Revert_WhenSplitGreaterThan100(uint16 defaultSplitBips) public {
+        defaultSplitBips = uint16(bound(defaultSplitBips, ONE_HUNDRED_IN_BIPS + 1, type(uint16).max));
+        cheats.startPrank(rewardsCoordinator.owner());
+        cheats.expectRevert(SplitExceedsMax.selector);
+        rewardsCoordinator.setDefaultOperatorSplit(defaultSplitBips);
     }
 
     function testFuzz_setDefaultOperatorSplit_Revert_WhenNotOwner(address caller, uint16 defaultSplitBips)
