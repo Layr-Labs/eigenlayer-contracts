@@ -555,6 +555,14 @@ library Env {
         return ZEnvHelpers.state().deployedProxy(name);
     }
 
+    function _deployedProxyOr(
+        string memory name,
+        address defaultValue
+    ) private view returns (address) {
+        string memory envvar = string.concat("ZEUS_DEPLOYED_", name, "_Proxy");
+        return vm.envOr(envvar, defaultValue);
+    }
+
     function _deployedBeacon(
         string memory name
     ) private view returns (address) {

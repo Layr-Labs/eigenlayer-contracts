@@ -17,9 +17,13 @@ contract DeployImplementations is CoreContractsDeployer {
     function _runAsEOA() internal virtual override {
         vm.startBroadcast();
 
-        deployRewardsCoordinator();
+        // Preprod needs to be upgraded, not redeployed.
+        if (!(Env._strEq(Env.envVersion(), "1.12.0"))) {
+            deployEmissionsControllerProxy();
+        }
+
         deployEmissionsController();
-        deployEmissionsControllerProxy();
+        deployRewardsCoordinator();
 
         vm.stopBroadcast();
     }

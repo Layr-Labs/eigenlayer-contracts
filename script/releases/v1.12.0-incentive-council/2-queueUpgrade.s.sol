@@ -21,7 +21,7 @@ import {IBackingEigen} from "src/contracts/interfaces/IBackingEigen.sol";
 
 /// Steps:
 /// 1. Queue EmissionsController upgrade and initialization.
-/// 2. Queue RewardsCoordinator upgrade and reinitialization.
+/// 2. Queue RewardsCoordinator upgrade (with conditional reinitialization based on current state).
 /// 3. Queue add EmissionsController to protocol registry.
 /// 4. Queue remove minting rights from old hopper.
 /// 5. Queue grant minting rights to EmissionsController.
@@ -48,33 +48,60 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
 
         // 1. Upgrade EmissionsController proxy to the new implementation and initialize
-        executorCalls.append({
-            to: Env.proxyAdmin(),
-            data: abi.encodeCall(
-                IProxyAdmin.upgradeAndCall,
-                (
-                    ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
-                    address(Env.impl.emissionsController()),
-                    abi.encodeCall(
-                        EmissionsController.initialize,
-                        (
-                            Env.opsMultisig(), // initialOwner
-                            Env.incentiveCouncilMultisig(), // initialIncentiveCouncil
-                            0 // initialPausedStatus
+        // Preprod needs to be upgraded, not redeployed.
+        if (Env._strEq(Env.envVersion(), "1.12.0")) {
+            executorCalls.append({
+                to: Env.proxyAdmin(),
+                data: abi.encodeCall(
+                    IProxyAdmin.upgrade,
+                    (
+                        ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
+                        address(Env.impl.emissionsController())
+                    )
+                )
+            });
+        } else {
+            executorCalls.append({
+                to: Env.proxyAdmin(),
+                data: abi.encodeCall(
+                    IProxyAdmin.upgradeAndCall,
+                    (
+                        ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
+                        address(Env.impl.emissionsController()),
+                        abi.encodeCall(
+                            EmissionsController.initialize,
+                            (
+                                Env.opsMultisig(), // initialOwner
+                                Env.incentiveCouncilMultisig(), // initialIncentiveCouncil
+                                0 // initialPausedStatus
+                            )
                         )
                     )
                 )
-            )
-        });
-        // 2. Upgrade RewardsCoordinator to the new implementation and reinitialize.
-        executorCalls.upgradeAndReinitializeRewardsCoordinator({
-            initialOwner: Env.opsMultisig(),
-            initialPausedStatus: 0,
-            rewardsUpdater: Env.REWARDS_UPDATER(),
-            activationDelay: Env.ACTIVATION_DELAY(),
-            defaultSplitBips: Env.DEFAULT_SPLIT_BIPS(),
-            feeRecipient: Env.incentiveCouncilMultisig()
-        });
+            });
+        }
+        // 2. Upgrade RewardsCoordinator to the new implementation.
+        // Check if RewardsCoordinator has already been reinitialized by reading _initialized from storage.
+        // Slot 0 contains: _initialized (uint8 at offset 0) and _initializing (bool at offset 1)
+        // If _initialized >= 2, reinitializer(2) has already been called.
+        RewardsCoordinator rc = Env.proxy.rewardsCoordinator();
+        bytes32 slot0 = vm.load(address(rc), bytes32(uint256(0)));
+        uint8 initializedVersion = uint8(uint256(slot0) & 0xFF); // Mask to get only the first byte
+
+        if (initializedVersion < 2) {
+            // Not yet reinitialized - perform upgrade with reinitialization
+            executorCalls.upgradeAndReinitializeRewardsCoordinator({
+                initialOwner: Env.opsMultisig(),
+                initialPausedStatus: 0,
+                rewardsUpdater: Env.REWARDS_UPDATER(),
+                activationDelay: Env.ACTIVATION_DELAY(),
+                defaultSplitBips: Env.DEFAULT_SPLIT_BIPS(),
+                feeRecipient: Env.incentiveCouncilMultisig()
+            });
+        } else {
+            // Already reinitialized - just upgrade without calling initialize
+            executorCalls.upgradeRewardsCoordinator();
+        }
         // 3. Add EmissionsController to the protocol registry.
         address[] memory addresses = new address[](1);
         addresses[0] = address(Env.proxy.emissionsController());
@@ -111,6 +138,10 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     }
 
     function testScript() public virtual override {
+        if (!Env.isCoreProtocolDeployed()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
@@ -151,10 +182,13 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             require(beigen.isMinter(Env.legacyTokenHopper()), "Old hopper should have minting rights before upgrade");
         }
         // Ensure EmissionsController does NOT have minting rights yet
-        require(
-            !beigen.isMinter(address(Env.proxy.emissionsController())),
-            "EmissionsController should NOT have minting rights before upgrade"
-        );
+        // Skip check if we are on preprod, as the EmissionsController is already deployed.
+        if (!Env._strEq(Env.envVersion(), "1.12.0")) {
+            require(
+                !beigen.isMinter(address(Env.proxy.emissionsController())),
+                "EmissionsController should NOT have minting rights before upgrade"
+            );
+        }
     }
 }
 

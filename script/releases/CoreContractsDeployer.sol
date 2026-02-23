@@ -93,6 +93,8 @@ abstract contract CoreContractsDeployer is EOADeployer {
                 delegationManager: Env.proxy.delegationManager(),
                 strategyManager: Env.proxy.strategyManager(),
                 allocationManager: Env.proxy.allocationManager(),
+                // NOTE: EmissionsController was added in v1.12.0. For backward compatibility with
+                // older releases (v1.9.0, etc.), this will be address(Env.executorMultisig()) if not deployed.
                 emissionsController: Env.proxy.emissionsController(),
                 pauserRegistry: Env.impl.pauserRegistry(),
                 permissionController: Env.proxy.permissionController(),
