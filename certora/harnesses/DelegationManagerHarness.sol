@@ -24,6 +24,19 @@ contract DelegationManagerHarness is DelegationManager {
             _version
         ) {}
 
+
+    
+    function getSlashableSharesInQueueWithMag(address operator, IStrategy strategy, uint64 prevMaxMagnitude, uint64 maxMagnitude) public view returns (uint256) {
+
+        // Return amount of slashable scaled shares remaining
+        return _getSlashableSharesInQueue({
+            operator: operator,
+            strategy: strategy,
+            prevMaxMagnitude: prevMaxMagnitude,
+            newMaxMagnitude: maxMagnitude
+        });
+    }
+
     function get_operatorShares(address operator, IStrategy strategy) public view returns (uint256) {
         return operatorShares[operator][strategy];
     }

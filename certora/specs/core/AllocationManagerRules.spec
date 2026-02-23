@@ -1,5 +1,5 @@
 import "./AllocationManagerValidState.spec";
-using DelegationManager as DelegationManager;
+using DelegationManagerHarness as DelegationManager;
 
 definition DEFAULT_BURN_ADDRESS() returns address = 0x00000000000000000000000000000000000E16E4;
 
@@ -21,6 +21,17 @@ filtered {f -> f.selector != sig:modifyAllocations(address,IAllocationManagerTyp
         f(e, args);
 
     assert didMakeInvalidPendingDiffTransition == false;
+}
+
+rule pendingDiffStateTransitionsTest_TOREMOVE(address[] operators, address strategy)  {
+    env e;
+    requireValidState();
+
+    require didMakeInvalidPendingDiffTransition == false;
+
+    getMaxMagnitudes(e, operators, strategy);
+
+    satisfy true;
 }
 
 // this rule is for modifyAllocations where when all the effectblock are in the future, this function cannot make more than one transition at a time.
@@ -51,12 +62,12 @@ rule noOverslashingOfOperatorShares(env e, address avs, IAllocationManagerTypes.
     // Assume some already proven invariants
     requireValidState();
     requireNoOverflow(e);
-    requireInvariant maxMagnitudeLeqWAD(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
     requireInvariant currentMagnitudeLeqWAD(operatorKey, params.operator, params.strategies[0]);
     requireInvariant encumberedMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGEencumberedMagnitude(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGEencumberedMagnitude(e,params.operator, params.strategies[0]);
     requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGECurrentMagnitude(operatorKey, params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGECurrentMagnitude(e, operatorKey, params.operator, params.strategies[0]);
     
     require (e.block.number < currentContract.allocations[params.operator][operatorKey][params.strategies[0]].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
 
@@ -64,7 +75,7 @@ rule noOverslashingOfOperatorShares(env e, address avs, IAllocationManagerTypes.
     uint64 currentMagnitudeBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
     int128 pendingDiffBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].pendingDiff;
     require (pendingDiffBefore == 0, "prove an underapproximation assuming no pendingDiff, as pendingDiff changes currentMagnitude throughout the computation of slashOperator in _getUpdatedAllocation()");
-    uint64 maxMagnitudeBefore = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeBefore = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesBefore = DelegationManager.operatorShares[params.operator][params.strategies[0]];
     uint256 queuedSharesBefore = DelegationManager.getSlashableSharesInQueue(e, params.operator, params.strategies[0]);
@@ -77,7 +88,7 @@ rule noOverslashingOfOperatorShares(env e, address avs, IAllocationManagerTypes.
     slashOperator(e, avs, params);
 
     uint64 currentMagnitudeAfter = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
-    uint64 maxMagnitudeAfter = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeAfter = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesAfter = DelegationManager.operatorShares[params.operator][params.strategies[0]];
 
@@ -107,12 +118,12 @@ rule noOverslashingOfShares(env e, address avs, IAllocationManagerTypes.Slashing
     // Assume some already proven invariants
     requireValidState();
     requireNoOverflow(e);
-    requireInvariant maxMagnitudeLeqWAD(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
     requireInvariant currentMagnitudeLeqWAD(operatorKey, params.operator, params.strategies[0]);
     requireInvariant encumberedMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGEencumberedMagnitude(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGEencumberedMagnitude(e, params.operator, params.strategies[0]);
     requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGECurrentMagnitude(operatorKey, params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGECurrentMagnitude(e, operatorKey, params.operator, params.strategies[0]);
     
     require (e.block.number < currentContract.allocations[params.operator][operatorKey][params.strategies[0]].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
 
@@ -120,7 +131,7 @@ rule noOverslashingOfShares(env e, address avs, IAllocationManagerTypes.Slashing
     uint64 currentMagnitudeBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
     int128 pendingDiffBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].pendingDiff;
     require (pendingDiffBefore == 0, "prove an underapproximation assuming no pendingDiff, as pendingDiff changes currentMagnitude throughout the computation of slashOperator in _getUpdatedAllocation()");
-    uint64 maxMagnitudeBefore = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeBefore = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesBefore = DelegationManager.operatorShares[params.operator][params.strategies[0]];
     uint256 queuedSharesBefore = DelegationManager.getSlashableSharesInQueue(e, params.operator, params.strategies[0]);
@@ -132,10 +143,12 @@ rule noOverslashingOfShares(env e, address avs, IAllocationManagerTypes.Slashing
     slashOperator(e, avs, params);
 
     uint64 currentMagnitudeAfter = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
-    uint64 maxMagnitudeAfter = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeAfter = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesAfter = DelegationManager.operatorShares[params.operator][params.strategies[0]];
-    uint256 queuedSharesAfter = DelegationManager.getSlashableSharesInQueue(e, params.operator, params.strategies[0]);
+ 
+    // remove the same amount of shares from the original shares in queue as a are burnt throughout the slashing process
+    uint256 queuedSharesAfter = assert_uint256(queuedSharesBefore - DelegationManager.getSlashableSharesInQueueWithMag(e, params.operator, params.strategies[0], maxMagnitudeBefore, maxMagnitudeAfter));
 
     // currentMagnitude should not increase from a slash
     assert(currentMagnitudeBefore >= currentMagnitudeAfter);
@@ -162,12 +175,12 @@ rule overslashingOfSharesAtMostOne(env e, address avs, IAllocationManagerTypes.S
     // Assume some already proven invariants
     requireValidState();
     requireNoOverflow(e);
-    requireInvariant maxMagnitudeLeqWAD(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
     requireInvariant currentMagnitudeLeqWAD(operatorKey, params.operator, params.strategies[0]);
     requireInvariant encumberedMagnitudeLeqWAD(e, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGEencumberedMagnitude(params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGEencumberedMagnitude(e, params.operator, params.strategies[0]);
     requireInvariant sumOfPendingDiffCurrentMagnitudeRespectsWAD(operatorKey, params.operator, params.strategies[0]);
-    requireInvariant maxMagnitudeGECurrentMagnitude(operatorKey, params.operator, params.strategies[0]);
+    requireInvariant maxMagnitudeGECurrentMagnitude(e, operatorKey, params.operator, params.strategies[0]);
     
     require (e.block.number < currentContract.allocations[params.operator][operatorKey][params.strategies[0]].effectBlock, "require to not trigger a change of values throughout computation by _getUpdatedAllocation()");
 
@@ -175,7 +188,7 @@ rule overslashingOfSharesAtMostOne(env e, address avs, IAllocationManagerTypes.S
     uint64 currentMagnitudeBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
     int128 pendingDiffBefore = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].pendingDiff;
     require (pendingDiffBefore == 0, "prove an underapproximation assuming no pendingDiff, as pendingDiff changes currentMagnitude throughout the computation of slashOperator in _getUpdatedAllocation()");
-    uint64 maxMagnitudeBefore = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeBefore = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesBefore = DelegationManager.operatorShares[params.operator][params.strategies[0]];
     uint256 queuedSharesBefore = DelegationManager.getSlashableSharesInQueue(e, params.operator, params.strategies[0]);
@@ -187,7 +200,7 @@ rule overslashingOfSharesAtMostOne(env e, address avs, IAllocationManagerTypes.S
     slashOperator(e, avs, params);
 
     uint64 currentMagnitudeAfter = currentContract.allocations[params.operator][operatorKey][params.strategies[0]].currentMagnitude;
-    uint64 maxMagnitudeAfter = getMaxMagnitude(params.operator, params.strategies[0]);
+    uint64 maxMagnitudeAfter = getMaxMagnitude(e, params.operator, params.strategies[0]);
 
     uint256 operatorSharesAfter = DelegationManager.operatorShares[params.operator][params.strategies[0]];
     uint256 queuedSharesAfter = DelegationManager.getSlashableSharesInQueue(e, params.operator, params.strategies[0]);
