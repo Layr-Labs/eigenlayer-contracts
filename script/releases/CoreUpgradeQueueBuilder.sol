@@ -176,6 +176,15 @@ library CoreUpgradeQueueBuilder {
         });
     }
 
+    function upgradeDurationVaultStrategy(
+        MultisigCall[] storage calls
+    ) internal returns (MultisigCall[] storage) {
+        return calls.append({
+            to: address(Env.beacon.durationVaultStrategy()),
+            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.durationVaultStrategy())})
+        });
+    }
+
     /// multichain/
     function upgradeBN254CertificateVerifier(
         MultisigCall[] storage calls

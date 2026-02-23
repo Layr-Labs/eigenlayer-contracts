@@ -819,6 +819,35 @@ library TestUtils {
         );
     }
 
+    function validateDurationVaultStrategyImmutables(
+        DurationVaultStrategy durationVaultStrategy
+    ) internal view {
+        assertTrue(
+            durationVaultStrategy.strategyManager() == Env.proxy.strategyManager(),
+            "durationVaultStrategy strategyManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.delegationManager()) == address(Env.proxy.delegationManager()),
+            "durationVaultStrategy delegationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.allocationManager()) == address(Env.proxy.allocationManager()),
+            "durationVaultStrategy allocationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.rewardsCoordinator()) == address(Env.proxy.rewardsCoordinator()),
+            "durationVaultStrategy rewardsCoordinator incorrect"
+        );
+        assertTrue(
+            durationVaultStrategy.pauserRegistry() == Env.impl.pauserRegistry(),
+            "durationVaultStrategy pauserRegistry incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.strategyFactory()) == address(Env.proxy.strategyFactory()),
+            "durationVaultStrategy strategyFactory incorrect"
+        );
+    }
+
     /// multichain/
     function validateBN254CertificateVerifierImmutables(
         BN254CertificateVerifier bn254CertificateVerifier
@@ -975,7 +1004,7 @@ library TestUtils {
         StrategyFactory strategyFactory
     ) internal {
         vm.expectRevert(errInit);
-        strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+        strategyFactory.initialize(address(0), 0);
     }
 
     /// multichain/
@@ -1191,6 +1220,52 @@ library TestUtils {
         // Lastly, attempt to call pauseAll on the protocol registry
         vm.prank(Env.pauserMultisig());
         Env.proxy.protocolRegistry().pauseAll();
+    }
+
+    ///
+    ///                         DURATION VAULT STRATEGY VALIDATION (v1.11.0+)
+    ///
+    /// @dev These functions are called explicitly by v1.11.0+ scripts only.
+    /// @dev Do NOT call from main validation functions to avoid breaking older releases.
+
+    /// @notice Validates DurationVaultStrategy beacon owner
+    function validateDurationVaultStrategyProxyAdmin() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().owner() == Env.executorMultisig(),
+            "durationVaultStrategy beacon owner incorrect"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy factory beacon reference
+    function validateDurationVaultStrategyStorage() internal view {
+        StrategyFactory strategyFactory = Env.proxy.strategyFactory();
+        assertTrue(
+            strategyFactory.durationVaultBeacon() == Env.beacon.durationVaultStrategy(),
+            "sFact.durationVaultBeacon invalid"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy implementation immutables
+    function validateDurationVaultStrategyImplConstructors() internal view {
+        validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
+    }
+
+    /// @notice Validates DurationVaultStrategy beacon points to correct implementation
+    function validateDurationVaultStrategyImplAddressesMatchProxy() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().implementation() == address(Env.impl.durationVaultStrategy()),
+            "durationVaultStrategy impl address mismatch"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy in protocol registry
+    function validateDurationVaultStrategyProtocolRegistry() internal view {
+        address addr;
+        IProtocolRegistryTypes.DeploymentConfig memory config;
+        (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DurationVaultStrategy).name);
+        assertTrue(addr == address(Env.beacon.durationVaultStrategy()), "durationVaultStrategy address incorrect");
+        assertFalse(config.pausable, "durationVaultStrategy should not be pausable");
+        assertFalse(config.deprecated, "durationVaultStrategy should not be deprecated");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`

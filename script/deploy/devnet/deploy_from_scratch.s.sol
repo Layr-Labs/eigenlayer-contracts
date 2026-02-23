@@ -18,6 +18,7 @@ import "../../../src/contracts/permissions/PermissionController.sol";
 import "../../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "../../../src/contracts/strategies/StrategyFactory.sol";
 import "../../../src/contracts/strategies/StrategyBase.sol";
+import "../../../src/contracts/strategies/DurationVaultStrategy.sol";
 
 import "../../../src/contracts/pods/EigenPod.sol";
 import "../../../src/contracts/pods/EigenPodManager.sol";
@@ -59,6 +60,8 @@ contract DeployFromScratch is Script, Test {
     StrategyFactory public strategyFactoryImplementation;
     UpgradeableBeacon public strategyBeacon;
     StrategyBase public baseStrategyImplementation;
+    UpgradeableBeacon public durationVaultBeacon;
+    DurationVaultStrategy public durationVaultImplementation;
     AllocationManager public allocationManagerImplementation;
     AllocationManager public allocationManager;
     AllocationManagerView public allocationManagerView;
@@ -269,7 +272,6 @@ contract DeployFromScratch is Script, Test {
         );
 
         permissionControllerImplementation = new PermissionController();
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
 
         // Third, upgrade the proxy contracts to use the correct implementation contracts and initialize them.
         {
@@ -336,16 +338,27 @@ contract DeployFromScratch is Script, Test {
         // Create a proxy beacon for base strategy implementation
         strategyBeacon = new UpgradeableBeacon(address(baseStrategyImplementation));
 
+        // Create duration vault strategy implementation and beacon
+        durationVaultImplementation = new DurationVaultStrategy(
+            strategyManager,
+            eigenLayerPauserReg,
+            delegation,
+            IAllocationManager(address(allocationManager)),
+            rewardsCoordinator,
+            IStrategyFactory(address(strategyFactory))
+        );
+        durationVaultBeacon = new UpgradeableBeacon(address(durationVaultImplementation));
+
+        // Create strategy factory implementation with beacons (beacons are now immutable)
+        strategyFactoryImplementation = new StrategyFactory(
+            strategyManager, eigenLayerPauserReg, IBeacon(strategyBeacon), IBeacon(durationVaultBeacon)
+        );
+
         // Strategy Factory, upgrade and initialized
         eigenLayerProxyAdmin.upgradeAndCall(
             ITransparentUpgradeableProxy(payable(address(strategyFactory))),
             address(strategyFactoryImplementation),
-            abi.encodeWithSelector(
-                StrategyFactory.initialize.selector,
-                executorMultisig,
-                0, // initial paused status
-                IBeacon(strategyBeacon)
-            )
+            abi.encodeWithSelector(StrategyFactory.initialize.selector, executorMultisig, 0)
         );
 
         // Set the strategyWhitelister to the factory
@@ -413,6 +426,8 @@ contract DeployFromScratch is Script, Test {
         vm.serializeAddress(deployed_addresses, "strategyFactoryImplementation", address(strategyFactoryImplementation));
         vm.serializeAddress(deployed_addresses, "strategyBeacon", address(strategyBeacon));
         vm.serializeAddress(deployed_addresses, "baseStrategyImplementation", address(baseStrategyImplementation));
+        vm.serializeAddress(deployed_addresses, "durationVaultBeacon", address(durationVaultBeacon));
+        vm.serializeAddress(deployed_addresses, "durationVaultImplementation", address(durationVaultImplementation));
         vm.serializeAddress(deployed_addresses, "eigenPodManager", address(eigenPodManager));
         vm.serializeAddress(deployed_addresses, "eigenPodManagerImplementation", address(eigenPodManagerImplementation));
         vm.serializeAddress(deployed_addresses, "rewardsCoordinator", address(rewardsCoordinator));
@@ -539,6 +554,11 @@ contract DeployFromScratch is Script, Test {
             strategyBeacon.implementation() == address(baseStrategyImplementation),
             "strategyBeacon: implementation set incorrectly"
         );
+
+        require(
+            durationVaultBeacon.implementation() == address(durationVaultImplementation),
+            "durationVaultBeacon: implementation set incorrectly"
+        );
     }
 
     function _verifyInitialOwners() internal view {
@@ -549,6 +569,7 @@ contract DeployFromScratch is Script, Test {
         require(eigenLayerProxyAdmin.owner() == executorMultisig, "eigenLayerProxyAdmin: owner not set correctly");
         require(eigenPodBeacon.owner() == executorMultisig, "eigenPodBeacon: owner not set correctly");
         require(strategyBeacon.owner() == executorMultisig, "strategyBeacon: owner not set correctly");
+        require(durationVaultBeacon.owner() == executorMultisig, "durationVaultBeacon: owner not set correctly");
     }
 
     function _checkPauserInitializations() internal view {
@@ -611,6 +632,23 @@ contract DeployFromScratch is Script, Test {
         require(
             baseStrategyImplementation.strategyManager() == strategyManager,
             "baseStrategyImplementation: strategyManager set incorrectly"
+        );
+
+        require(
+            durationVaultImplementation.strategyManager() == strategyManager,
+            "durationVaultImplementation: strategyManager set incorrectly"
+        );
+        require(
+            address(durationVaultImplementation.delegationManager()) == address(delegation),
+            "durationVaultImplementation: delegationManager set incorrectly"
+        );
+        require(
+            address(durationVaultImplementation.allocationManager()) == address(allocationManager),
+            "durationVaultImplementation: allocationManager set incorrectly"
+        );
+        require(
+            address(durationVaultImplementation.rewardsCoordinator()) == address(rewardsCoordinator),
+            "durationVaultImplementation: rewardsCoordinator set incorrectly"
         );
 
         require(

@@ -16,6 +16,7 @@ import "../../src/contracts/permissions/PermissionController.sol";
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "../../src/contracts/strategies/DurationVaultStrategy.sol";
 import "../../src/contracts/strategies/EigenStrategy.sol";
 
 import "../../src/contracts/pods/EigenPod.sol";
@@ -103,6 +104,7 @@ contract ExistingDeploymentParser is Script, Logger {
     PauserRegistry public eigenLayerPauserReg;
     UpgradeableBeacon public eigenPodBeacon;
     UpgradeableBeacon public strategyBeacon;
+    UpgradeableBeacon public durationVaultBeacon;
 
     /// @dev AllocationManager
     IAllocationManager public allocationManager;
@@ -138,6 +140,7 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
     StrategyBase public baseStrategyImplementation;
+    DurationVaultStrategy public durationVaultImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
     // Token
