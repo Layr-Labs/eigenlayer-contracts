@@ -37,6 +37,23 @@ library Merkle {
     /// @dev Empty roots should never be valid. We prevent them to avoid issues like the Nomad bridge attack: <https://medium.com/nomad-xyz-blog/nomad-bridge-hack-root-cause-analysis-875ad2e5aacd>
     error EmptyRoot();
 
+    /// @dev Pads `leaves` to the next power of two and returns a layer array with the leaves copied in.
+    ///      Unfilled slots remain as zero hashes (bytes32(0)).
+    function _makePaddedLayer(
+        bytes32[] memory leaves
+    ) private pure returns (bytes32[] memory layer, uint256 numNodesInLayer) {
+        // pad to the next power of 2
+        numNodesInLayer = 1;
+        while (numNodesInLayer < leaves.length) {
+            numNodesInLayer *= 2;
+        }
+
+        layer = new bytes32[](numNodesInLayer);
+        for (uint256 i = 0; i < leaves.length; i++) {
+            layer[i] = leaves[i];
+        }
+    }
+
     /// @notice Verifies that a given leaf is included in a Merkle tree
     /// @param proof The proof of inclusion for the leaf
     /// @param root The root of the Merkle tree
@@ -259,15 +276,7 @@ library Merkle {
     ) internal pure returns (bytes memory proof) {
         require(leaves.length > 0, NoLeaves());
         // TODO: very inefficient, use ZERO_HASHES
-        // pad to the next power of 2
-        uint256 numNodesInLayer = 1;
-        while (numNodesInLayer < leaves.length) {
-            numNodesInLayer *= 2;
-        }
-        bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        for (uint256 i = 0; i < leaves.length; i++) {
-            layer[i] = leaves[i];
-        }
+        (bytes32[] memory layer, uint256 numNodesInLayer) = _makePaddedLayer(leaves);
 
         if (index >= layer.length) revert InvalidIndex();
 
@@ -301,15 +310,7 @@ library Merkle {
     ) internal pure returns (bytes memory proof) {
         require(leaves.length > 1, NotEnoughLeaves());
         // TODO: very inefficient, use ZERO_HASHES
-        // pad to the next power of 2
-        uint256 numNodesInLayer = 1;
-        while (numNodesInLayer < leaves.length) {
-            numNodesInLayer *= 2;
-        }
-        bytes32[] memory layer = new bytes32[](numNodesInLayer);
-        for (uint256 i = 0; i < leaves.length; i++) {
-            layer[i] = leaves[i];
-        }
+        (bytes32[] memory layer, uint256 numNodesInLayer) = _makePaddedLayer(leaves);
 
         if (index >= layer.length) revert InvalidIndex();
 
