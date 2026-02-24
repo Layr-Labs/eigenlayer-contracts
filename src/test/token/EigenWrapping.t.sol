@@ -199,7 +199,7 @@ contract EigenWrappingTests is Test {
         EigenHarness(address(eigen)).mint(minter1, totalSupply / 2);
         EigenHarness(address(eigen)).mint(minter2, totalSupply / 2);
 
-        // set allowed froms
+        // set allowed forms
         EigenHarness(address(eigen)).setAllowedFromPermissionless(minter1, true);
         EigenHarness(address(eigen)).setAllowedFromPermissionless(minter2, true);
 
