@@ -14,17 +14,13 @@ env:
 jobs:
   typos:
     name: Typo Linting
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
-        with:
-          egress-policy: block
-          allowed-endpoints: >
-            github.com:443
-            release-assets.githubusercontent.com:443
-            objects.githubusercontent.com:443
-            release-assets.githubusercontent.com:443
+      - name: Install wget
+        run: |
+          if ! command -v wget &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y wget
+          fi
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: crate-ci/typos@717cd03663352cbd05e4d28c01366e571ff5f2ed
