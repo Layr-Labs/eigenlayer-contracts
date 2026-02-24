@@ -383,7 +383,7 @@ To understand more about how our ecosystem and its participants work, checkout t
 
 * [AVS Developer Guide](https://docs.eigenlayer.xyz/developers/Concepts/avs-developer-guide)
 * [Operator Guide](https://docs.eigenlayer.xyz/operators/concepts/operator-introduction)
-* [Restaker Guide](https://docs.eigenlayer.xyz/restakers/concepts/overview)
+* [Restaker Guide](https://docs.eigencloud.xyz/eigenda/operator-guides/run-a-node/registration)
 
 ### Contract Docs & Deep Dive
 
