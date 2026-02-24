@@ -32,6 +32,7 @@ extend-ignore-re = []
 [default.extend-words]
 strat = "strat"
 froms = "froms"
+Ba = "Ba"
 
 [type.go]
 extend-glob = []
