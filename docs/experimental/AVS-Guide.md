@@ -1,5 +1,5 @@
 [middleware-folder-link]: https://github.com/Layr-Labs/eigenlayer-contracts/tree/master/src/contracts/middleware
-[middleware-guide-link]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/master/docs/AVS-Guide.md#quick-start-guide-to-build-avs-contracts
+[middleware-guide-link]: https://github.com/Layr-Labs/eigenlayer-contracts/blob/main/docs/experimental/AVS-Guide.md#quick-start-guide-to-build-avs-contracts
 # Purpose
 This document aims to describe and summarize how actively validated services (AVSs) building on EigenLayer interact with the core EigenLayer protocol. Currently, this doc explains how AVS developers can use the current** APIs for: 
 - enabling operators to opt-in to the AVS,
