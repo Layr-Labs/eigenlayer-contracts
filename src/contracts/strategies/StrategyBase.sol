@@ -112,6 +112,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
         // calculate the prior virtual balance to account for the tokens that were already transferred to this contract
         uint256 virtualPriorTokenBalance = virtualTokenBalance - amount;
+        
+        // Additional safety check to prevent precision loss
+        require(virtualPriorTokenBalance > 0, "VirtualPriorTokenBalanceZero");
+        require(virtualShareAmount > 0, "VirtualShareAmountZero");
+        
         newShares = (amount * virtualShareAmount) / virtualPriorTokenBalance;
 
         // extra check for correctness / against edge case where share rate can be massively inflated as a 'griefing' sort of attack
@@ -151,6 +156,11 @@ contract StrategyBase is Initializable, Pausable, IStrategy {
         // account for virtual shares and balance
         uint256 virtualPriorTotalShares = priorTotalShares + SHARES_OFFSET;
         uint256 virtualTokenBalance = _tokenBalance() + BALANCE_OFFSET;
+        
+        // Additional safety checks for withdrawal calculations
+        require(virtualPriorTotalShares > 0, "VirtualPriorTotalSharesZero");
+        require(virtualTokenBalance > 0, "VirtualTokenBalanceZero");
+        
         // calculate ratio based on virtual shares and balance, being careful to multiply before dividing
         amountOut = (virtualTokenBalance * amountShares) / virtualPriorTotalShares;
 
