@@ -1,17 +1,17 @@
 {
-    "name": "incentives-emissions-controller",
-    "from": ">=1.11.0",
+    "name": "duration-vault-incentives-v1.12.0",
+    "from": "1.9.0",
     "to": "1.12.0",
     "phases": [
         {
             "type": "eoa",
             "filename": "1-deployImplementations.s.sol",
-            "description": "Deploy new RewardsCoordinator and EmissionsController implementations"
+            "description": "Deploy Duration Vault, RewardsCoordinator v2.2, and EmissionsController implementations"
         },
         {
             "type": "multisig",
             "filename": "2-queueUpgrade.s.sol",
-            "description": "Queue upgrade to deploy EmissionsController proxy and upgrade both contracts to new implementations"
+            "description": "Queue upgrades for all strategy contracts, EmissionsController, and RewardsCoordinator"
         },
         {
             "type": "multisig",

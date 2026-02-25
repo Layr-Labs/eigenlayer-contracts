@@ -28,8 +28,6 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     UpgradeableBeacon public strategyBeacon;
     UpgradeableBeacon public durationVaultBeacon;
     ERC20PresetFixedSupply public underlyingToken;
-    RewardsCoordinatorMock public rewardsCoordinatorMock;
-
     uint initialSupply = 1e36;
     address initialOwner = address(this);
     address beaconProxyOwner = address(this);

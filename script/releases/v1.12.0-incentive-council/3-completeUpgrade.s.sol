@@ -75,10 +75,17 @@ contract ExecuteUpgrade is QueueUpgrade {
         TestUtils.validateProxyStorage();
         TestUtils.validateImplAddressesMatchProxy();
 
-        // Additional v9.9.9-specific validation (must run before validateProtocolRegistry which pauses everything)
+        // Incentive council validations (must run before validateProtocolRegistry which pauses everything)
         _validateEmissionsControllerUpgrade();
         _validateRewardsCoordinatorUpgrade();
         _validateMintingRights();
+
+        // Duration vault validations
+        TestUtils.validateDurationVaultStrategyProxyAdmin();
+        TestUtils.validateDurationVaultStrategyStorage();
+        TestUtils.validateDurationVaultStrategyImplConstructors();
+        TestUtils.validateDurationVaultStrategyImplAddressesMatchProxy();
+        TestUtils.validateDurationVaultStrategyProtocolRegistry();
 
         // Run last since it calls pauseAll()
         TestUtils.validateProtocolRegistry();

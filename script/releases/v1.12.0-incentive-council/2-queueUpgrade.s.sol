@@ -19,12 +19,13 @@ import {RewardsCoordinator} from "src/contracts/core/RewardsCoordinator.sol";
 import {IProtocolRegistry, IProtocolRegistryTypes} from "src/contracts/interfaces/IProtocolRegistry.sol";
 import {IBackingEigen} from "src/contracts/interfaces/IBackingEigen.sol";
 
-/// Steps:
-/// 1. Queue EmissionsController upgrade and initialization.
-/// 2. Queue RewardsCoordinator upgrade (with conditional reinitialization based on current state).
-/// 3. Queue add EmissionsController to protocol registry.
-/// 4. Queue remove minting rights from old hopper.
-/// 5. Queue grant minting rights to EmissionsController.
+/// Purpose: Queue the upgrade for Duration Vault and Incentive Council features.
+/// This script queues upgrades to:
+/// - EmissionsController (new proxy + initialize, or upgrade for preprod)
+/// - RewardsCoordinator (rewards v2.2 + protocol fees, with conditional reinitialization)
+/// - StrategyManager, EigenStrategy, StrategyBase beacon, StrategyBaseTVLLimits, StrategyFactory
+/// - Register DurationVaultStrategy beacon + EmissionsController in ProtocolRegistry
+/// - Transfer minting rights from legacy hopper to EmissionsController
 contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     using Env for *;
     using Encode for *;
@@ -80,7 +81,14 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
                 )
             });
         }
-        // 2. Upgrade RewardsCoordinator to the new implementation.
+        // 2. Upgrade strategy contracts for Duration Vault feature.
+        executorCalls.upgradeStrategyManager();
+        executorCalls.upgradeEigenStrategy();
+        executorCalls.upgradeStrategyBase();
+        executorCalls.upgradeStrategyBaseTVLLimits();
+        executorCalls.upgradeStrategyFactory();
+
+        // 3. Upgrade RewardsCoordinator to the new implementation.
         // Check if RewardsCoordinator has already been reinitialized by reading _initialized from storage.
         // Slot 0 contains: _initialized (uint8 at offset 0) and _initializing (bool at offset 1)
         // If _initialized >= 2, reinitializer(2) has already been called.
@@ -102,26 +110,29 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             // Already reinitialized - just upgrade without calling initialize
             executorCalls.upgradeRewardsCoordinator();
         }
-        // 3. Add EmissionsController to the protocol registry.
-        address[] memory addresses = new address[](1);
-        addresses[0] = address(Env.proxy.emissionsController());
+        // 4. Register DurationVaultStrategy beacon and EmissionsController in protocol registry.
+        address[] memory addresses = new address[](2);
+        addresses[0] = address(Env.beacon.durationVaultStrategy());
+        addresses[1] = address(Env.proxy.emissionsController());
 
-        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](1);
-        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
+        IProtocolRegistryTypes.DeploymentConfig[] memory configs = new IProtocolRegistryTypes.DeploymentConfig[](2);
+        configs[0] = IProtocolRegistryTypes.DeploymentConfig({pausable: false, deprecated: false});
+        configs[1] = IProtocolRegistryTypes.DeploymentConfig({pausable: true, deprecated: false});
 
-        string[] memory names = new string[](1);
-        names[0] = type(EmissionsController).name;
+        string[] memory names = new string[](2);
+        names[0] = type(DurationVaultStrategy).name;
+        names[1] = type(EmissionsController).name;
 
         executorCalls.append({
             to: address(Env.proxy.protocolRegistry()),
             data: abi.encodeCall(IProtocolRegistry.ship, (addresses, configs, names, Env.deployVersion()))
         });
-        // 4. Remove minting rights from the old hopper.
+        // 5. Remove minting rights from the old hopper.
         executorCalls.append({
             to: address(Env.proxy.beigen()),
             data: abi.encodeCall(IBackingEigen.setIsMinter, (Env.legacyTokenHopper(), false))
         });
-        // 5. Grant minting rights to the EmissionsController.
+        // 6. Grant minting rights to the EmissionsController.
         executorCalls.append({
             to: address(Env.proxy.beigen()),
             data: abi.encodeCall(IBackingEigen.setIsMinter, (address(Env.proxy.emissionsController()), true))

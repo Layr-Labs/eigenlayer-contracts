@@ -25,7 +25,6 @@ contract StrategyManagerDurationUnitTests is EigenLayerUnitTestSetup, IStrategyM
     DurationVaultStrategy public durationVaultImplementation;
     IDurationVaultStrategy public durationVault;
 
-    RewardsCoordinatorMock public rewardsCoordinatorMock;
     StrategyFactoryMock public strategyFactoryMock;
     ERC20PresetFixedSupply public underlyingToken;
 
