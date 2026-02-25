@@ -177,9 +177,23 @@ abstract contract CoreContractsDeployer is EOADeployer {
     function deployStrategyFactory() internal onlyEOA returns (StrategyFactory deployed) {
         deployed = new StrategyFactory({
             _strategyManager: Env.proxy.strategyManager(),
-            _pauserRegistry: Env.impl.pauserRegistry()
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _strategyBeacon: Env.beacon.strategyBase(),
+            _durationVaultBeacon: Env.beacon.durationVaultStrategy()
         });
         deployImpl({name: type(StrategyFactory).name, deployedTo: address(deployed)});
+    }
+
+    function deployDurationVaultStrategy() internal onlyEOA returns (DurationVaultStrategy deployed) {
+        deployed = new DurationVaultStrategy({
+            _strategyManager: Env.proxy.strategyManager(),
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _delegationManager: Env.proxy.delegationManager(),
+            _allocationManager: Env.proxy.allocationManager(),
+            _rewardsCoordinator: Env.proxy.rewardsCoordinator(),
+            _strategyFactory: Env.proxy.strategyFactory()
+        });
+        deployImpl({name: type(DurationVaultStrategy).name, deployedTo: address(deployed)});
     }
 
     /// multichain/
