@@ -26,7 +26,7 @@ contract DeployImplementations is CoreContractsDeployer {
         /// core/
         // Update the MAX_REWARDS_DURATION environment variable before deploying RewardsCoordinator
         // 63072000s = 730 days = 2 years
-        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63072000);
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63_072_000);
         deployRewardsCoordinator();
         deployStrategyManager();
 
