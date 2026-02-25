@@ -24,17 +24,18 @@ contract DeployImplementations is CoreContractsDeployer {
         vm.startBroadcast();
 
         /// core/
-        // Update the MAX_REWARDS_DURATION environment variable before deploying RewardsCoordinator
-        // 63072000s = 730 days = 2 years
-        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63_072_000);
-        deployRewardsCoordinator();
-        deployStrategyManager();
-
+        // Deploy EmissionsController proxy first (RewardsCoordinator needs its address as immutable)
         // Preprod already has EmissionsController proxy deployed
         if (!(Env._strEq(Env.envVersion(), "1.12.0"))) {
             deployEmissionsControllerProxy();
         }
         deployEmissionsController();
+
+        // Update the MAX_REWARDS_DURATION environment variable before deploying RewardsCoordinator
+        // 63072000s = 730 days = 2 years
+        zUpdateUint32("REWARDS_COORDINATOR_MAX_REWARDS_DURATION", 63_072_000);
+        deployRewardsCoordinator();
+        deployStrategyManager();
 
         /// strategies/
         deployEigenStrategy();
