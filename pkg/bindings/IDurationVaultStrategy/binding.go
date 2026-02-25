@@ -31,7 +31,7 @@ var (
 
 // IDurationVaultStrategyMetaData contains all meta data concerning the IDurationVaultStrategy contract.
 var IDurationVaultStrategyMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"allocationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allocationsActive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beforeAddShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beforeRemoveShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositsOpen\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"duration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"explanation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isLocked\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isMatured\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lock\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"lockedAt\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"markMatured\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxPerDeposit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"maxTotalDeposits\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"metadataURI\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorIntegrationConfigured\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetInfo\",\"inputs\":[],\"outputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetRegistered\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"rewardsCoordinator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIRewardsCoordinator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"shares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"sharesToUnderlying\",\"inputs\":[{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"sharesToUnderlyingView\",\"inputs\":[{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakeCap\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"state\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIDurationVaultStrategyTypes.VaultState\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalShares\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"underlyingToShares\",\"inputs\":[{\"name\":\"amountUnderlying\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"underlyingToSharesView\",\"inputs\":[{\"name\":\"amountUnderlying\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"underlyingToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unlockTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"updateMetadataURI\",\"inputs\":[{\"name\":\"newMetadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateTVLLimits\",\"inputs\":[{\"name\":\"newMaxPerDeposit\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"newStakeCap\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"userUnderlying\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"userUnderlyingView\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"vaultAdmin\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"recipient\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawalsOpen\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"ExchangeRateEmitted\",\"inputs\":[{\"name\":\"rate\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MetadataURIUpdated\",\"inputs\":[{\"name\":\"newMetadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyTokenSet\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"decimals\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultInitialized\",\"inputs\":[{\"name\":\"vaultAdmin\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"underlyingToken\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"contractIERC20\"},{\"name\":\"duration\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"maxPerDeposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"stakeCap\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultLocked\",\"inputs\":[{\"name\":\"lockedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"unlockAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultMatured\",\"inputs\":[{\"name\":\"maturedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"BalanceExceedsMaxTotalDeposits\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DepositsLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DurationNotElapsed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidVaultAdmin\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MaxPerDepositExceedsMax\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MustBeDelegatedToVaultOperator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NewSharesZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStrategyManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnderlyingToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyVaultAdmin\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorIntegrationInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TotalSharesExceedsMax\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnderlyingTokenBlacklisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VaultAlreadyLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalAmountExceedsTotalDeposits\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalsLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalsLockedDuringAllocations\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"advanceToWithdrawals\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"allocationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIAllocationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allocationsActive\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"arbitrator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"beforeAddShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"beforeRemoveShares\",\"inputs\":[{\"name\":\"staker\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"shares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"delegationManager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIDelegationManager\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositsOpen\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"duration\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"explanation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isLocked\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isMatured\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"lock\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"lockedAt\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"markMatured\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"maxPerDeposit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"maxTotalDeposits\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"metadataURI\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorIntegrationConfigured\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetInfo\",\"inputs\":[],\"outputs\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"operatorSetRegistered\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"rewardsCoordinator\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIRewardsCoordinator\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setRewardsClaimer\",\"inputs\":[{\"name\":\"claimer\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"shares\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"sharesToUnderlying\",\"inputs\":[{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"sharesToUnderlyingView\",\"inputs\":[{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"stakeCap\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"state\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"enumIDurationVaultStrategyTypes.VaultState\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalShares\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"underlyingToShares\",\"inputs\":[{\"name\":\"amountUnderlying\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"underlyingToSharesView\",\"inputs\":[{\"name\":\"amountUnderlying\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"underlyingToken\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"unlockTimestamp\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"updateDelegationApprover\",\"inputs\":[{\"name\":\"newDelegationApprover\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateMetadataURI\",\"inputs\":[{\"name\":\"newMetadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateOperatorMetadataURI\",\"inputs\":[{\"name\":\"newOperatorMetadataURI\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"updateTVLLimits\",\"inputs\":[{\"name\":\"newMaxPerDeposit\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"newStakeCap\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"userUnderlying\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"userUnderlyingView\",\"inputs\":[{\"name\":\"user\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"vaultAdmin\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"withdraw\",\"inputs\":[{\"name\":\"recipient\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"amountShares\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawalsOpen\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"DeallocateAttempted\",\"inputs\":[{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DeregisterAttempted\",\"inputs\":[{\"name\":\"success\",\"type\":\"bool\",\"indexed\":false,\"internalType\":\"bool\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExchangeRateEmitted\",\"inputs\":[{\"name\":\"rate\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MaxPerDepositUpdated\",\"inputs\":[{\"name\":\"previousValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MaxTotalDepositsUpdated\",\"inputs\":[{\"name\":\"previousValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"newValue\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"MetadataURIUpdated\",\"inputs\":[{\"name\":\"newMetadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategyTokenSet\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"decimals\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultAdvancedToWithdrawals\",\"inputs\":[{\"name\":\"arbitrator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"maturedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultInitialized\",\"inputs\":[{\"name\":\"vaultAdmin\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"arbitrator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"underlyingToken\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"contractIERC20\"},{\"name\":\"duration\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"maxPerDeposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"stakeCap\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultLocked\",\"inputs\":[{\"name\":\"lockedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"unlockAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"VaultMatured\",\"inputs\":[{\"name\":\"maturedAt\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"BalanceExceedsMaxTotalDeposits\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DepositExceedsMaxPerDeposit\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DepositsLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DurationAlreadyElapsed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"DurationNotElapsed\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidArbitrator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidDuration\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"InvalidVaultAdmin\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MaxPerDepositExceedsMax\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"MustBeDelegatedToVaultOperator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NewSharesZero\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyArbitrator\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyStrategyManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyUnderlyingToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OnlyVaultAdmin\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OperatorIntegrationInvalid\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"PendingAllocation\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyNotSupportedByOperatorSet\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"TotalSharesExceedsMax\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"UnderlyingTokenBlacklisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VaultAlreadyLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"VaultNotLocked\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalAmountExceedsTotalDeposits\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"WithdrawalsLockedDuringAllocations\",\"inputs\":[]}]",
 }
 
 // IDurationVaultStrategyABI is the input ABI used to generate the binding from.
@@ -240,6 +240,37 @@ func (_IDurationVaultStrategy *IDurationVaultStrategySession) AllocationsActive(
 // Solidity: function allocationsActive() view returns(bool)
 func (_IDurationVaultStrategy *IDurationVaultStrategyCallerSession) AllocationsActive() (bool, error) {
 	return _IDurationVaultStrategy.Contract.AllocationsActive(&_IDurationVaultStrategy.CallOpts)
+}
+
+// Arbitrator is a free data retrieval call binding the contract method 0x6cc6cde1.
+//
+// Solidity: function arbitrator() view returns(address)
+func (_IDurationVaultStrategy *IDurationVaultStrategyCaller) Arbitrator(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _IDurationVaultStrategy.contract.Call(opts, &out, "arbitrator")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// Arbitrator is a free data retrieval call binding the contract method 0x6cc6cde1.
+//
+// Solidity: function arbitrator() view returns(address)
+func (_IDurationVaultStrategy *IDurationVaultStrategySession) Arbitrator() (common.Address, error) {
+	return _IDurationVaultStrategy.Contract.Arbitrator(&_IDurationVaultStrategy.CallOpts)
+}
+
+// Arbitrator is a free data retrieval call binding the contract method 0x6cc6cde1.
+//
+// Solidity: function arbitrator() view returns(address)
+func (_IDurationVaultStrategy *IDurationVaultStrategyCallerSession) Arbitrator() (common.Address, error) {
+	return _IDurationVaultStrategy.Contract.Arbitrator(&_IDurationVaultStrategy.CallOpts)
 }
 
 // DelegationManager is a free data retrieval call binding the contract method 0xea4d3c9b.
@@ -1031,6 +1062,27 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyCallerSession) WithdrawalsO
 	return _IDurationVaultStrategy.Contract.WithdrawalsOpen(&_IDurationVaultStrategy.CallOpts)
 }
 
+// AdvanceToWithdrawals is a paid mutator transaction binding the contract method 0x6325f655.
+//
+// Solidity: function advanceToWithdrawals() returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactor) AdvanceToWithdrawals(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.contract.Transact(opts, "advanceToWithdrawals")
+}
+
+// AdvanceToWithdrawals is a paid mutator transaction binding the contract method 0x6325f655.
+//
+// Solidity: function advanceToWithdrawals() returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategySession) AdvanceToWithdrawals() (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.AdvanceToWithdrawals(&_IDurationVaultStrategy.TransactOpts)
+}
+
+// AdvanceToWithdrawals is a paid mutator transaction binding the contract method 0x6325f655.
+//
+// Solidity: function advanceToWithdrawals() returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) AdvanceToWithdrawals() (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.AdvanceToWithdrawals(&_IDurationVaultStrategy.TransactOpts)
+}
+
 // BeforeAddShares is a paid mutator transaction binding the contract method 0x73e3c280.
 //
 // Solidity: function beforeAddShares(address staker, uint256 shares) returns()
@@ -1136,6 +1188,27 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) MarkMatu
 	return _IDurationVaultStrategy.Contract.MarkMatured(&_IDurationVaultStrategy.TransactOpts)
 }
 
+// SetRewardsClaimer is a paid mutator transaction binding the contract method 0xb501d660.
+//
+// Solidity: function setRewardsClaimer(address claimer) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactor) SetRewardsClaimer(opts *bind.TransactOpts, claimer common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.contract.Transact(opts, "setRewardsClaimer", claimer)
+}
+
+// SetRewardsClaimer is a paid mutator transaction binding the contract method 0xb501d660.
+//
+// Solidity: function setRewardsClaimer(address claimer) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategySession) SetRewardsClaimer(claimer common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.SetRewardsClaimer(&_IDurationVaultStrategy.TransactOpts, claimer)
+}
+
+// SetRewardsClaimer is a paid mutator transaction binding the contract method 0xb501d660.
+//
+// Solidity: function setRewardsClaimer(address claimer) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) SetRewardsClaimer(claimer common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.SetRewardsClaimer(&_IDurationVaultStrategy.TransactOpts, claimer)
+}
+
 // SharesToUnderlying is a paid mutator transaction binding the contract method 0xf3e73875.
 //
 // Solidity: function sharesToUnderlying(uint256 amountShares) returns(uint256)
@@ -1178,6 +1251,27 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) Underlyi
 	return _IDurationVaultStrategy.Contract.UnderlyingToShares(&_IDurationVaultStrategy.TransactOpts, amountUnderlying)
 }
 
+// UpdateDelegationApprover is a paid mutator transaction binding the contract method 0xb4e20f13.
+//
+// Solidity: function updateDelegationApprover(address newDelegationApprover) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactor) UpdateDelegationApprover(opts *bind.TransactOpts, newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.contract.Transact(opts, "updateDelegationApprover", newDelegationApprover)
+}
+
+// UpdateDelegationApprover is a paid mutator transaction binding the contract method 0xb4e20f13.
+//
+// Solidity: function updateDelegationApprover(address newDelegationApprover) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategySession) UpdateDelegationApprover(newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.UpdateDelegationApprover(&_IDurationVaultStrategy.TransactOpts, newDelegationApprover)
+}
+
+// UpdateDelegationApprover is a paid mutator transaction binding the contract method 0xb4e20f13.
+//
+// Solidity: function updateDelegationApprover(address newDelegationApprover) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) UpdateDelegationApprover(newDelegationApprover common.Address) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.UpdateDelegationApprover(&_IDurationVaultStrategy.TransactOpts, newDelegationApprover)
+}
+
 // UpdateMetadataURI is a paid mutator transaction binding the contract method 0x53fd3e81.
 //
 // Solidity: function updateMetadataURI(string newMetadataURI) returns()
@@ -1197,6 +1291,27 @@ func (_IDurationVaultStrategy *IDurationVaultStrategySession) UpdateMetadataURI(
 // Solidity: function updateMetadataURI(string newMetadataURI) returns()
 func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) UpdateMetadataURI(newMetadataURI string) (*types.Transaction, error) {
 	return _IDurationVaultStrategy.Contract.UpdateMetadataURI(&_IDurationVaultStrategy.TransactOpts, newMetadataURI)
+}
+
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+//
+// Solidity: function updateOperatorMetadataURI(string newOperatorMetadataURI) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactor) UpdateOperatorMetadataURI(opts *bind.TransactOpts, newOperatorMetadataURI string) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.contract.Transact(opts, "updateOperatorMetadataURI", newOperatorMetadataURI)
+}
+
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+//
+// Solidity: function updateOperatorMetadataURI(string newOperatorMetadataURI) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategySession) UpdateOperatorMetadataURI(newOperatorMetadataURI string) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.UpdateOperatorMetadataURI(&_IDurationVaultStrategy.TransactOpts, newOperatorMetadataURI)
+}
+
+// UpdateOperatorMetadataURI is a paid mutator transaction binding the contract method 0x99be81c8.
+//
+// Solidity: function updateOperatorMetadataURI(string newOperatorMetadataURI) returns()
+func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) UpdateOperatorMetadataURI(newOperatorMetadataURI string) (*types.Transaction, error) {
+	return _IDurationVaultStrategy.Contract.UpdateOperatorMetadataURI(&_IDurationVaultStrategy.TransactOpts, newOperatorMetadataURI)
 }
 
 // UpdateTVLLimits is a paid mutator transaction binding the contract method 0xaf6eb2be.
@@ -1260,6 +1375,274 @@ func (_IDurationVaultStrategy *IDurationVaultStrategySession) Withdraw(recipient
 // Solidity: function withdraw(address recipient, address token, uint256 amountShares) returns(uint256)
 func (_IDurationVaultStrategy *IDurationVaultStrategyTransactorSession) Withdraw(recipient common.Address, token common.Address, amountShares *big.Int) (*types.Transaction, error) {
 	return _IDurationVaultStrategy.Contract.Withdraw(&_IDurationVaultStrategy.TransactOpts, recipient, token, amountShares)
+}
+
+// IDurationVaultStrategyDeallocateAttemptedIterator is returned from FilterDeallocateAttempted and is used to iterate over the raw logs and unpacked data for DeallocateAttempted events raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyDeallocateAttemptedIterator struct {
+	Event *IDurationVaultStrategyDeallocateAttempted // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IDurationVaultStrategyDeallocateAttemptedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IDurationVaultStrategyDeallocateAttempted)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IDurationVaultStrategyDeallocateAttempted)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IDurationVaultStrategyDeallocateAttemptedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IDurationVaultStrategyDeallocateAttemptedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IDurationVaultStrategyDeallocateAttempted represents a DeallocateAttempted event raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyDeallocateAttempted struct {
+	Success bool
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterDeallocateAttempted is a free log retrieval operation binding the contract event 0x72f957da7daaea6b52e4ff7820cb464206fd51e9f502f3027f45b5017caf4c8b.
+//
+// Solidity: event DeallocateAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterDeallocateAttempted(opts *bind.FilterOpts) (*IDurationVaultStrategyDeallocateAttemptedIterator, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "DeallocateAttempted")
+	if err != nil {
+		return nil, err
+	}
+	return &IDurationVaultStrategyDeallocateAttemptedIterator{contract: _IDurationVaultStrategy.contract, event: "DeallocateAttempted", logs: logs, sub: sub}, nil
+}
+
+// WatchDeallocateAttempted is a free log subscription operation binding the contract event 0x72f957da7daaea6b52e4ff7820cb464206fd51e9f502f3027f45b5017caf4c8b.
+//
+// Solidity: event DeallocateAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchDeallocateAttempted(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyDeallocateAttempted) (event.Subscription, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "DeallocateAttempted")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IDurationVaultStrategyDeallocateAttempted)
+				if err := _IDurationVaultStrategy.contract.UnpackLog(event, "DeallocateAttempted", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDeallocateAttempted is a log parse operation binding the contract event 0x72f957da7daaea6b52e4ff7820cb464206fd51e9f502f3027f45b5017caf4c8b.
+//
+// Solidity: event DeallocateAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseDeallocateAttempted(log types.Log) (*IDurationVaultStrategyDeallocateAttempted, error) {
+	event := new(IDurationVaultStrategyDeallocateAttempted)
+	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "DeallocateAttempted", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IDurationVaultStrategyDeregisterAttemptedIterator is returned from FilterDeregisterAttempted and is used to iterate over the raw logs and unpacked data for DeregisterAttempted events raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyDeregisterAttemptedIterator struct {
+	Event *IDurationVaultStrategyDeregisterAttempted // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IDurationVaultStrategyDeregisterAttemptedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IDurationVaultStrategyDeregisterAttempted)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IDurationVaultStrategyDeregisterAttempted)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IDurationVaultStrategyDeregisterAttemptedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IDurationVaultStrategyDeregisterAttemptedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IDurationVaultStrategyDeregisterAttempted represents a DeregisterAttempted event raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyDeregisterAttempted struct {
+	Success bool
+	Raw     types.Log // Blockchain specific contextual infos
+}
+
+// FilterDeregisterAttempted is a free log retrieval operation binding the contract event 0xd0791dbc9180cb64588d7eb7658a1022dcf734b8825eb7eec68bd9516872d168.
+//
+// Solidity: event DeregisterAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterDeregisterAttempted(opts *bind.FilterOpts) (*IDurationVaultStrategyDeregisterAttemptedIterator, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "DeregisterAttempted")
+	if err != nil {
+		return nil, err
+	}
+	return &IDurationVaultStrategyDeregisterAttemptedIterator{contract: _IDurationVaultStrategy.contract, event: "DeregisterAttempted", logs: logs, sub: sub}, nil
+}
+
+// WatchDeregisterAttempted is a free log subscription operation binding the contract event 0xd0791dbc9180cb64588d7eb7658a1022dcf734b8825eb7eec68bd9516872d168.
+//
+// Solidity: event DeregisterAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchDeregisterAttempted(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyDeregisterAttempted) (event.Subscription, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "DeregisterAttempted")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IDurationVaultStrategyDeregisterAttempted)
+				if err := _IDurationVaultStrategy.contract.UnpackLog(event, "DeregisterAttempted", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDeregisterAttempted is a log parse operation binding the contract event 0xd0791dbc9180cb64588d7eb7658a1022dcf734b8825eb7eec68bd9516872d168.
+//
+// Solidity: event DeregisterAttempted(bool success)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseDeregisterAttempted(log types.Log) (*IDurationVaultStrategyDeregisterAttempted, error) {
+	event := new(IDurationVaultStrategyDeregisterAttempted)
+	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "DeregisterAttempted", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // IDurationVaultStrategyExchangeRateEmittedIterator is returned from FilterExchangeRateEmitted and is used to iterate over the raw logs and unpacked data for ExchangeRateEmitted events raised by the IDurationVaultStrategy contract.
@@ -1390,6 +1773,276 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchExchangeRate
 func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseExchangeRateEmitted(log types.Log) (*IDurationVaultStrategyExchangeRateEmitted, error) {
 	event := new(IDurationVaultStrategyExchangeRateEmitted)
 	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "ExchangeRateEmitted", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IDurationVaultStrategyMaxPerDepositUpdatedIterator is returned from FilterMaxPerDepositUpdated and is used to iterate over the raw logs and unpacked data for MaxPerDepositUpdated events raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyMaxPerDepositUpdatedIterator struct {
+	Event *IDurationVaultStrategyMaxPerDepositUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IDurationVaultStrategyMaxPerDepositUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IDurationVaultStrategyMaxPerDepositUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IDurationVaultStrategyMaxPerDepositUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IDurationVaultStrategyMaxPerDepositUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IDurationVaultStrategyMaxPerDepositUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IDurationVaultStrategyMaxPerDepositUpdated represents a MaxPerDepositUpdated event raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyMaxPerDepositUpdated struct {
+	PreviousValue *big.Int
+	NewValue      *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterMaxPerDepositUpdated is a free log retrieval operation binding the contract event 0xf97ed4e083acac67830025ecbc756d8fe847cdbdca4cee3fe1e128e98b54ecb5.
+//
+// Solidity: event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterMaxPerDepositUpdated(opts *bind.FilterOpts) (*IDurationVaultStrategyMaxPerDepositUpdatedIterator, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "MaxPerDepositUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &IDurationVaultStrategyMaxPerDepositUpdatedIterator{contract: _IDurationVaultStrategy.contract, event: "MaxPerDepositUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchMaxPerDepositUpdated is a free log subscription operation binding the contract event 0xf97ed4e083acac67830025ecbc756d8fe847cdbdca4cee3fe1e128e98b54ecb5.
+//
+// Solidity: event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchMaxPerDepositUpdated(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyMaxPerDepositUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "MaxPerDepositUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IDurationVaultStrategyMaxPerDepositUpdated)
+				if err := _IDurationVaultStrategy.contract.UnpackLog(event, "MaxPerDepositUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseMaxPerDepositUpdated is a log parse operation binding the contract event 0xf97ed4e083acac67830025ecbc756d8fe847cdbdca4cee3fe1e128e98b54ecb5.
+//
+// Solidity: event MaxPerDepositUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseMaxPerDepositUpdated(log types.Log) (*IDurationVaultStrategyMaxPerDepositUpdated, error) {
+	event := new(IDurationVaultStrategyMaxPerDepositUpdated)
+	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "MaxPerDepositUpdated", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// IDurationVaultStrategyMaxTotalDepositsUpdatedIterator is returned from FilterMaxTotalDepositsUpdated and is used to iterate over the raw logs and unpacked data for MaxTotalDepositsUpdated events raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyMaxTotalDepositsUpdatedIterator struct {
+	Event *IDurationVaultStrategyMaxTotalDepositsUpdated // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IDurationVaultStrategyMaxTotalDepositsUpdatedIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IDurationVaultStrategyMaxTotalDepositsUpdated)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IDurationVaultStrategyMaxTotalDepositsUpdated)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IDurationVaultStrategyMaxTotalDepositsUpdatedIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IDurationVaultStrategyMaxTotalDepositsUpdatedIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IDurationVaultStrategyMaxTotalDepositsUpdated represents a MaxTotalDepositsUpdated event raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyMaxTotalDepositsUpdated struct {
+	PreviousValue *big.Int
+	NewValue      *big.Int
+	Raw           types.Log // Blockchain specific contextual infos
+}
+
+// FilterMaxTotalDepositsUpdated is a free log retrieval operation binding the contract event 0x6ab181e0440bfbf4bacdf2e99674735ce6638005490688c5f994f5399353e452.
+//
+// Solidity: event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterMaxTotalDepositsUpdated(opts *bind.FilterOpts) (*IDurationVaultStrategyMaxTotalDepositsUpdatedIterator, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "MaxTotalDepositsUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return &IDurationVaultStrategyMaxTotalDepositsUpdatedIterator{contract: _IDurationVaultStrategy.contract, event: "MaxTotalDepositsUpdated", logs: logs, sub: sub}, nil
+}
+
+// WatchMaxTotalDepositsUpdated is a free log subscription operation binding the contract event 0x6ab181e0440bfbf4bacdf2e99674735ce6638005490688c5f994f5399353e452.
+//
+// Solidity: event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchMaxTotalDepositsUpdated(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyMaxTotalDepositsUpdated) (event.Subscription, error) {
+
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "MaxTotalDepositsUpdated")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IDurationVaultStrategyMaxTotalDepositsUpdated)
+				if err := _IDurationVaultStrategy.contract.UnpackLog(event, "MaxTotalDepositsUpdated", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseMaxTotalDepositsUpdated is a log parse operation binding the contract event 0x6ab181e0440bfbf4bacdf2e99674735ce6638005490688c5f994f5399353e452.
+//
+// Solidity: event MaxTotalDepositsUpdated(uint256 previousValue, uint256 newValue)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseMaxTotalDepositsUpdated(log types.Log) (*IDurationVaultStrategyMaxTotalDepositsUpdated, error) {
+	event := new(IDurationVaultStrategyMaxTotalDepositsUpdated)
+	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "MaxTotalDepositsUpdated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1665,6 +2318,151 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseStrategyToke
 	return event, nil
 }
 
+// IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator is returned from FilterVaultAdvancedToWithdrawals and is used to iterate over the raw logs and unpacked data for VaultAdvancedToWithdrawals events raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator struct {
+	Event *IDurationVaultStrategyVaultAdvancedToWithdrawals // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(IDurationVaultStrategyVaultAdvancedToWithdrawals)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(IDurationVaultStrategyVaultAdvancedToWithdrawals)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// IDurationVaultStrategyVaultAdvancedToWithdrawals represents a VaultAdvancedToWithdrawals event raised by the IDurationVaultStrategy contract.
+type IDurationVaultStrategyVaultAdvancedToWithdrawals struct {
+	Arbitrator common.Address
+	MaturedAt  uint32
+	Raw        types.Log // Blockchain specific contextual infos
+}
+
+// FilterVaultAdvancedToWithdrawals is a free log retrieval operation binding the contract event 0x96c49d03ef64591194500229a104cd087b2d45c68234c96444c3a2a6abb0bb97.
+//
+// Solidity: event VaultAdvancedToWithdrawals(address indexed arbitrator, uint32 maturedAt)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterVaultAdvancedToWithdrawals(opts *bind.FilterOpts, arbitrator []common.Address) (*IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator, error) {
+
+	var arbitratorRule []interface{}
+	for _, arbitratorItem := range arbitrator {
+		arbitratorRule = append(arbitratorRule, arbitratorItem)
+	}
+
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "VaultAdvancedToWithdrawals", arbitratorRule)
+	if err != nil {
+		return nil, err
+	}
+	return &IDurationVaultStrategyVaultAdvancedToWithdrawalsIterator{contract: _IDurationVaultStrategy.contract, event: "VaultAdvancedToWithdrawals", logs: logs, sub: sub}, nil
+}
+
+// WatchVaultAdvancedToWithdrawals is a free log subscription operation binding the contract event 0x96c49d03ef64591194500229a104cd087b2d45c68234c96444c3a2a6abb0bb97.
+//
+// Solidity: event VaultAdvancedToWithdrawals(address indexed arbitrator, uint32 maturedAt)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchVaultAdvancedToWithdrawals(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyVaultAdvancedToWithdrawals, arbitrator []common.Address) (event.Subscription, error) {
+
+	var arbitratorRule []interface{}
+	for _, arbitratorItem := range arbitrator {
+		arbitratorRule = append(arbitratorRule, arbitratorItem)
+	}
+
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "VaultAdvancedToWithdrawals", arbitratorRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(IDurationVaultStrategyVaultAdvancedToWithdrawals)
+				if err := _IDurationVaultStrategy.contract.UnpackLog(event, "VaultAdvancedToWithdrawals", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseVaultAdvancedToWithdrawals is a log parse operation binding the contract event 0x96c49d03ef64591194500229a104cd087b2d45c68234c96444c3a2a6abb0bb97.
+//
+// Solidity: event VaultAdvancedToWithdrawals(address indexed arbitrator, uint32 maturedAt)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseVaultAdvancedToWithdrawals(log types.Log) (*IDurationVaultStrategyVaultAdvancedToWithdrawals, error) {
+	event := new(IDurationVaultStrategyVaultAdvancedToWithdrawals)
+	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "VaultAdvancedToWithdrawals", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // IDurationVaultStrategyVaultInitializedIterator is returned from FilterVaultInitialized and is used to iterate over the raw logs and unpacked data for VaultInitialized events raised by the IDurationVaultStrategy contract.
 type IDurationVaultStrategyVaultInitializedIterator struct {
 	Event *IDurationVaultStrategyVaultInitialized // Event containing the contract specifics and raw log
@@ -1735,6 +2533,7 @@ func (it *IDurationVaultStrategyVaultInitializedIterator) Close() error {
 // IDurationVaultStrategyVaultInitialized represents a VaultInitialized event raised by the IDurationVaultStrategy contract.
 type IDurationVaultStrategyVaultInitialized struct {
 	VaultAdmin      common.Address
+	Arbitrator      common.Address
 	UnderlyingToken common.Address
 	Duration        uint32
 	MaxPerDeposit   *big.Int
@@ -1743,42 +2542,50 @@ type IDurationVaultStrategyVaultInitialized struct {
 	Raw             types.Log // Blockchain specific contextual infos
 }
 
-// FilterVaultInitialized is a free log retrieval operation binding the contract event 0x11f2c91364d1d8629411a968c4341d98aeeeb0c33dcc3f2cdd19c09b0ca8ab9e.
+// FilterVaultInitialized is a free log retrieval operation binding the contract event 0xbdbff63632f473bb2a7c6a4aafbc096b71fbda12e22c6b51643bfd64f13d2b9e.
 //
-// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
-func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterVaultInitialized(opts *bind.FilterOpts, vaultAdmin []common.Address, underlyingToken []common.Address) (*IDurationVaultStrategyVaultInitializedIterator, error) {
+// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed arbitrator, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) FilterVaultInitialized(opts *bind.FilterOpts, vaultAdmin []common.Address, arbitrator []common.Address, underlyingToken []common.Address) (*IDurationVaultStrategyVaultInitializedIterator, error) {
 
 	var vaultAdminRule []interface{}
 	for _, vaultAdminItem := range vaultAdmin {
 		vaultAdminRule = append(vaultAdminRule, vaultAdminItem)
+	}
+	var arbitratorRule []interface{}
+	for _, arbitratorItem := range arbitrator {
+		arbitratorRule = append(arbitratorRule, arbitratorItem)
 	}
 	var underlyingTokenRule []interface{}
 	for _, underlyingTokenItem := range underlyingToken {
 		underlyingTokenRule = append(underlyingTokenRule, underlyingTokenItem)
 	}
 
-	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "VaultInitialized", vaultAdminRule, underlyingTokenRule)
+	logs, sub, err := _IDurationVaultStrategy.contract.FilterLogs(opts, "VaultInitialized", vaultAdminRule, arbitratorRule, underlyingTokenRule)
 	if err != nil {
 		return nil, err
 	}
 	return &IDurationVaultStrategyVaultInitializedIterator{contract: _IDurationVaultStrategy.contract, event: "VaultInitialized", logs: logs, sub: sub}, nil
 }
 
-// WatchVaultInitialized is a free log subscription operation binding the contract event 0x11f2c91364d1d8629411a968c4341d98aeeeb0c33dcc3f2cdd19c09b0ca8ab9e.
+// WatchVaultInitialized is a free log subscription operation binding the contract event 0xbdbff63632f473bb2a7c6a4aafbc096b71fbda12e22c6b51643bfd64f13d2b9e.
 //
-// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
-func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchVaultInitialized(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyVaultInitialized, vaultAdmin []common.Address, underlyingToken []common.Address) (event.Subscription, error) {
+// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed arbitrator, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
+func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchVaultInitialized(opts *bind.WatchOpts, sink chan<- *IDurationVaultStrategyVaultInitialized, vaultAdmin []common.Address, arbitrator []common.Address, underlyingToken []common.Address) (event.Subscription, error) {
 
 	var vaultAdminRule []interface{}
 	for _, vaultAdminItem := range vaultAdmin {
 		vaultAdminRule = append(vaultAdminRule, vaultAdminItem)
+	}
+	var arbitratorRule []interface{}
+	for _, arbitratorItem := range arbitrator {
+		arbitratorRule = append(arbitratorRule, arbitratorItem)
 	}
 	var underlyingTokenRule []interface{}
 	for _, underlyingTokenItem := range underlyingToken {
 		underlyingTokenRule = append(underlyingTokenRule, underlyingTokenItem)
 	}
 
-	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "VaultInitialized", vaultAdminRule, underlyingTokenRule)
+	logs, sub, err := _IDurationVaultStrategy.contract.WatchLogs(opts, "VaultInitialized", vaultAdminRule, arbitratorRule, underlyingTokenRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1810,9 +2617,9 @@ func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) WatchVaultInitial
 	}), nil
 }
 
-// ParseVaultInitialized is a log parse operation binding the contract event 0x11f2c91364d1d8629411a968c4341d98aeeeb0c33dcc3f2cdd19c09b0ca8ab9e.
+// ParseVaultInitialized is a log parse operation binding the contract event 0xbdbff63632f473bb2a7c6a4aafbc096b71fbda12e22c6b51643bfd64f13d2b9e.
 //
-// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
+// Solidity: event VaultInitialized(address indexed vaultAdmin, address indexed arbitrator, address indexed underlyingToken, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI)
 func (_IDurationVaultStrategy *IDurationVaultStrategyFilterer) ParseVaultInitialized(log types.Log) (*IDurationVaultStrategyVaultInitialized, error) {
 	event := new(IDurationVaultStrategyVaultInitialized)
 	if err := _IDurationVaultStrategy.contract.UnpackLog(event, "VaultInitialized", log); err != nil {
