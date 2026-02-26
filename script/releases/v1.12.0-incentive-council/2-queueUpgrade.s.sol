@@ -100,7 +100,7 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             // Not yet reinitialized - perform upgrade with reinitialization
             executorCalls.upgradeAndReinitializeRewardsCoordinator({
                 initialOwner: Env.opsMultisig(),
-                initialPausedStatus: 0,
+                initialPausedStatus: 2,
                 rewardsUpdater: Env.REWARDS_UPDATER(),
                 activationDelay: Env.ACTIVATION_DELAY(),
                 defaultSplitBips: Env.DEFAULT_SPLIT_BIPS(),

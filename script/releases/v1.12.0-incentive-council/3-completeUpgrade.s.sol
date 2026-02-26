@@ -139,7 +139,7 @@ contract ExecuteUpgrade is QueueUpgrade {
         assertEq(rc.activationDelay(), Env.ACTIVATION_DELAY(), "RC: activationDelay incorrect");
         assertEq(rc.defaultOperatorSplitBips(), Env.DEFAULT_SPLIT_BIPS(), "RC: defaultOperatorSplitBips incorrect");
         assertEq(rc.feeRecipient(), Env.incentiveCouncilMultisig(), "RC: feeRecipient incorrect");
-        assertEq(rc.paused(), 0, "RC: paused status incorrect");
+        assertEq(rc.paused(), 2, "RC: paused status incorrect");
 
         // Validate immutables still intact
         TestUtils.validateRewardsCoordinatorImmutables(rc);
