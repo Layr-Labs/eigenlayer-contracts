@@ -7,10 +7,10 @@ name: Claude review
 
 on:
   # Trigger: new/updated PRs to main
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    branches:
-      - main
+  # pull_request:
+  #   types: [opened, synchronize, ready_for_review, reopened]
+  #   branches:
+  #     - main
 
   # Trigger: @claude mentions in comments
   issue_comment:
@@ -22,96 +22,96 @@ on:
 
 jobs:
   # Job 1: Auto-review on PR open/update (no forks, no drafts)
-  auto-review:
-    if: |
-      github.event_name == 'pull_request' &&
-      !github.event.pull_request.draft &&
-      !github.event.pull_request.head.repo.fork
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      pull-requests: write
-      id-token: write
-      actions: read
-    steps:
-      # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
-      # This avoids CodeQL "checkout of untrusted code in trusted context" warning
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 20
-
-      - name: Apply PR diff to workspace
-        id: apply_diff
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          base_sha="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json baseRefOid -q '.baseRefOid')"
-          git fetch --depth=1 origin "$base_sha"
-          git checkout --detach "$base_sha"
-          gh pr diff "$PR_NUMBER" > pr.diff
-          if ! git apply --3way --whitespace=nowarn pr.diff; then
-            rm -f pr.diff
-            echo "apply_ok=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          rm pr.diff
-          echo "apply_ok=true" >> "$GITHUB_OUTPUT"
-
-      - name: Comment when diff apply fails
-        if: steps.apply_diff.outputs.apply_ok == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" \
-            --body "<!-- claude-apply-fail -->Skipped: PR diff failed to apply. Rebase and re-push."
-
-      - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
-        if: steps.apply_diff.outputs.apply_ok != 'false'
-        with:
-          anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
-          additional_permissions: "actions: read"
-          track_progress: true
-          use_sticky_comment: true
-          prompt: |
-            Follow CLAUDE.md for project context and conventions.
-            For contract details, read the relevant docs in /docs folder.
-
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
-
-            First, identify the PR type from the title (feat|fix|docs|test|refactor|ci|perf|style|chore|release):
-            - **feat/fix**: Full review - correctness, security, edge cases, gas, events, test coverage
-            - **perf**: Focus on gas optimization correctness and no functional regressions
-            - **test**: Check assertions are correct, edge cases covered, no false positives
-            - **docs**: Check accuracy against actual code behavior
-            - **style/refactor**: No functional changes - verify behavior is preserved
-            - **chore/ci/release**: Light review - check for unintended side effects
-
-            For Solidity changes, check:
-            1. **Correctness**: Does it work? Edge cases handled? Invariants preserved?
-            2. **Security**: Access control, reentrancy, overflow, unsafe external calls
-            3. **Integration**: How do changes affect other contracts that interact with this one?
-
-            For each issue found:
-            - Use inline comment on the specific line
-            - Explain the problem
-            - Provide a suggested fix as a diff block:
-            ```diff
-            - old code
-            + new code
-            ```
-
-            Use top-level comment for summary only.
-
-          claude_args: |
-            --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git fetch:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
-            --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
-            --max-turns 15
+  # auto-review:
+  #   if: |
+  #     github.event_name == 'pull_request' &&
+  #     !github.event.pull_request.draft &&
+  #     !github.event.pull_request.head.repo.fork
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   permissions:
+  #     contents: read
+  #     pull-requests: write
+  #     id-token: write
+  #     actions: read
+  #   steps:
+  #     # Checkout base branch (trusted) - Claude reads PR diff via gh pr diff
+  #     # This avoids CodeQL "checkout of untrusted code in trusted context" warning
+  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+  #       with:
+  #         fetch-depth: 20
+  #
+  #     - name: Apply PR diff to workspace
+  #       id: apply_diff
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #         PR_NUMBER: ${{ github.event.pull_request.number }}
+  #         REPO: ${{ github.repository }}
+  #       run: |
+  #         set -euo pipefail
+  #         base_sha="$(gh pr view "$PR_NUMBER" --repo "$REPO" --json baseRefOid -q '.baseRefOid')"
+  #         git fetch --depth=1 origin "$base_sha"
+  #         git checkout --detach "$base_sha"
+  #         gh pr diff "$PR_NUMBER" > pr.diff
+  #         if ! git apply --3way --whitespace=nowarn pr.diff; then
+  #           rm -f pr.diff
+  #           echo "apply_ok=false" >> "$GITHUB_OUTPUT"
+  #           exit 0
+  #         fi
+  #         rm pr.diff
+  #         echo "apply_ok=true" >> "$GITHUB_OUTPUT"
+  #
+  #     - name: Comment when diff apply fails
+  #       if: steps.apply_diff.outputs.apply_ok == 'false'
+  #       env:
+  #         GH_TOKEN: ${{ github.token }}
+  #         PR_NUMBER: ${{ github.event.pull_request.number }}
+  #       run: |
+  #         gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" \
+  #           --body "<!-- claude-apply-fail -->Skipped: PR diff failed to apply. Rebase and re-push."
+  #
+  #     - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
+  #       if: steps.apply_diff.outputs.apply_ok != 'false'
+  #       with:
+  #         anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
+  #         additional_permissions: "actions: read"
+  #         track_progress: true
+  #         use_sticky_comment: true
+  #         prompt: |
+  #           Follow CLAUDE.md for project context and conventions.
+  #           For contract details, read the relevant docs in /docs folder.
+  #
+  #           REPO: ${{ github.repository }}
+  #           PR NUMBER: ${{ github.event.pull_request.number }}
+  #
+  #           First, identify the PR type from the title (feat|fix|docs|test|refactor|ci|perf|style|chore|release):
+  #           - **feat/fix**: Full review - correctness, security, edge cases, gas, events, test coverage
+  #           - **perf**: Focus on gas optimization correctness and no functional regressions
+  #           - **test**: Check assertions are correct, edge cases covered, no false positives
+  #           - **docs**: Check accuracy against actual code behavior
+  #           - **style/refactor**: No functional changes - verify behavior is preserved
+  #           - **chore/ci/release**: Light review - check for unintended side effects
+  #
+  #           For Solidity changes, check:
+  #           1. **Correctness**: Does it work? Edge cases handled? Invariants preserved?
+  #           2. **Security**: Access control, reentrancy, overflow, unsafe external calls
+  #           3. **Integration**: How do changes affect other contracts that interact with this one?
+  #
+  #           For each issue found:
+  #           - Use inline comment on the specific line
+  #           - Explain the problem
+  #           - Provide a suggested fix as a diff block:
+  #           ```diff
+  #           - old code
+  #           + new code
+  #           ```
+  #
+  #           Use top-level comment for summary only.
+  #
+  #         claude_args: |
+  #           --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git fetch:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
+  #           --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
+  #           --max-turns 15
 
   # Job 2: @claude mentions in any PR comment (members only)
   # - issue_comment: PR conversation comments (no fork info available, member-check is sufficient)
