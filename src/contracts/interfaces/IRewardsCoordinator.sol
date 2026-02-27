@@ -10,6 +10,7 @@ import "./IStrategyManager.sol";
 import "./IPauserRegistry.sol";
 import "./IPermissionController.sol";
 import "./IStrategy.sol";
+import "./IEmissionsController.sol";
 
 interface IRewardsCoordinatorErrors {
     /// @dev Thrown when msg.sender is not allowed to call a function
@@ -244,6 +245,7 @@ interface IRewardsCoordinatorTypes {
         IDelegationManager delegationManager;
         IStrategyManager strategyManager;
         IAllocationManager allocationManager;
+        IEmissionsController emissionsController;
         IPauserRegistry pauserRegistry;
         IPermissionController permissionController;
         uint32 CALCULATION_INTERVAL_SECONDS;
@@ -414,6 +416,17 @@ interface IRewardsCoordinatorEvents is IRewardsCoordinatorTypes {
         IERC20 token,
         uint256 claimedAmount
     );
+
+    /// @notice Emitted when the fee recipient is set.
+    /// @param oldFeeRecipient The old fee recipient
+    /// @param newFeeRecipient The new fee recipient
+    event FeeRecipientSet(address indexed oldFeeRecipient, address indexed newFeeRecipient);
+
+    /// @notice Emitted when the opt in for protocol fee is set.
+    /// @param submitter The address of the submitter
+    /// @param oldValue The old value of the opt in for protocol fee
+    /// @param newValue The new value of the opt in for protocol fee
+    event OptInForProtocolFeeSet(address indexed submitter, bool indexed oldValue, bool indexed newValue);
 }
 
 /// @title Interface for the `IRewardsCoordinator` contract.
@@ -431,7 +444,23 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
-        uint16 _defaultSplitBips
+        uint16 _defaultSplitBips,
+        address _feeRecipient
+    ) external;
+
+    /// @notice Creates a new rewards submission on behalf of the Eigen DA AVS, to be split amongst the
+    /// set of stakers delegated to operators who are registered to the `avs`
+    /// @param rewardsSubmissions The rewards submissions being created
+    /// @dev Expected to be called by the EmissionsController behalf of the Eigen DA AVS of which the submission is being made
+    /// @dev The duration of the `rewardsSubmission` cannot exceed `MAX_REWARDS_DURATION`
+    /// @dev The duration of the `rewardsSubmission` cannot be 0 and must be a multiple of `CALCULATION_INTERVAL_SECONDS`
+    /// @dev The tokens are sent to the `RewardsCoordinator` contract
+    /// @dev Strategies must be in ascending order of addresses to check for duplicates
+    /// @dev This function will revert if the `rewardsSubmission` is malformed,
+    /// e.g. if the `strategies` and `weights` arrays are of non-equal lengths
+    function createEigenDARewardsSubmission(
+        address avs,
+        RewardsSubmission[] calldata rewardsSubmissions
     ) external;
 
     /// @notice Creates a new rewards submission on behalf of an AVS, to be split amongst the
@@ -459,7 +488,7 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
     /// @notice Creates a new rewards submission for all earners across all AVSs.
     /// Earners in this case indicating all operators and their delegated stakers. Undelegated stake
     /// is not rewarded from this RewardsSubmission. This interface is only callable
-    /// by the token hopper contract from the Eigen Foundation
+    /// by authorized rewardsForAllSubmitters, primarily the EmissionsController
     /// @param rewardsSubmissions The rewards submissions being created
     function createRewardsForAllEarners(
         RewardsSubmission[] calldata rewardsSubmissions
@@ -606,6 +635,13 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         uint16 split
     ) external;
 
+    /// @notice Sets the fee recipient address which receives optional protocol fees
+    /// @dev Only callable by the contract owner
+    /// @param _feeRecipient The address of the new fee recipient
+    function setFeeRecipient(
+        address _feeRecipient
+    ) external;
+
     /// @notice Sets the split for a specific operator for a specific avs
     /// @param operator The operator who is setting the split
     /// @param avs The avs for which the split is being set by the operator
@@ -641,6 +677,15 @@ interface IRewardsCoordinator is IRewardsCoordinatorErrors, IRewardsCoordinatorE
         address operator,
         OperatorSet calldata operatorSet,
         uint16 split
+    ) external;
+
+    /// @notice Sets whether the submitter wants to pay the protocol fee on their rewards submissions.
+    /// @dev Submitters must opt-in to pay the protocol fee to be eligible for rewards.
+    /// @param submitter The address of the submitter that wants to opt-in or out of the protocol fee.
+    /// @param optInForProtocolFee Whether the submitter wants to pay the protocol fee.
+    function setOptInForProtocolFee(
+        address submitter,
+        bool optInForProtocolFee
     ) external;
 
     /// @notice Sets the permissioned `rewardsUpdater` address which can post new roots

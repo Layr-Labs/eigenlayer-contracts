@@ -16,6 +16,7 @@ import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
 import "src/contracts/pods/EigenPodManager.sol";
 import "src/contracts/pods/EigenPod.sol";
 import "src/contracts/permissions/PauserRegistry.sol";
@@ -24,6 +25,9 @@ import "src/contracts/permissions/PermissionController.sol";
 import "src/test/mocks/EmptyContract.sol";
 import "src/test/mocks/ETHDepositMock.sol";
 import "src/test/integration/mocks/BeaconChainMock.t.sol";
+
+import "src/contracts/token/Eigen.sol";
+import "src/contracts/token/BackingEigen.sol";
 
 import "src/test/integration/users/AVS.t.sol";
 import "src/test/integration/users/User.t.sol";
@@ -167,6 +171,26 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // Deploy mocks
         emptyContract = new EmptyContract();
 
+        // Deploy EIGEN and bEIGEN token proxies (handle circular dependency)
+        tokenProxyAdmin = new ProxyAdmin();
+        EIGEN = IEigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
+        bEIGEN = IBackingEigen(address(new TransparentUpgradeableProxy(address(emptyContract), address(tokenProxyAdmin), "")));
+
+        // Deploy token implementations
+        EIGENImpl = IEigen(address(new Eigen(IERC20(address(bEIGEN)), version)));
+        bEIGENImpl = IBackingEigen(address(new BackingEigen(IERC20(address(EIGEN)))));
+
+        // Upgrade token proxies to implementations
+        tokenProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(EIGEN))), address(EIGENImpl));
+        tokenProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(bEIGEN))), address(bEIGENImpl));
+
+        // Initialize tokens (cast to concrete types to access initialize)
+        address[] memory minters = new address[](0);
+        uint[] memory mintingAllowances = new uint[](0);
+        uint[] memory mintAllowedAfters = new uint[](0);
+        Eigen(address(EIGEN)).initialize(executorMultisig, minters, mintingAllowances, mintAllowedAfters);
+        BackingEigen(address(bEIGEN)).initialize(executorMultisig);
+
         // Matching parameters to testnet
         DELEGATION_MANAGER_MIN_WITHDRAWAL_DELAY_BLOCKS = 50;
         DEALLOCATION_DELAY = 50;
@@ -177,6 +201,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         REWARDS_COORDINATOR_MAX_RETROACTIVE_LENGTH = 7_776_000;
         REWARDS_COORDINATOR_MAX_FUTURE_LENGTH = 2_592_000;
         REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP = 1_710_979_200;
+
+        // EmissionsController parameters (set after GENESIS_REWARDS_TIMESTAMP)
+        EMISSIONS_CONTROLLER_INFLATION_RATE = 2.3e24; // 2.3M EIGEN per epoch
+        EMISSIONS_CONTROLLER_EPOCH_LENGTH = 1 weeks;
+        // Ensure start time is aligned to day boundaries (divisible by calculation interval)
+        EMISSIONS_CONTROLLER_START_TIME = (REWARDS_COORDINATOR_GENESIS_REWARDS_TIMESTAMP + 1 weeks)
+            / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+        EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL = vm.addr(0xC041C11);
 
         _deployProxies();
         _deployImplementations();
@@ -227,6 +259,16 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         string memory existingDeploymentParams = "script/configs/mainnet.json";
         _parseParamsForIntegrationUpgrade(existingDeploymentParams);
 
+        // EmissionsController parameters (set after GENESIS_REWARDS_TIMESTAMP)
+        // These are not yet deployed on mainnet, so we need to set them for testing
+        EMISSIONS_CONTROLLER_INFLATION_RATE = 2.3e24; // 2.3M EIGEN per epoch
+        EMISSIONS_CONTROLLER_EPOCH_LENGTH = 1 weeks;
+        // For fork tests, set start time relative to current block time to avoid past epoch issues
+        // Ensure start time is aligned to day boundaries (divisible by calculation interval)
+        EMISSIONS_CONTROLLER_START_TIME = (block.timestamp + 1 weeks) / REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS
+            * REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS;
+        EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL = vm.addr(0xC041C11);
+
         // Place native ETH first in `allStrats`
         // This ensures when we select a nonzero number of strategies from this array, we always
         // have beacon chain ETH
@@ -267,14 +309,37 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     }
 
     function _upgradeMainnetContracts() public virtual {
-        cheats.startPrank(address(executorMultisig));
-
         // First, deploy the new contracts as empty contracts
         emptyContract = new EmptyContract();
+
+        // Deploy durationVaultBeacon and transfer ownership to executorMultisig
+        // so it can be upgraded uniformly with other beacons in _upgradeProxies()
+        if (address(durationVaultBeacon) == address(0)) {
+            durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
+            durationVaultBeacon.transferOwnership(executorMultisig);
+        }
+
+        cheats.startPrank(address(executorMultisig));
+
         // Deploy new implementation contracts and upgrade all proxies to point to them
         _deployProxies(); // deploy proxies (if undeployed)
         _deployImplementations();
         _upgradeProxies();
+
+        // Initialize EmissionsController if it's a new proxy
+        // Use try-catch in case it's already initialized
+        try emissionsController.initialize({
+            initialOwner: executorMultisig,
+            initialIncentiveCouncil: EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL,
+            initialPausedStatus: 0
+        }) {}
+            catch {}
+
+        // Grant EmissionsController permission to mint bEIGEN tokens
+        bEIGEN.setIsMinter(address(emissionsController), true);
+        // Disable transfer restrictions for EIGEN token (use try-catch in case already disabled)
+        try EIGEN.disableTransferRestrictions() {} catch {}
+
         cheats.stopPrank();
     }
 
@@ -313,9 +378,14 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         }
         if (address(eigenPodBeacon) == address(0)) eigenPodBeacon = new UpgradeableBeacon(address(emptyContract));
         if (address(strategyBeacon) == address(0)) strategyBeacon = new UpgradeableBeacon(address(emptyContract));
+        if (address(durationVaultBeacon) == address(0)) durationVaultBeacon = new UpgradeableBeacon(address(emptyContract));
         // multichain
         if (address(keyRegistrar) == address(0)) {
             keyRegistrar = KeyRegistrar(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
+        }
+        if (address(emissionsController) == address(0)) {
+            emissionsController =
+                EmissionsController(address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), "")));
         }
     }
 
@@ -354,6 +424,7 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
                 delegationManager: delegationManager,
                 strategyManager: strategyManager,
                 allocationManager: allocationManager,
+                emissionsController: emissionsController,
                 pauserRegistry: eigenLayerPauserReg,
                 permissionController: permissionController,
                 CALCULATION_INTERVAL_SECONDS: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -365,17 +436,31 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg);
+        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, strategyBeacon, durationVaultBeacon);
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);
         baseStrategyImplementation = new StrategyBase(strategyManager, eigenLayerPauserReg);
+        durationVaultImplementation = new DurationVaultStrategy(
+            strategyManager, eigenLayerPauserReg, delegationManager, allocationManager, rewardsCoordinator, strategyFactory
+        );
 
         // Pre-longtail StrategyBaseTVLLimits implementation
         // TODO - need to update ExistingDeploymentParser
 
         // multichain
         keyRegistrarImplementation = new KeyRegistrar(permissionController, allocationManager, "9.9.9");
+        emissionsControllerImplementation = new EmissionsController({
+            eigen: EIGEN,
+            backingEigen: bEIGEN,
+            allocationManager: allocationManager,
+            rewardsCoordinator: rewardsCoordinator,
+            pauserRegistry: eigenLayerPauserReg,
+            inflationRate: EMISSIONS_CONTROLLER_INFLATION_RATE,
+            startTime: EMISSIONS_CONTROLLER_START_TIME,
+            cooldownSeconds: EMISSIONS_CONTROLLER_EPOCH_LENGTH,
+            calculationIntervalSeconds: REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS
+        });
     }
 
     function _upgradeProxies() public noTracing {
@@ -423,6 +508,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // StrategyBase Beacon
         strategyBeacon.upgradeTo(address(baseStrategyImplementation));
 
+        // DurationVault Beacon
+        durationVaultBeacon.upgradeTo(address(durationVaultImplementation));
+
         // Upgrade All deployed strategy contracts to new base strategy
         for (uint i = 0; i < numStrategiesDeployed; i++) {
             // Upgrade existing strategy
@@ -437,6 +525,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         // PermissionController
         eigenLayerProxyAdmin.upgrade(
             ITransparentUpgradeableProxy(payable(address(permissionController))), address(permissionControllerImplementation)
+        );
+
+        // EmissionsController
+        eigenLayerProxyAdmin.upgrade(
+            ITransparentUpgradeableProxy(payable(address(emissionsController))), address(emissionsControllerImplementation)
         );
     }
 
@@ -455,7 +548,22 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
 
         allocationManager.initialize({initialPausedStatus: 0});
 
-        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0, _strategyBeacon: strategyBeacon});
+        strategyFactory.initialize({_initialOwner: executorMultisig, _initialPausedStatus: 0});
+
+        emissionsController.initialize({
+            initialOwner: executorMultisig,
+            initialIncentiveCouncil: EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL,
+            initialPausedStatus: 0
+        });
+
+        // Grant EmissionsController permission to mint bEIGEN tokens (only for local tests)
+        if (forkType == LOCAL) {
+            cheats.startPrank(executorMultisig);
+            bEIGEN.setIsMinter(address(emissionsController), true);
+            // Disable transfer restrictions for EIGEN token
+            EIGEN.disableTransferRestrictions();
+            cheats.stopPrank();
+        }
     }
 
     /// @dev Deploy a strategy and its underlying token, push to global lists of tokens/strategies, and whitelist

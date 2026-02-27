@@ -17,6 +17,7 @@ artifacts
 #Foundry files
 out
 cache
+snapshots
 
 *.DS_Store
 

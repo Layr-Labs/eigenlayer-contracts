@@ -10,7 +10,7 @@ import "../../interfaces/IRewardsCoordinator.sol";
 abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     // Constants
 
-    /// @dev Index for flag that pauses calling createAVSRewardsSubmission
+    /// @dev Index for flag that pauses calling createAVSRewardsSubmission and createEigenDARewardsSubmission
     uint8 internal constant PAUSED_AVS_REWARDS_SUBMISSION = 0;
     /// @dev Index for flag that pauses calling createRewardsForAllSubmission
     uint8 internal constant PAUSED_REWARDS_FOR_ALL_SUBMISSION = 1;
@@ -18,7 +18,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_PROCESS_CLAIM = 2;
     /// @dev Index for flag that pauses submitRoots and disableRoot
     uint8 internal constant PAUSED_SUBMIT_DISABLE_ROOTS = 3;
-    /// @dev Index for flag that pauses calling rewardAllStakersAndOperators
+    /// @dev Index for flag that pauses calling createRewardsForAllEarners
     uint8 internal constant PAUSED_REWARD_ALL_STAKERS_AND_OPERATORS = 4;
     /// @dev Index for flag that pauses calling createOperatorDirectedAVSRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION = 5;
@@ -28,9 +28,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     uint8 internal constant PAUSED_OPERATOR_PI_SPLIT = 7;
     /// @dev Index for flag that pauses calling setOperatorSetSplit
     uint8 internal constant PAUSED_OPERATOR_SET_SPLIT = 8;
-    /// @dev Index for flag that pauses calling setOperatorSetPerformanceRewardsSubmission
+    /// @dev Index for flag that pauses calling createOperatorDirectedOperatorSetRewardsSubmission
     uint8 internal constant PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION = 9;
-    /// @dev Index for flag that pauses calling createOperatorSetRewardsSubmission
+    /// @dev Index for flag that pauses calling createUniqueStakeRewardsSubmission
     uint8 internal constant PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION = 10;
     /// @dev Index for flag that pauses calling createTotalStakeRewardsSubmission
     uint8 internal constant PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION = 11;
@@ -48,6 +48,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
+    /// @notice Protocol fee percentage in basis points (20%).
+    uint16 internal constant PROTOCOL_FEE_BIPS = 2000;
+
     // Immutables
 
     /// @notice The DelegationManager contract for EigenLayer
@@ -58,6 +61,9 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
 
     /// @notice The AllocationManager contract for EigenLayer
     IAllocationManager public immutable allocationManager;
+
+    /// @notice The RewardsCoordinator contract for EigenLayer
+    IEmissionsController public immutable emissionsController;
 
     /// @notice The interval in seconds at which the calculation for rewards distribution is done.
     /// @dev RewardsSubmission durations must be multiples of this interval. This is going to be configured to 1 day
@@ -136,11 +142,18 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @notice Returns whether a `hash` is a `valid` total stake rewards submission hash for a given `avs`.
     mapping(address avs => mapping(bytes32 hash => bool valid)) public isTotalStakeRewardsSubmissionHash;
 
+    /// @notice Returns whether a `submitter` is opted in for protocol fees.
+    mapping(address submitter => bool isOptedIn) public isOptedInForProtocolFee;
+
+    /// @notice The address that receives optional protocol fees
+    address public feeRecipient;
+
     // Construction
     constructor(
         IDelegationManager _delegationManager,
         IStrategyManager _strategyManager,
         IAllocationManager _allocationManager,
+        IEmissionsController _emissionsController,
         uint32 _CALCULATION_INTERVAL_SECONDS,
         uint32 _MAX_REWARDS_DURATION,
         uint32 _MAX_RETROACTIVE_LENGTH,
@@ -154,6 +167,7 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
         delegationManager = _delegationManager;
         strategyManager = _strategyManager;
         allocationManager = _allocationManager;
+        emissionsController = _emissionsController;
         CALCULATION_INTERVAL_SECONDS = _CALCULATION_INTERVAL_SECONDS;
         MAX_REWARDS_DURATION = _MAX_REWARDS_DURATION;
         MAX_RETROACTIVE_LENGTH = _MAX_RETROACTIVE_LENGTH;
@@ -164,5 +178,5 @@ abstract contract RewardsCoordinatorStorage is IRewardsCoordinator {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[33] private __gap;
+    uint256[31] private __gap;
 }

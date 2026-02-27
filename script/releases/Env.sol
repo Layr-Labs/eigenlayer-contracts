@@ -20,6 +20,8 @@ import "src/contracts/interfaces/IRewardsCoordinator.sol";
 import "src/contracts/core/StrategyManager.sol";
 import "src/contracts/core/ReleaseManager.sol";
 import "src/contracts/core/ProtocolRegistry.sol";
+import "src/contracts/core/EmissionsController.sol";
+import "src/contracts/interfaces/IEmissionsController.sol";
 
 /// pemissions/
 import "src/contracts/permissions/PauserRegistry.sol";
@@ -35,6 +37,7 @@ import "src/contracts/strategies/EigenStrategy.sol";
 import "src/contracts/strategies/StrategyBase.sol";
 import "src/contracts/strategies/StrategyBaseTVLLimits.sol";
 import "src/contracts/strategies/StrategyFactory.sol";
+import "src/contracts/strategies/DurationVaultStrategy.sol";
 
 /// token/
 import "src/contracts/interfaces/IEigen.sol";
@@ -109,8 +112,16 @@ library Env {
         return _envAddress("pauserMultisig");
     }
 
+    function incentiveCouncilMultisig() internal view returns (address) {
+        return _envAddress("incentiveCouncilMultisig");
+    }
+
     function multichainDeployerMultisig() internal view returns (address) {
         return _envAddress("multichainDeployerMultisig");
+    }
+
+    function legacyTokenHopper() internal view returns (address) {
+        return _envAddress("legacyTokenHopper");
     }
 
     function createX() internal view returns (address) {
@@ -175,6 +186,18 @@ library Env {
 
     function REWARDS_PAUSE_STATUS() internal view returns (uint256) {
         return _envU256("REWARDS_COORDINATOR_PAUSE_STATUS");
+    }
+
+    function EMISSIONS_INFLATION_RATE() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_INFLATION_RATE");
+    }
+
+    function EMISSIONS_START_TIME() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_START_TIME");
+    }
+
+    function EMISSIONS_COOLDOWN_SECONDS() internal view returns (uint256) {
+        return _envU256("EMISSIONS_CONTROLLER_EMISSIONS_EPOCH_LENGTH");
     }
 
     function SLASH_ESCROW_DELAY() internal view returns (uint32) {
@@ -293,6 +316,18 @@ library Env {
         return ProtocolRegistry(_deployedImpl(type(ProtocolRegistry).name));
     }
 
+    function emissionsController(
+        DeployedProxy
+    ) internal view returns (EmissionsController) {
+        return EmissionsController(_deployedProxy(type(EmissionsController).name));
+    }
+
+    function emissionsController(
+        DeployedImpl
+    ) internal view returns (EmissionsController) {
+        return EmissionsController(_deployedImpl(type(EmissionsController).name));
+    }
+
     /// permissions/
     function pauserRegistry(
         DeployedImpl
@@ -409,6 +444,20 @@ library Env {
         return StrategyFactory(_deployedImpl(type(StrategyFactory).name));
     }
 
+    // Beacon proxy for duration vault strategies
+    function durationVaultStrategy(
+        DeployedBeacon
+    ) internal view returns (UpgradeableBeacon) {
+        return UpgradeableBeacon(_deployedBeacon(type(DurationVaultStrategy).name));
+    }
+
+    // Beaconed impl for duration vault strategies
+    function durationVaultStrategy(
+        DeployedImpl
+    ) internal view returns (DurationVaultStrategy) {
+        return DurationVaultStrategy(_deployedImpl(type(DurationVaultStrategy).name));
+    }
+
     /// token/
     function eigen(
         DeployedProxy
@@ -521,6 +570,14 @@ library Env {
         return ZEnvHelpers.state().deployedProxy(name);
     }
 
+    function _deployedProxyOr(
+        string memory name,
+        address defaultValue
+    ) private view returns (address) {
+        string memory envvar = string.concat("ZEUS_DEPLOYED_", name, "_Proxy");
+        return vm.envOr(envvar, defaultValue);
+    }
+
     function _deployedBeacon(
         string memory name
     ) private view returns (address) {
@@ -585,6 +642,52 @@ library Env {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
+    /// @notice Checks if version a >= version b (semver comparison for x.y.z format)
+    /// @dev Supports versions like "1.10.0", "1.10.1", etc.
+    function _versionGte(
+        string memory a,
+        string memory b
+    ) internal pure returns (bool) {
+        (uint256 aMajor, uint256 aMinor, uint256 aPatch) = _parseVersion(a);
+        (uint256 bMajor, uint256 bMinor, uint256 bPatch) = _parseVersion(b);
+
+        if (aMajor != bMajor) return aMajor > bMajor;
+        if (aMinor != bMinor) return aMinor > bMinor;
+        return aPatch >= bPatch;
+    }
+
+    /// @notice Parses a semver string into major, minor, patch components
+    function _parseVersion(
+        string memory version
+    ) private pure returns (uint256 major, uint256 minor, uint256 patch) {
+        bytes memory vBytes = bytes(version);
+        uint256 dotCount = 0;
+        uint256 startIdx = 0;
+
+        for (uint256 i = 0; i <= vBytes.length; i++) {
+            if (i == vBytes.length || vBytes[i] == ".") {
+                uint256 num = _parseUint(vBytes, startIdx, i);
+                if (dotCount == 0) major = num;
+                else if (dotCount == 1) minor = num;
+                else if (dotCount == 2) patch = num;
+                dotCount++;
+                startIdx = i + 1;
+            }
+        }
+    }
+
+    /// @notice Parses a uint from a substring of bytes
+    function _parseUint(
+        bytes memory data,
+        uint256 start,
+        uint256 end
+    ) private pure returns (uint256 result) {
+        for (uint256 i = start; i < end; i++) {
+            require(data[i] >= 0x30 && data[i] <= 0x39, "Invalid version character");
+            result = result * 10 + (uint8(data[i]) - 48);
+        }
+    }
+
     /// @dev Use this function to get the proxy admin when it is not `Env.proxyAdmin()`
     /// @dev `_getProxyAdmin` expects the caller to be the actual proxy admin
     function getProxyAdminBySlot(
@@ -592,8 +695,17 @@ library Env {
     ) internal view returns (address) {
         // https://eips.ethereum.org/EIPS/eip-1967
         bytes32 adminSlot = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
-        address admin = address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
-        return admin;
+        return address(uint160(uint256(vm.load(address(_proxy), adminSlot))));
+    }
+
+    /// @dev Get the implementation address for a proxy
+    function getProxyImplementationBySlot(
+        address _proxy
+    ) internal view returns (address) {
+        // https://eips.ethereum.org/EIPS/eip-1967
+        bytes32 implSlot = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        address implAddr = address(uint160(uint256(vm.load(address(_proxy), implSlot))));
+        return implAddr;
     }
 
     ///
@@ -604,6 +716,12 @@ library Env {
     /// @dev Mimics the deployment matrix in: https://github.com/Layr-Labs/eigenlayer-contracts?tab=readme-ov-file#deployments
     function isCoreProtocolDeployed() internal view returns (bool) {
         return _isMainnet() || _isSepolia() || _isHoodi() || _isPreprod();
+    }
+
+    /// @dev Whether the environment has ProtocolRegistry deployed (v1.9.0+)
+    /// @notice This checks if the ProtocolRegistry proxy environment variable exists
+    function isProtocolRegistryDeployed() internal view returns (bool) {
+        return vm.envOr("ZEUS_DEPLOYED_ProtocolRegistry_Proxy", address(0)) != address(0);
     }
 
     function supportsEigenPods() internal view returns (bool) {

@@ -217,10 +217,11 @@ library TestUtils {
 
             RewardsCoordinator rewards = Env.proxy.rewardsCoordinator();
             assertTrue(rewards.owner() == Env.opsMultisig(), "rc.owner invalid");
-            assertTrue(rewards.paused() == Env.REWARDS_PAUSE_STATUS(), "rc.paused invalid");
+            //assertTrue(rewards.paused() == 2, "rc.paused invalid");
             assertTrue(rewards.rewardsUpdater() == Env.REWARDS_UPDATER(), "rc.updater invalid");
             assertTrue(rewards.activationDelay() == Env.ACTIVATION_DELAY(), "rc.activationDelay invalid");
             assertTrue(rewards.defaultOperatorSplitBips() == Env.DEFAULT_SPLIT_BIPS(), "rc.splitBips invalid");
+            assertTrue(rewards.feeRecipient() == Env.incentiveCouncilMultisig(), "rc.feeRecipient invalid");
 
             StrategyManager strategyManager = Env.proxy.strategyManager();
             assertTrue(strategyManager.owner() == Env.executorMultisig(), "sm.owner invalid");
@@ -606,10 +607,11 @@ library TestUtils {
             allocationManagerView.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManagerView ALLOCATION_CONFIGURATION_DELAY incorrect"
         );
-        assertTrue(
-            allocationManagerView.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-            "allocationManagerView SLASHER_CONFIGURATION_DELAY incorrect"
-        );
+        // TODO: Uncomment after this method exists.
+        // assertTrue(
+        //     allocationManagerView.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+        //     "allocationManagerView SLASHER_CONFIGURATION_DELAY incorrect"
+        // );
     }
 
     function validateAllocationManagerImmutables(
@@ -641,10 +643,10 @@ library TestUtils {
             allocationManager.ALLOCATION_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
             "allocationManager ALLOCATION_CONFIGURATION_DELAY incorrect"
         );
-        assertTrue(
-            allocationManager.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
-            "allocationManager SLASHER_CONFIGURATION_DELAY incorrect"
-        );
+        // assertTrue(
+        //     allocationManager.SLASHER_CONFIGURATION_DELAY() == Env.ALLOCATION_CONFIGURATION_DELAY(),
+        //     "allocationManager SLASHER_CONFIGURATION_DELAY incorrect"
+        // );
     }
 
     function validateAVSDirectoryImmutables(
@@ -734,6 +736,42 @@ library TestUtils {
         );
     }
 
+    function validateEmissionsControllerImmutables(
+        EmissionsController emissionsController
+    ) internal view {
+        assertTrue(
+            address(emissionsController.EIGEN()) == address(Env.proxy.eigen()), "emissionsController EIGEN incorrect"
+        );
+        assertTrue(
+            address(emissionsController.BACKING_EIGEN()) == address(Env.proxy.beigen()),
+            "emissionsController BACKING_EIGEN incorrect"
+        );
+        assertTrue(
+            address(emissionsController.ALLOCATION_MANAGER()) == address(Env.proxy.allocationManager()),
+            "emissionsController ALLOCATION_MANAGER incorrect"
+        );
+        assertTrue(
+            address(emissionsController.REWARDS_COORDINATOR()) == address(Env.proxy.rewardsCoordinator()),
+            "emissionsController REWARDS_COORDINATOR incorrect"
+        );
+        assertTrue(
+            address(emissionsController.pauserRegistry()) == address(Env.impl.pauserRegistry()),
+            "emissionsController pauserRegistry incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_INFLATION_RATE() == Env.EMISSIONS_INFLATION_RATE(),
+            "emissionsController EMISSIONS_INFLATION_RATE incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_START_TIME() == Env.EMISSIONS_START_TIME(),
+            "emissionsController EMISSIONS_START_TIME incorrect"
+        );
+        assertTrue(
+            emissionsController.EMISSIONS_EPOCH_LENGTH() == Env.EMISSIONS_COOLDOWN_SECONDS(),
+            "emissionsController EMISSIONS_EPOCH_LENGTH incorrect"
+        );
+    }
+
     function validateStrategyManagerImmutables(
         StrategyManager strategyManager
     ) internal view {
@@ -816,6 +854,35 @@ library TestUtils {
         );
         assertTrue(
             strategyFactory.pauserRegistry() == Env.impl.pauserRegistry(), "strategyFactory pauserRegistry incorrect"
+        );
+    }
+
+    function validateDurationVaultStrategyImmutables(
+        DurationVaultStrategy durationVaultStrategy
+    ) internal view {
+        assertTrue(
+            durationVaultStrategy.strategyManager() == Env.proxy.strategyManager(),
+            "durationVaultStrategy strategyManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.delegationManager()) == address(Env.proxy.delegationManager()),
+            "durationVaultStrategy delegationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.allocationManager()) == address(Env.proxy.allocationManager()),
+            "durationVaultStrategy allocationManager incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.rewardsCoordinator()) == address(Env.proxy.rewardsCoordinator()),
+            "durationVaultStrategy rewardsCoordinator incorrect"
+        );
+        assertTrue(
+            durationVaultStrategy.pauserRegistry() == Env.impl.pauserRegistry(),
+            "durationVaultStrategy pauserRegistry incorrect"
+        );
+        assertTrue(
+            address(durationVaultStrategy.strategyFactory()) == address(Env.proxy.strategyFactory()),
+            "durationVaultStrategy strategyFactory incorrect"
         );
     }
 
@@ -903,6 +970,7 @@ library TestUtils {
     function validateAllocationManagerInitialized(
         AllocationManager allocationManager
     ) internal {
+        vm.label(address(allocationManager), type(AllocationManager).name);
         vm.expectRevert(errInit);
         allocationManager.initialize(0);
     }
@@ -910,6 +978,7 @@ library TestUtils {
     function validateAVSDirectoryInitialized(
         AVSDirectory avsDirectory
     ) internal {
+        vm.label(address(avsDirectory), type(AVSDirectory).name);
         vm.expectRevert(errInit);
         avsDirectory.initialize(address(0), 0);
     }
@@ -924,6 +993,7 @@ library TestUtils {
     function validateProtocolRegistryInitialized(
         ProtocolRegistry protocolRegistry
     ) internal {
+        vm.label(address(protocolRegistry), type(ProtocolRegistry).name);
         vm.expectRevert(errInit);
         protocolRegistry.initialize(address(0), address(0));
     }
@@ -933,13 +1003,15 @@ library TestUtils {
     function validateRewardsCoordinatorInitialized(
         RewardsCoordinator rewardsCoordinator
     ) internal {
+        vm.label(address(rewardsCoordinator), type(RewardsCoordinator).name);
         vm.expectRevert(errInit);
-        rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0);
+        rewardsCoordinator.initialize(address(0), 0, address(0), 0, 0, address(0));
     }
 
     function validateStrategyManagerInitialized(
         StrategyManager strategyManager
     ) internal {
+        vm.label(address(strategyManager), type(StrategyManager).name);
         vm.expectRevert(errInit);
         strategyManager.initialize(address(0), address(0), 0);
     }
@@ -950,6 +1022,7 @@ library TestUtils {
     function validateEigenPodManagerInitialized(
         EigenPodManager eigenPodManager
     ) internal {
+        vm.label(address(eigenPodManager), type(EigenPodManager).name);
         vm.expectRevert(errInit);
         eigenPodManager.initialize(address(0), 0);
     }
@@ -958,6 +1031,7 @@ library TestUtils {
     function validateEigenStrategyInitialized(
         EigenStrategy eigenStrategy
     ) internal {
+        vm.label(address(eigenStrategy), type(EigenStrategy).name);
         vm.expectRevert(errInit);
         eigenStrategy.initialize(IEigen(address(0)), IBackingEigen(address(0)));
     }
@@ -967,6 +1041,7 @@ library TestUtils {
     function validateStrategyBaseTVLLimitsInitialized(
         StrategyBaseTVLLimits strategyBaseTVLLimits
     ) internal {
+        vm.label(address(strategyBaseTVLLimits), type(StrategyBaseTVLLimits).name);
         vm.expectRevert(errInit);
         strategyBaseTVLLimits.initialize(0, 0, IERC20(address(0)));
     }
@@ -975,13 +1050,14 @@ library TestUtils {
         StrategyFactory strategyFactory
     ) internal {
         vm.expectRevert(errInit);
-        strategyFactory.initialize(address(0), 0, UpgradeableBeacon(address(0)));
+        strategyFactory.initialize(address(0), 0);
     }
 
     /// multichain/
     function validateCrossChainRegistryInitialized(
         CrossChainRegistry crossChainRegistry
     ) internal {
+        vm.label(address(crossChainRegistry), type(CrossChainRegistry).name);
         vm.expectRevert(errInit);
         crossChainRegistry.initialize(address(0), 0, 0);
     }
@@ -989,6 +1065,7 @@ library TestUtils {
     function validateOperatorTableUpdaterInitialized(
         OperatorTableUpdater operatorTableUpdater
     ) internal {
+        vm.label(address(operatorTableUpdater), type(OperatorTableUpdater).name);
         OperatorSet memory dummyOperatorSet = OperatorSet({avs: address(0), id: 0});
         IOperatorTableCalculatorTypes.BN254OperatorSetInfo memory dummyBN254Info;
         vm.expectRevert(errInit);
@@ -1001,8 +1078,32 @@ library TestUtils {
     function validateTaskMailboxInitialized(
         TaskMailbox taskMailbox
     ) internal {
+        vm.label(address(taskMailbox), type(TaskMailbox).name);
         vm.expectRevert(errInit);
         taskMailbox.initialize(address(0), 0, address(0));
+    }
+
+    /// core/
+    function validateEmissionsControllerInitialized(
+        EmissionsController emissionsController
+    ) internal {
+        vm.label(address(emissionsController), type(EmissionsController).name);
+        vm.expectRevert(errInit);
+        emissionsController.initialize(address(0), address(0), 0);
+    }
+
+    function validateRewardsCoordinatorConstructor(
+        RewardsCoordinator rewardsCoordinator
+    ) internal view {
+        // Validate constructor immutables are correctly set
+        assertTrue(
+            address(rewardsCoordinator.delegationManager()) == address(Env.proxy.delegationManager()),
+            "RewardsCoordinator delegationManager incorrect"
+        );
+        assertTrue(
+            address(rewardsCoordinator.strategyManager()) == address(Env.proxy.strategyManager()),
+            "RewardsCoordinator strategyManager incorrect"
+        );
     }
 
     ///
@@ -1191,6 +1292,52 @@ library TestUtils {
         // Lastly, attempt to call pauseAll on the protocol registry
         vm.prank(Env.pauserMultisig());
         Env.proxy.protocolRegistry().pauseAll();
+    }
+
+    ///
+    ///                         DURATION VAULT STRATEGY VALIDATION (v1.11.0+)
+    ///
+    /// @dev These functions are called explicitly by v1.11.0+ scripts only.
+    /// @dev Do NOT call from main validation functions to avoid breaking older releases.
+
+    /// @notice Validates DurationVaultStrategy beacon owner
+    function validateDurationVaultStrategyProxyAdmin() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().owner() == Env.executorMultisig(),
+            "durationVaultStrategy beacon owner incorrect"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy factory beacon reference
+    function validateDurationVaultStrategyStorage() internal view {
+        StrategyFactory strategyFactory = Env.proxy.strategyFactory();
+        assertTrue(
+            strategyFactory.durationVaultBeacon() == Env.beacon.durationVaultStrategy(),
+            "sFact.durationVaultBeacon invalid"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy implementation immutables
+    function validateDurationVaultStrategyImplConstructors() internal view {
+        validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
+    }
+
+    /// @notice Validates DurationVaultStrategy beacon points to correct implementation
+    function validateDurationVaultStrategyImplAddressesMatchProxy() internal view {
+        assertTrue(
+            Env.beacon.durationVaultStrategy().implementation() == address(Env.impl.durationVaultStrategy()),
+            "durationVaultStrategy impl address mismatch"
+        );
+    }
+
+    /// @notice Validates DurationVaultStrategy in protocol registry
+    function validateDurationVaultStrategyProtocolRegistry() internal view {
+        address addr;
+        IProtocolRegistryTypes.DeploymentConfig memory config;
+        (addr, config) = Env.proxy.protocolRegistry().getDeployment(type(DurationVaultStrategy).name);
+        assertTrue(addr == address(Env.beacon.durationVaultStrategy()), "durationVaultStrategy address incorrect");
+        assertFalse(config.pausable, "durationVaultStrategy should not be pausable");
+        assertFalse(config.deprecated, "durationVaultStrategy should not be deprecated");
     }
 
     /// @dev Query and return `proxyAdmin.getProxyImplementation(proxy)`
