@@ -358,6 +358,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     function testFuzz_addDists_pressButton_skipsDisabledDistributions(uint24 r) public rand(r) {
         (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
         numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        totalWeight = uint16(_randUint({min: numDistributions, max: 10_000})); // Recalculate for new numDistributions
 
         // Create distribution types (all enabled initially)
         DistributionType[] memory types = new DistributionType[](numDistributions);
@@ -396,6 +397,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     function testFuzz_addDists_pressButton_skipsNotYetStartedDistributions(uint24 r) public rand(r) {
         (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
         numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        totalWeight = uint16(_randUint({min: numDistributions, max: 10_000})); // Recalculate for new numDistributions
         startEpoch = uint64(_randUint({min: 2, max: 2**12 - 1})); // Ensure startEpoch > 0
 
         // Generate random distribution types (non-disabled)
@@ -431,6 +433,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     function testFuzz_addDists_pressButton_skipsEndedDistributions(uint24 r) public rand(r) {
         (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
         numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        totalWeight = uint16(_randUint({min: numDistributions, max: 10_000})); // Recalculate for new numDistributions
         startEpoch = uint64(_randUint({min: 1, max: 100})); // Keep epochs reasonable
 
         // Generate random distribution types (non-disabled)
@@ -482,6 +485,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     function testFuzz_addDists_pressButton_skipsZeroWeightDistributions(uint24 r) public rand(r) {
         (uint64 startEpoch, uint16 totalWeight, uint numDistributions) = _genRandParams();
         numDistributions = _randUint({min: 2, max: 32}); // Need at least 2 distributions
+        totalWeight = uint16(_randUint({min: numDistributions, max: 10_000})); // Recalculate for new numDistributions
 
         // Generate random distribution types (non-disabled)
         DistributionType[] memory types = new DistributionType[](numDistributions);
