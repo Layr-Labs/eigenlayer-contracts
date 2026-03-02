@@ -4,6 +4,10 @@ pragma solidity ^0.8.12;
 import "./Env.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import {IPausable} from "src/contracts/interfaces/IPausable.sol";
+import {IProxyAdmin} from "zeus-templates/interfaces/IProxyAdmin.sol";
+import {
+    ITransparentUpgradeableProxy as ITransparentProxy
+} from "zeus-templates/interfaces/ITransparentUpgradeableProxy.sol";
 
 /// @title CoreUpgradeQueueBuilder
 /// @notice Provides reusable helpers for constructing multisig upgrade calls.
@@ -102,6 +106,38 @@ library CoreUpgradeQueueBuilder {
         });
     }
 
+    function upgradeAndReinitializeRewardsCoordinator(
+        MultisigCall[] storage calls,
+        address initialOwner,
+        uint256 initialPausedStatus,
+        address rewardsUpdater,
+        uint32 activationDelay,
+        uint16 defaultSplitBips,
+        address feeRecipient
+    ) internal returns (MultisigCall[] storage) {
+        bytes memory initData = abi.encodeWithSelector(
+            RewardsCoordinator.initialize.selector,
+            initialOwner,
+            initialPausedStatus,
+            rewardsUpdater,
+            activationDelay,
+            defaultSplitBips,
+            feeRecipient
+        );
+
+        return calls.append({
+            to: Env.proxyAdmin(),
+            data: abi.encodeCall(
+                IProxyAdmin.upgradeAndCall,
+                (
+                    ITransparentProxy(address(Env.proxy.rewardsCoordinator())),
+                    address(Env.impl.rewardsCoordinator()),
+                    initData
+                )
+            )
+        });
+    }
+
     function upgradeStrategyManager(
         MultisigCall[] storage calls
     ) internal returns (MultisigCall[] storage) {
@@ -109,6 +145,42 @@ library CoreUpgradeQueueBuilder {
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin
                 .upgrade({proxy: address(Env.proxy.strategyManager()), impl: address(Env.impl.strategyManager())})
+        });
+    }
+
+    function upgradeEmissionsController(
+        MultisigCall[] storage calls
+    ) internal returns (MultisigCall[] storage) {
+        return calls.append({
+            to: Env.proxyAdmin(),
+            data: Encode.proxyAdmin
+                .upgrade({
+                    proxy: address(Env.proxy.emissionsController()),
+                    impl: address(Env.impl.emissionsController())
+                })
+        });
+    }
+
+    function upgradeAndInitializeEmissionsController(
+        MultisigCall[] storage calls,
+        address initialOwner,
+        address initialIncentiveCouncil,
+        uint256 initialPausedStatus
+    ) internal returns (MultisigCall[] storage) {
+        bytes memory initData = abi.encodeWithSelector(
+            EmissionsController.initialize.selector, initialOwner, initialIncentiveCouncil, initialPausedStatus
+        );
+
+        return calls.append({
+            to: Env.proxyAdmin(),
+            data: abi.encodeCall(
+                IProxyAdmin.upgradeAndCall,
+                (
+                    ITransparentProxy(address(Env.proxy.emissionsController())),
+                    address(Env.impl.emissionsController()),
+                    initData
+                )
+            )
         });
     }
 
@@ -173,6 +245,15 @@ library CoreUpgradeQueueBuilder {
             to: Env.proxyAdmin(),
             data: Encode.proxyAdmin
                 .upgrade({proxy: address(Env.proxy.strategyFactory()), impl: address(Env.impl.strategyFactory())})
+        });
+    }
+
+    function upgradeDurationVaultStrategy(
+        MultisigCall[] storage calls
+    ) internal returns (MultisigCall[] storage) {
+        return calls.append({
+            to: address(Env.beacon.durationVaultStrategy()),
+            data: Encode.upgradeableBeacon.upgradeTo({newImpl: address(Env.impl.durationVaultStrategy())})
         });
     }
 

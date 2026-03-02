@@ -16,6 +16,7 @@ import "../../src/contracts/permissions/PermissionController.sol";
 import "../../src/contracts/strategies/StrategyFactory.sol";
 import "../../src/contracts/strategies/StrategyBase.sol";
 import "../../src/contracts/strategies/StrategyBaseTVLLimits.sol";
+import "../../src/contracts/strategies/DurationVaultStrategy.sol";
 import "../../src/contracts/strategies/EigenStrategy.sol";
 
 import "../../src/contracts/pods/EigenPod.sol";
@@ -30,6 +31,9 @@ import "../../src/test/mocks/EmptyContract.sol";
 
 import "../../src/contracts/interfaces/IBackingEigen.sol";
 import "../../src/contracts/interfaces/IEigen.sol";
+
+// contracts
+import "../../src/contracts/core/EmissionsController.sol";
 
 import "forge-std/Script.sol";
 
@@ -95,6 +99,12 @@ contract ExistingDeploymentParser is Script, Logger {
     uint256 STRATEGY_MAX_PER_DEPOSIT;
     uint256 STRATEGY_MAX_TOTAL_DEPOSITS;
 
+    /// @dev EmissionsController
+    uint256 EMISSIONS_CONTROLLER_INFLATION_RATE;
+    uint256 EMISSIONS_CONTROLLER_START_TIME;
+    uint256 EMISSIONS_CONTROLLER_EPOCH_LENGTH;
+    address EMISSIONS_CONTROLLER_INCENTIVE_COUNCIL;
+
     /// -----------------------------------------------------------------------
     /// EigenLayer Contracts
     /// -----------------------------------------------------------------------
@@ -103,6 +113,7 @@ contract ExistingDeploymentParser is Script, Logger {
     PauserRegistry public eigenLayerPauserReg;
     UpgradeableBeacon public eigenPodBeacon;
     UpgradeableBeacon public strategyBeacon;
+    UpgradeableBeacon public durationVaultBeacon;
 
     /// @dev AllocationManager
     IAllocationManager public allocationManager;
@@ -138,6 +149,7 @@ contract ExistingDeploymentParser is Script, Logger {
     StrategyFactory public strategyFactory;
     StrategyFactory public strategyFactoryImplementation;
     StrategyBase public baseStrategyImplementation;
+    DurationVaultStrategy public durationVaultImplementation;
     StrategyBase public strategyFactoryBeaconImplementation;
 
     // Token
@@ -152,6 +164,10 @@ contract ExistingDeploymentParser is Script, Logger {
     /// @dev Multichain
     KeyRegistrar public keyRegistrar;
     KeyRegistrar public keyRegistrarImplementation;
+
+    /// @dev EmissionsController
+    EmissionsController public emissionsController;
+    EmissionsController public emissionsControllerImplementation;
 
     /// -----------------------------------------------------------------------
     /// Storage
@@ -522,7 +538,8 @@ contract ExistingDeploymentParser is Script, Logger {
             0, // initialPausedStatus
             address(0), // rewardsUpdater
             0, // activationDelay
-            0 // defaultSplitBips
+            0, // defaultSplitBips
+            address(0) // feeRecipient
         );
         // DelegationManager
         cheats.expectRevert(bytes("Initializable: contract is already initialized"));

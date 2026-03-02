@@ -1,0 +1,481 @@
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.27;
+
+import "@openzeppelin-upgrades/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
+import "@openzeppelin-upgrades/contracts/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../libraries/OperatorSetLib.sol";
+import "../permissions/Pausable.sol";
+import "./storage/EmissionsControllerStorage.sol";
+
+contract EmissionsController is
+    Initializable,
+    OwnableUpgradeable,
+    Pausable,
+    ReentrancyGuardUpgradeable,
+    EmissionsControllerStorage
+{
+    using SafeERC20 for IERC20;
+
+    /// @dev Modifier that checks if the caller is the incentive council.
+    modifier onlyIncentiveCouncil() {
+        _checkOnlyIncentiveCouncil();
+        _;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Initialization
+    /// -----------------------------------------------------------------------
+    constructor(
+        IEigen eigen,
+        IBackingEigen backingEigen,
+        IAllocationManager allocationManager,
+        IRewardsCoordinator rewardsCoordinator,
+        IPauserRegistry pauserRegistry,
+        uint256 inflationRate,
+        uint256 startTime,
+        uint256 cooldownSeconds,
+        uint256 calculationIntervalSeconds
+    )
+        EmissionsControllerStorage(
+            eigen,
+            backingEigen,
+            allocationManager,
+            rewardsCoordinator,
+            inflationRate,
+            startTime,
+            cooldownSeconds,
+            calculationIntervalSeconds
+        )
+        Pausable(pauserRegistry)
+    {
+        _disableInitializers();
+    }
+
+    /// @inheritdoc IEmissionsController
+    function initialize(
+        address initialOwner,
+        address initialIncentiveCouncil,
+        uint256 initialPausedStatus
+    ) external override initializer {
+        // Set the initial owner.
+        _transferOwnership(initialOwner);
+        // Set the initial incentive council.
+        _setIncentiveCouncil(initialIncentiveCouncil);
+        // Set the initial paused status.
+        _setPausedStatus(initialPausedStatus);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Permissionless Trigger
+    /// -----------------------------------------------------------------------
+
+    /// @inheritdoc IEmissionsController
+    function sweep() external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
+        uint256 amount = EIGEN.balanceOf(address(this));
+        if (!isButtonPressable() && amount != 0) {
+            IERC20(EIGEN).safeTransfer(incentiveCouncil, amount);
+            emit Swept(incentiveCouncil, amount);
+        }
+    }
+
+    /// @inheritdoc IEmissionsController
+    function pressButton(
+        uint256 length
+    ) external override nonReentrant onlyWhenNotPaused(PAUSED_TOKEN_FLOWS) {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // Check if emissions have not started yet.
+        // Prevents minting EIGEN before the first epoch has started.
+        require(currentEpoch != type(uint256).max, EmissionsNotStarted());
+
+        uint256 totalProcessable = getTotalProcessableDistributions();
+        uint256 nextDistributionId = _epochs[currentEpoch].totalProcessed;
+
+        // Check if all distributions have already been processed.
+        require(nextDistributionId < totalProcessable, AllDistributionsProcessed());
+
+        // Mint the total amount of bEIGEN/EIGEN needed for all distributions.
+        if (!_epochs[currentEpoch].minted) {
+            // NOTE: Approvals may not be entirely spent.
+
+            // Max approve EIGEN for spending bEIGEN.
+            BACKING_EIGEN.approve(address(EIGEN), EMISSIONS_INFLATION_RATE);
+            // Max approve RewardsCoordinator for spending EIGEN.
+            EIGEN.approve(address(REWARDS_COORDINATOR), EMISSIONS_INFLATION_RATE);
+
+            // First mint the bEIGEN in order to wrap it into EIGEN.
+            BACKING_EIGEN.mint(address(this), EMISSIONS_INFLATION_RATE);
+            // Then wrap it into EIGEN.
+            EIGEN.wrap(EMISSIONS_INFLATION_RATE);
+
+            // Mark the epoch as minted.
+            _epochs[currentEpoch].minted = true;
+        }
+
+        // Calculate the start timestamp for the distribution (equivalent to `lastTimeButtonPressable()`).
+        uint256 startTimestamp = EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
+        // Calculate the last index to process.
+        uint256 lastIndex = nextDistributionId + length;
+
+        // If length exceeds total distributions, set last index to total distributions (exclusive upper bound).
+        if (lastIndex > totalProcessable) lastIndex = totalProcessable;
+
+        // Process distributions starting from the next one to process...
+        for (uint256 distributionId = nextDistributionId; distributionId < lastIndex; ++distributionId) {
+            Distribution memory distribution = _distributions[distributionId];
+
+            // Skip disabled distributions...
+            if (distribution.distributionType == DistributionType.Disabled) continue;
+            // Skip distributions that haven't started yet...
+            if (distribution.startEpoch > currentEpoch) continue;
+            // Skip distributions that have ended (0 means infinite)...
+            if (distribution.totalEpochs != 0) {
+                if (currentEpoch >= distribution.startEpoch + distribution.totalEpochs) continue;
+            }
+
+            _processDistribution({
+                distribution: distribution,
+                distributionId: distributionId,
+                currentEpoch: currentEpoch,
+                startTimestamp: startTimestamp
+            });
+        }
+
+        // Update total processed count for this epoch.
+        _epochs[currentEpoch].totalProcessed = uint64(lastIndex);
+    }
+
+    /// @dev Internal helper that processes a distribution.
+    /// @param distributionId The id of the distribution to process.
+    /// @param currentEpoch The current epoch.
+    /// @param distribution The distribution (from storage).
+    function _processDistribution(
+        Distribution memory distribution,
+        uint256 distributionId,
+        uint256 currentEpoch,
+        uint256 startTimestamp
+    ) internal {
+        // Calculate the total amount of emissions for the distribution.
+        uint256 totalAmount = EMISSIONS_INFLATION_RATE * distribution.weight / MAX_TOTAL_WEIGHT;
+        // Success flag for the distribution.
+        bool success;
+
+        // Skip if the total amount is 0.
+        if (totalAmount == 0) return;
+
+        if (distribution.distributionType != DistributionType.Manual) {
+            uint256 strategiesAndMultipliersLength = distribution.strategiesAndMultipliers.length;
+
+            // Skip cases where the below `amountPerSubmission` calculation would revert.
+            if (strategiesAndMultipliersLength > totalAmount) return;
+
+            // Calculate the amount per submission.
+            uint256 amountPerSubmission = totalAmount / strategiesAndMultipliersLength;
+
+            // Update the rewards submissions start timestamp, duration, and amount.
+            IRewardsCoordinator.RewardsSubmission[] memory rewardsSubmissions =
+                new IRewardsCoordinator.RewardsSubmission[](strategiesAndMultipliersLength);
+            for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
+                rewardsSubmissions[i] = IRewardsCoordinatorTypes.RewardsSubmission({
+                    strategiesAndMultipliers: distribution.strategiesAndMultipliers[i],
+                    token: EIGEN,
+                    amount: amountPerSubmission,
+                    startTimestamp: uint32(startTimestamp),
+                    duration: uint32(EMISSIONS_EPOCH_LENGTH)
+                });
+            }
+
+            // Dispatch the `RewardsCoordinator` call based on the distribution type.
+            if (distribution.distributionType == DistributionType.RewardsForAllEarners) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(IRewardsCoordinator.createRewardsForAllEarners, (rewardsSubmissions))
+                );
+            } else if (distribution.distributionType == DistributionType.OperatorSetUniqueStake) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(
+                        IRewardsCoordinator.createUniqueStakeRewardsSubmission,
+                        (distribution.operatorSet, rewardsSubmissions)
+                    )
+                );
+            } else if (distribution.distributionType == DistributionType.OperatorSetTotalStake) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(
+                        IRewardsCoordinator.createTotalStakeRewardsSubmission,
+                        (distribution.operatorSet, rewardsSubmissions)
+                    )
+                );
+            } else if (distribution.distributionType == DistributionType.EigenDA) {
+                success = _tryCallRewardsCoordinator(
+                    abi.encodeCall(
+                        IRewardsCoordinator.createEigenDARewardsSubmission,
+                        (distribution.operatorSet.avs, rewardsSubmissions)
+                    )
+                );
+            }
+        } else {
+            (success,) =
+                address(EIGEN).call(abi.encodeWithSelector(IERC20.transfer.selector, incentiveCouncil, totalAmount));
+        }
+
+        // Emit an event for the processed distribution.
+        emit DistributionProcessed(distributionId, currentEpoch, distribution, success);
+    }
+
+    /// @dev Internal helper that try/calls the RewardsCoordinator returning success or failure.
+    /// This is needed as using try/catch requires decoding the calldata, which can revert preventing further distributions.
+    /// Also checks for reentrancy attacks by verifying the return data is not the reentrancy error thrown by OZ 4.9.0 ReentrancyGuard.
+    /// Also checks for OOG (Out Of Gas) panics by verifying the return data is not empty.
+    /// @param abiEncodedCall The ABI encoded call to the RewardsCoordinator.
+    /// @return success True if the function call was successful, false otherwise.
+    function _tryCallRewardsCoordinator(
+        bytes memory abiEncodedCall
+    ) internal returns (bool success) {
+        bytes memory returnData;
+        (success, returnData) = address(REWARDS_COORDINATOR).call(abiEncodedCall);
+        if (!success) require(!_isDisallowedError(returnData), MaliciousCallDetected());
+    }
+
+    /// @dev Internal helper that checks if the error is a disallowed error (reentrancy or OOG).
+    /// @param returnData The return data from the failed call.
+    /// @return True if the error is disallowed, false otherwise.
+    function _isDisallowedError(
+        bytes memory returnData
+    ) internal pure returns (bool) {
+        if (keccak256(returnData) == REENTRANCY_ERROR_HASH) return true; // prevent reentrancy attacks
+        if (returnData.length == 0) return true; // prevent OOG errors
+        return false;
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Owner Functions
+    /// -----------------------------------------------------------------------
+
+    /// @inheritdoc IEmissionsController
+    function setIncentiveCouncil(
+        address newIncentiveCouncil
+    ) external override onlyOwner {
+        _setIncentiveCouncil(newIncentiveCouncil);
+    }
+
+    /// @dev Internal helper to set the incentive council.
+    function _setIncentiveCouncil(
+        address newIncentiveCouncil
+    ) internal {
+        // Check that new incentive council is not the zero address to prevent lost funds.
+        require(newIncentiveCouncil != address(0), InputAddressZero());
+        // Set the new incentive council.
+        incentiveCouncil = newIncentiveCouncil;
+        // Emit an event for the updated incentive council.
+        emit IncentiveCouncilUpdated(newIncentiveCouncil);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Incentive Council Functions
+    /// -----------------------------------------------------------------------
+
+    /// @inheritdoc IEmissionsController
+    function addDistribution(
+        Distribution calldata distribution
+    ) external override onlyIncentiveCouncil returns (uint256 distributionId) {
+        // Checks
+
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // Check if the distribution is disabled.
+        require(distribution.distributionType != DistributionType.Disabled, CannotAddDisabledDistribution());
+
+        // Can only add/update distributions if all distributions have been processed for the current epoch.
+        // Prevents pending weight changes from affecting the current epoch.
+        _checkAllDistributionsProcessed(currentEpoch);
+
+        uint256 totalWeightBefore = totalWeight;
+
+        // Asserts the following:
+        // - The start epoch is in the future.
+        // - The total weight of all distributions does not exceed the max total weight.
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore);
+
+        // Effects
+
+        // Increment the total added count for the current epoch.
+        ++_epochs[currentEpoch].totalAdded;
+
+        // Update return value to the next available distribution id.
+        // Use the current length of the distributions array as the new id.
+        distributionId = _distributions.length;
+
+        // Update the total weight.
+        totalWeight = uint16(totalWeightBefore + distribution.weight);
+        // Append the distribution to the distributions array.
+        _distributions.push(distribution);
+        // Emit an event for the new distribution.
+        emit DistributionAdded(distributionId, currentEpoch, distribution);
+    }
+
+    /// @inheritdoc IEmissionsController
+    function updateDistribution(
+        uint256 distributionId,
+        Distribution calldata distribution
+    ) external override onlyIncentiveCouncil {
+        // Checks
+
+        uint256 currentEpoch = getCurrentEpoch();
+        uint256 totalWeightBefore = totalWeight;
+        uint256 weight = _distributions[distributionId].weight;
+
+        // Can only add/update distributions if all distributions have been processed for the current epoch.
+        // Prevents pending weight changes from affecting the current epoch.
+        _checkAllDistributionsProcessed(currentEpoch);
+
+        // Asserts the following:
+        // - The start epoch is in the future.
+        // - The total weight of all distributions does not exceed the max total weight.
+        _checkDistribution(distribution, currentEpoch, totalWeightBefore - weight);
+
+        // Effects
+
+        // Update the pending total weight (will be committed when pressButton starts a new epoch).
+        totalWeight = uint16(totalWeightBefore - weight + distribution.weight);
+        // Update the distribution in the distributions array.
+        _distributions[distributionId] = distribution;
+        // Emit an event for the updated distribution.
+        emit DistributionUpdated(distributionId, currentEpoch, distribution);
+    }
+
+    /// -----------------------------------------------------------------------
+    /// Internal Helpers
+    /// -----------------------------------------------------------------------
+
+    function _checkOnlyIncentiveCouncil() internal view {
+        // Check if the caller is the incentive council.
+        require(msg.sender == incentiveCouncil, CallerIsNotIncentiveCouncil());
+    }
+
+    function _checkAllDistributionsProcessed(
+        uint256 currentEpoch
+    ) internal view {
+        // Check if all distributions have been processed for the current epoch.
+        require(!_isButtonPressable(currentEpoch), AllDistributionsMustBeProcessed());
+    }
+
+    function _checkDistribution(
+        Distribution calldata distribution,
+        uint256 currentEpoch,
+        uint256 totalWeightBefore
+    ) internal view {
+        // Check if the operator set is registered (for OperatorSetTotalStake or OperatorSetUniqueStake distributions).
+        if (
+            distribution.distributionType == DistributionType.OperatorSetTotalStake
+                || distribution.distributionType == DistributionType.OperatorSetUniqueStake
+        ) {
+            require(ALLOCATION_MANAGER.isOperatorSet(distribution.operatorSet), OperatorSetNotRegistered());
+        }
+
+        // Check if the start epoch is in the future.
+        // Prevents updating a distribution to a past or current epoch.
+        if (currentEpoch != type(uint256).max) {
+            // After emissions start - require future epochs only
+            require(distribution.startEpoch > currentEpoch, StartEpochMustBeInTheFuture());
+        }
+
+        // Check if the new total weight of all distributions exceeds max total weight.
+        // Prevents distributing more supply than inflation rate allows.
+        require(distribution.weight + totalWeightBefore <= MAX_TOTAL_WEIGHT, TotalWeightExceedsMax());
+
+        // Check if rewards submissions array is empty for non-Manual distributions.
+        // Manual distributions handle rewards differently and don't require submissions.
+        require(
+            distribution.distributionType == DistributionType.Manual
+                || distribution.strategiesAndMultipliers.length > 0,
+            RewardsSubmissionsCannotBeEmpty()
+        );
+    }
+
+    /// @dev Internal helper to check if the button is pressable.
+    /// @param currentEpoch The current epoch.
+    /// @return True if the button is pressable, false otherwise.
+    function _isButtonPressable(
+        uint256 currentEpoch
+    ) internal view returns (bool) {
+        // If emissions haven't started yet, button is not pressable.
+        if (currentEpoch == type(uint256).max) return false;
+
+        // Return true if there are any unprocessed distributions for the current epoch.
+        return _epochs[currentEpoch].totalProcessed < getTotalProcessableDistributions();
+    }
+
+    /// -----------------------------------------------------------------------
+    /// View
+    /// -----------------------------------------------------------------------
+
+    /// @inheritdoc IEmissionsController
+    function getCurrentEpoch() public view returns (uint256) {
+        // If the start time has not elapsed, default to max uint256.
+        if (block.timestamp < EMISSIONS_START_TIME) return type(uint256).max;
+        // Calculate the current epoch by dividing the time since start by the epoch length.
+        return (block.timestamp - EMISSIONS_START_TIME) / EMISSIONS_EPOCH_LENGTH;
+    }
+
+    /// @inheritdoc IEmissionsController
+    function isButtonPressable() public view returns (bool) {
+        return _isButtonPressable(getCurrentEpoch());
+    }
+
+    /// @inheritdoc IEmissionsController
+    function nextTimeButtonPressable() external view returns (uint256) {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // If emissions haven't started yet, return the start time.
+        if (currentEpoch == type(uint256).max) return EMISSIONS_START_TIME;
+
+        // Return the start time of the next epoch.
+        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * (currentEpoch + 1);
+    }
+
+    /// @inheritdoc IEmissionsController
+    function lastTimeButtonPressable() external view returns (uint256) {
+        uint256 currentEpoch = getCurrentEpoch();
+
+        // If emissions haven't started yet, return the max uint256.
+        if (currentEpoch == type(uint256).max) return type(uint256).max;
+
+        // Return the start time of the current epoch.
+        return EMISSIONS_START_TIME + EMISSIONS_EPOCH_LENGTH * currentEpoch;
+    }
+
+    /// @inheritdoc IEmissionsController
+    function getTotalProcessableDistributions() public view returns (uint256) {
+        uint256 currentEpoch = getCurrentEpoch();
+        // Before emissions start, return the full count since distributions added
+        // before emissions are not tracked as "added in current epoch"
+        if (currentEpoch == type(uint256).max) {
+            return _distributions.length;
+        }
+        return _distributions.length - _epochs[currentEpoch].totalAdded;
+    }
+
+    /// @inheritdoc IEmissionsController
+    function getDistribution(
+        uint256 distributionId
+    ) external view returns (Distribution memory) {
+        return _distributions[distributionId];
+    }
+
+    /// @inheritdoc IEmissionsController
+    function getDistributions(
+        uint256 start,
+        uint256 length
+    ) external view returns (Distribution[] memory distributions) {
+        // Avoid out-of-bounds error.
+        uint256 actualLength = _distributions.length;
+        if (start + length > actualLength) length = actualLength - start;
+        // Create a new array in memory with the given length.
+        distributions = new Distribution[](length);
+        // Copy the specified subset of distributions from the storage array to the memory array.
+        for (uint256 i = 0; i < length; ++i) {
+            distributions[i] = _distributions[start + i];
+        }
+    }
+}
