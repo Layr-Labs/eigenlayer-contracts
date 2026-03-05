@@ -16,7 +16,7 @@ jobs:
   test:
     runs-on: protocol-x64-16core
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         env: [mainnet, testnet-sepolia, testnet-hoodi, testnet-base-sepolia, base, preprod-hoodi]
 

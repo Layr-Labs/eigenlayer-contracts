@@ -39,10 +39,6 @@ contract RewardsCoordinator is
         _;
     }
 
-    /// -----------------------------------------------------------------------
-    /// Initialization
-    /// -----------------------------------------------------------------------
-
     /// @dev Sets the immutable variables for the contract
     constructor(
         RewardsCoordinatorConstructorParams memory params
@@ -51,7 +47,6 @@ contract RewardsCoordinator is
             params.delegationManager,
             params.strategyManager,
             params.allocationManager,
-            params.emissionsController,
             params.CALCULATION_INTERVAL_SECONDS,
             params.MAX_REWARDS_DURATION,
             params.MAX_RETROACTIVE_LENGTH,
@@ -72,35 +67,36 @@ contract RewardsCoordinator is
         uint256 initialPausedStatus,
         address _rewardsUpdater,
         uint32 _activationDelay,
-        uint16 _defaultSplitBips,
-        address _feeRecipient
-    ) external reinitializer(2) {
+        uint16 _defaultSplitBips
+    ) external initializer {
         _setPausedStatus(initialPausedStatus);
         _transferOwnership(initialOwner);
         _setRewardsUpdater(_rewardsUpdater);
         _setActivationDelay(_activationDelay);
         _setDefaultOperatorSplit(_defaultSplitBips);
-        _setFeeRecipient(_feeRecipient);
     }
 
-    /// -----------------------------------------------------------------------
-    /// External Functions
-    /// -----------------------------------------------------------------------
-
-    /// @inheritdoc IRewardsCoordinator
-    function createEigenDARewardsSubmission(
-        address avs,
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
-        require(msg.sender == address(emissionsController), UnauthorizedCaller());
-        _createAVSRewardsSubmission(avs, rewardsSubmissions);
-    }
+    ///
+    ///                         EXTERNAL FUNCTIONS
+    ///
 
     /// @inheritdoc IRewardsCoordinator
     function createAVSRewardsSubmission(
         RewardsSubmission[] calldata rewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_AVS_REWARDS_SUBMISSION) nonReentrant {
-        _createAVSRewardsSubmission(msg.sender, rewardsSubmissions);
+        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
+            uint256 nonce = submissionNonce[msg.sender];
+            bytes32 rewardsSubmissionHash = keccak256(abi.encode(msg.sender, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
+
+            isAVSRewardsSubmissionHash[msg.sender][rewardsSubmissionHash] = true;
+            submissionNonce[msg.sender] = nonce + 1;
+
+            emit AVSRewardsSubmissionCreated(msg.sender, nonce, rewardsSubmissionHash, rewardsSubmission);
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
+        }
     }
 
     /// @inheritdoc IRewardsCoordinator
@@ -152,24 +148,14 @@ contract RewardsCoordinator is
         OperatorDirectedRewardsSubmission[] calldata operatorDirectedRewardsSubmissions
     ) external onlyWhenNotPaused(PAUSED_OPERATOR_DIRECTED_AVS_REWARDS_SUBMISSION) checkCanCall(avs) nonReentrant {
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
-            OperatorDirectedRewardsSubmission memory operatorDirectedRewardsSubmission =
+            OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
-
             uint256 nonce = submissionNonce[avs];
+            bytes32 operatorDirectedRewardsSubmissionHash =
+                keccak256(abi.encode(avs, nonce, operatorDirectedRewardsSubmission));
 
-            // First validate the operator directed submission.
-            // Validate the operator directed submission and deduct protocol fees upfront from each `operatorRewards.amount` if applicable.
-            // This ensures all amounts are net of fees before proceeding, avoiding redundant fee calculations later.
-            (bytes32 operatorDirectedRewardsSubmissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) =
-                _validateOperatorDirectedRewardsSubmission(avs, nonce, operatorDirectedRewardsSubmission);
+            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
 
-            // Then transfer the full amount to the contract.
-            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            _takeOperatorDirectedProtocolFee(operatorDirectedRewardsSubmission.token, amountBeforeFee, amountAfterFee);
-
-            // Last update storage.
             isOperatorDirectedAVSRewardsSubmissionHash[avs][operatorDirectedRewardsSubmissionHash] = true;
             submissionNonce[avs] = nonce + 1;
 
@@ -180,6 +166,7 @@ contract RewardsCoordinator is
                 nonce,
                 operatorDirectedRewardsSubmission
             );
+            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -195,23 +182,14 @@ contract RewardsCoordinator is
     {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < operatorDirectedRewardsSubmissions.length; i++) {
-            OperatorDirectedRewardsSubmission memory operatorDirectedRewardsSubmission =
+            OperatorDirectedRewardsSubmission calldata operatorDirectedRewardsSubmission =
                 operatorDirectedRewardsSubmissions[i];
-
             uint256 nonce = submissionNonce[operatorSet.avs];
-            // First validate the operator directed submission.
-            // Validate the operator directed submission and deduct protocol fees upfront from each `operatorRewards.amount` if applicable.
-            // This ensures all amounts are net of fees before proceeding, avoiding redundant fee calculations later.
-            (bytes32 operatorDirectedRewardsSubmissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) =
-                _validateOperatorDirectedRewardsSubmission(operatorSet.avs, nonce, operatorDirectedRewardsSubmission);
+            bytes32 operatorDirectedRewardsSubmissionHash =
+                keccak256(abi.encode(operatorSet.avs, nonce, operatorDirectedRewardsSubmission));
 
-            // Then transfer the full amount to the contract.
-            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), amountBeforeFee);
+            uint256 totalAmount = _validateOperatorDirectedRewardsSubmission(operatorDirectedRewardsSubmission);
 
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            _takeOperatorDirectedProtocolFee(operatorDirectedRewardsSubmission.token, amountBeforeFee, amountAfterFee);
-
-            // Last update storage.
             isOperatorDirectedOperatorSetRewardsSubmissionHash[operatorSet.avs][operatorDirectedRewardsSubmissionHash] =
                 true;
             submissionNonce[operatorSet.avs] = nonce + 1;
@@ -223,6 +201,7 @@ contract RewardsCoordinator is
                 nonce,
                 operatorDirectedRewardsSubmission
             );
+            operatorDirectedRewardsSubmission.token.safeTransferFrom(msg.sender, address(this), totalAmount);
         }
     }
 
@@ -233,20 +212,11 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[operatorSet.avs];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
 
             isUniqueStakeRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
             submissionNonce[operatorSet.avs] = nonce + 1;
@@ -258,6 +228,7 @@ contract RewardsCoordinator is
                 nonce,
                 rewardsSubmission
             );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -268,20 +239,11 @@ contract RewardsCoordinator is
     ) external onlyWhenNotPaused(PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION) checkCanCall(operatorSet.avs) nonReentrant {
         require(allocationManager.isOperatorSet(operatorSet), InvalidOperatorSet());
         for (uint256 i = 0; i < rewardsSubmissions.length; ++i) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
+            RewardsSubmission calldata rewardsSubmission = rewardsSubmissions[i];
             uint256 nonce = submissionNonce[operatorSet.avs];
             bytes32 rewardsSubmissionHash = keccak256(abi.encode(operatorSet.avs, nonce, rewardsSubmission));
+
+            _validateRewardsSubmission(rewardsSubmission);
 
             isTotalStakeRewardsSubmissionHash[operatorSet.avs][rewardsSubmissionHash] = true;
             submissionNonce[operatorSet.avs] = nonce + 1;
@@ -293,6 +255,7 @@ contract RewardsCoordinator is
                 nonce,
                 rewardsSubmission
             );
+            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
         }
     }
 
@@ -384,13 +347,6 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setFeeRecipient(
-        address _feeRecipient
-    ) external onlyOwner {
-        _setFeeRecipient(_feeRecipient);
-    }
-
-    /// @inheritdoc IRewardsCoordinator
     function setOperatorAVSSplit(
         address operator,
         address avs,
@@ -431,14 +387,6 @@ contract RewardsCoordinator is
     }
 
     /// @inheritdoc IRewardsCoordinator
-    function setOptInForProtocolFee(
-        address submitter,
-        bool optInForProtocolFee
-    ) external checkCanCall(submitter) {
-        _setOptInForProtocolFee(submitter, optInForProtocolFee);
-    }
-
-    /// @inheritdoc IRewardsCoordinator
     function setRewardsUpdater(
         address _rewardsUpdater
     ) external onlyOwner {
@@ -455,39 +403,9 @@ contract RewardsCoordinator is
         isRewardsForAllSubmitter[_submitter] = _newValue;
     }
 
-    /// -----------------------------------------------------------------------
-    /// Internal Helper Functions
-    /// -----------------------------------------------------------------------
-
-    /// @notice Internal helper to create AVS rewards submissions.
-    /// @param avs The address of the AVS to submit rewards for.
-    /// @param rewardsSubmissions The RewardsSubmissions to be created.
-    function _createAVSRewardsSubmission(
-        address avs,
-        RewardsSubmission[] calldata rewardsSubmissions
-    ) internal {
-        for (uint256 i = 0; i < rewardsSubmissions.length; i++) {
-            RewardsSubmission memory rewardsSubmission = rewardsSubmissions[i];
-
-            // First validate the submission.
-            _validateRewardsSubmission(rewardsSubmission);
-
-            // Then transfer the full amount to the contract.
-            rewardsSubmission.token.safeTransferFrom(msg.sender, address(this), rewardsSubmission.amount);
-
-            // Then take the protocol fee (if the submitter is opted in for protocol fees).
-            rewardsSubmission.amount = _takeProtocolFee(rewardsSubmission.token, rewardsSubmission.amount);
-
-            // Last update storage.
-            uint256 nonce = submissionNonce[avs];
-            bytes32 rewardsSubmissionHash = keccak256(abi.encode(avs, nonce, rewardsSubmission));
-
-            isAVSRewardsSubmissionHash[avs][rewardsSubmissionHash] = true;
-            submissionNonce[avs] = nonce + 1;
-
-            emit AVSRewardsSubmissionCreated(avs, nonce, rewardsSubmissionHash, rewardsSubmission);
-        }
-    }
+    ///
+    ///                         INTERNAL FUNCTIONS
+    ///
 
     /// @notice Internal helper to process reward claims.
     /// @param claim The RewardsMerkleClaims to be processed.
@@ -551,14 +469,6 @@ contract RewardsCoordinator is
         emit ClaimerForSet(earner, prevClaimer, claimer);
     }
 
-    function _setFeeRecipient(
-        address _feeRecipient
-    ) internal {
-        require(_feeRecipient != address(0), InvalidAddressZero());
-        emit FeeRecipientSet(feeRecipient, _feeRecipient);
-        feeRecipient = _feeRecipient;
-    }
-
     /// @notice Internal helper to set the operator split.
     /// @param operatorSplit The split struct for an Operator
     /// @param split The split in basis points.
@@ -583,18 +493,9 @@ contract RewardsCoordinator is
         operatorSplit.activatedAt = activatedAt;
     }
 
-    function _setOptInForProtocolFee(
-        address submitter,
-        bool value
-    ) internal {
-        bool prevValue = isOptedInForProtocolFee[submitter];
-        emit OptInForProtocolFeeSet(submitter, prevValue, value);
-        isOptedInForProtocolFee[submitter] = value;
-    }
-
     /// @notice Common checks for all RewardsSubmissions.
     function _validateCommonRewardsSubmission(
-        StrategyAndMultiplier[] memory strategiesAndMultipliers,
+        StrategyAndMultiplier[] calldata strategiesAndMultipliers,
         uint32 startTimestamp,
         uint32 duration
     ) internal view {
@@ -623,7 +524,7 @@ contract RewardsCoordinator is
 
     /// @notice Validate a RewardsSubmission. Called from both `createAVSRewardsSubmission` and `createRewardsForAllSubmission`
     function _validateRewardsSubmission(
-        RewardsSubmission memory rewardsSubmission
+        RewardsSubmission calldata rewardsSubmission
     ) internal view {
         _validateCommonRewardsSubmission(
             rewardsSubmission.strategiesAndMultipliers, rewardsSubmission.startTimestamp, rewardsSubmission.duration
@@ -636,14 +537,10 @@ contract RewardsCoordinator is
     /// @notice Validate a OperatorDirectedRewardsSubmission. Called from `createOperatorDirectedAVSRewardsSubmission`.
     /// @dev Not checking for `MAX_FUTURE_LENGTH` (Since operator-directed reward submissions are strictly retroactive).
     /// @param submission OperatorDirectedRewardsSubmission to validate.
-    /// @return submissionHash The hash of the submission.
-    /// @return amountBeforeFee The sum of all operator reward amounts before fees are taken.
-    /// @return amountAfterFee The sum of all operator reward amounts after fees are taken.
+    /// @return total amount to be transferred from the avs to the contract.
     function _validateOperatorDirectedRewardsSubmission(
-        address submitter,
-        uint256 nonce,
-        OperatorDirectedRewardsSubmission memory submission
-    ) internal view returns (bytes32 submissionHash, uint256 amountBeforeFee, uint256 amountAfterFee) {
+        OperatorDirectedRewardsSubmission calldata submission
+    ) internal view returns (uint256) {
         _validateCommonRewardsSubmission(
             submission.strategiesAndMultipliers, submission.startTimestamp, submission.duration
         );
@@ -651,34 +548,21 @@ contract RewardsCoordinator is
         require(submission.operatorRewards.length > 0, InputArrayLengthZero());
         require(submission.startTimestamp + submission.duration < block.timestamp, SubmissionNotRetroactive());
 
-        bool feeOn = isOptedInForProtocolFee[msg.sender];
+        uint256 totalAmount = 0;
+        address currOperatorAddress = address(0);
+        for (uint256 i = 0; i < submission.operatorRewards.length; ++i) {
+            OperatorReward calldata operatorReward = submission.operatorRewards[i];
+            require(operatorReward.operator != address(0), InvalidAddressZero());
+            require(currOperatorAddress < operatorReward.operator, OperatorsNotInAscendingOrder());
+            require(operatorReward.amount > 0, AmountIsZero());
 
-        address lastOperator = address(0);
-        uint256 length = submission.operatorRewards.length;
-        for (uint256 i = 0; i < length; ++i) {
-            // Check that each operator is a non-zero address.
-            require(submission.operatorRewards[i].operator != address(0), InvalidAddressZero());
-            // Check that each operator is in ascending order.
-            require(lastOperator < submission.operatorRewards[i].operator, OperatorsNotInAscendingOrder());
-            // Check that each operator reward amount is non-zero.
-            require(submission.operatorRewards[i].amount > 0, AmountIsZero());
-
-            // Increment the total amount before fees by the operator reward amount.
-            amountBeforeFee += submission.operatorRewards[i].amount;
-
-            // Take the protocol fee (if the submitter is opted in for protocol fees).
-            uint256 feeAmount = submission.operatorRewards[i].amount * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-            if (feeOn && feeAmount != 0) {
-                submission.operatorRewards[i].amount -= feeAmount;
-            }
-
-            amountAfterFee += submission.operatorRewards[i].amount;
-            lastOperator = submission.operatorRewards[i].operator;
+            currOperatorAddress = operatorReward.operator;
+            totalAmount += operatorReward.amount;
         }
 
-        require(amountBeforeFee <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
+        require(totalAmount <= MAX_REWARDS_AMOUNT, AmountExceedsMax());
 
-        return (keccak256(abi.encode(submitter, nonce, submission)), amountBeforeFee, amountAfterFee);
+        return totalAmount;
     }
 
     function _checkClaim(
@@ -788,41 +672,9 @@ contract RewardsCoordinator is
         }
     }
 
-    /// @notice Internal helper to take protocol fees from a submission.
-    /// @param token The token to take the protocol fee from.
-    /// @param amountBeforeFee The amount before the protocol fee is taken.
-    /// @return amountAfterFee The amount after the protocol fee is taken.
-    function _takeProtocolFee(
-        IERC20 token,
-        uint256 amountBeforeFee
-    ) internal returns (uint256 amountAfterFee) {
-        uint256 feeAmount = amountBeforeFee * PROTOCOL_FEE_BIPS / ONE_HUNDRED_IN_BIPS;
-        if (isOptedInForProtocolFee[msg.sender]) {
-            if (feeAmount != 0) {
-                token.safeTransfer(feeRecipient, feeAmount);
-                return amountBeforeFee - feeAmount;
-            }
-        }
-        return amountBeforeFee;
-    }
-
-    /// @notice Internal helper to take protocol fees from a operator-directed rewards submission.
-    /// @param token The token to take the protocol fee from.
-    /// @param amountBeforeFee The amount before the protocol fee is taken.
-    /// @param amountAfterFee The amount after the protocol fee is taken.
-    function _takeOperatorDirectedProtocolFee(
-        IERC20 token,
-        uint256 amountBeforeFee,
-        uint256 amountAfterFee
-    ) internal {
-        if (amountAfterFee != amountBeforeFee) {
-            token.safeTransfer(feeRecipient, amountBeforeFee - amountAfterFee);
-        }
-    }
-
-    /// -----------------------------------------------------------------------
-    /// External View Functions
-    /// -----------------------------------------------------------------------
+    ///
+    ///                         VIEW FUNCTIONS
+    ///
 
     /// @inheritdoc IRewardsCoordinator
     function calculateEarnerLeafHash(
