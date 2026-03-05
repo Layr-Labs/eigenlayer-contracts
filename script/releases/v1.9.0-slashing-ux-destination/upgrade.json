@@ -1,0 +1,31 @@
+{
+    "name": "slashing-ux-improvements",
+    "from": ">=1.8.0",
+    "to": "1.9.0",
+    "phases": [
+        {
+            "type": "multisig",
+            "filename": "1-deployProtocolRegistryProxy.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "2-deployProtocolRegistryImpl.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-upgradeProtocolRegistry.s.sol"
+        },
+        {
+            "type": "eoa",
+            "filename": "4-deployCoreContracts.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "5-queueUpgrade.s.sol"
+        },
+        {
+            "type": "multisig",
+            "filename": "6-completeUpgrade.s.sol"
+        }
+    ]
+}

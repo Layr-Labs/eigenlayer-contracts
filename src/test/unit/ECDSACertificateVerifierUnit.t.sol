@@ -481,7 +481,7 @@ contract ECDSACertificateVerifierUnitTests_verifyCertificate is ECDSACertificate
 
         // Verification should fail - expect SignersNotOrdered because signature recovery
         // with wrong message hash produces different addresses that break ordering
-        cheats.expectRevert(); // SignersNotOrdered or VerificationFailed
+        vm.expectRevert(IECDSACertificateVerifierErrors.SignersNotOrdered.selector);
         verifier.verifyCertificate(defaultOperatorSet, cert);
     }
 

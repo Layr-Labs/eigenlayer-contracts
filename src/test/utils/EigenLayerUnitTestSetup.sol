@@ -16,9 +16,6 @@ import "src/test/mocks/AllocationManagerMock.sol";
 import "src/test/mocks/StrategyManagerMock.sol";
 import "src/test/mocks/DelegationManagerMock.sol";
 import "src/test/mocks/EigenPodManagerMock.sol";
-import "src/test/mocks/EigenMock.sol";
-import "src/test/mocks/BackingEigenMock.sol";
-import "src/test/mocks/RewardsCoordinatorMock.sol";
 import "src/test/mocks/EmptyContract.sol";
 
 import "src/test/utils/ArrayLib.sol";
@@ -46,9 +43,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
     StrategyManagerMock strategyManagerMock;
     DelegationManagerMock delegationManagerMock;
     EigenPodManagerMock eigenPodManagerMock;
-    EigenMock eigenMock;
-    BackingEigenMock backingEigenMock;
-    RewardsCoordinatorMock rewardsCoordinatorMock;
     EmptyContract emptyContract;
 
     mapping(address => bool) public isExcludedFuzzAddress;
@@ -87,9 +81,6 @@ abstract contract EigenLayerUnitTestSetup is Test {
             StrategyManagerMock(payable(address(new StrategyManagerMock(IDelegationManager(address(delegationManagerMock))))));
         delegationManagerMock = DelegationManagerMock(payable(address(new DelegationManagerMock())));
         eigenPodManagerMock = EigenPodManagerMock(payable(address(new EigenPodManagerMock(pauserRegistry))));
-        backingEigenMock = BackingEigenMock(payable(address(new BackingEigenMock())));
-        eigenMock = EigenMock(payable(address(new EigenMock(backingEigenMock))));
-        rewardsCoordinatorMock = RewardsCoordinatorMock(payable(address(new RewardsCoordinatorMock())));
         emptyContract = new EmptyContract();
 
         isExcludedFuzzAddress[address(0)] = true;
@@ -101,8 +92,5 @@ abstract contract EigenLayerUnitTestSetup is Test {
         isExcludedFuzzAddress[address(strategyManagerMock)] = true;
         isExcludedFuzzAddress[address(delegationManagerMock)] = true;
         isExcludedFuzzAddress[address(eigenPodManagerMock)] = true;
-        isExcludedFuzzAddress[address(eigenMock)] = true;
-        isExcludedFuzzAddress[address(backingEigenMock)] = true;
-        isExcludedFuzzAddress[address(rewardsCoordinatorMock)] = true;
     }
 }

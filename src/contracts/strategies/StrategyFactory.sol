@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import "@openzeppelin-upgrades/contracts/access/OwnableUpgradeable.sol";
 import "./StrategyFactoryStorage.sol";
 import "./StrategyBase.sol";
-import "./DurationVaultStrategy.sol";
-import "../interfaces/IDurationVaultStrategy.sol";
 import "../permissions/Pausable.sol";
 
 /// @title Factory contract for deploying BeaconProxies of a Strategy contract implementation for arbitrary ERC20 tokens
@@ -20,31 +18,23 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /// @notice EigenLayer's StrategyManager contract
     IStrategyManager public immutable strategyManager;
 
-    /// @notice Upgradeable beacon used for baseline strategies deployed by this contract.
-    IBeacon public immutable strategyBeacon;
-
-    /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
-    IBeacon public immutable durationVaultBeacon;
-
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
     constructor(
         IStrategyManager _strategyManager,
-        IPauserRegistry _pauserRegistry,
-        IBeacon _strategyBeacon,
-        IBeacon _durationVaultBeacon
+        IPauserRegistry _pauserRegistry
     ) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
-        strategyBeacon = _strategyBeacon;
-        durationVaultBeacon = _durationVaultBeacon;
         _disableInitializers();
     }
 
     function initialize(
         address _initialOwner,
-        uint256 _initialPausedStatus
+        uint256 _initialPausedStatus,
+        IBeacon _strategyBeacon
     ) public virtual initializer {
         _transferOwnership(_initialOwner);
         _setPausedStatus(_initialPausedStatus);
+        _setStrategyBeacon(_strategyBeacon);
     }
 
     /// @notice Deploy a new StrategyBase contract for the ERC20 token, using a beacon proxy
@@ -110,30 +100,6 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
     }
 
-    /// @notice Deploys a new duration vault strategy backed by the configured beacon.
-    function deployDurationVaultStrategy(
-        IDurationVaultStrategy.VaultConfig calldata config
-    ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IDurationVaultStrategy newVault) {
-        IERC20 underlyingToken = config.underlyingToken;
-        require(!isBlacklisted[underlyingToken], BlacklistedToken());
-
-        newVault = IDurationVaultStrategy(
-            address(
-                new BeaconProxy(
-                    address(durationVaultBeacon),
-                    abi.encodeWithSelector(DurationVaultStrategy.initialize.selector, config)
-                )
-            )
-        );
-
-        _registerDurationVault(underlyingToken, newVault);
-        IStrategy[] memory strategiesToWhitelist = new IStrategy[](1);
-        strategiesToWhitelist[0] = newVault;
-        strategyManager.addStrategiesToDepositWhitelist(strategiesToWhitelist);
-
-        _emitDurationVaultDeployed(newVault, underlyingToken, config);
-    }
-
     /// @notice Owner-only function to pass through a call to `StrategyManager.removeStrategiesFromDepositWhitelist`
     function removeStrategiesFromWhitelist(
         IStrategy[] calldata strategiesToRemoveFromWhitelist
@@ -149,37 +115,10 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         emit StrategySetForToken(token, strategy);
     }
 
-    /// @inheritdoc IStrategyFactory
-    function getDurationVaults(
-        IERC20 token
-    ) external view returns (IDurationVaultStrategy[] memory) {
-        // NOTE: Consider using the public durationVaultsByToken mapping directly
-        // for on-chain integrations to avoid potential OOG issues with large arrays.
-        return durationVaultsByToken[token];
-    }
-
-    function _registerDurationVault(
-        IERC20 token,
-        IDurationVaultStrategy vault
+    function _setStrategyBeacon(
+        IBeacon _strategyBeacon
     ) internal {
-        durationVaultsByToken[token].push(vault);
-    }
-
-    function _emitDurationVaultDeployed(
-        IDurationVaultStrategy vault,
-        IERC20 underlyingToken,
-        IDurationVaultStrategy.VaultConfig calldata config
-    ) internal {
-        emit DurationVaultDeployed(
-            vault,
-            underlyingToken,
-            config.vaultAdmin,
-            config.duration,
-            config.maxPerDeposit,
-            config.stakeCap,
-            config.metadataURI,
-            config.operatorSet.avs,
-            config.operatorSet.id
-        );
+        emit StrategyBeaconModified(strategyBeacon, _strategyBeacon);
+        strategyBeacon = _strategyBeacon;
     }
 }
