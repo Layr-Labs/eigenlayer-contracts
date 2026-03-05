@@ -210,7 +210,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 "slashOperator",
                 string.concat(
                     "{operator: ",
-                    User(payable(params.operator)).NAME_COLORED(),
+                    _formatActor(params.operator),
                     ", operatorSetId: ",
                     cheats.toString(params.operatorSetId),
                     ", strategy: ",
@@ -246,7 +246,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 "slashOperator",
                 string.concat(
                     "{operator: ",
-                    User(payable(params.operator)).NAME_COLORED(),
+                    _formatActor(params.operator),
                     ", operatorSetId: ",
                     cheats.toString(params.operatorSetId),
                     ", strategy: ",
@@ -285,7 +285,7 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
                 "slashOperator",
                 string.concat(
                     "{operator: ",
-                    operator.NAME_COLORED(),
+                    _formatActor(address(operator)),
                     ", operatorSetId: ",
                     cheats.toString(operatorSetId),
                     ", strategy: ",
@@ -411,5 +411,14 @@ contract AVS is Logger, IAllocationManagerTypes, IAVSRegistrar {
 
     function _tryPrankAppointee_AllocationManager(bytes4 selector) internal {
         return _tryPrankAppointee(address(allocationManager), selector);
+    }
+
+    function _formatActor(address actor) internal view returns (string memory) {
+        if (actor == address(0)) return "address(0)";
+        try Logger(actor).NAME_COLORED() returns (string memory colored) {
+            return colored;
+        } catch {
+            return cheats.toString(actor);
+        }
     }
 }
