@@ -68,7 +68,7 @@ This document is organized according to the following themes (click each to be t
   * This is assumed to be a customized `ServiceManager` contract of some kind that is interfacing with the EigenLayer protocol. See the `ServiceManagerBase` docs here: [`eigenlayer-middleware/docs/ServiceManagerBase.md`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/docs/ServiceManagerBase.md).
 * An **Operator Set** refers to a collection of registered operators and strategies. See [ELIP-002](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#operator-sets) for more details.
 * An **Operator Set Key** describes the tuple of an AVS address and an ID that uniquely identifies an Operator Set. See the [AllocationManager](./AllocationManager.md#operator-sets) for details.
-* A **rewards submission** includes, unless specified otherwise, the v1/v2.2 `RewardsSubmission`, the v2/v2.1 `OperatorDirectedRewardsSubmission` types.
+* A **rewards submission** includes, unless specified otherwise, the v1/v2.2 `RewardsSubmission` and the v2/v2.1 `OperatorDirectedRewardsSubmission` types.
 * The internal function `_checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root)` checks the merkle inclusion of a claim against a `DistributionRoot`
     * It reverts if any of the following are true:
         * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves
