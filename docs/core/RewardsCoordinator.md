@@ -9,17 +9,24 @@
 
 The `RewardsCoordinator` accepts ERC20s from AVSs alongside rewards submission requests made out to Operators who, during a specified time range, were registered to the AVS in the core [`AllocationManager`](./AllocationManager.md) contract.
 
-There are two forms of rewards:
-* Rewards v1, also known as rewards submissions.
-* Rewards v2, also known as operator-directed rewards submissions. See the [ELIP](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context on this rewards type.
+There are four forms of rewards:
+* **Rewards v1**, also known as rewards submissions. AVS-wide, auto-weighted distribution based on total delegated stake.
+* **Rewards v2**, also known as operator-directed rewards submissions. AVSs specify per-operator amounts with custom logic, scoped AVS-wide. See [ELIP-001](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-001.md) for additional context.
+* **Rewards v2.1**, also known as operator-directed operator set rewards submissions. Same operator-directed model as v2 but scoped to a specific Operator Set rather than AVS-wide. Uses per-operator-set splits (via `setOperatorSetSplit`) and operator set registration for eligibility.
+* **Rewards v2.2**, also known as unique stake and total stake operator set rewards. Auto-weighted distribution scoped to Operator Sets, supporting both retroactive and forward-looking submissions (up to 2 years). See [ELIP-014](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-014.md) for additional context. This includes:
+  * **Unique Stake Rewards**: Distributes based on allocated unique stake (`magnitude / max_magnitude`) within an Operator Set.
+  * **Total Stake Rewards**: Distributes based on total delegated stake within an Operator Set (operator set analog to Rewards v1).
 
-*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it is based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits.
+*Off-chain*, the trusted *rewards updater* calculates a rewards distribution over some rewards submission's time range, depending on the rewards type. For a **v1 rewards submission**, it is based on: (i) the relative stake weight of each Operator's Stakers and (ii) a default split given to the Operator. For a **v2 rewards submission**, it is based on: (i) an AVS's custom rewards logic, (ii) the per-operator splits. For a **v2.1 rewards submission**, it is based on: (i) the AVS's per-operator amounts, (ii) the per-operator-set split, and (iii) operator registration to the specific Operator Set. For a **v2.2 rewards submission**, it is based on: (i) the relative unique or total stake weight of each Operator within the Operator Set, (ii) the per-operator-set split.
 
 *On-chain*, the rewards updater sends the `RewardsCoordinator` a merkle root of each earner's cumulative earnings. Earners provide merkle proofs to the `RewardsCoordinator` to claim rewards against these roots.
 
 The typical user flow is as follows:
-1. An AVS submits a *rewards submission*, either a `RewardsSubmission` (v1) or `OperatorDirectedRewardsSubmission` (v2), to the `RewardsCoordinator` contract, which specifies a time range (`startTimestamp` and `duration`) and `token`. The rewards submission also specifies the relative reward weights of strategies (i.e. "distribute 80% out to holders of X strategy, and 20% to holders of strategy Y").
-   * Note that **v1 rewards** specify a total `amount`, whereas **v2 rewards** specify a per-operator reward (due to customizable rewards logic). **v2 rewards** also allow for adding a `description` of the rewards submission's purpose.
+1. An AVS submits a *rewards submission* — either a `RewardsSubmission` (v1/v2.2) or `OperatorDirectedRewardsSubmission` (v2/v2.1) — to the `RewardsCoordinator` contract, which specifies a time range (`startTimestamp` and `duration`) and `token`. The rewards submission also specifies the relative reward weights of strategies (i.e. "distribute 80% out to holders of X strategy, and 20% to holders of strategy Y").
+   * **v1 rewards** specify a total `amount` distributed AVS-wide.
+   * **v2 rewards** specify a per-operator reward (due to customizable rewards logic) and allow for adding a `description` of the rewards submission's purpose.
+   * **v2.1 rewards** are identical to v2 but scoped to a specific Operator Set. Operators must be registered to the Operator Set, and per-operator-set splits apply.
+   * **v2.2 rewards** specify a total `amount` scoped to a specific Operator Set. The system automatically calculates per-operator distribution based on either unique allocated stake or total delegated stake weight.
 2. Off-chain, the rewards submissions are used to calculate reward distributions, which are periodically consolidated into a merkle tree.
 3. The root of this tree (aka the `DistributionRoot`) is posted on-chain by the *rewards updater*. A `DistributionRoot` becomes active for claims after some globally-configured `activationDelay`.
 4. Stakers and Operators (or their configured "claimers") can claim their accumulated earnings by providing a merkle proof against any previously-posted `DistributionRoot`.
@@ -61,7 +68,7 @@ This document is organized according to the following themes (click each to be t
   * This is assumed to be a customized `ServiceManager` contract of some kind that is interfacing with the EigenLayer protocol. See the `ServiceManagerBase` docs here: [`eigenlayer-middleware/docs/ServiceManagerBase.md`](https://github.com/Layr-Labs/eigenlayer-middleware/blob/dev/docs/ServiceManagerBase.md).
 * An **Operator Set** refers to a collection of registered operators and strategies. See [ELIP-002](https://github.com/eigenfoundation/ELIPs/blob/main/ELIPs/ELIP-002.md#operator-sets) for more details.
 * An **Operator Set Key** describes the tuple of an AVS address and an ID that uniquely identifies an Operator Set. See the [AllocationManager](./AllocationManager.md#operator-sets) for details.
-* A **rewards submission** includes, unless specified otherwise, both the v1 `RewardsSubmission` and the v2 `OperatorDirectedRewardsSubmission` types.
+* A **rewards submission** includes, unless specified otherwise, the v1/v2.2 `RewardsSubmission` and the v2/v2.1 `OperatorDirectedRewardsSubmission` types.
 * The internal function `_checkClaim(RewardsMerkleClaim calldata claim, DistributionRoot memory root)` checks the merkle inclusion of a claim against a `DistributionRoot`
     * It reverts if any of the following are true:
         * mismatch input param lengths: tokenIndices, tokenTreeProofs, tokenLeaves
@@ -79,6 +86,8 @@ Rewards are initially submitted to the contract to be distributed to Operators a
 * [`RewardsCoordinator.createRewardsForAllEarners`](#createrewardsforallearners)
 * [`RewardsCoordinator.createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission)
 * [`RewardsCoordinator.createOperatorDirectedOperatorSetRewardsSubmission`](#createoperatordirectedoperatorsetrewardssubmission)
+* [`RewardsCoordinator.createUniqueStakeRewardsSubmission`](#createuniquestakerewardssubmission)
+* [`RewardsCoordinator.createTotalStakeRewardsSubmission`](#createtotalstakerewardssubmission)
 
 #### `createAVSRewardsSubmission`
 
@@ -266,11 +275,19 @@ function createOperatorDirectedOperatorSetRewardsSubmission(
     nonReentrant
 ```
 
-This function allows AVSs to make rewards submissions to specific operator sets, allowing for more granularly targeted rewards based on tasks assigned to a specific operator set, or any other custom AVS logic. Its functionality is almost identical to [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission), save for some operator-set specific requirements, state variables, and events.
+This is the **Rewards v2.1** function. It allows AVSs to make operator-directed rewards submissions scoped to a specific Operator Set, allowing for more granularly targeted rewards based on tasks assigned to a specific operator set, or any other custom AVS logic. Its functionality is almost identical to [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission), save for some operator-set specific requirements, state variables, and events.
 
 Note that an AVS must specify an operator set registered to the AVS; in other words, an operator set belonging to a different AVS, or an unregistered operator set, will cause this function to revert.
 
-Also note that making this reward submission with a duration extending prior to the slashing release will result in those reward snapshots, prior to the slashing release, being refunded to the AVS (This is handled in the Sidecar rewards calculation logic).
+Also note that making this reward submission with a duration extending prior to the slashing release will result in those reward snapshots, prior to the slashing release, being refunded to the AVS (this is handled in the Sidecar rewards calculation logic).
+
+*Eligibility*:
+
+Operators specified in the `operatorRewards` array must be registered to the Operator Set during the reward period. If an operator is not registered during a given snapshot, the allocated amounts for that snapshot are refunded to the AVS. Additionally, if a strategy specified in the submission is not registered to the Operator Set, the staker portion for that strategy is also refunded to the AVS.
+
+*Rewards Distribution*:
+
+Unlike v2 (AVS-wide), v2.1 uses **per-operator-set splits** (set via [`setOperatorSetSplit`](#setoperatorsetsplit)) rather than per-AVS splits. The split lookup chain is: operator set split → global default split → 10% fallback. Staker distribution is proportional to their delegated shares weighted by the `strategiesAndMultipliers`, considering only strategies registered to the Operator Set.
 
 *Effects*:
 * See [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission) above. The only differences are that:
@@ -281,6 +298,101 @@ Also note that making this reward submission with a duration extending prior to 
 * See [`createOperatorDirectedAVSRewardsSubmission`](#createoperatordirectedavsrewardssubmission) above. The only differences are that:
   * `operatorSet` MUST be a [registered operator set](./AllocationManager.md#createoperatorsets) for the given AVS as according to `allocationManager.isOperatorSet()`
   * Pause status is instead: `PAUSED_OPERATOR_DIRECTED_OPERATOR_SET_REWARDS_SUBMISSION`
+
+#### `createUniqueStakeRewardsSubmission`
+
+```solidity
+function createUniqueStakeRewardsSubmission(
+    OperatorSet calldata operatorSet,
+    RewardsSubmission[] calldata rewardsSubmissions
+)
+    external
+    onlyWhenNotPaused(PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION)
+    checkCanCall(operatorSet.avs)
+    nonReentrant
+```
+
+Called by an AVS to submit a list of `RewardsSubmission`s to be distributed across Operators who have allocated **unique stake** to the specified Operator Set. This is the first forward-looking rewards mechanism for `AllocationManager`-registered AVSs, and is essentially the Rewards v1 model scoped to allocated unique stake within an Operator Set.
+
+The AVS specifies a total `amount`; the off-chain system automatically calculates per-operator distribution based on each operator's relative unique stake weight (`magnitude / max_magnitude`) within the Operator Set.
+
+A `RewardsSubmission` consists of the same fields as described in [`createAVSRewardsSubmission`](#createavsrewardssubmission):
+* `IERC20 token`, `uint256 amount`, `uint32 startTimestamp`, `uint32 duration`, `StrategyAndMultiplier[] strategiesAndMultipliers`
+
+*Eligibility*:
+
+Operators must be registered to the Operator Set **and** have allocated unique stake to that specific Operator Set during the reward period to be eligible for unique stake rewards. Unique stake is always slashable by definition. If no operators are registered during a given snapshot, the allocated amounts for that snapshot are refunded to the AVS.
+
+*Rewards Distribution*:
+
+The off-chain sidecar calculates daily distributions based on `magnitude / max_magnitude` from `AllocationManager` allocation snapshots. For each daily snapshot during the reward `duration`:
+* Each operator's allocated weight is calculated as `SUM(shares * magnitude / max_magnitude * multiplier)` across the specified strategies
+* Operator share for the day: `FLOOR(tokens_per_day * operator_weight / total_weight)`
+* The operator's share is split according to the per-operator-set split (see [`setOperatorSetSplit`](#setoperatorsetsplit)), with the remainder distributed to stakers proportional to their delegated shares and the `strategiesAndMultipliers`
+
+The split lookup chain is: operator set split → global default split → 10% fallback.
+
+*Effects*:
+* For each `RewardsSubmission` element:
+    * Transfers `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
+    * Takes the protocol fee (if the submitter is opted in for protocol fees)
+    * Hashes `operatorSet.avs`, nonce, and `RewardsSubmission` struct to create a unique rewards hash and sets this value to `true` in the `isUniqueStakeRewardsSubmissionHash` mapping
+    * Increments `submissionNonce[operatorSet.avs]`
+    * Emits a `UniqueStakeRewardsSubmissionCreated` event
+
+*Requirements*:
+* Pause status MUST NOT be set: `PAUSED_UNIQUE_STAKE_REWARDS_SUBMISSION`
+* Caller MUST be authorized, either as the AVS itself or an admin/appointee (see [`PermissionController.md`](../permissions/PermissionController.md))
+* `operatorSet` MUST be a [registered operator set](./AllocationManager.md#createoperatorsets) for the given AVS as according to `allocationManager.isOperatorSet()`
+* Function call is not reentered
+* For each `RewardsSubmission` element:
+    * Requirements from calling internal function `_validateRewardsSubmission()` (same validation as [`createAVSRewardsSubmission`](#createavsrewardssubmission))
+    * `transferFrom` MUST succeed in transferring `amount` of `token` from `msg.sender` to the `RewardsCoordinator`
+
+*Key behavioral notes*:
+* **Dynamic Weighting**: Stake weights are queried daily at execution time, not locked at submission time. Individual operator shares fluctuate as relative stake changes; the total daily rate (`amount / duration`) remains fixed.
+* **No Cancellation**: Once submitted, commitments are binding. Tokens are immediately escrowed and cannot be cancelled.
+* **Forward-Looking**: Unlike operator-directed rewards (which are strictly retroactive), unique stake rewards support `startTimestamp` up to `MAX_FUTURE_LENGTH` in the future.
+
+#### `createTotalStakeRewardsSubmission`
+
+```solidity
+function createTotalStakeRewardsSubmission(
+    OperatorSet calldata operatorSet,
+    RewardsSubmission[] calldata rewardsSubmissions
+)
+    external
+    onlyWhenNotPaused(PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION)
+    checkCanCall(operatorSet.avs)
+    nonReentrant
+```
+
+Called by an AVS to submit a list of `RewardsSubmission`s to be distributed across Operators registered to the specified Operator Set based on **total delegated stake**. This is the Operator Set analog to Rewards v1, scoped to a specific Operator Set instead of AVS-wide.
+
+The AVS specifies a total `amount`, then the off-chain system automatically calculates per-operator distribution based on each operator's relative total delegated stake weight within the Operator Set.
+
+*Eligibility*:
+
+Operators must be registered to the Operator Set during the reward period to be eligible for total stake rewards. Unlike unique stake rewards, operators are not required to have allocated unique stake. Only registration is needed. If no operators are registered during a given snapshot, the allocated amounts for that snapshot are refunded to the AVS.
+
+*Rewards Distribution*:
+
+The off-chain sidecar calculates daily distributions based on total delegated shares from `DelegationManager` share snapshots. For each daily snapshot during the reward `duration`:
+* Each operator's total weight is calculated as `SUM(shares * multiplier)` across the specified strategies
+* Operator share for the day: `FLOOR(tokens_per_day * operator_weight / total_weight)`
+* The operator's share is split the same way as unique stake rewards (per-operator-set split → global default → 10% fallback)
+
+*Effects*:
+* See [`createUniqueStakeRewardsSubmission`](#createuniquestakerewardssubmission) above. The only differences are that:
+    * Each rewards submission hash is stored in the `isTotalStakeRewardsSubmissionHash` mapping
+    * A `TotalStakeRewardsSubmissionCreated` event is emitted
+
+*Requirements*:
+* See [`createUniqueStakeRewardsSubmission`](#createuniquestakerewardssubmission) above. The only difference is that:
+    * Pause status is instead: `PAUSED_TOTAL_STAKE_REWARDS_SUBMISSION`
+
+*Key behavioral notes*:
+* See [`createUniqueStakeRewardsSubmission`](#createuniquestakerewardssubmission) above. The primary difference is the stake weighting mechanism — total stake uses total delegated shares (`SUM(shares * multiplier)`) rather than allocated unique stake (`SUM(shares * magnitude / max_magnitude * multiplier)`).
 
 ---
 
@@ -612,6 +724,6 @@ The rewards merkle tree is structured in the diagram below:
 
 ### Off Chain Calculation
 
-Rewards are calculated via an off-chain data pipeline. The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently set to once per day. It then combines these snapshots with any active rewards to calculate what the single daily reward of an earner is. Every `CALCULATION_INTERVAL_SECONDS` rewards are accumulated up to `lastRewardsTimestamp + CALCULATION_INTERVAL_SECONDS` and posted on-chain by the entity with the `rewardsUpdater` role.
+Rewards are calculated via an off-chain data pipeline (the [EigenLayer Sidecar](https://github.com/Layr-Labs/sidecar)). The pipeline takes snapshots of core contract state at the `SNAPSHOT_CADENCE`, currently set to once per day. It then combines these snapshots with any active rewards to calculate what the single daily reward of an earner is. Every `CALCULATION_INTERVAL_SECONDS` rewards are accumulated up to `lastRewardsTimestamp + CALCULATION_INTERVAL_SECONDS` and posted on-chain by the entity with the `rewardsUpdater` role.
 
-`MAX_REWARDS_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. An in-depth overview of the off-chain calculation can be found [here](https://github.com/Layr-Labs/sidecar/blob/master/docs/docs/sidecar/rewards/calculation.md)
+`MAX_REWARDS_AMOUNT` is set to `1e38-1` given the precision bounds of the off-chain pipeline. An in-depth overview of the off-chain calculation can be found [here](https://github.com/Layr-Labs/sidecar/blob/master/docs/docs/sidecar/rewards/calculation.md).
