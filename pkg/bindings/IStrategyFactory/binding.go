@@ -29,9 +29,30 @@ var (
 	_ = abi.ConvertType
 )
 
+// IDurationVaultStrategyTypesVaultConfig is an auto generated low-level Go binding around an user-defined struct.
+type IDurationVaultStrategyTypesVaultConfig struct {
+	UnderlyingToken             common.Address
+	VaultAdmin                  common.Address
+	Arbitrator                  common.Address
+	Duration                    uint32
+	MaxPerDeposit               *big.Int
+	StakeCap                    *big.Int
+	MetadataURI                 string
+	OperatorSet                 OperatorSet
+	OperatorSetRegistrationData []byte
+	DelegationApprover          common.Address
+	OperatorMetadataURI         string
+}
+
+// OperatorSet is an auto generated low-level Go binding around an user-defined struct.
+type OperatorSet struct {
+	Avs common.Address
+	Id  uint32
+}
+
 // IStrategyFactoryMetaData contains all meta data concerning the IStrategyFactory contract.
 var IStrategyFactoryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployedStrategies\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"StrategyBeaconModified\",\"inputs\":[{\"name\":\"previousBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"},{\"name\":\"newBeacon\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIBeacon\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyBlacklisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"BlacklistedToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyAlreadyExists\",\"inputs\":[]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"deployDurationVaultStrategy\",\"inputs\":[{\"name\":\"config\",\"type\":\"tuple\",\"internalType\":\"structIDurationVaultStrategyTypes.VaultConfig\",\"components\":[{\"name\":\"underlyingToken\",\"type\":\"address\",\"internalType\":\"contractIERC20\"},{\"name\":\"vaultAdmin\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"arbitrator\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"duration\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"maxPerDeposit\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"stakeCap\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"internalType\":\"string\"},{\"name\":\"operatorSet\",\"type\":\"tuple\",\"internalType\":\"structOperatorSet\",\"components\":[{\"name\":\"avs\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"id\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"operatorSetRegistrationData\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"delegationApprover\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"operatorMetadataURI\",\"type\":\"string\",\"internalType\":\"string\"}]}],\"outputs\":[{\"name\":\"newVault\",\"type\":\"address\",\"internalType\":\"contractIDurationVaultStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployNewStrategy\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"newStrategy\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"deployedStrategies\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIStrategy\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"durationVaultBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getDurationVaults\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"contractIDurationVaultStrategy[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"contractIERC20\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeStrategiesFromWhitelist\",\"inputs\":[{\"name\":\"strategiesToRemoveFromWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"strategyBeacon\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIBeacon\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"whitelistStrategies\",\"inputs\":[{\"name\":\"strategiesToWhitelist\",\"type\":\"address[]\",\"internalType\":\"contractIStrategy[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"DurationVaultDeployed\",\"inputs\":[{\"name\":\"vault\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"contractIDurationVaultStrategy\"},{\"name\":\"underlyingToken\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"contractIERC20\"},{\"name\":\"vaultAdmin\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"duration\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"maxPerDeposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"stakeCap\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"},{\"name\":\"metadataURI\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"},{\"name\":\"operatorSetAVS\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"},{\"name\":\"operatorSetId\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"StrategySetForToken\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"},{\"name\":\"strategy\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIStrategy\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TokenBlacklisted\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"contractIERC20\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"AlreadyBlacklisted\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"BlacklistedToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"StrategyAlreadyExists\",\"inputs\":[]}]",
 }
 
 // IStrategyFactoryABI is the input ABI used to generate the binding from.
@@ -211,6 +232,99 @@ func (_IStrategyFactory *IStrategyFactoryCallerSession) DeployedStrategies(token
 	return _IStrategyFactory.Contract.DeployedStrategies(&_IStrategyFactory.CallOpts, token)
 }
 
+// DurationVaultBeacon is a free data retrieval call binding the contract method 0x9e4f2dcd.
+//
+// Solidity: function durationVaultBeacon() view returns(address)
+func (_IStrategyFactory *IStrategyFactoryCaller) DurationVaultBeacon(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _IStrategyFactory.contract.Call(opts, &out, "durationVaultBeacon")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// DurationVaultBeacon is a free data retrieval call binding the contract method 0x9e4f2dcd.
+//
+// Solidity: function durationVaultBeacon() view returns(address)
+func (_IStrategyFactory *IStrategyFactorySession) DurationVaultBeacon() (common.Address, error) {
+	return _IStrategyFactory.Contract.DurationVaultBeacon(&_IStrategyFactory.CallOpts)
+}
+
+// DurationVaultBeacon is a free data retrieval call binding the contract method 0x9e4f2dcd.
+//
+// Solidity: function durationVaultBeacon() view returns(address)
+func (_IStrategyFactory *IStrategyFactoryCallerSession) DurationVaultBeacon() (common.Address, error) {
+	return _IStrategyFactory.Contract.DurationVaultBeacon(&_IStrategyFactory.CallOpts)
+}
+
+// GetDurationVaults is a free data retrieval call binding the contract method 0xa5dae840.
+//
+// Solidity: function getDurationVaults(address token) view returns(address[])
+func (_IStrategyFactory *IStrategyFactoryCaller) GetDurationVaults(opts *bind.CallOpts, token common.Address) ([]common.Address, error) {
+	var out []interface{}
+	err := _IStrategyFactory.contract.Call(opts, &out, "getDurationVaults", token)
+
+	if err != nil {
+		return *new([]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
+
+	return out0, err
+
+}
+
+// GetDurationVaults is a free data retrieval call binding the contract method 0xa5dae840.
+//
+// Solidity: function getDurationVaults(address token) view returns(address[])
+func (_IStrategyFactory *IStrategyFactorySession) GetDurationVaults(token common.Address) ([]common.Address, error) {
+	return _IStrategyFactory.Contract.GetDurationVaults(&_IStrategyFactory.CallOpts, token)
+}
+
+// GetDurationVaults is a free data retrieval call binding the contract method 0xa5dae840.
+//
+// Solidity: function getDurationVaults(address token) view returns(address[])
+func (_IStrategyFactory *IStrategyFactoryCallerSession) GetDurationVaults(token common.Address) ([]common.Address, error) {
+	return _IStrategyFactory.Contract.GetDurationVaults(&_IStrategyFactory.CallOpts, token)
+}
+
+// IsBlacklisted is a free data retrieval call binding the contract method 0xfe575a87.
+//
+// Solidity: function isBlacklisted(address token) view returns(bool)
+func (_IStrategyFactory *IStrategyFactoryCaller) IsBlacklisted(opts *bind.CallOpts, token common.Address) (bool, error) {
+	var out []interface{}
+	err := _IStrategyFactory.contract.Call(opts, &out, "isBlacklisted", token)
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsBlacklisted is a free data retrieval call binding the contract method 0xfe575a87.
+//
+// Solidity: function isBlacklisted(address token) view returns(bool)
+func (_IStrategyFactory *IStrategyFactorySession) IsBlacklisted(token common.Address) (bool, error) {
+	return _IStrategyFactory.Contract.IsBlacklisted(&_IStrategyFactory.CallOpts, token)
+}
+
+// IsBlacklisted is a free data retrieval call binding the contract method 0xfe575a87.
+//
+// Solidity: function isBlacklisted(address token) view returns(bool)
+func (_IStrategyFactory *IStrategyFactoryCallerSession) IsBlacklisted(token common.Address) (bool, error) {
+	return _IStrategyFactory.Contract.IsBlacklisted(&_IStrategyFactory.CallOpts, token)
+}
+
 // StrategyBeacon is a free data retrieval call binding the contract method 0xf0062d9a.
 //
 // Solidity: function strategyBeacon() view returns(address)
@@ -240,6 +354,27 @@ func (_IStrategyFactory *IStrategyFactorySession) StrategyBeacon() (common.Addre
 // Solidity: function strategyBeacon() view returns(address)
 func (_IStrategyFactory *IStrategyFactoryCallerSession) StrategyBeacon() (common.Address, error) {
 	return _IStrategyFactory.Contract.StrategyBeacon(&_IStrategyFactory.CallOpts)
+}
+
+// DeployDurationVaultStrategy is a paid mutator transaction binding the contract method 0xfb515303.
+//
+// Solidity: function deployDurationVaultStrategy((address,address,address,uint32,uint256,uint256,string,(address,uint32),bytes,address,string) config) returns(address newVault)
+func (_IStrategyFactory *IStrategyFactoryTransactor) DeployDurationVaultStrategy(opts *bind.TransactOpts, config IDurationVaultStrategyTypesVaultConfig) (*types.Transaction, error) {
+	return _IStrategyFactory.contract.Transact(opts, "deployDurationVaultStrategy", config)
+}
+
+// DeployDurationVaultStrategy is a paid mutator transaction binding the contract method 0xfb515303.
+//
+// Solidity: function deployDurationVaultStrategy((address,address,address,uint32,uint256,uint256,string,(address,uint32),bytes,address,string) config) returns(address newVault)
+func (_IStrategyFactory *IStrategyFactorySession) DeployDurationVaultStrategy(config IDurationVaultStrategyTypesVaultConfig) (*types.Transaction, error) {
+	return _IStrategyFactory.Contract.DeployDurationVaultStrategy(&_IStrategyFactory.TransactOpts, config)
+}
+
+// DeployDurationVaultStrategy is a paid mutator transaction binding the contract method 0xfb515303.
+//
+// Solidity: function deployDurationVaultStrategy((address,address,address,uint32,uint256,uint256,string,(address,uint32),bytes,address,string) config) returns(address newVault)
+func (_IStrategyFactory *IStrategyFactoryTransactorSession) DeployDurationVaultStrategy(config IDurationVaultStrategyTypesVaultConfig) (*types.Transaction, error) {
+	return _IStrategyFactory.Contract.DeployDurationVaultStrategy(&_IStrategyFactory.TransactOpts, config)
 }
 
 // DeployNewStrategy is a paid mutator transaction binding the contract method 0x6b9b6229.
@@ -305,9 +440,9 @@ func (_IStrategyFactory *IStrategyFactoryTransactorSession) WhitelistStrategies(
 	return _IStrategyFactory.Contract.WhitelistStrategies(&_IStrategyFactory.TransactOpts, strategiesToWhitelist)
 }
 
-// IStrategyFactoryStrategyBeaconModifiedIterator is returned from FilterStrategyBeaconModified and is used to iterate over the raw logs and unpacked data for StrategyBeaconModified events raised by the IStrategyFactory contract.
-type IStrategyFactoryStrategyBeaconModifiedIterator struct {
-	Event *IStrategyFactoryStrategyBeaconModified // Event containing the contract specifics and raw log
+// IStrategyFactoryDurationVaultDeployedIterator is returned from FilterDurationVaultDeployed and is used to iterate over the raw logs and unpacked data for DurationVaultDeployed events raised by the IStrategyFactory contract.
+type IStrategyFactoryDurationVaultDeployedIterator struct {
+	Event *IStrategyFactoryDurationVaultDeployed // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -321,7 +456,7 @@ type IStrategyFactoryStrategyBeaconModifiedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Next() bool {
+func (it *IStrategyFactoryDurationVaultDeployedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -330,7 +465,7 @@ func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(IStrategyFactoryStrategyBeaconModified)
+			it.Event = new(IStrategyFactoryDurationVaultDeployed)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -345,7 +480,7 @@ func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(IStrategyFactoryStrategyBeaconModified)
+		it.Event = new(IStrategyFactoryDurationVaultDeployed)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -361,42 +496,75 @@ func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Error() error {
+func (it *IStrategyFactoryDurationVaultDeployedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *IStrategyFactoryStrategyBeaconModifiedIterator) Close() error {
+func (it *IStrategyFactoryDurationVaultDeployedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// IStrategyFactoryStrategyBeaconModified represents a StrategyBeaconModified event raised by the IStrategyFactory contract.
-type IStrategyFactoryStrategyBeaconModified struct {
-	PreviousBeacon common.Address
-	NewBeacon      common.Address
-	Raw            types.Log // Blockchain specific contextual infos
+// IStrategyFactoryDurationVaultDeployed represents a DurationVaultDeployed event raised by the IStrategyFactory contract.
+type IStrategyFactoryDurationVaultDeployed struct {
+	Vault           common.Address
+	UnderlyingToken common.Address
+	VaultAdmin      common.Address
+	Duration        uint32
+	MaxPerDeposit   *big.Int
+	StakeCap        *big.Int
+	MetadataURI     string
+	OperatorSetAVS  common.Address
+	OperatorSetId   uint32
+	Raw             types.Log // Blockchain specific contextual infos
 }
 
-// FilterStrategyBeaconModified is a free log retrieval operation binding the contract event 0xe21755962a7d7e100b59b9c3e4d4b54085b146313719955efb6a7a25c5c7feee.
+// FilterDurationVaultDeployed is a free log retrieval operation binding the contract event 0x6c9e2cbc6fcd0f5b21ee2edb38f3421d7538cd98b8ff00803f81879345568504.
 //
-// Solidity: event StrategyBeaconModified(address previousBeacon, address newBeacon)
-func (_IStrategyFactory *IStrategyFactoryFilterer) FilterStrategyBeaconModified(opts *bind.FilterOpts) (*IStrategyFactoryStrategyBeaconModifiedIterator, error) {
+// Solidity: event DurationVaultDeployed(address indexed vault, address indexed underlyingToken, address indexed vaultAdmin, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI, address operatorSetAVS, uint32 operatorSetId)
+func (_IStrategyFactory *IStrategyFactoryFilterer) FilterDurationVaultDeployed(opts *bind.FilterOpts, vault []common.Address, underlyingToken []common.Address, vaultAdmin []common.Address) (*IStrategyFactoryDurationVaultDeployedIterator, error) {
 
-	logs, sub, err := _IStrategyFactory.contract.FilterLogs(opts, "StrategyBeaconModified")
+	var vaultRule []interface{}
+	for _, vaultItem := range vault {
+		vaultRule = append(vaultRule, vaultItem)
+	}
+	var underlyingTokenRule []interface{}
+	for _, underlyingTokenItem := range underlyingToken {
+		underlyingTokenRule = append(underlyingTokenRule, underlyingTokenItem)
+	}
+	var vaultAdminRule []interface{}
+	for _, vaultAdminItem := range vaultAdmin {
+		vaultAdminRule = append(vaultAdminRule, vaultAdminItem)
+	}
+
+	logs, sub, err := _IStrategyFactory.contract.FilterLogs(opts, "DurationVaultDeployed", vaultRule, underlyingTokenRule, vaultAdminRule)
 	if err != nil {
 		return nil, err
 	}
-	return &IStrategyFactoryStrategyBeaconModifiedIterator{contract: _IStrategyFactory.contract, event: "StrategyBeaconModified", logs: logs, sub: sub}, nil
+	return &IStrategyFactoryDurationVaultDeployedIterator{contract: _IStrategyFactory.contract, event: "DurationVaultDeployed", logs: logs, sub: sub}, nil
 }
 
-// WatchStrategyBeaconModified is a free log subscription operation binding the contract event 0xe21755962a7d7e100b59b9c3e4d4b54085b146313719955efb6a7a25c5c7feee.
+// WatchDurationVaultDeployed is a free log subscription operation binding the contract event 0x6c9e2cbc6fcd0f5b21ee2edb38f3421d7538cd98b8ff00803f81879345568504.
 //
-// Solidity: event StrategyBeaconModified(address previousBeacon, address newBeacon)
-func (_IStrategyFactory *IStrategyFactoryFilterer) WatchStrategyBeaconModified(opts *bind.WatchOpts, sink chan<- *IStrategyFactoryStrategyBeaconModified) (event.Subscription, error) {
+// Solidity: event DurationVaultDeployed(address indexed vault, address indexed underlyingToken, address indexed vaultAdmin, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI, address operatorSetAVS, uint32 operatorSetId)
+func (_IStrategyFactory *IStrategyFactoryFilterer) WatchDurationVaultDeployed(opts *bind.WatchOpts, sink chan<- *IStrategyFactoryDurationVaultDeployed, vault []common.Address, underlyingToken []common.Address, vaultAdmin []common.Address) (event.Subscription, error) {
 
-	logs, sub, err := _IStrategyFactory.contract.WatchLogs(opts, "StrategyBeaconModified")
+	var vaultRule []interface{}
+	for _, vaultItem := range vault {
+		vaultRule = append(vaultRule, vaultItem)
+	}
+	var underlyingTokenRule []interface{}
+	for _, underlyingTokenItem := range underlyingToken {
+		underlyingTokenRule = append(underlyingTokenRule, underlyingTokenItem)
+	}
+	var vaultAdminRule []interface{}
+	for _, vaultAdminItem := range vaultAdmin {
+		vaultAdminRule = append(vaultAdminRule, vaultAdminItem)
+	}
+
+	logs, sub, err := _IStrategyFactory.contract.WatchLogs(opts, "DurationVaultDeployed", vaultRule, underlyingTokenRule, vaultAdminRule)
 	if err != nil {
 		return nil, err
 	}
@@ -406,8 +574,8 @@ func (_IStrategyFactory *IStrategyFactoryFilterer) WatchStrategyBeaconModified(o
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(IStrategyFactoryStrategyBeaconModified)
-				if err := _IStrategyFactory.contract.UnpackLog(event, "StrategyBeaconModified", log); err != nil {
+				event := new(IStrategyFactoryDurationVaultDeployed)
+				if err := _IStrategyFactory.contract.UnpackLog(event, "DurationVaultDeployed", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -428,12 +596,12 @@ func (_IStrategyFactory *IStrategyFactoryFilterer) WatchStrategyBeaconModified(o
 	}), nil
 }
 
-// ParseStrategyBeaconModified is a log parse operation binding the contract event 0xe21755962a7d7e100b59b9c3e4d4b54085b146313719955efb6a7a25c5c7feee.
+// ParseDurationVaultDeployed is a log parse operation binding the contract event 0x6c9e2cbc6fcd0f5b21ee2edb38f3421d7538cd98b8ff00803f81879345568504.
 //
-// Solidity: event StrategyBeaconModified(address previousBeacon, address newBeacon)
-func (_IStrategyFactory *IStrategyFactoryFilterer) ParseStrategyBeaconModified(log types.Log) (*IStrategyFactoryStrategyBeaconModified, error) {
-	event := new(IStrategyFactoryStrategyBeaconModified)
-	if err := _IStrategyFactory.contract.UnpackLog(event, "StrategyBeaconModified", log); err != nil {
+// Solidity: event DurationVaultDeployed(address indexed vault, address indexed underlyingToken, address indexed vaultAdmin, uint32 duration, uint256 maxPerDeposit, uint256 stakeCap, string metadataURI, address operatorSetAVS, uint32 operatorSetId)
+func (_IStrategyFactory *IStrategyFactoryFilterer) ParseDurationVaultDeployed(log types.Log) (*IStrategyFactoryDurationVaultDeployed, error) {
+	event := new(IStrategyFactoryDurationVaultDeployed)
+	if err := _IStrategyFactory.contract.UnpackLog(event, "DurationVaultDeployed", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

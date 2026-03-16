@@ -93,6 +93,9 @@ abstract contract CoreContractsDeployer is EOADeployer {
                 delegationManager: Env.proxy.delegationManager(),
                 strategyManager: Env.proxy.strategyManager(),
                 allocationManager: Env.proxy.allocationManager(),
+                // NOTE: EmissionsController was added in v1.12.0. For backward compatibility with
+                // older releases (v1.9.0, etc.), this will be address(Env.executorMultisig()) if not deployed.
+                emissionsController: Env.proxy.emissionsController(),
                 pauserRegistry: Env.impl.pauserRegistry(),
                 permissionController: Env.proxy.permissionController(),
                 CALCULATION_INTERVAL_SECONDS: Env.CALCULATION_INTERVAL_SECONDS(),
@@ -113,6 +116,21 @@ abstract contract CoreContractsDeployer is EOADeployer {
             _version: Env.deployVersion()
         });
         deployImpl({name: type(StrategyManager).name, deployedTo: address(deployed)});
+    }
+
+    function deployEmissionsController() internal onlyEOA returns (EmissionsController deployed) {
+        deployed = new EmissionsController({
+            eigen: IEigen(address(Env.proxy.eigen())),
+            backingEigen: Env.proxy.beigen(),
+            allocationManager: Env.proxy.allocationManager(),
+            rewardsCoordinator: Env.proxy.rewardsCoordinator(),
+            pauserRegistry: Env.impl.pauserRegistry(),
+            inflationRate: Env.EMISSIONS_INFLATION_RATE(),
+            startTime: Env.EMISSIONS_START_TIME(),
+            cooldownSeconds: Env.EMISSIONS_COOLDOWN_SECONDS(),
+            calculationIntervalSeconds: Env.CALCULATION_INTERVAL_SECONDS()
+        });
+        deployImpl({name: type(EmissionsController).name, deployedTo: address(deployed)});
     }
 
     /// pods/
@@ -159,9 +177,23 @@ abstract contract CoreContractsDeployer is EOADeployer {
     function deployStrategyFactory() internal onlyEOA returns (StrategyFactory deployed) {
         deployed = new StrategyFactory({
             _strategyManager: Env.proxy.strategyManager(),
-            _pauserRegistry: Env.impl.pauserRegistry()
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _strategyBeacon: Env.beacon.strategyBase(),
+            _durationVaultBeacon: Env.beacon.durationVaultStrategy()
         });
         deployImpl({name: type(StrategyFactory).name, deployedTo: address(deployed)});
+    }
+
+    function deployDurationVaultStrategy() internal onlyEOA returns (DurationVaultStrategy deployed) {
+        deployed = new DurationVaultStrategy({
+            _strategyManager: Env.proxy.strategyManager(),
+            _pauserRegistry: Env.impl.pauserRegistry(),
+            _delegationManager: Env.proxy.delegationManager(),
+            _allocationManager: Env.proxy.allocationManager(),
+            _rewardsCoordinator: Env.proxy.rewardsCoordinator(),
+            _strategyFactory: Env.proxy.strategyFactory()
+        });
+        deployImpl({name: type(DurationVaultStrategy).name, deployedTo: address(deployed)});
     }
 
     /// multichain/

@@ -111,6 +111,8 @@ contract DeployFromScratch is Script, Test {
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP;
     uint32 REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH;
 
+    address REWARDS_COORDINATOR_EMISSIONS_CONTROLLER;
+
     // AllocationManager
     uint256 ALLOCATION_MANAGER_INIT_PAUSED_STATUS;
 
@@ -159,6 +161,9 @@ contract DeployFromScratch is Script, Test {
             uint32(stdJson.readUint(config_data, ".rewardsCoordinator.OPERATOR_SET_GENESIS_REWARDS_TIMESTAMP"));
         REWARDS_COORDINATOR_OPERATOR_SET_MAX_RETROACTIVE_LENGTH =
             uint32(stdJson.readUint(config_data, ".rewardsCoordinator.OPERATOR_SET_MAX_RETROACTIVE_LENGTH"));
+
+        REWARDS_COORDINATOR_EMISSIONS_CONTROLLER =
+            stdJson.readAddress(config_data, ".rewardsCoordinator.emissions_controller_address");
 
         STRATEGY_MANAGER_INIT_WITHDRAWAL_DELAY_BLOCKS =
             uint32(stdJson.readUint(config_data, ".strategyManager.init_withdrawal_delay_blocks"));
@@ -219,9 +224,6 @@ contract DeployFromScratch is Script, Test {
         allocationManager = AllocationManager(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
-        allocationManagerView = AllocationManagerView(
-            address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
-        );
         permissionController = PermissionController(
             address(new TransparentUpgradeableProxy(address(emptyContract), address(eigenLayerProxyAdmin), ""))
         );
@@ -237,6 +239,9 @@ contract DeployFromScratch is Script, Test {
         eigenPodBeacon = new UpgradeableBeacon(address(eigenPodImplementation));
 
         // Second, deploy the *implementation* contracts, using the *proxy contracts* as inputs
+        // Deploy AllocationManagerView as a standalone implementation (not a proxy)
+        allocationManagerView =
+            new AllocationManagerView(delegation, eigenStrategy, DEALLOCATION_DELAY, ALLOCATION_CONFIGURATION_DELAY);
 
         delegationImplementation = new DelegationManager(
             strategyManager,
@@ -258,6 +263,7 @@ contract DeployFromScratch is Script, Test {
                 delegation,
                 strategyManager,
                 IAllocationManager(address(allocationManager)),
+                IEmissionsController(address(REWARDS_COORDINATOR_EMISSIONS_CONTROLLER)),
                 eigenLayerPauserReg,
                 permissionController,
                 REWARDS_COORDINATOR_CALCULATION_INTERVAL_SECONDS,
@@ -327,7 +333,8 @@ contract DeployFromScratch is Script, Test {
                 REWARDS_COORDINATOR_INIT_PAUSED_STATUS,
                 REWARDS_COORDINATOR_UPDATER,
                 REWARDS_COORDINATOR_ACTIVATION_DELAY,
-                REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS
+                REWARDS_COORDINATOR_DEFAULT_OPERATOR_SPLIT_BIPS,
+                executorMultisig // feeRecipient
             )
         );
 
