@@ -5029,8 +5029,11 @@ contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManager
         allocationManager.slashOperator(defaultAVS, slashParams);
         uint64 maxMagnitudeAfterFirstSlash = allocationManager.getMaxMagnitude(defaultOperator, strategyMock);
 
-        // Warp to random block
-        uint32 secondSlashBlock = uint32(block.number + r.Uint32());
+        // Warp to random block (avoid uint32 wrap/underflow)
+
+        uint32 maxDelta = type(uint32).max - uint32(block.number);
+        uint32 delta = maxDelta == 0 ? 0 : r.Uint32(1, maxDelta);
+        uint32 secondSlashBlock = uint32(block.number) + delta;
         cheats.roll(secondSlashBlock);
 
         // Slash second time
@@ -5039,8 +5042,10 @@ contract AllocationManagerUnitTests_getMaxMagnitudesAtBlock is AllocationManager
         allocationManager.slashOperator(defaultAVS, slashParams);
         uint64 maxMagnitudeAfterSecondSlash = allocationManager.getMaxMagnitude(defaultOperator, strategyMock);
 
-        // Warp to a block after the second slash
-        cheats.roll(block.number + r.Uint32());
+        // Warp to a block after the second slash (avoid uint32 wrap/underflow)
+        uint32 maxPostDelta = type(uint32).max - uint32(block.number);
+        uint32 postDelta = maxPostDelta == 0 ? 0 : r.Uint32(1, maxPostDelta);
+        cheats.roll(uint32(block.number) + postDelta);
 
         // Validate get max magnitudes at block
         assertEq(
