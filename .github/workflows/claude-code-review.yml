@@ -2,6 +2,11 @@
 # - Auto-reviews PRs targeting main (excludes drafts and forks)
 # - Responds to @claude mentions from org members only
 # - Uses OIDC auth with Claude GitHub App (id-token: write)
+#
+# Tip: you can pick a model by tagging it directly in a comment:
+#   @claude-opus    → claude-opus-latest    (always latest opus, best for complex/security-critical PRs)
+#   @claude-sonnet  → claude-sonnet-latest  (default)
+#   @claude-haiku   → claude-haiku-latest   (always latest haiku, fast/cheap for quick questions)
 
 name: Claude review
 
@@ -113,7 +118,7 @@ jobs:
   #           --system-prompt "If you inspect CI logs, never paste raw logs. Summarize likely cause only. Redact tokens, keys, credentials, or URLs with credentials. If unsure, say log may contain sensitive data and stop."
   #           --max-turns 15
 
-  # Job 2: @claude mentions in any PR comment (members only)
+  # Job 2: @claude / @claude-opus / @claude-sonnet / @claude-haiku mentions in any PR comment (members only)
   # - issue_comment: PR conversation comments (no fork info available, member-check is sufficient)
   # - pull_request_review_comment: inline review comments (fork check added)
   # - pull_request_review: review submissions (fork check added)
@@ -234,11 +239,40 @@ jobs:
           gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" \
             --body "<!-- claude-apply-fail -->Skipped: PR diff failed to apply. Rebase and re-push."
 
+      - name: Resolve model and inline instructions from comment
+        id: comment_parse
+        if: steps.prmeta.outputs.is_fork != 'true' && steps.apply_diff.outputs.apply_ok != 'false'
+        env:
+          # pull_request_review uses .review.body; the others use .comment.body
+          COMMENT_BODY: ${{ github.event.comment.body || github.event.review.body }}
+        run: |
+          set -euo pipefail
+
+          # Detect model qualifier (case-insensitive)
+          if echo "$COMMENT_BODY" | grep -qi '@claude-opus'; then
+            MODEL="claude-opus-latest"
+          elif echo "$COMMENT_BODY" | grep -qi '@claude-haiku'; then
+            MODEL="claude-haiku-latest"
+          else
+            # Covers both bare @claude and @claude-sonnet
+            MODEL="claude-sonnet-latest"
+          fi
+
+          # Strip the @claude* tag and surrounding whitespace to get any extra instructions
+          INLINE_INSTRUCTIONS="$(echo "$COMMENT_BODY" | sed 's/@claude-[a-zA-Z0-9_-]*//gi; s/@claude//gi' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | tr -s ' ')"
+
+          echo "model=$MODEL" >> "$GITHUB_OUTPUT"
+          echo "inline_instructions<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$INLINE_INSTRUCTIONS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "Selected model: $MODEL"
+
       - uses: anthropics/claude-code-action@70e16deb18402428bd09e08d1ec3662a872e3c72 # v1
         # Skip Claude entirely on fork PRs or when diff apply fails.
         if: steps.prmeta.outputs.is_fork != 'true' && steps.apply_diff.outputs.apply_ok != 'false'
         with:
           anthropic_api_key: ${{ secrets.ORG_ANTHROPIC_API_KEY }}
+          model: ${{ steps.comment_parse.outputs.model }}
           additional_permissions: "actions: read"
           track_progress: true
           prompt: |
@@ -248,10 +282,20 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ steps.prmeta.outputs.pr_num }}
 
+            Look at the PR type from the title (feat|fix|docs|test|refactor|ci|perf|style|chore|release):
+            - feat/fix: full review - correctness, security, edge cases, gas, events, test coverage
+            - perf: focus on gas optimization correctness and no functional regressions
+            - test: check assertions are correct, edge cases covered, no false positives
+            - docs: check accuracy against actual code behavior
+            - style/refactor: no functional changes - verify behavior is preserved
+            - chore/ci/release: light review - check for unintended side effects
+
             For Solidity changes, check:
-            1. **Correctness**: Does it work? Edge cases handled? Invariants preserved?
-            2. **Security**: Access control, reentrancy, overflow, unsafe external calls
-            3. **Integration**: How do changes affect other contracts that interact with this one?
+            1. Correctness: does it work? edge cases handled? invariants preserved?
+            2. Security: access control, reentrancy, overflow, unsafe external calls
+            3. Gas: avoidable SLOADs/SSTOREs, tight loops, unnecessary memory copies
+            4. Events: emitted for all state changes with the right indexed fields
+            5. Integration: how do changes affect other contracts that interact with this one?
 
             For each issue found:
             - Use inline comment on the specific line
@@ -263,6 +307,8 @@ jobs:
             ```
 
             Use top-level comment for summary only.
+
+            ${{ steps.comment_parse.outputs.inline_instructions }}
 
           claude_args: |
             --allowedTools "Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(git fetch:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr checks:*),Bash(gh run list:*),Bash(gh run view:*)"
