@@ -153,6 +153,10 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             return;
         }
 
+        if (_isUpgradeAlreadyApplied()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
@@ -173,6 +177,20 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
 
         // Check that the upgrade has been added to the timelock
         assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
+    }
+
+    function _isUpgradeAlreadyApplied() internal view returns (bool) {
+        address emissionsControllerProxy = vm.envOr("ZEUS_DEPLOYED_EmissionsController_Proxy", address(0));
+        if (emissionsControllerProxy == address(0)) {
+            return false;
+        }
+
+        IBackingEigen beigen = Env.proxy.beigen();
+        address legacyTokenHopper = vm.envOr("ZEUS_ENV_legacyTokenHopper", address(0));
+        bool oldHopperCleared = legacyTokenHopper == address(0) || !beigen.isMinter(legacyTokenHopper);
+        bool emissionsControllerIsMinter = beigen.isMinter(emissionsControllerProxy);
+
+        return oldHopperCleared && emissionsControllerIsMinter;
     }
 
     /// @notice Validates state before queuing the upgrade

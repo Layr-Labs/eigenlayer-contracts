@@ -1,0 +1,22 @@
+{
+    "name": "duration-vault-v1.12.1-patch",
+    "from": "1.12.0",
+    "to": "1.12.1",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployImplementations.s.sol",
+            "description": "Deploy updated DurationVaultStrategy implementation (intended for testnet-sepolia)"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol",
+            "description": "Queue UpgradeableBeacon upgrade for DurationVaultStrategy"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-completeUpgrade.s.sol",
+            "description": "Execute beacon upgrade after timelock delay"
+        }
+    ]
+}

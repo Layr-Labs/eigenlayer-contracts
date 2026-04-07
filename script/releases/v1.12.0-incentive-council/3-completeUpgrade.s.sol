@@ -39,6 +39,10 @@ contract ExecuteUpgrade is QueueUpgrade {
             return;
         }
 
+        if (_isUpgradeAlreadyApplied()) {
+            return;
+        }
+
         // Deploy the implementations (from previous step 1)
         super.runAsEOA();
 
