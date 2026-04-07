@@ -35,12 +35,13 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
         executorCalls.upgradeDurationVaultStrategy();
 
-        return Encode.gnosisSafe.execTransaction({
-            from: address(Env.timelockController()),
-            to: Env.multiSendCallOnly(),
-            op: Encode.Operation.DelegateCall,
-            data: Encode.multiSend(executorCalls)
-        });
+        return Encode.gnosisSafe
+            .execTransaction({
+                from: address(Env.timelockController()),
+                to: Env.multiSendCallOnly(),
+                op: Encode.Operation.DelegateCall,
+                data: Encode.multiSend(executorCalls)
+            });
     }
 
     function testScript() public virtual override {
