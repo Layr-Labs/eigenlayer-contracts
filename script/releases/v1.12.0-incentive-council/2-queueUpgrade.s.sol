@@ -180,9 +180,15 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     }
 
     function _isUpgradeAlreadyApplied() internal view returns (bool) {
+        address emissionsControllerProxy = vm.envOr("ZEUS_DEPLOYED_EmissionsController_Proxy", address(0));
+        if (emissionsControllerProxy == address(0)) {
+            return false;
+        }
+
         IBackingEigen beigen = Env.proxy.beigen();
-        bool oldHopperCleared = Env.legacyTokenHopper() == address(0) || !beigen.isMinter(Env.legacyTokenHopper());
-        bool emissionsControllerIsMinter = beigen.isMinter(address(Env.proxy.emissionsController()));
+        address legacyTokenHopper = vm.envOr("ZEUS_ENV_legacyTokenHopper", address(0));
+        bool oldHopperCleared = legacyTokenHopper == address(0) || !beigen.isMinter(legacyTokenHopper);
+        bool emissionsControllerIsMinter = beigen.isMinter(emissionsControllerProxy);
 
         return oldHopperCleared && emissionsControllerIsMinter;
     }
