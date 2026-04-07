@@ -31,7 +31,9 @@ contract ExecuteUpgrade is QueueUpgrade {
             return;
         }
 
-        _requireSepoliaPatchEnv();
+        if (!_isSepoliaPatchEnv()) {
+            return;
+        }
 
         super.runAsEOA();
 

@@ -49,7 +49,10 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             return;
         }
 
-        _requireSepoliaPatchEnv();
+        if (!_isSepoliaPatchEnv()) {
+            return;
+        }
+
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();

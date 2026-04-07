@@ -22,10 +22,18 @@ contract DeployImplementations is CoreContractsDeployer {
             return;
         }
 
-        _requireSepoliaPatchEnv();
+        if (!_isSepoliaPatchEnv()) {
+            return;
+        }
+
         runAsEOA();
 
         TestUtils.validateDurationVaultStrategyImplConstructors();
+    }
+
+    function _isSepoliaPatchEnv() internal view returns (bool) {
+        return Env._strEq(Env.env(), "testnet-sepolia") && Env._strEq(Env.envVersion(), "1.12.0")
+            && Env._strEq(Env.deployVersion(), "1.12.1");
     }
 
     function _requireSepoliaPatchEnv() internal view {
