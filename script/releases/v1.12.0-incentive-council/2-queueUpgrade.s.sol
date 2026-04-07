@@ -181,8 +181,7 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
 
     function _isUpgradeAlreadyApplied() internal view returns (bool) {
         IBackingEigen beigen = Env.proxy.beigen();
-        bool oldHopperCleared =
-            Env.legacyTokenHopper() == address(0) || !beigen.isMinter(Env.legacyTokenHopper());
+        bool oldHopperCleared = Env.legacyTokenHopper() == address(0) || !beigen.isMinter(Env.legacyTokenHopper());
         bool emissionsControllerIsMinter = beigen.isMinter(address(Env.proxy.emissionsController()));
 
         return oldHopperCleared && emissionsControllerIsMinter;
