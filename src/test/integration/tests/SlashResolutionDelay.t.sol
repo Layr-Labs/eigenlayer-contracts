@@ -72,9 +72,7 @@ contract Integration_SlashResolutionDelay is Integration_SlashResolutionDelay_Ba
         );
         assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId), 1, "slash should have one pending strategy");
         assertEq(
-            strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[0]),
-            sharesSlashed[0],
-            "pending shares mismatch"
+            strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, strategies[0]), sharesSlashed[0], "pending shares mismatch"
         );
 
         // 7. Clearing before the resolution delay elapses should revert
@@ -148,9 +146,7 @@ contract Integration_SlashResolutionDelay is Integration_SlashResolutionDelay_Ba
         assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId2), 1, "second slash should remain pending");
         assertEq(strategyManager.getPendingSlashIds(operatorSet).length, 1, "one slash id should remain pending");
         assertEq(
-            token.balanceOf(redistributionRecipient),
-            recipientBalanceBefore + expectedRedistributions1[0],
-            "first slash payout incorrect"
+            token.balanceOf(redistributionRecipient), recipientBalanceBefore + expectedRedistributions1[0], "first slash payout incorrect"
         );
 
         // 8. Clearing the second slash before its own delay should still revert

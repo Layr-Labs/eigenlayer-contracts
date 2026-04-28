@@ -1560,7 +1560,11 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
 
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat2);
 
-        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should be deleted after full clear");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            0,
+            "resolution block should be deleted after full clear"
+        );
     }
 
     function test_Revert_ClearBurnOrRedistributableShares_WhenPausedBeforeDelay() external {
@@ -1602,8 +1606,16 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
 
-        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), resolutionBlock, "resolution block should be unchanged");
-        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), pendingCount, "pending count should be unchanged");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            resolutionBlock,
+            "resolution block should be unchanged"
+        );
+        assertEq(
+            strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId),
+            pendingCount,
+            "pending count should be unchanged"
+        );
         assertEq(
             strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat),
             pendingShares,
@@ -1633,7 +1645,9 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         cheats.roll(uint(resolutionBlock1) + 1);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
 
-        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "first slash resolution block should be deleted");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "first slash resolution block should be deleted"
+        );
         assertEq(
             strategyManager.getSlashResolutionBlock(defaultOperatorSet, slashId2),
             resolutionBlock2,
@@ -1641,7 +1655,9 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         );
         assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "one slash id should remain pending");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, slashId2), 1, "second slash should remain pending");
-        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect after first clear");
+        assertEq(
+            dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect after first clear"
+        );
 
         cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, slashId2, dummyStrat);
@@ -1676,8 +1692,16 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         assertEq(strategyManager.getPendingOperatorSets().length, 1, "one operator set should remain pending");
         assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "default operator set should be cleared");
         assertEq(strategyManager.getPendingSlashIds(operatorSet2).length, 1, "second operator set should remain pending");
-        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "first operator set resolution block should be deleted");
-        assertEq(strategyManager.getSlashResolutionBlock(operatorSet2, defaultSlashId), resolutionBlock2, "second operator set resolution block should remain");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            0,
+            "first operator set resolution block should be deleted"
+        );
+        assertEq(
+            strategyManager.getSlashResolutionBlock(operatorSet2, defaultSlashId),
+            resolutionBlock2,
+            "second operator set resolution block should remain"
+        );
         assertEq(dummyToken.balanceOf(redistributionRecipient1), recipient1BalanceBefore + shares, "first recipient balance incorrect");
         assertEq(dummyToken.balanceOf(redistributionRecipient2), recipient2BalanceBefore, "second recipient should not be paid yet");
 
