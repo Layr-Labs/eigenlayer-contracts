@@ -139,6 +139,7 @@ contract StrategyManager is
         strategy.withdraw(staker, token, shares);
     }
 
+
     /// @inheritdoc IShareManager
     function increaseBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
@@ -157,7 +158,10 @@ contract StrategyManager is
 
         // NOTE: Duplicate operator sets and slash ids will not revert, but will not be added.
         _pendingOperatorSets.add(operatorSet.key());
-        _pendingSlashIds[operatorSet.key()].add(slashId);
+        // Set the resolution block the first time this slashId is recorded for this operator set.
+        if (_pendingSlashIds[operatorSet.key()].add(slashId)) {
+            _slashResolutionBlock[operatorSet.key()][slashId] = uint32(block.number) + SLASH_RESOLUTION_DELAY_BLOCKS;
+        }
 
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
     }
@@ -389,7 +393,9 @@ contract StrategyManager is
         uint256 slashId,
         IStrategy strategy,
         address recipient
-    ) internal returns (uint256) {
+    ) internal onlyWhenNotPaused(PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES) returns (uint256) {
+        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
+
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 
@@ -416,6 +422,7 @@ contract StrategyManager is
         if (remainingStrategies == 0) {
             // Remove the slash id from the pending slash ids.
             _pendingSlashIds[operatorSet.key()].remove(slashId);
+            delete _slashResolutionBlock[operatorSet.key()][slashId];
 
             // If there are no more pending slash ids for this operator set, remove the operator set from the pending operator sets.
             if (_pendingSlashIds[operatorSet.key()].length() == 0) {
@@ -566,5 +573,13 @@ contract StrategyManager is
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory) {
         return _pendingSlashIds[operatorSet.key()].values();
+    }
+
+    /// @inheritdoc IStrategyManager
+    function getSlashResolutionBlock(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint32) {
+        return _slashResolutionBlock[operatorSet.key()][slashId];
     }
 }

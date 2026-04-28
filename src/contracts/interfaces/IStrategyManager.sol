@@ -25,6 +25,8 @@ interface IStrategyManagerErrors {
     error StrategyNotWhitelisted();
     /// @dev Thrown when attempting to add a strategy that is already in the operator set's burn or redistributable shares.
     error StrategyAlreadyInSlash();
+    /// @dev Thrown when attempting to clear burn or redistributable shares before the slash resolution delay has elapsed.
+    error SlashResolutionDelayNotElapsed();
 }
 
 interface IStrategyManagerEvents {
@@ -129,7 +131,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external;
 
     /// @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
-    /// @dev Reentrancy is checked in the `clearBurnOrRedistributableSharesByStrategy` function.
+    /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
+    /// @dev Reverts if clearing is paused via `PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
     /// @return The amounts of tokens transferred to the redistribution recipient for each strategy
@@ -139,6 +142,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256[] memory);
 
     /// @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
+    /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
+    /// @dev Reverts if clearing is paused via `PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
     /// @param strategy The strategy to burn shares in.
@@ -149,7 +154,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy strategy
     ) external returns (uint256);
 
-    /// @notice Returns the strategies and shares that have NOT been sent to the redistribution recipient for a given slashId.
+    /// @notice Returns the strategies and shares that are pending slash resolution for a given slashId.
+    /// @dev Shares cannot be cleared until `SLASH_RESOLUTION_DELAY_BLOCKS` has elapsed after the slash.
     /// @param operatorSet The operator set to burn or redistribute shares in.
     /// @param slashId The slash ID to burn or redistribute shares in.
     /// @return The strategies and shares for the given slashId.
@@ -170,7 +176,8 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         IStrategy strategy
     ) external view returns (uint256);
 
-    /// @notice Returns the number of strategies that have NOT been sent to the redistribution recipient for a given slashId.
+    /// @notice Returns the number of strategies pending slash resolution for a given slashId.
+    /// @dev Strategies cannot be cleared until `SLASH_RESOLUTION_DELAY_BLOCKS` has elapsed after the slash.
     /// @param operatorSet The operator set to burn or redistribute shares in.
     /// @param slashId The slash ID to burn or redistribute shares in.
     /// @return The number of strategies for the given slashId.
@@ -271,4 +278,14 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function getPendingSlashIds(
         OperatorSet calldata operatorSet
     ) external view returns (uint256[] memory);
+
+    /// @notice Returns the block number after which the given slash's shares may be cleared.
+    /// @dev Returns 0 for slashes recorded before the slash resolution delay was introduced (these clear immediately).
+    /// @param operatorSet The operator set the slash belongs to.
+    /// @param slashId The slash ID to query.
+    /// @return The block number after which clearing is permitted.
+    function getSlashResolutionBlock(
+        OperatorSet calldata operatorSet,
+        uint256 slashId
+    ) external view returns (uint32);
 }

@@ -28,6 +28,13 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     // index for flag that pauses deposits when set
     uint8 internal constant PAUSED_DEPOSITS = 0;
 
+    /// @dev Index for flag that pauses clearing of burn or redistributable shares when set.
+    uint8 internal constant PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES = 1;
+
+    /// @notice The number of blocks that must elapse after a slash before its shares can be cleared.
+    /// @dev Approximately 7 days at 12-second block times.
+    uint32 public constant SLASH_RESOLUTION_DELAY_BLOCKS = 50_400;
+
     /// @notice default address for burning slashed shares and transferring underlying tokens
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
@@ -86,6 +93,11 @@ abstract contract StrategyManagerStorage is IStrategyManager {
 
     /// @notice Returns a list of slash ids for each operator set who have pending burn or redistributable shares.
     mapping(bytes32 operatorSetKey => EnumerableSet.UintSet) internal _pendingSlashIds;
+
+    /// @notice The block number after which a slash's shares may be cleared.
+    /// @dev Set to `block.number + SLASH_RESOLUTION_DELAY_BLOCKS` when a slash is first recorded.
+    /// @dev Pre-upgrade entries will have a zero value, allowing immediate clearing (grandfather behaviour).
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 resolutionBlock)) internal _slashResolutionBlock;
 
     // Construction
 
