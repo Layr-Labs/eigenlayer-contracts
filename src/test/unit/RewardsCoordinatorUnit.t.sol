@@ -1452,6 +1452,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         filterFuzzedAddressInputs(avs)
     {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -1512,6 +1513,7 @@ contract RewardsCoordinatorUnitTests_createAVSRewardsSubmission is RewardsCoordi
         filterFuzzedAddressInputs(avs)
     {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
         cheats.prank(rewardsCoordinator.owner());
 
         // 1. Bound fuzz inputs to valid ranges and amounts
@@ -3053,6 +3055,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         filterFuzzedAddressInputs(avs)
     {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
@@ -3115,6 +3118,7 @@ contract RewardsCoordinatorUnitTests_createOperatorDirectedAVSRewardsSubmission 
         filterFuzzedAddressInputs(avs)
     {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // 1. Bound fuzz inputs to valid ranges and amounts
         IERC20 rewardToken = new ERC20PresetFixedSupply("dog wif hat", "MOCK1", mockTokenInitialSupply, avs);
@@ -4888,6 +4892,7 @@ contract RewardsCoordinatorUnitTests_createUniqueStakeRewardsSubmission is Rewar
         uint amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // Setup operator set
         OperatorSet memory operatorSet = OperatorSet(avs, 1);
@@ -4946,6 +4951,7 @@ contract RewardsCoordinatorUnitTests_createUniqueStakeRewardsSubmission is Rewar
         uint amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // Setup operator set
         OperatorSet memory operatorSet = OperatorSet(avs, 1);
@@ -5641,6 +5647,7 @@ contract RewardsCoordinatorUnitTests_createTotalStakeRewardsSubmission is Reward
         uint amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // Setup operator set
         OperatorSet memory operatorSet = OperatorSet(avs, 1);
@@ -5699,6 +5706,7 @@ contract RewardsCoordinatorUnitTests_createTotalStakeRewardsSubmission is Reward
         uint amount
     ) public filterFuzzedAddressInputs(avs) {
         cheats.assume(avs != address(0));
+        cheats.assume(avs != feeRecipient);
 
         // Setup operator set
         OperatorSet memory operatorSet = OperatorSet(avs, 1);
