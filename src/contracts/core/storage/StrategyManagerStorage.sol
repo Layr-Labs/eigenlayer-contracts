@@ -97,7 +97,8 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @notice The block number after which a slash's shares may be cleared.
     /// @dev Set to `block.number + SLASH_RESOLUTION_DELAY_BLOCKS` when a slash is first recorded.
     /// @dev Pre-upgrade entries will have a zero value, allowing immediate clearing (grandfather behaviour).
-    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 resolutionBlock)) internal _slashResolutionBlock;
+    mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 resolutionBlock)) internal
+        _slashResolutionBlock;
 
     // Construction
 

@@ -371,6 +371,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
 
         (uint slashId,) = ctx.avs.slashOperator(slashParams);
+        _rollPastSlashResolutionDelay(ctx.operatorSet, slashId);
         uint redistributed =
             strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
         assertEq(redistributed, expectedRedistribution, "unexpected redistribution amount");
@@ -416,6 +417,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
             if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
 
             (uint slashId,) = ctx.avs.slashOperator(slashParams);
+            _rollPastSlashResolutionDelay(ctx.operatorSet, slashId);
             uint redistributed =
                 strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
             // Queued withdrawals remove shares from the operator, so expect zero redistribution.
@@ -427,6 +429,11 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         IERC20[] memory tokens = staker.completeWithdrawalAsTokens(withdrawals[0]);
         assertEq(address(tokens[0]), address(ctx.asset), "unexpected withdrawal token");
         assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker balance after queued slash incorrect");
+    }
+
+    function _rollPastSlashResolutionDelay(OperatorSet memory operatorSet, uint slashId) internal {
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(operatorSet, slashId);
+        if (block.number <= resolutionBlock) cheats.roll(uint(resolutionBlock) + 1);
     }
 
     function _deployDurationVault(address insuranceRecipient) internal returns (DurationVaultContext memory ctx) {

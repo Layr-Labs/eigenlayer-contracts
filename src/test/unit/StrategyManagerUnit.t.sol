@@ -91,6 +91,11 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
         return newStrategy;
     }
 
+    function _rollPastSlashResolutionDelay(OperatorSet memory operatorSet, uint slashId) internal {
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(operatorSet, slashId);
+        if (block.number <= resolutionBlock) cheats.roll(uint(resolutionBlock) + 1);
+    }
+
     function _depositIntoStrategySuccessfully(IStrategy strategy, address staker, uint amount) internal filterFuzzedAddressInputs(staker) {
         IERC20 token = dummyToken;
 
@@ -1235,6 +1240,7 @@ contract StrategyManagerUnitTests_increaseBurnOrRedistributableShares is Strateg
 
         // Deposit shares to strategies to enable clearing
         _depositIntoStrategySuccessfully(strategy, address(this), shares * 3);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
 
         // Clear one slash ID from defaultOperatorSet
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
@@ -1286,6 +1292,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         (IStrategy[] memory slashStrats, uint[] memory slashShares) =
@@ -1316,6 +1323,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, strategy, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategy);
 
         (IStrategy[] memory slashStrats, uint[] memory slashShares) =
@@ -1349,6 +1357,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
 
         _increaseBurnOrRedistributableShares(strategies, sharesToAdd);
 
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
 
         (IStrategy[] memory slashStrats, uint[] memory slashShares) =
@@ -1390,6 +1399,7 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         indices[1] = 0; // dummyStrat
         indices[2] = 2; // dummyStrat3
 
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         for (uint i = 0; i < strategies.length; ++i) {
             strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, strategies[indices[i]]);
 
@@ -1440,6 +1450,8 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
         cheats.expectEmit(true, true, true, true, address(strategyManager));
         emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
         strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, strategy, sharesToRemove);
+
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
 
         // Now set token to be contract that reverts simulating an upgrade
         cheats.etch(address(token), address(revertToken).code);
@@ -1634,6 +1646,7 @@ contract StrategyManagerUnitTests_getPendingOperatorSets is StrategyManagerUnitT
         assertEq(pendingOperatorSets[0].avs, defaultOperatorSet.avs, "pending operator set AVS mismatch");
         assertEq(pendingOperatorSets[0].id, defaultOperatorSet.id, "pending operator set ID mismatch");
         // Clear shares
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
         pendingOperatorSets = strategyManager.getPendingOperatorSets();
         assertEq(pendingOperatorSets.length, 0, "should have 0 pending operator sets");
@@ -1671,6 +1684,7 @@ contract StrategyManagerUnitTests_getPendingOperatorSets is StrategyManagerUnitT
         assertEq(pendingOperatorSets[2].avs, operatorSet3.avs, "pending operator set 3 AVS mismatch");
         assertEq(pendingOperatorSets[2].id, operatorSet3.id, "pending operator set 3 ID mismatch");
 
+        _rollPastSlashResolutionDelay(operatorSet1, defaultSlashId);
         strategyManager.clearBurnOrRedistributableShares(operatorSet1, defaultSlashId);
         assertEq(strategyManager.getPendingOperatorSets().length, 2, "should have 2 pending operator sets");
 
@@ -1723,6 +1737,7 @@ contract StrategyManagerUnitTests_getPendingSlashIds is StrategyManagerUnitTests
         assertEq(pendingSlashIds[1], defaultSlashId + 1, "pending slash ID mismatch");
         assertEq(pendingSlashIds[2], defaultSlashId + 2, "pending slash ID mismatch");
 
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
         pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet);
         assertEq(pendingSlashIds.length, 2, "should have 2 pending slash IDs");
