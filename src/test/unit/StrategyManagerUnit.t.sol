@@ -1469,6 +1469,229 @@ contract StrategyManagerUnitTests_clearBurnOrRedistributableShares is StrategyMa
     }
 }
 
+contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTests {
+    function _depositAndSlash(IStrategy strategy, uint slashId, uint shares) internal {
+        _depositAndSlash(defaultOperatorSet, strategy, slashId, shares);
+    }
+
+    function _depositAndSlash(OperatorSet memory operatorSet, IStrategy strategy, uint slashId, uint shares) internal {
+        _depositIntoStrategySuccessfully(strategy, address(this), shares);
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(operatorSet, slashId, strategy, shares);
+    }
+
+    function test_getSlashResolutionBlock_SetOnFirstIncrease() external {
+        uint shares = 1e18;
+        uint32 expectedResolutionBlock = uint32(block.number) + strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS();
+
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            expectedResolutionBlock,
+            "resolution block not set on first slash"
+        );
+    }
+
+    function test_getSlashResolutionBlock_NotResetBySecondStrategy() external {
+        uint shares = 1e18;
+
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(block.number + 17);
+        _depositAndSlash(dummyStrat2, defaultSlashId, shares);
+
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            resolutionBlock,
+            "resolution block should not reset for the same slash"
+        );
+    }
+
+    function testFuzz_Revert_ClearBeforeOrAtResolutionBlock(uint32 blocksElapsed) external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        blocksElapsed = uint32(bound(blocksElapsed, 0, strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS()));
+        cheats.roll(block.number + blocksElapsed);
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_AfterDelay() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        uint recipientBalanceBefore = dummyToken.balanceOf(redistributionRecipient);
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesDecreased(defaultOperatorSet, defaultSlashId, dummyStrat, shares);
+
+        cheats.roll(uint(resolutionBlock) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "count should be zero after clear");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should be empty");
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should be deleted");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_PartialClearKeepsResolutionBlock() external {
+        uint shares = 1e18;
+
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        _depositAndSlash(dummyStrat2, defaultSlashId, shares);
+
+        cheats.roll(uint(resolutionBlock) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 1, "one strategy should remain");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            resolutionBlock,
+            "resolution block should remain until full clear"
+        );
+
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat2);
+
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should be deleted after full clear");
+    }
+
+    function test_Revert_ClearBurnOrRedistributableShares_WhenPausedBeforeDelay() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        cheats.prank(pauser);
+        strategyManager.pause(1 << 1);
+
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_Revert_ClearBurnOrRedistributableShares_WhenPaused() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(pauser);
+        strategyManager.pause(1 << 1);
+
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_Revert_ClearBurnOrRedistributableSharesByStrategy_BeforeDelay_UnchangedState() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        uint pendingCount = strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId);
+        uint pendingShares = strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat);
+        uint pendingSlashIds = strategyManager.getPendingSlashIds(defaultOperatorSet).length;
+        uint pendingOperatorSets = strategyManager.getPendingOperatorSets().length;
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        uint recipientBalance = dummyToken.balanceOf(redistributionRecipient);
+        uint strategyBalance = dummyToken.balanceOf(address(dummyStrat));
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), resolutionBlock, "resolution block should be unchanged");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), pendingCount, "pending count should be unchanged");
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat),
+            pendingShares,
+            "pending shares should be unchanged"
+        );
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, pendingSlashIds, "pending slash ids should be unchanged");
+        assertEq(strategyManager.getPendingOperatorSets().length, pendingOperatorSets, "pending operator sets should be unchanged");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalance, "recipient balance should be unchanged");
+        assertEq(dummyToken.balanceOf(address(dummyStrat)), strategyBalance, "strategy balance should be unchanged");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_TwoSlashIdsIndependentResolution() external {
+        uint shares = 1e18;
+        uint slashId2 = defaultSlashId + 1;
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock1 = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(block.number + 17);
+        _depositAndSlash(dummyStrat, slashId2, shares);
+        uint32 resolutionBlock2 = strategyManager.getSlashResolutionBlock(defaultOperatorSet, slashId2);
+
+        assertGt(resolutionBlock2, resolutionBlock1, "second slash should resolve later");
+
+        uint recipientBalanceBefore = dummyToken.balanceOf(redistributionRecipient);
+        cheats.roll(uint(resolutionBlock1) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "first slash resolution block should be deleted");
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, slashId2),
+            resolutionBlock2,
+            "second slash resolution block should remain"
+        );
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "one slash id should remain pending");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, slashId2), 1, "second slash should remain pending");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect after first clear");
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, slashId2, dummyStrat);
+
+        cheats.roll(uint(resolutionBlock2) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, slashId2, dummyStrat);
+
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "all slash ids should be cleared");
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "all operator sets should be cleared");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_TwoOperatorSetsIndependentPendingState() external {
+        uint shares = 1e18;
+        OperatorSet memory operatorSet2 = OperatorSet(address(0x2), 1);
+        address redistributionRecipient1 = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        address redistributionRecipient2 = address(0xBEEF);
+        allocationManagerMock.setRedistributionRecipient(operatorSet2, redistributionRecipient2);
+
+        _depositAndSlash(defaultOperatorSet, dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock1 = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+
+        cheats.roll(block.number + 17);
+        _depositAndSlash(operatorSet2, dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock2 = strategyManager.getSlashResolutionBlock(operatorSet2, defaultSlashId);
+
+        uint recipient1BalanceBefore = dummyToken.balanceOf(redistributionRecipient1);
+        uint recipient2BalanceBefore = dummyToken.balanceOf(redistributionRecipient2);
+
+        cheats.roll(uint(resolutionBlock1) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "one operator set should remain pending");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "default operator set should be cleared");
+        assertEq(strategyManager.getPendingSlashIds(operatorSet2).length, 1, "second operator set should remain pending");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "first operator set resolution block should be deleted");
+        assertEq(strategyManager.getSlashResolutionBlock(operatorSet2, defaultSlashId), resolutionBlock2, "second operator set resolution block should remain");
+        assertEq(dummyToken.balanceOf(redistributionRecipient1), recipient1BalanceBefore + shares, "first recipient balance incorrect");
+        assertEq(dummyToken.balanceOf(redistributionRecipient2), recipient2BalanceBefore, "second recipient should not be paid yet");
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(operatorSet2, defaultSlashId, dummyStrat);
+
+        cheats.roll(uint(resolutionBlock2) + 1);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(operatorSet2, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "all operator sets should be cleared");
+        assertEq(dummyToken.balanceOf(redistributionRecipient2), recipient2BalanceBefore + shares, "second recipient balance incorrect");
+    }
+}
+
 contract StrategyManagerUnitTests_setStrategyWhitelister is StrategyManagerUnitTests {
     function testFuzz_SetStrategyWhitelister(address newWhitelister) external filterFuzzedAddressInputs(newWhitelister) {
         address previousStrategyWhitelister = strategyManager.strategyWhitelister();
