@@ -458,10 +458,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         ctx = _deployDurationVaultForToken(asset, insuranceRecipient);
     }
 
-    function _deployDurationVaultForToken(
-        IERC20 asset,
-        address insuranceRecipient
-    ) internal returns (DurationVaultContext memory ctx) {
+    function _deployDurationVaultForToken(IERC20 asset, address insuranceRecipient) internal returns (DurationVaultContext memory ctx) {
         AVS avsInstance = new AVS("duration-avs");
         avsInstance.updateAVSMetadataURI("https://avs-metadata.local");
 
@@ -489,9 +486,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         ctx = DurationVaultContext({vault: vault, asset: asset, avs: avsInstance, operatorSet: opSet});
     }
 
-    function _mainnetBlacklistedTokenWithBalance(
-        uint minBalance
-    ) internal view returns (IERC20 token, IStrategy sourceStrategy) {
+    function _mainnetBlacklistedTokenWithBalance(uint minBalance) internal view returns (IERC20 token, IStrategy sourceStrategy) {
         for (uint i; i < deployedStrategyArray.length; ++i) {
             IStrategy strategy = IStrategy(deployedStrategyArray[i]);
             IERC20 underlyingToken = strategy.underlyingToken();

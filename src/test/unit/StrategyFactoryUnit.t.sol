@@ -132,9 +132,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         assertEq(strategyFactory.paused(), initialPausedStatus, "constructor / initializer incorrect, paused status set wrong");
         assertEq(strategyBeacon.owner(), beaconProxyOwner, "constructor / initializer incorrect, beaconProxyOwner set wrong");
         assertEq(address(strategyFactory.EIGEN()), address(eigenMock), "constructor / initializer incorrect, EIGEN set wrong");
-        assertEq(
-            address(strategyFactory.bEIGEN()), address(backingEigenMock), "constructor / initializer incorrect, bEIGEN set wrong"
-        );
+        assertEq(address(strategyFactory.bEIGEN()), address(backingEigenMock), "constructor / initializer incorrect, bEIGEN set wrong");
     }
 
     function test_initialize_revert_reinitialization() public {
@@ -215,16 +213,14 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
     }
 
     function test_deployDurationVaultStrategy_revert_EigenToken() public {
-        IDurationVaultStrategyTypes.VaultConfig memory config =
-            _defaultDurationVaultConfig(IERC20(address(eigenMock)));
+        IDurationVaultStrategyTypes.VaultConfig memory config = _defaultDurationVaultConfig(IERC20(address(eigenMock)));
 
         cheats.expectRevert(IStrategyFactory.ProhibitedDurationVaultToken.selector);
         strategyFactory.deployDurationVaultStrategy(config);
     }
 
     function test_deployDurationVaultStrategy_revert_bEigenToken() public {
-        IDurationVaultStrategyTypes.VaultConfig memory config =
-            _defaultDurationVaultConfig(IERC20(address(backingEigenMock)));
+        IDurationVaultStrategyTypes.VaultConfig memory config = _defaultDurationVaultConfig(IERC20(address(backingEigenMock)));
 
         cheats.expectRevert(IStrategyFactory.ProhibitedDurationVaultToken.selector);
         strategyFactory.deployDurationVaultStrategy(config);
@@ -306,9 +302,7 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         );
     }
 
-    function _defaultDurationVaultConfig(
-        IERC20 token
-    ) internal view returns (IDurationVaultStrategyTypes.VaultConfig memory) {
+    function _defaultDurationVaultConfig(IERC20 token) internal view returns (IDurationVaultStrategyTypes.VaultConfig memory) {
         return IDurationVaultStrategyTypes.VaultConfig({
             underlyingToken: token,
             vaultAdmin: address(this),
