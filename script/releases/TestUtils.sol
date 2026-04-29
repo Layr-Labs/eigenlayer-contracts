@@ -855,6 +855,8 @@ library TestUtils {
         assertTrue(
             strategyFactory.pauserRegistry() == Env.impl.pauserRegistry(), "strategyFactory pauserRegistry incorrect"
         );
+        assertTrue(address(strategyFactory.EIGEN()) == address(Env.proxy.eigen()), "strategyFactory EIGEN incorrect");
+        assertTrue(address(strategyFactory.bEIGEN()) == address(Env.proxy.beigen()), "strategyFactory bEIGEN incorrect");
     }
 
     function validateDurationVaultStrategyImmutables(

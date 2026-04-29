@@ -65,8 +65,14 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         rewardsCoordinatorMock = new RewardsCoordinatorMock();
 
         // Deploy strategyFactory proxy first (with placeholder impl) so DurationVaultStrategy can reference it
-        StrategyFactory placeholderFactoryImpl =
-            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, IBeacon(address(0)));
+        StrategyFactory placeholderFactoryImpl = new StrategyFactory(
+            IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
+            strategyBeacon,
+            IBeacon(address(0)),
+            IERC20(address(eigenMock)),
+            IERC20(address(backingEigenMock))
+        );
         strategyFactory = StrategyFactory(
             address(
                 new TransparentUpgradeableProxy(
@@ -90,8 +96,14 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         durationVaultBeacon.transferOwnership(beaconProxyOwner);
 
         // Upgrade strategyFactory to final impl with correct beacon
-        strategyFactoryImplementation =
-            new StrategyFactory(IStrategyManager(address(strategyManagerMock)), pauserRegistry, strategyBeacon, durationVaultBeacon);
+        strategyFactoryImplementation = new StrategyFactory(
+            IStrategyManager(address(strategyManagerMock)),
+            pauserRegistry,
+            strategyBeacon,
+            durationVaultBeacon,
+            IERC20(address(eigenMock)),
+            IERC20(address(backingEigenMock))
+        );
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(address(strategyFactory)), address(strategyFactoryImplementation));
     }
 
@@ -119,6 +131,10 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         assertEq(strategyFactory.owner(), initialOwner, "constructor / initializer incorrect, owner set wrong");
         assertEq(strategyFactory.paused(), initialPausedStatus, "constructor / initializer incorrect, paused status set wrong");
         assertEq(strategyBeacon.owner(), beaconProxyOwner, "constructor / initializer incorrect, beaconProxyOwner set wrong");
+        assertEq(address(strategyFactory.EIGEN()), address(eigenMock), "constructor / initializer incorrect, EIGEN set wrong");
+        assertEq(
+            address(strategyFactory.bEIGEN()), address(backingEigenMock), "constructor / initializer incorrect, bEIGEN set wrong"
+        );
     }
 
     function test_initialize_revert_reinitialization() public {
@@ -198,6 +214,22 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
         require(strategyFactory.deployedStrategies(underlyingToken) == base, "base strategy overwritten");
     }
 
+    function test_deployDurationVaultStrategy_revert_EigenToken() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config =
+            _defaultDurationVaultConfig(IERC20(address(eigenMock)));
+
+        cheats.expectRevert(IStrategyFactory.ProhibitedDurationVaultToken.selector);
+        strategyFactory.deployDurationVaultStrategy(config);
+    }
+
+    function test_deployDurationVaultStrategy_revert_bEigenToken() public {
+        IDurationVaultStrategyTypes.VaultConfig memory config =
+            _defaultDurationVaultConfig(IERC20(address(backingEigenMock)));
+
+        cheats.expectRevert(IStrategyFactory.ProhibitedDurationVaultToken.selector);
+        strategyFactory.deployDurationVaultStrategy(config);
+    }
+
     function test_blacklistTokens(IERC20 token) public {
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = token;
@@ -272,5 +304,23 @@ contract StrategyFactoryUnitTests is EigenLayerUnitTestSetup {
                 )
             )
         );
+    }
+
+    function _defaultDurationVaultConfig(
+        IERC20 token
+    ) internal view returns (IDurationVaultStrategyTypes.VaultConfig memory) {
+        return IDurationVaultStrategyTypes.VaultConfig({
+            underlyingToken: token,
+            vaultAdmin: address(this),
+            arbitrator: address(this),
+            duration: uint32(30 days),
+            maxPerDeposit: 10 ether,
+            stakeCap: 100 ether,
+            metadataURI: "ipfs://duration",
+            operatorSet: OperatorSet({avs: OPERATOR_SET_AVS, id: OPERATOR_SET_ID}),
+            operatorSetRegistrationData: REGISTRATION_DATA,
+            delegationApprover: DELEGATION_APPROVER,
+            operatorMetadataURI: OPERATOR_METADATA_URI
+        });
     }
 }

@@ -436,7 +436,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
         );
         avsDirectoryImplementation = new AVSDirectory(delegationManager, eigenLayerPauserReg, version);
         eigenPodManagerImplementation = new EigenPodManager(DEPOSIT_CONTRACT, eigenPodBeacon, delegationManager, eigenLayerPauserReg);
-        strategyFactoryImplementation = new StrategyFactory(strategyManager, eigenLayerPauserReg, strategyBeacon, durationVaultBeacon);
+        strategyFactoryImplementation =
+            new StrategyFactory(strategyManager, eigenLayerPauserReg, strategyBeacon, durationVaultBeacon, EIGEN, bEIGEN);
 
         // Beacon implementations
         eigenPodImplementation = new EigenPod(DEPOSIT_CONTRACT, eigenPodManager);

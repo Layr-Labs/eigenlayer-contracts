@@ -37,9 +37,6 @@ interface IDurationVaultStrategyErrors {
     error VaultNotLocked();
     /// @dev Thrown when operator integration inputs are missing or invalid.
     error OperatorIntegrationInvalid();
-    /// @dev Thrown when attempting to deposit into a vault whose underlying token is blacklisted.
-    error UnderlyingTokenBlacklisted();
-
     /// @dev Thrown when a deposit exceeds the configured `maxPerDeposit` limit.
     error DepositExceedsMaxPerDeposit();
 
