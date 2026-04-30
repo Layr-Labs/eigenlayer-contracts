@@ -1590,6 +1590,18 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
     }
 
+    function test_Revert_ClearBurnOrRedistributableSharesByStrategy_WhenPaused() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
+
+        cheats.prank(pauser);
+        strategyManager.pause(1 << 1);
+
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+    }
+
     function test_Revert_ClearBurnOrRedistributableSharesByStrategy_BeforeDelay_UnchangedState() external {
         uint shares = 1e18;
         _depositAndSlash(dummyStrat, defaultSlashId, shares);
@@ -1625,6 +1637,76 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         assertEq(strategyManager.getPendingOperatorSets().length, pendingOperatorSets, "pending operator sets should be unchanged");
         assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalance, "recipient balance should be unchanged");
         assertEq(dummyToken.balanceOf(address(dummyStrat)), strategyBalance, "strategy balance should be unchanged");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_WrongStrategyIsNoOp() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        uint recipientBalanceBefore = dummyToken.balanceOf(redistributionRecipient);
+        uint strategyBalanceBefore = dummyToken.balanceOf(address(dummyStrat));
+
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat2),
+            0,
+            "wrong strategy should return zero shares"
+        );
+
+        uint amountOut = strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat2);
+
+        assertEq(amountOut, 0, "wrong strategy should not transfer tokens");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 1, "pending count should remain");
+        assertEq(strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat), shares, "shares should remain");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), resolutionBlock, "resolution block should remain");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "slash id should remain pending");
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "operator set should remain pending");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore, "recipient balance should not change");
+        assertEq(dummyToken.balanceOf(address(dummyStrat)), strategyBalanceBefore, "strategy balance should not change");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_DoubleClearIsNoOp() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        _rollPastSlashResolutionDelay(defaultOperatorSet, defaultSlashId);
+
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+        uint recipientBalanceAfterClear = dummyToken.balanceOf(redistributionRecipient);
+
+        uint amountOut = strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(amountOut, 0, "second clear should not transfer tokens");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "slash should remain cleared");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should remain empty");
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should remain empty");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should remain deleted");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceAfterClear, "recipient balance should not change");
+    }
+
+    function test_clearBurnOrRedistributableSharesByStrategy_ZeroShareSlash() external {
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, 0);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 1, "zero-share slash should be pending");
+        assertEq(strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat), 0, "pending shares should be zero");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "slash id should be pending");
+        assertEq(strategyManager.getPendingOperatorSets().length, 1, "operator set should be pending");
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        cheats.roll(uint(resolutionBlock) + 1);
+        uint amountOut = strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(amountOut, 0, "zero-share clear should not transfer tokens");
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "zero-share slash should be cleared");
+        assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 0, "pending slash ids should be empty");
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should be deleted");
     }
 
     function test_clearBurnOrRedistributableSharesByStrategy_TwoSlashIdsIndependentResolution() external {

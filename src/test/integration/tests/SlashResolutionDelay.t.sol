@@ -167,4 +167,46 @@ contract Integration_SlashResolutionDelay is Integration_SlashResolutionDelay_Ba
             "total payout incorrect"
         );
     }
+
+    function testFuzz_slash_wait_batchClearAfterDelay(uint24 _random) public rand(_random) {
+        // 6. Slash the operator for all strategies in the operator set
+        SlashingParams memory slashParams = _genSlashing_Half(operator, operatorSet);
+        (uint slashId, uint[] memory sharesSlashed) = avs.slashOperator(slashParams);
+        check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(operatorSet, slashId);
+        assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId), slashParams.strategies.length, "pending count mismatch");
+
+        IERC20[] memory tokens = new IERC20[](slashParams.strategies.length);
+        uint[] memory recipientBalancesBefore = new uint[](slashParams.strategies.length);
+        uint[] memory expectedRedistributions = _calculateExpectedTokens(slashParams.strategies, sharesSlashed);
+
+        for (uint i = 0; i < slashParams.strategies.length; ++i) {
+            tokens[i] = IStrategy(slashParams.strategies[i]).underlyingToken();
+            recipientBalancesBefore[i] = tokens[i].balanceOf(redistributionRecipient);
+            assertEq(
+                strategyManager.getBurnOrRedistributableShares(operatorSet, slashId, slashParams.strategies[i]),
+                sharesSlashed[i],
+                "pending shares mismatch"
+            );
+        }
+
+        // 7. Roll past the delay and batch-clear every strategy in the slash
+        _rollPastSlashResolutionDelay(resolutionBlock);
+        avs.clearBurnOrRedistributableShares(operatorSet, slashId);
+
+        // 8. Cleared state should remove the slash and pay the redistribution recipient for every strategy
+        assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId), 0, "slash should be fully cleared");
+        assertEq(strategyManager.getPendingSlashIds(operatorSet).length, 0, "pending slash ids should be empty");
+        assertEq(strategyManager.getPendingOperatorSets().length, 0, "pending operator sets should be empty");
+        assertEq(strategyManager.getSlashResolutionBlock(operatorSet, slashId), 0, "resolution block should be deleted");
+
+        for (uint i = 0; i < slashParams.strategies.length; ++i) {
+            assertEq(
+                tokens[i].balanceOf(redistributionRecipient),
+                recipientBalancesBefore[i] + expectedRedistributions[i],
+                "recipient balance mismatch"
+            );
+        }
+    }
 }

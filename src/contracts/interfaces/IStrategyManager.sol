@@ -169,7 +169,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     /// @param slashId The slash ID to burn or redistribute shares in.
     /// @param strategy The strategy to get the shares for.
     /// @return The shares for the given strategy for the given slashId.
-    /// @dev This function will return revert if the shares have already been sent to the redistribution recipient.
+    /// @dev Returns 0 if the strategy has no pending shares for the given slash.
     function getBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
@@ -272,7 +272,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     function getPendingOperatorSets() external view returns (OperatorSet[] memory);
 
     /// @notice Returns the slash IDs that are pending to be burned or redistributed.
-    /// @dev This function will return revert if the operator set has no pending burn or redistributable shares.
+    /// @dev Returns an empty array if the operator set has no pending burn or redistributable shares.
     /// @param operatorSet The operator set to get the pending slash IDs for.
     /// @return The slash IDs that are pending to be burned or redistributed.
     function getPendingSlashIds(

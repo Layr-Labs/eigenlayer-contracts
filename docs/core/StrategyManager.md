@@ -250,11 +250,14 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 
 ## Increasing/Clearing Slashed Shares
 
-Slashes shares are marked as burnable or redistributable. Anybody can call
-`clearBurnOrRedistributableShares` to send tokens to the slash's `redistributionRecipient`. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The operatorSet and slashId are used to index into the enumerableMap of strategies to shares. The following methods handle clearing burn or redistributable shares:
+Slashed shares are marked as burnable or redistributable. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The `operatorSet` and `slashId` are used to index into the enumerableMap of strategies to shares.
+
+For slashes recorded after the slash resolution delay was introduced, clearing is delayed until after `SLASH_RESOLUTION_DELAY_BLOCKS` have elapsed. The resolution block for a slash can be queried with `getSlashResolutionBlock(operatorSet, slashId)`, and clearing reverts with `SlashResolutionDelayNotElapsed` until `block.number` is greater than that value. Slashes recorded before this delay was introduced have a resolution block of `0` and remain immediately clearable as grandfathered state.
+
+Anybody can call `clearBurnOrRedistributableShares` or `clearBurnOrRedistributableSharesByStrategy` after the delay to send tokens to the slash's `redistributionRecipient`. Clearing can be paused with `PAUSED_BURNING_AND_REDISTRIBUTION`. The following methods handle clearing burn or redistributable shares:
 * [`StrategyManager.increaseBurnOrRedistributableShares`](#increaseburnorredistributableshares)
-* [`StrategyManager.clearBurnOrRedistributableShares`](#clearBurnOrRedistributableShares)
-* [`StrategyManager.clearBurnOrRedistributableSharesByStrategy](#clearburnorredistributableshares)
+* [`StrategyManager.clearBurnOrRedistributableShares`](#clearburnorredistributableshares)
+* [`StrategyManager.clearBurnOrRedistributableSharesByStrategy`](#clearburnorredistributableshares)
 * [`StrategyManager.burnShares`](#burnshares) - Legacy burnShares function
 
 #### `increaseBurnOrRedistributableShares`
@@ -279,10 +282,11 @@ function increaseBurnOrRedistributableShares(
 
 The `DelegationManager` calls this method when an operator is slashed, calculating the number of slashable shares and marking them for burn or redistribution here.
 
-Anyone can then convert the shares to tokens and trigger a burn via `burnShares`. This asynchronous method was added to mitigate potential DoS vectors when slashing.
+The first strategy recorded for an `operatorSet` and `slashId` also sets the slash's resolution block. Additional strategies added for the same slash do not reset the delay. This asynchronous clearing flow was added to mitigate potential DoS vectors when slashing.
 
 *Effects*:
 * Sets `burnOrRedistributableShares` for the given `operatorSet`, `slashId`, and `strategy`
+* Sets the slash resolution block for the given `operatorSet` and `slashId` if this is the first strategy recorded for that slash
 * Emits a `BurnOrRedistributableSharesIncreased` event
 
 
@@ -296,10 +300,12 @@ Anyone can then convert the shares to tokens and trigger a burn via `burnShares`
 
 ```solidity
 /**
- * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+ * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
+ * @dev Reverts if SLASH_RESOLUTION_DELAY_BLOCKS has not elapsed since the slash was recorded.
+ * @dev Reverts if clearing is paused via PAUSED_BURNING_AND_REDISTRIBUTION.
  * @param operatorSet The operator set to burn shares in.
  * @param slashId The slash ID to burn shares in.
- * @return The amounts of tokens transferred to the slash escrow for each strategy
+ * @return The amounts of tokens transferred to the redistribution recipient for each strategy
  */
 function clearBurnOrRedistributableShares(
     OperatorSet calldata operatorSet, 
@@ -307,11 +313,13 @@ function clearBurnOrRedistributableShares(
 external returns (uint256[] memory);
 
 /**
- * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the slash escrow.
+ * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
+ * @dev Reverts if SLASH_RESOLUTION_DELAY_BLOCKS has not elapsed since the slash was recorded.
+ * @dev Reverts if clearing is paused via PAUSED_BURNING_AND_REDISTRIBUTION.
  * @param operatorSet The operator set to burn shares in.
  * @param slashId The slash ID to burn shares in.
  * @param strategy The strategy to burn shares in.
- * @return The amount of shares that were burned.
+ * @return The amount of tokens transferred to the redistribution recipient.
  */
 function clearBurnOrRedistributableSharesByStrategy(
     OperatorSet calldata operatorSet,
@@ -320,13 +328,14 @@ function clearBurnOrRedistributableSharesByStrategy(
 ) external returns (uint256);
 ```
 
-Anyone can call this method to transfer slashed shares to the operator sets's `redistributionRecipient`. This method sets the `burnOrRedistributableShares` for the given `slashId` and `operatorSet` to 0. To accommodate the unlimited number of strategies that can be added to an operatorSet, users can also pass in a strategy to clear via `clearBurnOrRedistributableSharesByStrategy`. The strategies that haven not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`. 
+Anyone can call these methods after the slash resolution delay to transfer slashed shares to the operator set's `redistributionRecipient`. `clearBurnOrRedistributableShares` clears every strategy recorded for the `operatorSet` and `slashId`. To accommodate the unlimited number of strategies that can be added to an operator set, callers can also clear one strategy at a time with `clearBurnOrRedistributableSharesByStrategy`. The strategies that have not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`.
 
 *Effects*:
-* Resets the strategy's burn or redistributable shares for the operatorSet and slashId to 0
+* Removes the strategy's burn or redistributable shares for the `operatorSet` and `slashId`
 * If the shares to remove are nonzero:
-    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the operator sets's `redistributionRecipient`
+    * Calls `withdraw` on the `strategy`, withdrawing shares and sending a corresponding amount of tokens to the operator set's `redistributionRecipient`
     * Emits a `BurnOrRedistributableSharesDecreased`
+* Deletes the slash resolution block once all strategies for the slash have been cleared
 
 #### `burnShares`
 

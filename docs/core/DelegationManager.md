@@ -57,7 +57,7 @@ mapping(address staker => address operator) public delegatedTo;
 mapping(address operator => OperatorDetails) internal _operatorDetails;
 
 /**
- * @notice Tracks the current balance of shares an `operator` is delegated according to each `strategy`. 
+ * @notice Tracks the current balance of shares an `operator` is delegated according to each `strategy`.
  * Updated by both the `StrategyManager` and `EigenPodManager` when a staker's delegatable balance changes,
  * and by the `AllocationManager` when the `operator` is slashed.
  *
@@ -123,10 +123,10 @@ Registers the caller as an operator in EigenLayer. The new operator provides the
  * @dev The caller must have previously registered as an operator in EigenLayer.
  */
 function modifyOperatorDetails(
-    address operator, 
+    address operator,
     address newDelegationApprover
-) 
-    external 
+)
+    external
     checkCanCall(operator)
     nonReentrant
 ```
@@ -149,10 +149,10 @@ Allows an operator to update their stored `delegationApprover`.
  * @dev Note that the `metadataURI` is *never stored * and is only emitted in the `OperatorMetadataURIUpdated` event
  */
 function updateOperatorMetadataURI(
-    address operator, 
+    address operator,
     string calldata metadataURI
-) 
-    external 
+)
+    external
     checkCanCall(operator)
 ```
 
@@ -236,7 +236,7 @@ mapping(address operator => mapping(IStrategy strategy => Snapshots.DefaultZeroH
     _cumulativeScaledSharesHistory;
 ```
 
-Prior to the slashing release, withdrawals were only stored as hashes in the `pendingWithdrawals` mapping. 
+Prior to the slashing release, withdrawals were only stored as hashes in the `pendingWithdrawals` mapping.
 
 With the slashing release, withdrawals are now stored entirely in state, and two new mappings have been added to support this:
 * `_stakedQueuedWithdrawalRoots`: a list of all the currently-queued withdrawal hashes belonging to a staker
@@ -266,9 +266,9 @@ The _deposit scaling factor_ is represented in `DelegationManager` storage, and 
  * There are 2 types of shares:
  *      1. deposit shares
  *          - These can be converted to an amount of tokens given a strategy
- *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens 
+ *              - by calling `sharesToUnderlying` on the strategy address (they're already tokens
  *              in the case of EigenPods)
- *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies 
+ *          - These live in the storage of the EigenPodManager and individual StrategyManager strategies
  *      2. withdrawable shares
  *          - For a staker, this is the amount of shares that they can withdraw
  *          - For an operator, the shares delegated to them are equal to the sum of their stakers'
@@ -328,15 +328,15 @@ struct SignatureWithExpiry {
  * If they have not, these params can be left empty.
  */
 function delegateTo(
-    address operator, 
-    SignatureWithExpiry memory approverSignatureAndExpiry, 
+    address operator,
+    SignatureWithExpiry memory approverSignatureAndExpiry,
     bytes32 approverSalt
-) 
+)
     external
     nonReentrant
 ```
 
-Allows a staker to delegate their assets to an operator. Delegation is all-or-nothing: when a staker delegates to an operator, they delegate ALL their assets. Stakers can only be delegated to one operator at a time. 
+Allows a staker to delegate their assets to an operator. Delegation is all-or-nothing: when a staker delegates to an operator, they delegate ALL their assets. Stakers can only be delegated to one operator at a time.
 
 *Note: Delegating to an operator who has very low magnitudes (on the order of wei) may result in loss of funds.*
 
@@ -364,7 +364,7 @@ For each strategy the staker has deposit shares in, the `DelegationManager` will
 /**
  * @notice Undelegates the staker from their operator and queues a withdrawal for all of their shares
  * @param staker The account to be undelegated
- * @return withdrawalRoots The roots of the newly queued withdrawals, if a withdrawal was queued. Returns 
+ * @return withdrawalRoots The roots of the newly queued withdrawals, if a withdrawal was queued. Returns
  * an empty array if none was queued.
  *
  * @dev Reverts if the `staker` is also an operator, since operators are not allowed to undelegate from themselves.
@@ -373,7 +373,7 @@ For each strategy the staker has deposit shares in, the `DelegationManager` will
  */
 function undelegate(
     address staker
-) 
+)
     external
     nonReentrant
     returns (bytes32[] memory withdrawalRoots);
@@ -387,7 +387,7 @@ Undelegation immediately sets the staker's delegated operator to 0, decreases th
 
 Just as with a normal queued withdrawal, these withdrawals can be completed by the staker after `MIN_WITHDRAWAL_DELAY_BLOCKS`. These withdrawals do not require the staker to "fully exit" from the system -- the staker may choose to keep their assets in the system once withdrawals are completed (See [`completeQueuedWithdrawal`](#completequeuedwithdrawal) for details).
 
-*Effects*: 
+*Effects*:
 * The `staker` is undelegated from their operator
 * If the `staker` has no deposit shares, there is no withdrawal queued or further effects
 * For each strategy held by the `staker`, a `Withdrawal` is queued:
@@ -430,14 +430,14 @@ Just as with a normal queued withdrawal, these withdrawals can be completed by t
     address newOperator,
     SignatureWithExpiry memory newOperatorApproverSig,
     bytes32 approverSalt
-) 
-    external 
+)
+    external
     returns (bytes32[] memory withdrawalRoots);
 ```
 
 `redelegate` is a convenience method that combines the effects of `undelegate` and `delegateTo`. `redelegate` allows a staker to switch their delegated operator to `newOperator` with a single call. **Note**, though, that the staker's assets will not be fully delegated to `newOperator` until the withdrawals queued during the undelegation portion of this method are completed.
 
-*Effects*: 
+*Effects*:
 * See [`delegateTo`](#delegateto) and [`undelegate`](#undelegate)
 
 *Requirements*:
@@ -462,9 +462,9 @@ struct QueuedWithdrawalParams {
 }
 
 /**
- * @notice Allows a staker to queue a withdrawal of their deposit shares. The withdrawal can be 
+ * @notice Allows a staker to queue a withdrawal of their deposit shares. The withdrawal can be
  * completed after the MIN_WITHDRAWAL_DELAY_BLOCKS via either of the completeQueuedWithdrawal methods.
- * 
+ *
  * While in the queue, these shares are removed from the staker's balance, as well as from their operator's
  * delegated share balance (if applicable). Note that while in the queue, deposit shares are still subject
  * to slashing. If any slashing has occurred, the shares received may be less than the queued deposit shares.
@@ -474,8 +474,8 @@ struct QueuedWithdrawalParams {
  */
 function queueWithdrawals(
     QueuedWithdrawalParams[] calldata queuedWithdrawalParams
-) 
-    external 
+)
+    external
     onlyWhenNotPaused(PAUSED_ENTER_WITHDRAWAL_QUEUE)
     nonReentrant
     returns (bytes32[] memory)
@@ -559,13 +559,13 @@ function completeQueuedWithdrawal(
     Withdrawal calldata withdrawal,
     IERC20[] calldata tokens,
     bool receiveAsTokens
-) 
-    external 
+)
+    external
     onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE)
     nonReentrant
 ```
 
-`MIN_WITHDRAWAL_DELAY_BLOCKS` after queueing, a staker can complete a `Withdrawal` by calling this method. The staker can elect to receive _either_ tokens OR shares depending on the value of the `receiveAsTokens` parameter. 
+`MIN_WITHDRAWAL_DELAY_BLOCKS` after queueing, a staker can complete a `Withdrawal` by calling this method. The staker can elect to receive _either_ tokens OR shares depending on the value of the `receiveAsTokens` parameter.
 
 Before processing a withdrawal, this method will calculate the slashing factor at the withdrawal's completion block (`withdrawal.startBlock + MIN_WITHDRAWAL_DELAY_BLOCKS`), according to the operator that was delegated to when the withdrawal was queued (`withdrawal.delegatedTo`). This slashing factor is used to determine if any additional slashing occurred while the withdrawal was in the queue. If so, this slashing is applied now.
 
@@ -575,16 +575,16 @@ If the staker chooses to receive the withdrawal _as tokens_, the withdrawable sh
 
 If the staker chooses to receive the withdrawal _as shares_, the withdrawable shares are credited to the staker via the corresponding share manager (`EigenPodManager`/`StrategyManager`). Additionally, if the caller is delegated to an operator, the new slashing factor for the given `(staker, operator, strategy)` determines how many shares are awarded to the operator (and how the staker's deposit scaling factor is updated) (See [Slashing Factors and Scaling Shares](#slashing-factors-and-scaling-shares)). In receiving the withdrawal as shares, this amount is credited as deposit shares for the staker. Due to known rounding error, the amount of withdrawable shares after completing the withdrawal may be slightly less than what was originally withdrawable.
 
-**Note:** if the staker (i) receives the withdrawal as shares, (ii) has `MAX_STAKER_STRATEGY_LIST_LENGTH` unique deposit strategies in the `StrategyManager`, and (iii) is withdrawing to a `StrategyManager` strategy in which they do not currently have shares, this will revert. The staker cannot withdraw such that their `stakerStrategyList` length exceeds the maximum; this withdrawal will have to be completed as tokens instead. 
+**Note:** if the staker (i) receives the withdrawal as shares, (ii) has `MAX_STAKER_STRATEGY_LIST_LENGTH` unique deposit strategies in the `StrategyManager`, and (iii) is withdrawing to a `StrategyManager` strategy in which they do not currently have shares, this will revert. The staker cannot withdraw such that their `stakerStrategyList` length exceeds the maximum; this withdrawal will have to be completed as tokens instead.
 
 **Note:** if the staker receives a `beaconChainETHStrategy` withdrawal as tokens, the staker's `EigenPod` MUST have sufficient `withdrawableExecutionLayerGwei` to honor the withdrawal.
 
-**Note:** if the strategy is not in the whitelist of the `StrategyManager`, the withdrawal will still succeed regardless of whether it is completed as shares or tokens. 
+**Note:** if the strategy is not in the whitelist of the `StrategyManager`, the withdrawal will still succeed regardless of whether it is completed as shares or tokens.
 
 *Effects*:
 * The hash of the `Withdrawal` is removed from the pending withdrawals
 * The hash of the `Withdrawal` is removed from the enumerable set of staker queued withdrawals
-* The `Withdrawal` struct is removed from the queued withdrawals 
+* The `Withdrawal` struct is removed from the queued withdrawals
 * If `receiveAsTokens`:
     * See [`StrategyManager.withdrawSharesAsTokens`](./StrategyManager.md#withdrawsharesastokens)
     * See [`EigenPodManager.withdrawSharesAsTokens`](./EigenPodManager.md#withdrawsharesastokens)
@@ -621,9 +621,9 @@ function completeQueuedWithdrawals(
     Withdrawal[] calldata withdrawals,
     IERC20[][] calldata tokens,
     bool[] calldata receiveAsTokens
-) 
-    external 
-    onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE) 
+)
+    external
+    onlyWhenNotPaused(PAUSED_EXIT_WITHDRAWAL_QUEUE)
     nonReentrant
 ```
 
@@ -664,7 +664,7 @@ function slashOperatorShares(
     IStrategy strategy,
     uint64 prevMaxMagnitude,
     uint64 newMaxMagnitude
-) 
+)
     external
     onlyAllocationManager
     nonReentrant
@@ -675,15 +675,15 @@ _See [Shares Accounting - Slashing](https://github.com/Layr-Labs/eigenlayer-cont
 
 This method is called by the `AllocationManager` when processing an AVS's slash of an operator. Slashing occurs instantly, with this method directly reducing the operator's delegated shares proportional to the slash.
 
-Additionally, any _slashable shares_ in the withdrawal queue are marked for burn or redistribution according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrateyManager`) is called, increasing the burn or redistributable shares for that operatorSet, slashId, and strategy combination. 
+Additionally, any _slashable shares_ in the withdrawal queue are marked for burn or redistribution according to the same slashing proportion (shares in the withdrawal queue remain slashable for `MIN_WITHDRAWAL_DELAY_BLOCKS`). For the slashed strategy, the corresponding share manager (`EigenPodManager/StrategyManager`) is called, increasing the burn or redistributable shares for that operatorSet, slashId, and strategy combination.
 
-**Note**: native ETH does not currently possess a burn/redistribution mechanism, as this requires Pectra to be able to force exit validators. Currently, slashing for the `beaconChainETHStrategy` is realized by modifying the amount stakers are able to withdraw.
+**Note**: ERC20 strategy shares marked in the `StrategyManager` are cleared through the slash-resolution delay flow documented in [`StrategyManager.increaseBurnOrRedistributableShares`](./StrategyManager.md#increaseburnorredistributableshares). Native ETH uses `EigenPodManager` accounting instead: slashed beacon chain ETH shares accrue in `burnableETHShares`, but there is no current StrategyManager-style delayed clear or redistribution execution path for native ETH, as burning native ETH requires the Pectra hard fork to be able to force exit validators.
 
 *Effects*:
 * The `operator's` `operatorShares` are reduced for the given `strategy`, according to the proportion given by `prevMaxMagnitude` and `newMaxMagnitude`
 * Any slashable shares in the withdrawal queue are marked for burning or redistribution according to the same proportion
-* See [`StrategyManager.increaseBurnOrRedistributableShares`](./StrategyManager.md#increaseBurnableShares)
-* See [`EigenPodManager.increaseBurnOrRedistributableShares`](./EigenPodManager.md#increaseBurnableShares)
+* See [`StrategyManager.increaseBurnOrRedistributableShares`](./StrategyManager.md#increaseburnorredistributableshares)
+* See [`EigenPodManager.increaseBurnOrRedistributableShares`](./EigenPodManager.md#increaseburnorredistributableshares)
 
 
 *Requirements*:
@@ -694,7 +694,7 @@ Additionally, any _slashable shares_ in the withdrawal queue are marked for burn
 ```solidity
 /**
  * @notice Called by a share manager when a staker's deposit share balance in a strategy increases.
- * This method delegates any new shares to an operator (if applicable), and updates the staker's 
+ * This method delegates any new shares to an operator (if applicable), and updates the staker's
  * deposit scaling factor regardless.
  * @param staker The address whose deposit shares have increased
  * @param strategy The strategy in which shares have been deposited
@@ -710,7 +710,7 @@ function increaseDelegatedShares(
     IStrategy strategy,
     uint256 prevDepositShares,
     uint256 addedShares
-) 
+)
     external
     onlyStrategyManagerOrEigenPodManager
     nonReentrant
@@ -718,7 +718,7 @@ function increaseDelegatedShares(
 
 Called by either the `StrategyManager` or `EigenPodManager` when a staker's deposit shares for one or more strategies increase.
 
-If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated. In addition, if the operator has allocated slashable stake for the strategy, the staker's deposit is immediately slashable by an operatorSet. 
+If the staker is delegated to an operator, the new deposit shares are directly added to that operator's `operatorShares`. Regardless of delegation status, the staker's deposit scaling factor is updated. In addition, if the operator has allocated slashable stake for the strategy, the staker's deposit is immediately slashable by an operatorSet.
 
 **Note** that if either the staker's current operator has been slashed 100% for `strategy`, OR the staker has been slashed 100% on the beacon chain such that the calculated slashing factor is 0, this method WILL REVERT. See [Shares Accounting - Fully Slashed](./accounting/SharesAccountingEdgeCases.md#fully-slashed-for-a-strategy) for details. This doesn't block delegation to an operator if the staker has 0 deposit shares for a strategy which has a slashing factor of 0, but any subsequent deposits that call `increaseDelegatedShares` will revert from the **Fully Slashed** edge case.
 
@@ -745,7 +745,7 @@ function decreaseDelegatedShares(
     address staker,
     uint256 curDepositShares,
     uint64 beaconChainSlashingFactorDecrease
-) 
+)
     external
     onlyEigenPodManager
     nonReentrant
