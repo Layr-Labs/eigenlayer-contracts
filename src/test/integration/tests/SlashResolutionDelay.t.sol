@@ -175,7 +175,9 @@ contract Integration_SlashResolutionDelay is Integration_SlashResolutionDelay_Ba
         check_Base_Slashing_State(operator, allocateParams, slashParams, slashId);
 
         uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(operatorSet, slashId);
-        assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId), slashParams.strategies.length, "pending count mismatch");
+        assertEq(
+            strategyManager.getBurnOrRedistributableCount(operatorSet, slashId), slashParams.strategies.length, "pending count mismatch"
+        );
 
         IERC20[] memory tokens = new IERC20[](slashParams.strategies.length);
         uint[] memory recipientBalancesBefore = new uint[](slashParams.strategies.length);

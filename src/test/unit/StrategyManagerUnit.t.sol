@@ -1659,8 +1659,12 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
 
         assertEq(amountOut, 0, "wrong strategy should not transfer tokens");
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 1, "pending count should remain");
-        assertEq(strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat), shares, "shares should remain");
-        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), resolutionBlock, "resolution block should remain");
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat), shares, "shares should remain"
+        );
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), resolutionBlock, "resolution block should remain"
+        );
         assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "slash id should remain pending");
         assertEq(strategyManager.getPendingOperatorSets().length, 1, "operator set should remain pending");
         assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore, "recipient balance should not change");
@@ -1692,7 +1696,11 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
 
         uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
         assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 1, "zero-share slash should be pending");
-        assertEq(strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat), 0, "pending shares should be zero");
+        assertEq(
+            strategyManager.getBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat),
+            0,
+            "pending shares should be zero"
+        );
         assertEq(strategyManager.getPendingSlashIds(defaultOperatorSet).length, 1, "slash id should be pending");
         assertEq(strategyManager.getPendingOperatorSets().length, 1, "operator set should be pending");
 
