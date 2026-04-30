@@ -392,7 +392,7 @@ contract StrategyManager is
         uint256 slashId,
         IStrategy strategy,
         address recipient
-    ) internal onlyWhenNotPaused(PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES) returns (uint256) {
+    ) internal onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) returns (uint256) {
         require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
 
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
@@ -421,6 +421,7 @@ contract StrategyManager is
         if (remainingStrategies == 0) {
             // Remove the slash id from the pending slash ids.
             _pendingSlashIds[operatorSet.key()].remove(slashId);
+            // Remove the slash resolution block for this slash id.
             delete _slashResolutionBlock[operatorSet.key()][slashId];
 
             // If there are no more pending slash ids for this operator set, remove the operator set from the pending operator sets.

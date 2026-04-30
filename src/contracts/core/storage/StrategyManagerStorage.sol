@@ -29,7 +29,7 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     uint8 internal constant PAUSED_DEPOSITS = 0;
 
     /// @dev Index for flag that pauses clearing of burn or redistributable shares when set.
-    uint8 internal constant PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES = 1;
+    uint8 internal constant PAUSED_BURNING_AND_REDISTRIBUTION = 1;
 
     /// @notice The number of blocks that must elapse after a slash before its shares can be cleared.
     /// @dev Approximately 7 days at 12-second block times.
@@ -114,5 +114,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[32] private __gap;
+    uint256[31] private __gap;
 }

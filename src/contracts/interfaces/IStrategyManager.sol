@@ -132,7 +132,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
 
     /// @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
     /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
-    /// @dev Reverts if clearing is paused via `PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES`.
+    /// @dev Reverts if clearing is paused via `PAUSED_BURNING_AND_REDISTRIBUTION`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
     /// @return The amounts of tokens transferred to the redistribution recipient for each strategy
@@ -143,7 +143,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
 
     /// @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
     /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
-    /// @dev Reverts if clearing is paused via `PAUSED_BURN_OR_REDISTRIBUTABLE_SHARES`.
+    /// @dev Reverts if clearing is paused via `PAUSED_BURNING_AND_REDISTRIBUTION`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
     /// @param strategy The strategy to burn shares in.
