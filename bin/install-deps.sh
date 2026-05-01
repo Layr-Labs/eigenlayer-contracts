@@ -31,6 +31,6 @@ curl -L https://foundry.paradigm.xyz | bash
 
 cp -R /root/.foundry/bin/* /usr/local/bin/
 
-foundryup
+foundryup --install v1.5.1
 
 cp -R /root/.foundry/bin/* /usr/local/bin/
