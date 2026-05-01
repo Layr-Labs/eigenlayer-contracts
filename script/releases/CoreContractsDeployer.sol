@@ -179,7 +179,9 @@ abstract contract CoreContractsDeployer is EOADeployer {
             _strategyManager: Env.proxy.strategyManager(),
             _pauserRegistry: Env.impl.pauserRegistry(),
             _strategyBeacon: Env.beacon.strategyBase(),
-            _durationVaultBeacon: Env.beacon.durationVaultStrategy()
+            _durationVaultBeacon: Env.beacon.durationVaultStrategy(),
+            _EIGEN: IERC20(address(Env.proxy.eigen())),
+            _bEIGEN: Env.proxy.beigen()
         });
         deployImpl({name: type(StrategyFactory).name, deployedTo: address(deployed)});
     }

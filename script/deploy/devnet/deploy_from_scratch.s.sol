@@ -358,7 +358,12 @@ contract DeployFromScratch is Script, Test {
 
         // Create strategy factory implementation with beacons (beacons are now immutable)
         strategyFactoryImplementation = new StrategyFactory(
-            strategyManager, eigenLayerPauserReg, IBeacon(strategyBeacon), IBeacon(durationVaultBeacon)
+            strategyManager,
+            eigenLayerPauserReg,
+            IBeacon(strategyBeacon),
+            IBeacon(durationVaultBeacon),
+            IERC20(address(0)),
+            IERC20(address(0))
         );
 
         // Strategy Factory, upgrade and initialized

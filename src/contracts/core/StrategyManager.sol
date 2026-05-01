@@ -169,7 +169,10 @@ contract StrategyManager is
     function clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId
-    ) external nonReentrant returns (uint256[] memory) {
+    ) external onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) nonReentrant returns (uint256[] memory) {
+        // Pause/delay are checked once here; per-strategy iteration shares the same slashId resolution block.
+        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
+
         // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
         uint256 length = strategies.length;
@@ -193,7 +196,8 @@ contract StrategyManager is
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy
-    ) external nonReentrant returns (uint256) {
+    ) external onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) nonReentrant returns (uint256) {
+        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
         return _clearBurnOrRedistributableShares({
             operatorSet: operatorSet,
             slashId: slashId,
@@ -387,14 +391,14 @@ contract StrategyManager is
     /// @param slashId The slash id to clear the shares for.
     /// @param strategy The strategy to clear the shares for.
     /// @param recipient The recipient to withdraw the shares to.
+    /// @dev Pause and slash-resolution-delay checks are enforced by the external callers
+    ///      (`clearBurnOrRedistributableShares` / `clearBurnOrRedistributableSharesByStrategy`).
     function _clearBurnOrRedistributableShares(
         OperatorSet calldata operatorSet,
         uint256 slashId,
         IStrategy strategy,
         address recipient
-    ) internal onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) returns (uint256) {
-        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
-
+    ) internal returns (uint256) {
         EnumerableMap.AddressToUintMap storage burnOrRedistributableShares =
             _burnOrRedistributableShares[operatorSet.key()][slashId];
 

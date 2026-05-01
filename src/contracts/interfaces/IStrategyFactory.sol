@@ -14,6 +14,8 @@ import "./ISemVerMixin.sol";
 interface IStrategyFactory {
     /// @dev Thrown when attempting to deploy a strategy for a blacklisted token.
     error BlacklistedToken();
+    /// @dev Thrown when attempting to deploy a duration vault for EIGEN or bEIGEN.
+    error ProhibitedDurationVaultToken();
     /// @dev Thrown when attempting to deploy a strategy that already exists.
     error StrategyAlreadyExists();
     /// @dev Thrown when attempting to blacklist a token that is already blacklisted
@@ -26,6 +28,12 @@ interface IStrategyFactory {
 
     /// @notice Upgradeable beacon which duration vault strategies deployed by this contract point to
     function durationVaultBeacon() external view returns (IBeacon);
+
+    /// @notice EIGEN token address.
+    function EIGEN() external view returns (IERC20);
+
+    /// @notice bEIGEN token address.
+    function bEIGEN() external view returns (IERC20);
 
     /// @notice Mapping token => Strategy contract for the token
     /// The strategies in this mapping are deployed by the StrategyFactory.
@@ -53,7 +61,7 @@ interface IStrategyFactory {
     ) external returns (IStrategy newStrategy);
 
     /// @notice Deploys a new duration-bound vault strategy contract.
-    /// @dev Enforces the same blacklist semantics as vanilla strategies.
+    /// @dev EIGEN and bEIGEN vaults are prohibited because those tokens use EigenStrategy.
     function deployDurationVaultStrategy(
         IDurationVaultStrategy.VaultConfig calldata config
     ) external returns (IDurationVaultStrategy newVault);
