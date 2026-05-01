@@ -4,6 +4,7 @@ pragma solidity ^0.8.12;
 import "./Env.sol";
 import "forge-std/Vm.sol";
 import "src/contracts/mixins/SplitContractMixin.sol";
+import {OperatorSet} from "src/contracts/libraries/OperatorSetLib.sol";
 
 /// @notice Utility library for testing contract deployments
 /// @dev This library exposes the following test functions:
@@ -559,6 +560,32 @@ library TestUtils {
         require(_strEq(Env.impl.strategyManager().version(), Env.deployVersion()), "strategyManager version incorrect");
     }
 
+    function validateStrategyManagerSlashResolutionDelay(
+        StrategyManager strategyManager
+    ) internal view {
+        assertTrue(
+            strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS() == 50_400,
+            "strategyManager slash resolution delay incorrect"
+        );
+
+        OperatorSet memory operatorSet = OperatorSet({avs: address(0xE1), id: type(uint32).max});
+        assertTrue(
+            strategyManager.getSlashResolutionBlock(operatorSet, type(uint256).max) == 0,
+            "strategyManager grandfather resolution incorrect"
+        );
+    }
+
+    function validateStrategyManagerPausedStatusUnchanged(
+        StrategyManager strategyManager,
+        uint256 previousPausedStatus
+    ) internal view {
+        assertTrue(strategyManager.paused() == previousPausedStatus, "strategyManager paused status changed");
+        assertTrue(
+            strategyManager.paused() & (1 << 1) == previousPausedStatus & (1 << 1),
+            "strategyManager burn/redistribution pause status changed"
+        );
+    }
+
     function validateECDSACertificateVerifierVersion() internal view {
         require(
             _strEq(Env.impl.ecdsaCertificateVerifier().version(), Env.deployVersion()),
@@ -784,6 +811,10 @@ library TestUtils {
         );
         assertTrue(
             strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "strategyManager pauserRegistry incorrect"
+        );
+        assertTrue(
+            strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS() == 50_400,
+            "strategyManager SLASH_RESOLUTION_DELAY_BLOCKS incorrect"
         );
     }
 
