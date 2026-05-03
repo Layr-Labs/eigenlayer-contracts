@@ -327,7 +327,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
 
     /// @dev Assert that all distributions succeed given valid inputs.
     function testFuzz_addDists_pressButton_allDistributionTypes(uint24 r) public rand(r) {
-        (uint64 startEpoch, uint16 totalWeight,) = _genRandParams();
+        (uint64 startEpoch,,) = _genRandParams();
 
         DistributionType[] memory types = new DistributionType[](5);
         types[0] = DistributionType.RewardsForAllEarners;
@@ -335,6 +335,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         types[2] = DistributionType.OperatorSetUniqueStake;
         types[3] = DistributionType.EigenDA;
         types[4] = DistributionType.Manual;
+        uint16 totalWeight = uint16(_randUint({min: types.length, max: 10_000}));
 
         // 1. Add distributions with all types
         (uint[] memory distributionIds, Distribution[] memory distributions) =

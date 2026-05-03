@@ -26,16 +26,26 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
     /// @notice Upgradeable beacon used for duration vault strategies deployed by this contract.
     IBeacon public immutable durationVaultBeacon;
 
+    /// @notice EIGEN token. Duration vaults cannot be deployed for this token.
+    IERC20 public immutable EIGEN;
+
+    /// @notice bEIGEN token. Duration vaults cannot be deployed for this token.
+    IERC20 public immutable bEIGEN;
+
     /// @notice Since this contract is designed to be initializable, the constructor simply sets the immutable variables.
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
         IBeacon _strategyBeacon,
-        IBeacon _durationVaultBeacon
+        IBeacon _durationVaultBeacon,
+        IERC20 _EIGEN,
+        IERC20 _bEIGEN
     ) Pausable(_pauserRegistry) {
         strategyManager = _strategyManager;
         strategyBeacon = _strategyBeacon;
         durationVaultBeacon = _durationVaultBeacon;
+        EIGEN = _EIGEN;
+        bEIGEN = _bEIGEN;
         _disableInitializers();
     }
 
@@ -115,7 +125,7 @@ contract StrategyFactory is StrategyFactoryStorage, OwnableUpgradeable, Pausable
         IDurationVaultStrategy.VaultConfig calldata config
     ) external onlyWhenNotPaused(PAUSED_NEW_STRATEGIES) returns (IDurationVaultStrategy newVault) {
         IERC20 underlyingToken = config.underlyingToken;
-        require(!isBlacklisted[underlyingToken], BlacklistedToken());
+        require(underlyingToken != EIGEN && underlyingToken != bEIGEN, ProhibitedDurationVaultToken());
 
         newVault = IDurationVaultStrategy(
             address(

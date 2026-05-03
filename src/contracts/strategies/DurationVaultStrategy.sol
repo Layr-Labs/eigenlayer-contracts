@@ -25,7 +25,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @notice Rewards coordinator reference used to configure operator splits.
     IRewardsCoordinator public immutable override rewardsCoordinator;
 
-    /// @notice Strategy factory reference used to check token blacklist status.
+    /// @notice Strategy factory that deployed this vault.
     IStrategyFactory public immutable strategyFactory;
 
     /// @dev Restricts function access to the vault administrator.
@@ -45,7 +45,7 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
     /// @param _delegationManager The DelegationManager contract for operator registration.
     /// @param _allocationManager The AllocationManager contract for operator set allocations.
     /// @param _rewardsCoordinator The RewardsCoordinator contract for configuring splits.
-    /// @param _strategyFactory The StrategyFactory contract for token blacklist checks.
+    /// @param _strategyFactory The StrategyFactory contract that deploys duration vaults.
     constructor(
         IStrategyManager _strategyManager,
         IPauserRegistry _pauserRegistry,
@@ -252,7 +252,6 @@ contract DurationVaultStrategy is DurationVaultStrategyStorage, StrategyBase {
         uint256 shares
     ) external view override(IStrategy, StrategyBase) onlyStrategyManager {
         require(depositsOpen(), DepositsLocked());
-        require(!strategyFactory.isBlacklisted(underlyingToken), UnderlyingTokenBlacklisted());
         require(delegationManager.delegatedTo(staker) == address(this), MustBeDelegatedToVaultOperator());
 
         // Enforce per-deposit cap using the minted shares as proxy for underlying.

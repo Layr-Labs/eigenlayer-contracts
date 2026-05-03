@@ -134,12 +134,12 @@ The `EigenPodManager` tracks a staker's _deposit shares_ and _beacon chain slash
 ```solidity
 /**
  * @notice mapping from pod owner to the deposit shares they have in the virtual beacon chain ETH strategy
- * 
+ *
  * @dev When an EigenPod registers a balance increase, deposit shares are increased. When registering a balance
  * decrease, however, deposit shares are NOT decreased. Instead, the pod owner's beacon chain slashing factor
  * is decreased proportional to the balance decrease. This impacts the number of shares that will be withdrawn
  * when the deposit shares are queued for withdrawal in the DelegationManager.
- * 
+ *
  * Note that prior to the slashing release, deposit shares were decreased when balance decreases occurred.
  * In certain cases, a combination of queueing a withdrawal plus registering a balance decrease could result
  * in a staker having negative deposit shares in this mapping. This negative value would be corrected when the
@@ -320,9 +320,9 @@ function recordBeaconChainETHBalanceUpdate(
     nonReentrant
 ```
 
-This method is called by an `EigenPod` to report a change in its pod owner's shares. It accepts a positive or negative `balanceDeltaWei`. A positive delta is added to the pod owner's _deposit shares,_ and delegated to their operator if applicable. A negative delta is NOT removed from the pod owner's deposit shares. Instead, the proportion of the balance decrease is used to update the pod owner's beacon chain slashing factor and decrease the number of shares delegated to their operator (if applicable). A zero delta results in no change. 
+This method is called by an `EigenPod` to report a change in its pod owner's shares. It accepts a positive or negative `balanceDeltaWei`. A positive delta is added to the pod owner's _deposit shares,_ and delegated to their operator if applicable. A negative delta is NOT removed from the pod owner's deposit shares. Instead, the proportion of the balance decrease is used to update the pod owner's beacon chain slashing factor and decrease the number of shares delegated to their operator (if applicable). A zero delta results in no change.
 
-**Note** that prior to the slashing release, negative balance deltas subtracted from the pod owner's shares, and could, in certain cases, result in a negative share balance. As of the slashing release, negative balance deltas no longer subtract from share balances, updating the beacon chain slashing factor instead. 
+**Note** that prior to the slashing release, negative balance deltas subtracted from the pod owner's shares, and could, in certain cases, result in a negative share balance. As of the slashing release, negative balance deltas no longer subtract from share balances, updating the beacon chain slashing factor instead.
 
 If a staker has negative shares as of the slashing release, this method will REVERT, preventing any further balance updates from their pod while the negative share balance persists. In order to fix this and restore the use of their pod, the staker should complete any outstanding withdrawals in the `DelegationManager` "as shares," which will correct the share deficit.
 
@@ -365,12 +365,12 @@ function increaseBurnOrRedistributableShares(
 
 The `DelegationManager` calls this method when an operator is slashed, calculating the number of slashable shares and marking them for burning here.
 
-Unlike in the `StrategyManager`, there is no current mechanism to burn these shares, as burning requires the Pectra hard fork to be able to eject validators. This will be added in a future update.
+Unlike in the `StrategyManager`, there is no current slash-resolution delay, redistribution, or clearing mechanism for these shares. Burning native ETH requires the Pectra hard fork to be able to eject validators.
 
-We also do not distinguish burnable shares on a per operatorSet/slashId basis, like the `StrategyManager` does. 
+We also do not distinguish burnable ETH shares on a per operatorSet/slashId basis, like the `StrategyManager` does.
 
 *Effects*:
-* Increases `burnableShares` for the beacon chain ETH strategy by `addedSharesToBurn`
+* Increases `burnableETHShares` for the beacon chain ETH strategy by `addedSharesToBurn`
 
 *Requirements*:
 * Can only be called by the `DelegationManager`

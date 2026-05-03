@@ -18,7 +18,7 @@ import "src/test/integration/users/AVS.t.sol";
 contract Integration_DurationVault is IntegrationCheckUtils {
     struct DurationVaultContext {
         IDurationVaultStrategy vault;
-        ERC20PresetFixedSupply asset;
+        IERC20 asset;
         AVS avs;
         OperatorSet operatorSet;
     }
@@ -26,6 +26,30 @@ contract Integration_DurationVault is IntegrationCheckUtils {
     uint32 internal constant DEFAULT_DURATION = 10 days;
     uint internal constant VAULT_MAX_PER_DEPOSIT = 200 ether;
     uint internal constant VAULT_STAKE_CAP = 1000 ether;
+
+    function test_durationVault_mainnetFork_deploysAndDepositsBlacklistedToken() public {
+        if (!isForktest()) cheats.skip(true);
+
+        uint depositAmount = 1e9;
+        (IERC20 blacklistedToken, IStrategy sourceStrategy) = _mainnetBlacklistedTokenWithBalance(depositAmount);
+        assertTrue(strategyFactory.isBlacklisted(blacklistedToken), "sanity: token should be blacklisted on mainnet");
+
+        DurationVaultContext memory ctx = _deployDurationVaultForToken(blacklistedToken, _randomInsuranceRecipient());
+        User staker = new User("duration-mainnet-blacklist-staker");
+
+        cheats.prank(address(sourceStrategy));
+        require(blacklistedToken.transfer(address(staker), depositAmount), "fund transfer failed");
+
+        IStrategy[] memory strategies = _durationStrategyArray(ctx.vault);
+        uint[] memory tokenBalances = _singleAmountArray(depositAmount);
+
+        _delegateToVault(staker, ctx.vault);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+
+        uint[] memory depositShares = _getStakerDepositShares(staker, strategies);
+        assertGt(depositShares[0], 0, "staker should receive vault shares");
+        assertApproxEqAbs(blacklistedToken.balanceOf(address(ctx.vault)), depositAmount, 1, "vault should hold deposited token");
+    }
 
     function test_durationVault_deposit_requires_delegation() public {
         DurationVaultContext memory ctx = _deployDurationVault(_randomInsuranceRecipient());
@@ -371,6 +395,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
 
         (uint slashId,) = ctx.avs.slashOperator(slashParams);
+        _rollPastSlashResolutionDelay(ctx.operatorSet, slashId);
         uint redistributed =
             strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
         assertEq(redistributed, expectedRedistribution, "unexpected redistribution amount");
@@ -416,6 +441,7 @@ contract Integration_DurationVault is IntegrationCheckUtils {
             if (alloc.effectBlock > block.number) cheats.roll(alloc.effectBlock);
 
             (uint slashId,) = ctx.avs.slashOperator(slashParams);
+            _rollPastSlashResolutionDelay(ctx.operatorSet, slashId);
             uint redistributed =
                 strategyManager.clearBurnOrRedistributableSharesByStrategy(ctx.operatorSet, slashId, IStrategy(address(ctx.vault)));
             // Queued withdrawals remove shares from the operator, so expect zero redistribution.
@@ -429,8 +455,17 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         assertEq(ctx.asset.balanceOf(address(staker)), depositAmount, "staker balance after queued slash incorrect");
     }
 
+    function _rollPastSlashResolutionDelay(OperatorSet memory operatorSet, uint slashId) internal {
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(operatorSet, slashId);
+        if (block.number <= resolutionBlock) cheats.roll(uint(resolutionBlock) + 1);
+    }
+
     function _deployDurationVault(address insuranceRecipient) internal returns (DurationVaultContext memory ctx) {
         ERC20PresetFixedSupply asset = new ERC20PresetFixedSupply("Duration Asset", "DURA", 1e24, address(this));
+        ctx = _deployDurationVaultForToken(asset, insuranceRecipient);
+    }
+
+    function _deployDurationVaultForToken(IERC20 asset, address insuranceRecipient) internal returns (DurationVaultContext memory ctx) {
         AVS avsInstance = new AVS("duration-avs");
         avsInstance.updateAVSMetadataURI("https://avs-metadata.local");
 
@@ -456,6 +491,19 @@ contract Integration_DurationVault is IntegrationCheckUtils {
         avsInstance.addStrategiesToOperatorSet(opSet.id, strategies);
 
         ctx = DurationVaultContext({vault: vault, asset: asset, avs: avsInstance, operatorSet: opSet});
+    }
+
+    function _mainnetBlacklistedTokenWithBalance(uint minBalance) internal view returns (IERC20 token, IStrategy sourceStrategy) {
+        for (uint i; i < deployedStrategyArray.length; ++i) {
+            IStrategy strategy = IStrategy(deployedStrategyArray[i]);
+            IERC20 underlyingToken = strategy.underlyingToken();
+
+            if (strategyFactory.isBlacklisted(underlyingToken) && underlyingToken.balanceOf(address(strategy)) >= minBalance) {
+                return (underlyingToken, strategy);
+            }
+        }
+
+        revert("blacklisted token with balance not found");
     }
 
     function _durationStrategyArray(IDurationVaultStrategy vault) internal pure returns (IStrategy[] memory arr) {
