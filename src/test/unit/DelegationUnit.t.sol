@@ -5710,6 +5710,59 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertLe(slashedA + slashedB, delegated, "total burned shares should not exceed delegated shares");
     }
 
+    function test_slashOperatorShares_BeaconQueueSharesAreBackedAfterCombinedRounding() public {
+        uint beaconShares = 3;
+        uint64 halfMagnitude = uint64(WAD / 2);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, WAD);
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int(beaconShares));
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        uint delegated = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        assertEq(delegated, beaconShares, "delegated beacon shares should equal initial shares");
+
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, halfMagnitude);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedA = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: beaconChainETHStrategy,
+            prevMaxMagnitude: WAD,
+            newMaxMagnitude: halfMagnitude
+        });
+
+        _decreaseBeaconChainShares(defaultStaker, int(beaconShares), 2);
+
+        uint activeBeforeQueue = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: beaconChainETHStrategy,
+            depositSharesToWithdraw: beaconShares
+        });
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        uint activeAfterQueue = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        uint removedFromOperator = activeBeforeQueue - activeAfterQueue;
+        uint queueSlashable = delegationManager.getSlashableSharesInQueue(defaultOperator, beaconChainETHStrategy);
+        assertLe(queueSlashable, removedFromOperator, "beacon queue slashable should not exceed removed backing");
+
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, 0);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedB = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: beaconChainETHStrategy,
+            prevMaxMagnitude: halfMagnitude,
+            newMaxMagnitude: 0
+        });
+
+        assertLe(slashedA + slashedB, delegated, "total burned beacon shares should not exceed delegated shares");
+    }
+
     /// @notice Verifies that shares are NOT burnable for a withdrawal queued just before the MIN_WITHDRAWAL_DELAY_BLOCKS
     function test_sharesNotBurnableWhenWithdrawalCompletable() public {
         // Register operator

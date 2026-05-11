@@ -13,6 +13,29 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
     IStrategy[] strategies;
     AllocateParams allocateParams;
 
+    struct QueueRedelegationContext {
+        User queueStaker;
+        User redelegatingStaker;
+        User newOperator;
+        uint delegatedBeforeSlash;
+        uint slashedBeforeQueue;
+        uint extraDepositShares;
+        uint activeBeforeQueue;
+        Withdrawal[] queuedWithdrawals;
+        Withdrawal[] redelegatedWithdrawals;
+    }
+
+    function _assertQueueSlashableBacked(User queueOperator, uint activeBeforeQueue, IStrategy queuedStrategy)
+        internal
+        view
+        returns (uint removedFromOperator, uint queueSlashable)
+    {
+        uint activeAfterQueue = delegationManager.operatorShares(address(queueOperator), queuedStrategy);
+        removedFromOperator = activeBeforeQueue - activeAfterQueue;
+        queueSlashable = delegationManager.getSlashableSharesInQueue(address(queueOperator), queuedStrategy);
+        assertLe(queueSlashable, removedFromOperator, "queue slashable should not exceed removed backing");
+    }
+
     function _init() internal override {
         _configAssetTypes(HOLDS_LST);
         _configUserTypes(DEFAULT);
@@ -90,5 +113,126 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
         (, uint[] memory sharesB) = avs.slashOperator(slashB);
 
         assertLe(sharesA[0] + sharesB[0], delegatedBefore, "total slashed shares should not exceed delegated shares");
+    }
+
+    function testFuzz_slash_deposit_queue_redelegate_slash_completeAsShares_noQueueOverAccounting(uint24 _random) public rand(_random) {
+        QueueRedelegationContext memory ctx =
+            _createSlashedStakersWithExtraDeposit(_randUint(10, 1e18), _randUint(10, 1e18), _randUint(10, 1e18));
+        ctx = _queueFullAndRedelegate(ctx);
+
+        SlashingParams memory slashB = _genSlashing_Custom(operator, operatorSet, 5e17);
+        (, uint[] memory sharesB) = avs.slashOperator(slashB);
+        assertLe(
+            ctx.slashedBeforeQueue + sharesB[0],
+            ctx.delegatedBeforeSlash + ctx.extraDepositShares,
+            "total slashed shares should not exceed old-operator delegated shares"
+        );
+
+        _completeWithdrawalsAsShares(ctx.queueStaker, operator, ctx.queuedWithdrawals);
+        _completeWithdrawalsAsSharesAfterRedelegation(ctx.redelegatingStaker, ctx.newOperator, ctx.redelegatedWithdrawals);
+    }
+
+    function _createSlashedStakersWithExtraDeposit(
+        uint queueInitialTokens,
+        uint redelegatingInitialTokens,
+        uint extraTokens
+    ) internal returns (QueueRedelegationContext memory ctx) {
+        ctx.queueStaker = _newEmptyStaker();
+        ctx.redelegatingStaker = _newEmptyStaker();
+        ctx.newOperator = _newRandomOperator_NoAssets();
+
+        _depositAndDelegate(ctx.queueStaker, queueInitialTokens);
+        _depositAndDelegate(ctx.redelegatingStaker, redelegatingInitialTokens);
+
+        allocateParams = _genAllocation_AllAvailable(operator, operatorSet);
+        operator.modifyAllocations(allocateParams);
+        check_IncrAlloc_State_Slashable(operator, allocateParams);
+        _rollBlocksForCompleteAllocation(operator, operatorSet, strategies);
+
+        ctx.delegatedBeforeSlash = delegationManager.operatorShares(address(operator), strategy);
+        SlashingParams memory slashA = _genSlashing_Custom(operator, operatorSet, 5e17);
+        (uint slashIdA, uint[] memory sharesA) = avs.slashOperator(slashA);
+        check_Base_Slashing_State(operator, allocateParams, slashA, slashIdA);
+        ctx.slashedBeforeQueue = sharesA[0];
+
+        uint[] memory extraTokenBalances = extraTokens.toArrayU256();
+        _dealAmounts(ctx.queueStaker, strategies, extraTokenBalances);
+        ctx.queueStaker.depositIntoEigenlayer(strategies, extraTokenBalances);
+        uint[] memory extraDepositShares = _calculateExpectedShares(strategies, extraTokenBalances);
+        check_Deposit_State(ctx.queueStaker, strategies, extraDepositShares);
+        ctx.extraDepositShares = extraDepositShares[0];
+    }
+
+    function _depositAndDelegate(User staker, uint tokenAmount) internal {
+        uint[] memory tokenBalances = tokenAmount.toArrayU256();
+        _dealAmounts(staker, strategies, tokenBalances);
+        staker.depositIntoEigenlayer(strategies, tokenBalances);
+        uint[] memory depositShares = _calculateExpectedShares(strategies, tokenBalances);
+        check_Deposit_State(staker, strategies, depositShares);
+
+        staker.delegateTo(operator);
+        check_Delegation_State(staker, operator, strategies, depositShares);
+    }
+
+    function _queueFullAndRedelegate(
+        QueueRedelegationContext memory ctx
+    ) internal returns (QueueRedelegationContext memory) {
+        uint[] memory depositShares = _getStakerDepositShares(ctx.queueStaker, strategies);
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(ctx.queueStaker, strategies);
+        ctx.activeBeforeQueue = delegationManager.operatorShares(address(operator), strategy);
+        ctx.queuedWithdrawals = ctx.queueStaker.queueWithdrawals(strategies, depositShares);
+        bytes32[] memory queuedWithdrawalRoots = _getWithdrawalHashes(ctx.queuedWithdrawals);
+        check_QueuedWithdrawal_State(ctx.queueStaker, operator, strategies, depositShares, withdrawableShares, ctx.queuedWithdrawals, queuedWithdrawalRoots);
+
+        _assertQueueSlashableBacked(operator, ctx.activeBeforeQueue, strategy);
+
+        uint[] memory remainingWithdrawableShares = _getStakerWithdrawableShares(ctx.redelegatingStaker, strategies);
+        ctx.redelegatedWithdrawals = ctx.redelegatingStaker.redelegate(ctx.newOperator);
+        bytes32[] memory redelegatedWithdrawalRoots = _getWithdrawalHashes(ctx.redelegatedWithdrawals);
+        check_Redelegate_State(
+            ctx.redelegatingStaker,
+            operator,
+            ctx.newOperator,
+            ctx.redelegatedWithdrawals,
+            redelegatedWithdrawalRoots,
+            strategies,
+            remainingWithdrawableShares
+        );
+
+        (uint removedFromOperator,) = _assertQueueSlashableBacked(operator, ctx.activeBeforeQueue, strategy);
+        assertEq(
+            removedFromOperator,
+            ctx.activeBeforeQueue - delegationManager.operatorShares(address(operator), strategy),
+            "removed backing should include queue and redelegation"
+        );
+        return ctx;
+    }
+
+    function _completeWithdrawalsAsShares(
+        User staker,
+        User currentOperator,
+        Withdrawal[] memory withdrawals
+    ) internal {
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_State(staker, currentOperator, withdrawals[i], withdrawals[i].strategies, expectedShares);
+        }
+    }
+
+    function _completeWithdrawalsAsSharesAfterRedelegation(
+        User staker,
+        User newOperator,
+        Withdrawal[] memory withdrawals
+    ) internal {
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        for (uint i = 0; i < withdrawals.length; ++i) {
+            uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
+            staker.completeWithdrawalAsShares(withdrawals[i]);
+            check_Withdrawal_AsShares_Redelegated_State(
+                staker, operator, newOperator, withdrawals[i], withdrawals[i].strategies, expectedShares
+            );
+        }
     }
 }
