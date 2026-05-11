@@ -5613,11 +5613,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertEq(activeDustBeforeQueue, numStakers / 2, "remaining active shares should be half");
 
         for (uint i = 0; i < numStakers; ++i) {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
-                staker: stakers[i],
-                strategy: strategyMock,
-                depositSharesToWithdraw: 1
-            });
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+                _setUpQueueWithdrawalsSingleStrat({staker: stakers[i], strategy: strategyMock, depositSharesToWithdraw: 1});
             cheats.prank(stakers[i]);
             delegationManager.queueWithdrawals(queuedWithdrawalParams);
         }
@@ -5682,11 +5679,8 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
 
         uint activeBeforeQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
         for (uint i = 0; i < numStakers; ++i) {
-            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
-                staker: stakers[i],
-                strategy: strategyMock,
-                depositSharesToWithdraw: depositShares
-            });
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+                _setUpQueueWithdrawalsSingleStrat({staker: stakers[i], strategy: strategyMock, depositSharesToWithdraw: depositShares});
             cheats.prank(stakers[i]);
             delegationManager.queueWithdrawals(queuedWithdrawalParams);
         }

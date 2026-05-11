@@ -132,11 +132,10 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
         _completeWithdrawalsAsSharesAfterRedelegation(ctx.redelegatingStaker, ctx.newOperator, ctx.redelegatedWithdrawals);
     }
 
-    function _createSlashedStakersWithExtraDeposit(
-        uint queueInitialTokens,
-        uint redelegatingInitialTokens,
-        uint extraTokens
-    ) internal returns (QueueRedelegationContext memory ctx) {
+    function _createSlashedStakersWithExtraDeposit(uint queueInitialTokens, uint redelegatingInitialTokens, uint extraTokens)
+        internal
+        returns (QueueRedelegationContext memory ctx)
+    {
         ctx.queueStaker = _newEmptyStaker();
         ctx.redelegatingStaker = _newEmptyStaker();
         ctx.newOperator = _newRandomOperator_NoAssets();
@@ -174,15 +173,15 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
         check_Delegation_State(staker, operator, strategies, depositShares);
     }
 
-    function _queueFullAndRedelegate(
-        QueueRedelegationContext memory ctx
-    ) internal returns (QueueRedelegationContext memory) {
+    function _queueFullAndRedelegate(QueueRedelegationContext memory ctx) internal returns (QueueRedelegationContext memory) {
         uint[] memory depositShares = _getStakerDepositShares(ctx.queueStaker, strategies);
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(ctx.queueStaker, strategies);
         ctx.activeBeforeQueue = delegationManager.operatorShares(address(operator), strategy);
         ctx.queuedWithdrawals = ctx.queueStaker.queueWithdrawals(strategies, depositShares);
         bytes32[] memory queuedWithdrawalRoots = _getWithdrawalHashes(ctx.queuedWithdrawals);
-        check_QueuedWithdrawal_State(ctx.queueStaker, operator, strategies, depositShares, withdrawableShares, ctx.queuedWithdrawals, queuedWithdrawalRoots);
+        check_QueuedWithdrawal_State(
+            ctx.queueStaker, operator, strategies, depositShares, withdrawableShares, ctx.queuedWithdrawals, queuedWithdrawalRoots
+        );
 
         _assertQueueSlashableBacked(operator, ctx.activeBeforeQueue, strategy);
 
@@ -208,11 +207,7 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
         return ctx;
     }
 
-    function _completeWithdrawalsAsShares(
-        User staker,
-        User currentOperator,
-        Withdrawal[] memory withdrawals
-    ) internal {
+    function _completeWithdrawalsAsShares(User staker, User currentOperator, Withdrawal[] memory withdrawals) internal {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
@@ -221,11 +216,7 @@ contract Integration_QueueSlashAccounting is IntegrationCheckUtils {
         }
     }
 
-    function _completeWithdrawalsAsSharesAfterRedelegation(
-        User staker,
-        User newOperator,
-        Withdrawal[] memory withdrawals
-    ) internal {
+    function _completeWithdrawalsAsSharesAfterRedelegation(User staker, User newOperator, Withdrawal[] memory withdrawals) internal {
         _rollBlocksForCompleteWithdrawals(withdrawals);
         for (uint i = 0; i < withdrawals.length; ++i) {
             uint[] memory expectedShares = _calculateExpectedShares(withdrawals[i]);
