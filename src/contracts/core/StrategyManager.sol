@@ -159,7 +159,9 @@ contract StrategyManager is
         _pendingOperatorSets.add(operatorSet.key());
         // Set the resolution block the first time this slashId is recorded for this operator set.
         if (_pendingSlashIds[operatorSet.key()].add(slashId)) {
-            _slashResolutionBlock[operatorSet.key()][slashId] = uint32(block.number) + SLASH_RESOLUTION_DELAY_BLOCKS;
+            uint32 resolutionBlock = uint32(block.number) + SLASH_RESOLUTION_DELAY_BLOCKS;
+            _slashResolutionBlock[operatorSet.key()][slashId] = resolutionBlock;
+            emit SlashResolutionBlockSet(operatorSet, slashId, resolutionBlock);
         }
 
         emit BurnOrRedistributableSharesIncreased(operatorSet, slashId, strategy, sharesToBurn);
@@ -209,7 +211,7 @@ contract StrategyManager is
     /// @inheritdoc IStrategyManager
     function burnShares(
         IStrategy strategy
-    ) external nonReentrant {
+    ) external onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) nonReentrant {
         (, uint256 sharesToBurn) = EnumerableMap.tryGet(burnableShares, address(strategy));
         EnumerableMap.remove(burnableShares, address(strategy));
         emit BurnableSharesDecreased(strategy, sharesToBurn);

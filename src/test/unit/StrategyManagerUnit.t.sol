@@ -1480,6 +1480,19 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         strategyManager.increaseBurnOrRedistributableShares(operatorSet, slashId, strategy, shares);
     }
 
+    function test_increaseBurnOrRedistributableShares_EmitsSlashResolutionBlockSet() external {
+        uint shares = 1e18;
+        uint32 expectedResolutionBlock = uint32(block.number) + strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS();
+
+        _depositIntoStrategySuccessfully(dummyStrat, address(this), shares);
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit SlashResolutionBlockSet(defaultOperatorSet, defaultSlashId, expectedResolutionBlock);
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit BurnOrRedistributableSharesIncreased(defaultOperatorSet, defaultSlashId, dummyStrat, shares);
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId, dummyStrat, shares);
+    }
+
     function test_getSlashResolutionBlock_SetOnFirstIncrease() external {
         uint shares = 1e18;
         uint32 expectedResolutionBlock = uint32(block.number) + strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS();

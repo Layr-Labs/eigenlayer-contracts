@@ -140,7 +140,7 @@ struct VaultConfig {
 
 *Requirements*:
 * Pause status MUST NOT be set: `PAUSED_NEW_STRATEGIES`
-* Token MUST NOT be blacklisted
+* Token MUST NOT be EIGEN or bEIGEN
 * `vaultAdmin` MUST NOT be zero address
 * `arbitrator` MUST NOT be zero address
 * `duration` MUST be non-zero and <= `MAX_DURATION` (2 years for now)
@@ -274,7 +274,6 @@ Called by `StrategyManager` on deposit or when re-adding shares when completing 
 
 *Requirements* (all must pass):
 * State *MUST* be `DEPOSITS` (vault not locked)
-* Strategy underlying token *MUST NOT* be blacklisted in `StrategyFactory`
 * Staker *MUST* be delegated to the vault
 * Deposit amount (in underlying) *MUST NOT* exceed `maxPerDeposit`
 * Post-deposit total active shares (in underlying) *MUST NOT* exceed `maxTotalDeposits`
@@ -465,7 +464,6 @@ Rewards follow the standard EigenLayer flow:
 | `DurationAlreadyElapsed` | `advanceToWithdrawals()` called at/after `unlockAt` timestamp |
 | `VaultNotLocked` | `advanceToWithdrawals()` called before the vault is locked |
 | `OperatorIntegrationInvalid` | Invalid operator integration config (zero AVS address) |
-| `UnderlyingTokenBlacklisted` | Deposit attempted with blacklisted token |
 | `PendingAllocation` | `lock()` attempted with pending allocation modification |
 | `MaxPerDepositExceedsMax` | `maxPerDeposit > maxTotalDeposits` or deposit exceeds per-deposit cap |
 | `BalanceExceedsMaxTotalDeposits` | Post-deposit balance exceeds TVL cap |

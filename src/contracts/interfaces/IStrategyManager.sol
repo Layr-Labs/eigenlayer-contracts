@@ -53,6 +53,9 @@ interface IStrategyManagerEvents {
         uint256 shares
     );
 
+    /// @notice Emitted when the slash resolution block is set for an operator set slash
+    event SlashResolutionBlockSet(OperatorSet operatorSet, uint256 slashId, uint32 resolutionBlock);
+
     /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the operator set's redistribution recipient
     event BurnOrRedistributableSharesDecreased(
         OperatorSet operatorSet,
