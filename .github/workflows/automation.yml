@@ -26,7 +26,7 @@ jobs:
   #         sync-labels: true
 
   lint-pr-title:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     name: Title
     steps:
       - name: Fetch PR Title
