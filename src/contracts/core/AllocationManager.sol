@@ -77,7 +77,7 @@ contract AllocationManager is
     /// @inheritdoc IAllocationManagerActions
     function modifyAllocations(
         address operator,
-        AllocateParams[] memory params
+        AllocateParams[] calldata params
     ) external onlyWhenNotPaused(PAUSED_MODIFY_ALLOCATIONS) {
         // Check that the caller is allowed to modify allocations on behalf of the operator
         // We do not use a modifier to avoid `stack too deep` errors
@@ -90,6 +90,13 @@ contract AllocationManager is
             require(isSet, UninitializedAllocationDelay());
             operatorAllocationDelay = delay;
         }
+
+        uint256 totalStrategies;
+        for (uint256 i = 0; i < params.length; i++) {
+            totalStrategies += params[i].strategies.length;
+        }
+        IStrategy[] memory seenStrategies = new IStrategy[](totalStrategies);
+        uint256 seenStrategiesCount;
 
         for (uint256 i = 0; i < params.length; i++) {
             require(params[i].strategies.length == params[i].newMagnitudes.length, InputArrayLengthMismatch());
@@ -110,7 +117,17 @@ contract AllocationManager is
                 // 1. If the operator has any pending deallocations for this strategy, clear them
                 // to free up magnitude for allocation. Fetch the operator's up to date allocation
                 // info and ensure there is no remaining pending modification.
-                _clearDeallocationQueue(operator, strategy, type(uint16).max);
+                bool alreadyCleared;
+                for (uint256 k = 0; k < seenStrategiesCount; ++k) {
+                    if (seenStrategies[k] == strategy) {
+                        alreadyCleared = true;
+                        break;
+                    }
+                }
+                if (!alreadyCleared) {
+                    _clearDeallocationQueue(operator, strategy, type(uint16).max);
+                    seenStrategies[seenStrategiesCount++] = strategy;
+                }
 
                 (StrategyInfo memory info, Allocation memory allocation) =
                     _getUpdatedAllocation(operator, operatorSet.key(), strategy);
