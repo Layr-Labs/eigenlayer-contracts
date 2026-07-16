@@ -27,6 +27,18 @@ interface IEigenPodManagerErrors {
     error LegacyWithdrawalsNotCompleted();
     /// @dev Thrown when caller is not the proof timestamp setter
     error OnlyProofTimestampSetter();
+    /// @dev Thrown when a staker without a deployed pod calls `disablePod`.
+    error EigenPodDoesNotExist();
+    /// @dev Thrown when attempting to disable with non-zero (or negative) deposit shares.
+    error DepositSharesNotZero();
+    /// @dev Thrown when a queued withdrawal containing beaconChainETH also contains other strategies.
+    error MixedWithdrawalPending();
+    /// @dev Thrown when a queued withdrawal has not remained slashable for the full delay.
+    error WithdrawalStillSlashable();
+    /// @dev Thrown when the pod controls more value than queued beacon chain withdrawals.
+    error PodValueExceedsQueuedWithdrawals();
+    /// @dev Thrown when attempting to credit shares after pod restaking was disabled.
+    error RestakingDisabled();
 }
 
 interface IEigenPodManagerEvents {
@@ -67,6 +79,9 @@ interface IEigenPodManagerEvents {
 
     /// @notice Emitted when the proof timestamp setter is updated
     event ProofTimestampSetterSet(address newProofTimestampSetter);
+
+    /// @notice Emitted when a pod permanently disables restaking.
+    event PodRestakingDisabled(address indexed podOwner, IEigenPod indexed pod);
 }
 
 interface IEigenPodManagerTypes {
@@ -108,6 +123,10 @@ interface IEigenPodManager is
         bytes calldata signature,
         bytes32 depositDataRoot
     ) external payable;
+
+    /// @notice Permanently disables restaking for the caller's pod once all native-ETH shares have
+    /// been queued and remained slashable for the full withdrawal delay.
+    function disablePod() external;
 
     /// @notice Adds any positive share delta to the pod owner's deposit shares, and delegates them to the pod
     /// owner's operator (if applicable). A negative share delta does NOT impact the pod owner's deposit shares,

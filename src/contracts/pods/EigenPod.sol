@@ -193,6 +193,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         bytes[] calldata validatorFieldsProofs,
         bytes32[][] calldata validatorFields
     ) external onlyOwnerOrProofSubmitter onlyWhenNotPaused(PAUSED_EIGENPODS_VERIFY_CREDENTIALS) {
+        require(!restakingDisabled, RestakingDisabled());
         require(
             (validatorIndices.length == validatorFieldsProofs.length)
                 && (validatorFieldsProofs.length == validatorFields.length),
@@ -293,6 +294,12 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
+        bool disabled = restakingDisabled;
+        // Disabled pods: only the owner, since consolidations can now move value out of the pod.
+        if (disabled) {
+            require(msg.sender == podOwner, OnlyEigenPodOwner());
+        }
+
         uint256 fee = getConsolidationRequestFee();
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
@@ -301,10 +308,13 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
 
-            // Ensure target has verified withdrawal credentials pointed at this pod
+            // Ensure target has verified withdrawal credentials pointed at this pod if pod isn't disabled
+            // Disabled pods no longer mint shares, so any target is allowed.
             bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
             bytes32 targetPubkeyHash = _calcPubkeyHash(request.targetPubkey);
-            require(validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            if (!disabled) {
+                require(validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            }
 
             // Call the predeploy
             bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);
@@ -326,6 +336,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function requestWithdrawal(
         WithdrawalRequest[] calldata requests
     ) external payable onlyWhenNotPaused(PAUSED_WITHDRAWAL_REQUESTS) onlyOwnerOrProofSubmitter {
+        bool disabled = restakingDisabled;
+
         uint256 fee = getWithdrawalRequestFee();
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
@@ -335,8 +347,11 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
             WithdrawalRequest calldata request = requests[i];
             bytes32 pubkeyHash = _calcPubkeyHash(request.pubkey);
 
-            // Ensure validator has verified withdrawal credentials pointed at this pod
-            require(validatorStatus(pubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            // Ensure validator has verified withdrawal credentials pointed at this pod if pod isn't disabled
+            // Disabled pods may also exit unverified validators.
+            if (!disabled) {
+                require(validatorStatus(pubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
+            }
 
             // Call the predeploy
             bytes memory callData = abi.encodePacked(request.pubkey, request.amountGwei);
@@ -375,11 +390,32 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     }
 
     /// @inheritdoc IEigenPod
+    function disableRestaking() external onlyEigenPodManager {
+        require(!restakingDisabled, RestakingDisabled());
+        // An active checkpoint would be finalized after the disable, trying to credit shares to the pod which will revert so we prevent it here
+        require(currentCheckpointTimestamp == 0, CheckpointAlreadyActive());
+        restakingDisabled = true;
+        emit RestakingPermanentlyDisabled();
+    }
+
+    /// @inheritdoc IEigenPod
+    function withdrawDisabledPodETH(
+        address recipient
+    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
+        require(recipient != address(0), InputAddressZero());
+        require(restakingDisabled, RestakingNotDisabled());
+        uint256 amountWei = address(this).balance;
+        emit DisabledPodETHWithdrawn(recipient, amountWei);
+        Address.sendValue(payable(recipient), amountWei);
+    }
+
+    /// @inheritdoc IEigenPod
     function stake(
         bytes calldata pubkey,
         bytes calldata signature,
         bytes32 depositDataRoot
     ) external payable onlyEigenPodManager {
+        require(!restakingDisabled, RestakingDisabled());
         // stake on ethpos
         require(msg.value == 32 ether, MsgValueNot32ETH());
         ethPOS.deposit{value: 32 ether}(pubkey, _podWithdrawalCredentials(), signature, depositDataRoot);
@@ -391,6 +427,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
         address recipient,
         uint256 amountWei
     ) external onlyEigenPodManager {
+        // Blocks completing a queued withdrawal as tokens once the pod is disabled.
+        require(!restakingDisabled, RestakingDisabled());
         uint64 amountGwei = uint64(amountWei / GWEI_TO_WEI);
         amountWei = amountGwei * GWEI_TO_WEI;
         require(amountGwei <= restakedExecutionLayerGwei, InsufficientWithdrawableBalance());
@@ -560,6 +598,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     function _startCheckpoint(
         bool revertIfNoBalance
     ) internal {
+        // Guards both `startCheckpoint` and `verifyStaleBalance`.
+        require(!restakingDisabled, RestakingDisabled());
         require(currentCheckpointTimestamp == 0, CheckpointAlreadyActive());
 
         // Prevent a checkpoint being completable twice in the same block. This prevents an edge case

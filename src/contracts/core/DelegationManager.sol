@@ -222,6 +222,40 @@ contract DelegationManager is
     }
 
     /// @inheritdoc IDelegationManager
+    function clearQueuedWithdrawalsForDisabledPod(
+        address staker
+    ) external onlyEigenPodManager nonReentrant {
+        bytes32[] memory withdrawalRoots = getQueuedWithdrawalRoots(staker);
+        uint256 withdrawalRootsLength = withdrawalRoots.length;
+        for (uint256 i = 0; i < withdrawalRootsLength; i++) {
+            bytes32 withdrawalRoot = withdrawalRoots[i];
+            Withdrawal storage withdrawal = _queuedWithdrawals[withdrawalRoot];
+
+            bool containsBeaconChainETH;
+            bool containsOtherStrategy;
+            uint256 strategiesLength = withdrawal.strategies.length;
+            for (uint256 j = 0; j < strategiesLength; j++) {
+                if (address(withdrawal.strategies[j]) == address(beaconChainETHStrategy)) {
+                    containsBeaconChainETH = true;
+                } else {
+                    containsOtherStrategy = true;
+                }
+            }
+
+            // Pure non-beacon withdrawals remain completable and are left untouched.
+            if (!containsBeaconChainETH) {
+                continue;
+            }
+            require(!containsOtherStrategy, MixedWithdrawalNotClearable());
+
+            _stakerQueuedWithdrawalRoots[staker].remove(withdrawalRoot);
+            delete _queuedWithdrawals[withdrawalRoot];
+            delete pendingWithdrawals[withdrawalRoot];
+            emit QueuedWithdrawalClearedForDisabledPod(withdrawalRoot);
+        }
+    }
+
+    /// @inheritdoc IDelegationManager
     function increaseDelegatedShares(
         address staker,
         IStrategy strategy,
