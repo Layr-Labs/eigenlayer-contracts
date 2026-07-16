@@ -1,0 +1,22 @@
+{
+    "name": "disable-burn-v1.14.0",
+    "from": "1.13.1",
+    "to": "1.14.0",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployImplementations.s.sol",
+            "description": "Deploy DelegationManager, EigenPodManager, EigenPod, and EmissionsController implementations"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol",
+            "description": "Queue core upgrades, bEIGEN burn permission, and protocol version shipment"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-completeUpgrade.s.sol",
+            "description": "Execute and validate the v1.14.0 upgrade after the timelock delay"
+        }
+    ]
+}

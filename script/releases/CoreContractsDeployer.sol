@@ -16,6 +16,15 @@ import "./Env.sol";
 abstract contract CoreContractsDeployer is EOADeployer {
     using Env for *;
 
+    /// @dev Runs a release test only for core deployments below the target version.
+    modifier onlyIfUpgradeRequired(
+        string memory targetVersion
+    ) {
+        if (Env.isCoreProtocolDeployed() && !Env._versionGte(Env.envVersion(), targetVersion)) {
+            _;
+        }
+    }
+
     /// permissions/
     function deployPermissionController() internal onlyEOA returns (PermissionController deployed) {
         deployed = new PermissionController();
