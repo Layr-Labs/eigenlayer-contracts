@@ -27,6 +27,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
 
     // Constants
     uint public constant GWEI_TO_WEI = 1e9;
+    uint8 public constant PAUSED_DISABLE_POD = 11;
     address public defaultStaker = address(this);
     IEigenPod public defaultPod;
     address public initialOwner = address(this);
@@ -228,6 +229,194 @@ contract EigenPodManagerUnitTests_StakeTests is EigenPodManagerUnitTests {
     }
 }
 
+contract EigenPodManagerUnitTests_DisablePodTests is EigenPodManagerUnitTests {
+    using Math for uint;
+
+    EigenPodManagerWrapper public eigenPodManagerWrapper;
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        eigenPodManagerWrapper =
+            new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
+        eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
+    }
+
+    function _beaconWithdrawal(address staker, uint32 startBlock, uint shares)
+        internal
+        pure
+        returns (IDelegationManagerTypes.Withdrawal memory withdrawal, uint[] memory withdrawalShares)
+    {
+        IStrategy[] memory strategies = new IStrategy[](1);
+        strategies[0] = beaconChainETHStrategy;
+
+        uint[] memory scaledShares = new uint[](1);
+        scaledShares[0] = shares;
+
+        withdrawalShares = new uint[](1);
+        withdrawalShares[0] = shares;
+
+        withdrawal = IDelegationManagerTypes.Withdrawal({
+            staker: staker,
+            delegatedTo: address(0),
+            withdrawer: staker,
+            nonce: 0,
+            startBlock: startBlock,
+            strategies: strategies,
+            scaledShares: scaledShares
+        });
+    }
+
+    function _setQueuedWithdrawals(address staker, IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint[][] memory shares)
+        internal
+    {
+        DelegationManagerMock(payable(address(delegationManagerMock))).setQueuedWithdrawals(staker, withdrawals, shares);
+    }
+
+    function _setSingleBeaconWithdrawal(address staker, uint32 startBlock, uint shares) internal {
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = new IDelegationManagerTypes.Withdrawal[](1);
+        uint[][] memory withdrawalShares = new uint[][](1);
+        (withdrawals[0], withdrawalShares[0]) = _beaconWithdrawal(staker, startBlock, shares);
+        _setQueuedWithdrawals(staker, withdrawals, withdrawalShares);
+    }
+
+    function _setPodBalanceGwei(uint64 withdrawableRestakedExecutionLayerGwei, uint64 prevBeaconBalanceGwei) internal {
+        EigenPodMock(payable(address(defaultPod))).setWithdrawableRestakedExecutionLayerGwei(withdrawableRestakedExecutionLayerGwei);
+        EigenPodMock(payable(address(defaultPod))).setCurrentCheckpoint(prevBeaconBalanceGwei, 0);
+    }
+
+    function test_disablePod_revert_paused() public deployPodForStaker(defaultStaker) {
+        cheats.prank(pauser);
+        eigenPodManager.pause(2**PAUSED_DISABLE_POD);
+
+        cheats.expectRevert(IPausable.CurrentlyPaused.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_revert_podDoesNotExist() public {
+        cheats.expectRevert(IEigenPodManagerErrors.EigenPodDoesNotExist.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_revert_depositSharesNotZero() public {
+        _initializePodWithShares(defaultStaker, 1);
+
+        cheats.expectRevert(IEigenPodManagerErrors.DepositSharesNotZero.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_revert_mixedBeaconWithdrawal() public deployPodForStaker(defaultStaker) {
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = new IDelegationManagerTypes.Withdrawal[](1);
+        uint[][] memory withdrawalShares = new uint[][](1);
+
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = beaconChainETHStrategy;
+        strategies[1] = IStrategy(address(0x1234));
+
+        uint[] memory scaledShares = new uint[](2);
+        scaledShares[0] = 1 ether;
+        scaledShares[1] = 1 ether;
+
+        withdrawalShares[0] = scaledShares;
+        withdrawals[0] = IDelegationManagerTypes.Withdrawal({
+            staker: defaultStaker,
+            delegatedTo: address(0),
+            withdrawer: defaultStaker,
+            nonce: 0,
+            startBlock: 0,
+            strategies: strategies,
+            scaledShares: scaledShares
+        });
+        _setQueuedWithdrawals(defaultStaker, withdrawals, withdrawalShares);
+
+        cheats.expectRevert(IEigenPodManagerErrors.MixedWithdrawalPending.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_revert_withdrawalStillSlashable() public deployPodForStaker(defaultStaker) {
+        uint32 delay = 10;
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(delay);
+        cheats.roll(100);
+        _setSingleBeaconWithdrawal(defaultStaker, uint32(block.number - delay), 1 ether);
+
+        cheats.expectRevert(IEigenPodManagerErrors.WithdrawalStillSlashable.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_revert_podValueExceedsQueuedWithdrawalsBeyondTolerance() public deployPodForStaker(defaultStaker) {
+        cheats.roll(100);
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(10);
+
+        uint64 podBalanceGwei = 64e9;
+        _setPodBalanceGwei(0, podBalanceGwei);
+        _setSingleBeaconWithdrawal(defaultStaker, 1, uint(podBalanceGwei) * GWEI_TO_WEI - GWEI_TO_WEI - 1);
+
+        cheats.expectRevert(IEigenPodManagerErrors.PodValueExceedsQueuedWithdrawals.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_allowsOneGweiRoundingTolerance() public deployPodForStaker(defaultStaker) {
+        cheats.roll(100);
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(10);
+
+        uint64 podBalanceGwei = 64e9;
+        _setPodBalanceGwei(0, podBalanceGwei);
+        _setSingleBeaconWithdrawal(defaultStaker, 1, uint(podBalanceGwei) * GWEI_TO_WEI - GWEI_TO_WEI);
+
+        eigenPodManager.disablePod();
+
+        assertTrue(defaultPod.restakingDisabled(), "pod should be disabled");
+        assertEq(
+            DelegationManagerMock(payable(address(delegationManagerMock))).lastClearedDisabledPodStaker(),
+            defaultStaker,
+            "queued withdrawals should be cleared"
+        );
+    }
+
+    function test_disablePod_sumsMultipleBeaconOnlyWithdrawals() public deployPodForStaker(defaultStaker) {
+        cheats.roll(100);
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(10);
+
+        uint64 podBalanceGwei = 64e9;
+        _setPodBalanceGwei(0, podBalanceGwei);
+
+        IDelegationManagerTypes.Withdrawal[] memory withdrawals = new IDelegationManagerTypes.Withdrawal[](2);
+        uint[][] memory withdrawalShares = new uint[][](2);
+        (withdrawals[0], withdrawalShares[0]) = _beaconWithdrawal(defaultStaker, 1, 32 ether);
+        (withdrawals[1], withdrawalShares[1]) = _beaconWithdrawal(defaultStaker, 2, 32 ether);
+        _setQueuedWithdrawals(defaultStaker, withdrawals, withdrawalShares);
+
+        eigenPodManager.disablePod();
+
+        assertTrue(defaultPod.restakingDisabled(), "pod should be disabled");
+    }
+
+    function test_disablePod_allowsBeaconChainSlashedPodWhenConservationCheckPasses() public deployPodForStaker(defaultStaker) {
+        cheats.roll(100);
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(10);
+
+        EigenPodManagerWrapper(address(eigenPodManager)).setBeaconChainSlashingFactor(defaultStaker, uint64(WAD / 2));
+        _setPodBalanceGwei(0, 32e9);
+        _setSingleBeaconWithdrawal(defaultStaker, 1, 32 ether);
+
+        eigenPodManager.disablePod();
+
+        assertTrue(defaultPod.restakingDisabled(), "pod should be disabled");
+    }
+
+    function test_disablePod_emitsManagerEvent() public deployPodForStaker(defaultStaker) {
+        cheats.roll(100);
+        DelegationManagerMock(payable(address(delegationManagerMock))).setMinWithdrawalDelayBlocks(10);
+        _setPodBalanceGwei(0, 32e9);
+        _setSingleBeaconWithdrawal(defaultStaker, 1, 32 ether);
+
+        cheats.expectEmit(true, true, true, true, address(eigenPodManager));
+        emit PodRestakingDisabled(defaultStaker, defaultPod);
+
+        eigenPodManager.disablePod();
+    }
+}
+
 contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
     // Wrapper contract that exposes the internal `_calculateChangeInDelegatableShares` function
     EigenPodManagerWrapper public eigenPodManagerWrapper;
@@ -279,6 +468,14 @@ contract EigenPodManagerUnitTests_ShareUpdateTests is EigenPodManagerUnitTests {
 
         // Check storage update
         assertEq(eigenPodManager.podOwnerDepositShares(defaultStaker), int(shares), "Incorrect number of shares added");
+    }
+
+    function test_addShares_revert_restakingDisabled() public deployPodForStaker(defaultStaker) {
+        EigenPodMock(payable(address(defaultPod))).setRestakingDisabled(true);
+
+        cheats.prank(address(delegationManagerMock));
+        cheats.expectRevert(IEigenPodManagerErrors.RestakingDisabled.selector);
+        eigenPodManager.addShares(defaultStaker, beaconChainETHStrategy, 1);
     }
 
     function test_addShares_negativeInitial() public {

@@ -8,14 +8,48 @@ import "../../contracts/mixins/SemVerMixin.sol";
 contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     constructor() SemVerMixin("9.9.9") {}
 
+    address internal _podOwner;
+    bool internal _restakingDisabled;
+    uint64 internal _withdrawableRestakedExecutionLayerGwei;
+    uint64 internal _currentCheckpointTimestamp;
+    Checkpoint internal _currentCheckpoint;
+
+    function setRestakingDisabled(bool disabled) external {
+        _restakingDisabled = disabled;
+    }
+
+    function setWithdrawableRestakedExecutionLayerGwei(uint64 amountGwei) external {
+        _withdrawableRestakedExecutionLayerGwei = amountGwei;
+    }
+
+    function setCurrentCheckpointTimestamp(uint64 timestamp) external {
+        _currentCheckpointTimestamp = timestamp;
+    }
+
+    function setCurrentCheckpoint(uint64 prevBeaconBalanceGwei, int64 balanceDeltasGwei) external {
+        _currentCheckpoint.prevBeaconBalanceGwei = prevBeaconBalanceGwei;
+        _currentCheckpoint.balanceDeltasGwei = balanceDeltasGwei;
+    }
+
     /// @notice the amount of execution layer ETH in this contract that is staked in EigenLayer (i.e. withdrawn from beaconchain but not EigenLayer),
-    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {}
+    function withdrawableRestakedExecutionLayerGwei() external view returns (uint64) {
+        return _withdrawableRestakedExecutionLayerGwei;
+    }
 
     /// @notice Used to initialize the pointers to contracts crucial to the pod's functionality, in beacon proxy construction from EigenPodManager
-    function initialize(address owner) external {}
+    function initialize(address owner) external {
+        _podOwner = owner;
+    }
 
     /// @notice Called by EigenPodManager when the owner wants to create another ETH validator.
     function stake(bytes calldata pubkey, bytes calldata signature, bytes32 depositDataRoot) external payable {}
+
+    function disableRestaking() external {
+        require(!_restakingDisabled, RestakingDisabled());
+        require(_currentCheckpointTimestamp == 0, CheckpointAlreadyActive());
+        _restakingDisabled = true;
+        emit RestakingPermanentlyDisabled();
+    }
 
     /// @notice Transfers `amountWei` in ether from this contract to the specified `recipient` address
     /// @notice Called by EigenPodManager to withdrawBeaconChainETH that has been added to the EigenPod's balance due to a withdrawal from the beacon chain.
@@ -23,11 +57,19 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     /// @dev Note that this function is marked as non-reentrant to prevent the recipient calling back into it
     function withdrawRestakedBeaconChainETH(address recipient, uint amount) external {}
 
+    function withdrawDisabledPodETH(address recipient) external {}
+
     /// @notice The single EigenPodManager for EigenLayer
     function eigenPodManager() external view returns (IEigenPodManager) {}
 
     /// @notice The owner of this EigenPod
-    function podOwner() external view returns (address) {}
+    function podOwner() external view returns (address) {
+        return _podOwner;
+    }
+
+    function restakingDisabled() external view returns (bool) {
+        return _restakingDisabled;
+    }
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(bytes32 validatorPubkeyHash) external view returns (ValidatorInfo memory) {}
@@ -42,10 +84,14 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     function lastCheckpointTimestamp() external view returns (uint64) {}
 
     /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
-    function currentCheckpointTimestamp() external view returns (uint64) {}
+    function currentCheckpointTimestamp() external view returns (uint64) {
+        return _currentCheckpointTimestamp;
+    }
 
     /// @notice Returns the currently-active checkpoint
-    function currentCheckpoint() external view returns (Checkpoint memory) {}
+    function currentCheckpoint() external view returns (Checkpoint memory) {
+        return _currentCheckpoint;
+    }
 
     function checkpointBalanceExitedGwei(uint64) external view returns (uint64) {}
 
