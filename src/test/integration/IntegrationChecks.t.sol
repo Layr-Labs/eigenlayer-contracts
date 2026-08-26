@@ -1206,7 +1206,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     2a) If the distribution type requires an operator set, check that the operator set was registered before adding.
         //     2b) If emissions have started, check that the start epoch is in the future (we allow adding before emissions start).
         //     2c) Check that the total weight after adding and ensuring it does not exceed the maximum total weight (100%).
-        //     2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+        //     2d) Check that the rewards submissions array is not empty for distributions that require them.
         // 3. Check that the distributions were stored correctly.
         // 4. Check that N distributions were added.
         // 5. Check that the total processable, emissions controller balance, incentive council balance, current epoch, and button pressability were unchanged.
@@ -1227,10 +1227,11 @@ contract IntegrationCheckUtils is IntegrationBase {
             // 2c) Check that the total weight after adding and ensuring it does not exceed the maximum total weight (100%).
             totalWeightAdded += distribution.weight; // Check after the loop.
 
-            // 2d) Check that the rewards submissions array is not empty for non-Manual distributions.
-            if (distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual) {
-                assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty for non-Manual distributions");
-            }
+            // 2d) Manual and Burn distributions do not require rewards submissions.
+            if (
+                distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual
+                    && distribution.distributionType != IEmissionsControllerTypes.DistributionType.Burn
+            ) assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty");
 
             // 3. Check that the distributions were stored correctly.
             assert_Distribution_StoredCorrectly(distributionIds[i], distribution, "state should be updated");
@@ -1284,7 +1285,7 @@ contract IntegrationCheckUtils is IntegrationBase {
         //     2a) If the distribution type requires an operator set, check that the operator set was registered before updating.
         //     2b) If emissions have started, check that the start epoch is in the future (we allow updating before emissions start).
         //     2c) Check that the total weight after updating and ensuring it does not exceed the maximum total weight (100%).
-        //     2d) Check that the rewards submissions array is not empty for non-Manual distributions.
+        //     2d) Check that the rewards submissions array is not empty for distributions that require them.
         // 3. Check that the distributions were updated correctly in storage.
         // 4. Check that distribution IDs remain valid.
         // 5. Check that N distributions remain (no addition or removal).
@@ -1303,10 +1304,11 @@ contract IntegrationCheckUtils is IntegrationBase {
 
             // 2c) Already checked above after the loop (total weight check).
 
-            // 2d) Check that the rewards submissions array is not empty for non-Manual distributions.
-            if (distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual) {
-                assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty for non-Manual distributions");
-            }
+            // 2d) Manual and Burn distributions do not require rewards submissions.
+            if (
+                distribution.distributionType != IEmissionsControllerTypes.DistributionType.Manual
+                    && distribution.distributionType != IEmissionsControllerTypes.DistributionType.Burn
+            ) assertGt(distribution.strategiesAndMultipliers.length, 0, "rewards submissions array is empty");
 
             // 3. Check that the distributions were updated correctly in storage.
             assert_Distribution_StoredCorrectly(distributionIds[i], distribution, "distribution should be stored correctly");

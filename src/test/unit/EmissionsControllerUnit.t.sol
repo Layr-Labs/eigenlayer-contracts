@@ -214,6 +214,33 @@ contract EmissionsControllerUnitTests_pressButton is EmissionsControllerUnitTest
         assertEq(balanceAfter, balanceBefore);
     }
 
+    function test_pressButton_BurnDistribution() public {
+        Distribution memory distribution = Distribution({
+            weight: 10_000,
+            startEpoch: 0,
+            totalEpochs: 1,
+            distributionType: DistributionType.Burn,
+            operatorSet: emptyOperatorSet(),
+            strategiesAndMultipliers: emptyStrategiesAndMultipliers()
+        });
+
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(distribution);
+
+        uint eigenSupplyBefore = eigenMock.totalSupply();
+        uint backingEigenSupplyBefore = backingEigenMock.totalSupply();
+
+        cheats.warp(EMISSIONS_START_TIME);
+        cheats.expectEmit(true, true, true, true, address(emissionsController));
+        emit DistributionProcessed(0, 0, distribution, true);
+        emissionsController.pressButton(1);
+
+        assertEq(eigenMock.totalSupply(), eigenSupplyBefore, "burn should remove minted EIGEN");
+        assertEq(backingEigenMock.totalSupply(), backingEigenSupplyBefore, "burn should remove minted bEIGEN");
+        assertEq(eigenMock.balanceOf(address(emissionsController)), 0, "controller should not retain burned EIGEN");
+        assertEq(backingEigenMock.balanceOf(address(emissionsController)), 0, "controller should not retain burned bEIGEN");
+    }
+
     /// -----------------------------------------------------------------------
     /// Distribution Skipping Tests
     /// -----------------------------------------------------------------------
@@ -400,6 +427,22 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
         );
     }
 
+    function test_addDistribution_Burn_AllowsEmptyRewardsSubmissions() public {
+        Distribution memory distribution = Distribution({
+            weight: 10_000,
+            startEpoch: 0,
+            totalEpochs: 0,
+            distributionType: DistributionType.Burn,
+            operatorSet: emptyOperatorSet(),
+            strategiesAndMultipliers: emptyStrategiesAndMultipliers()
+        });
+
+        cheats.expectEmit(true, true, true, true);
+        emit DistributionAdded(0, type(uint).max, distribution);
+        cheats.prank(incentiveCouncil);
+        emissionsController.addDistribution(distribution);
+    }
+
     function test_revert_addDistribution_StartEpochMustBeInTheFuture() public {
         cheats.warp(EMISSIONS_START_TIME);
         cheats.prank(incentiveCouncil);
@@ -469,9 +512,11 @@ contract EmissionsControllerUnitTests_addDistribution is EmissionsControllerUnit
 
         uint nextDistributionId = emissionsController.getTotalProcessableDistributions();
 
-        // Use defaultStrategiesAndMultipliers for non-Manual types, empty for Manual
-        IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory strategiesAndMultipliers =
-            distributionType == DistributionType.Manual ? emptyStrategiesAndMultipliers() : defaultStrategiesAndMultipliers();
+        // Manual and Burn distributions do not require rewards submissions.
+        IRewardsCoordinatorTypes.StrategyAndMultiplier[][] memory strategiesAndMultipliers = distributionType == DistributionType.Manual
+            || distributionType == DistributionType.Burn
+            ? emptyStrategiesAndMultipliers()
+            : defaultStrategiesAndMultipliers();
 
         Distribution memory addedDistribution = Distribution({
             weight: uint64(weight),
@@ -593,6 +638,34 @@ contract EmissionsControllerUnitTests_updateDistribution is EmissionsControllerU
                 strategiesAndMultipliers: emptyStrategiesAndMultipliers()
             })
         );
+    }
+
+    function test_updateDistribution_Burn_AllowsEmptyRewardsSubmissions() public {
+        cheats.prank(incentiveCouncil);
+        uint distributionId = emissionsController.addDistribution(
+            Distribution({
+                weight: 5000,
+                startEpoch: 0,
+                totalEpochs: 0,
+                distributionType: DistributionType.RewardsForAllEarners,
+                operatorSet: emptyOperatorSet(),
+                strategiesAndMultipliers: defaultStrategiesAndMultipliers()
+            })
+        );
+
+        Distribution memory distribution = Distribution({
+            weight: 5000,
+            startEpoch: 0,
+            totalEpochs: 0,
+            distributionType: DistributionType.Burn,
+            operatorSet: emptyOperatorSet(),
+            strategiesAndMultipliers: emptyStrategiesAndMultipliers()
+        });
+
+        cheats.expectEmit(true, true, true, true);
+        emit DistributionUpdated(distributionId, type(uint).max, distribution);
+        cheats.prank(incentiveCouncil);
+        emissionsController.updateDistribution(distributionId, distribution);
     }
 
     // NOTE: Fuzz test removed - covered by test_revert_updateDistribution_TotalWeightExceedsMax_MultipleDistributions

@@ -7688,3 +7688,75 @@ contract DelegationManagerUnitTests_getQueuedWithdrawal is DelegationManagerUnit
         assertEq(shares.length, 0, "sanity check");
     }
 }
+
+contract DelegationManagerUnitTests_clearQueuedWithdrawalsForDisabledPod is DelegationManagerUnitTests {
+    using ArrayLib for *;
+
+    function test_clearQueuedWithdrawalsForDisabledPod_revert_notEigenPodManager() public {
+        cheats.expectRevert(IDelegationManagerErrors.OnlyEigenPodManager.selector);
+        delegationManager.clearQueuedWithdrawalsForDisabledPod(defaultStaker);
+    }
+
+    function test_clearQueuedWithdrawalsForDisabledPod_clearsBeaconOnlyWithdrawal() public {
+        uint depositAmount = 32 ether;
+        _depositIntoStrategies(defaultStaker, beaconChainETHStrategy.toArray(), depositAmount.toArrayU256());
+
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: beaconChainETHStrategy,
+            depositSharesToWithdraw: depositAmount
+        });
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "withdrawal should be pending before cleanup");
+
+        cheats.expectEmit(true, true, true, true, address(delegationManager));
+        emit QueuedWithdrawalClearedForDisabledPod(withdrawalRoot);
+        cheats.prank(address(eigenPodManagerMock));
+        delegationManager.clearQueuedWithdrawalsForDisabledPod(defaultStaker);
+
+        assertFalse(delegationManager.pendingWithdrawals(withdrawalRoot), "beacon withdrawal should be cleared");
+        assertEq(delegationManager.getQueuedWithdrawalRoots(defaultStaker).length, 0, "staker root should be removed");
+    }
+
+    function test_clearQueuedWithdrawalsForDisabledPod_leavesPureNonBeaconWithdrawal() public {
+        uint depositAmount = 1 ether;
+        _depositIntoStrategies(defaultStaker, strategyMock.toArray(), depositAmount.toArrayU256());
+
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
+            _setUpQueueWithdrawalsSingleStrat({staker: defaultStaker, strategy: strategyMock, depositSharesToWithdraw: depositAmount});
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        cheats.prank(address(eigenPodManagerMock));
+        delegationManager.clearQueuedWithdrawalsForDisabledPod(defaultStaker);
+
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "non-beacon withdrawal should remain pending");
+        assertEq(delegationManager.getQueuedWithdrawalRoots(defaultStaker).length, 1, "non-beacon root should remain");
+    }
+
+    function test_clearQueuedWithdrawalsForDisabledPod_revert_mixedWithdrawal() public {
+        uint[] memory depositAmounts = new uint[](2);
+        depositAmounts[0] = 1 ether;
+        depositAmounts[1] = 32 ether;
+
+        IStrategy[] memory strategies = new IStrategy[](2);
+        strategies[0] = strategyMock;
+        strategies[1] = beaconChainETHStrategy;
+        _depositIntoStrategies(defaultStaker, strategies, depositAmounts);
+
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,, bytes32 withdrawalRoot) =
+            _setUpQueueWithdrawals({staker: defaultStaker, strategies: strategies, depositWithdrawalAmounts: depositAmounts});
+
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        cheats.expectRevert(IDelegationManagerErrors.MixedWithdrawalNotClearable.selector);
+        cheats.prank(address(eigenPodManagerMock));
+        delegationManager.clearQueuedWithdrawalsForDisabledPod(defaultStaker);
+
+        assertTrue(delegationManager.pendingWithdrawals(withdrawalRoot), "mixed withdrawal should remain pending");
+    }
+}

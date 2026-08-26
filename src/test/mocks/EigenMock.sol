@@ -16,4 +16,9 @@ contract EigenMock is Test, ERC20 {
         backingEigen.transferFrom(msg.sender, address(this), amount);
         _mint(msg.sender, amount);
     }
+
+    function unwrap(uint amount) external {
+        _burn(msg.sender, amount);
+        backingEigen.transfer(msg.sender, amount);
+    }
 }

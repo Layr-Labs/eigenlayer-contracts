@@ -42,6 +42,10 @@ interface IEigenPodErrors {
 
     /// @dev Thrown when amount exceeds `restakedExecutionLayerGwei`.
     error InsufficientWithdrawableBalance();
+    /// @dev Thrown when attempting to call a function disabled after `disableRestaking`.
+    error RestakingDisabled();
+    /// @dev Thrown when attempting to sweep ETH before calling `disableRestaking`.
+    error RestakingNotDisabled();
 
     /// Validator Status
 
@@ -175,6 +179,12 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a partial withdrawal request is initiated
     event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
+
+    /// @notice Emitted when restaking is permanently disabled for a pod.
+    event RestakingPermanentlyDisabled();
+
+    /// @notice Emitted when ETH is withdrawn from a disabled pod.
+    event DisabledPodETHWithdrawn(address indexed recipient, uint256 amountWei);
 }
 
 /// @title The implementation contract used for restaking beacon chain ETH on EigenLayer
@@ -196,12 +206,22 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
         bytes32 depositDataRoot
     ) external payable;
 
+    /// @notice Permanently disables restaking for this pod.
+    /// @dev Callable only by the EigenPodManager after staker-level checks pass.
+    function disableRestaking() external;
+
     /// @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
     /// of the DelegationManager's withdrawal flow.
     /// @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
     function withdrawRestakedBeaconChainETH(
         address recipient,
         uint256 amount
+    ) external;
+
+    /// @notice Withdraws all ETH held by a disabled pod.
+    /// @dev Callable only by the pod owner once `restakingDisabled` is true.
+    function withdrawDisabledPodETH(
+        address recipient
     ) external;
 
     /// @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
@@ -289,8 +309,9 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
     /// consolidate their validators on the beacon chain.
     /// @param requests An array of requests consisting of the source and target pubkeys
     /// of the validators to be consolidated
-    /// @dev The target validator MUST have ACTIVE (proven) withdrawal credentials pointed at
-    /// the pod. This prevents cross-pod consolidations.
+    /// @dev While restaking is enabled, the target validator MUST have ACTIVE (proven) withdrawal
+    /// credentials pointed at the pod, preventing cross-pod consolidations. Disabled pods skip this
+    /// (they mint no shares); EIP-7251 still restricts the source to this pod's own validators.
     /// @dev The consolidation request predeploy requires a fee is sent with each request;
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
@@ -416,6 +437,9 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address);
+
+    /// @notice Returns true if restaking has been permanently disabled on this pod.
+    function restakingDisabled() external view returns (bool);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(

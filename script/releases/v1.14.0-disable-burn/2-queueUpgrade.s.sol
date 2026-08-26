@@ -3,10 +3,6 @@ pragma solidity ^0.8.12;
 
 import {MultisigBuilder} from "zeus-templates/templates/MultisigBuilder.sol";
 import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
-import {IProxyAdmin} from "zeus-templates/interfaces/IProxyAdmin.sol";
-import {
-    ITransparentUpgradeableProxy as ITransparentProxy
-} from "zeus-templates/interfaces/ITransparentUpgradeableProxy.sol";
 import {DeployImplementations} from "./1-deployImplementations.s.sol";
 import {CoreUpgradeQueueBuilder} from "../CoreUpgradeQueueBuilder.sol";
 import "../Env.sol";
@@ -17,14 +13,12 @@ import {IProtocolRegistry, IProtocolRegistryTypes} from "src/contracts/interface
 import {IBackingEigen} from "src/contracts/interfaces/IBackingEigen.sol";
 import {EmissionsController} from "src/contracts/core/EmissionsController.sol";
 
-/// Purpose: Queue the upgrade for the slash resolution delay + duration vault blacklist fix.
-/// This script queues an upgrade to:
-/// - StrategyManager (adds SLASH_RESOLUTION_DELAY_BLOCKS constant and burn/redistribution pause flag)
-/// - StrategyFactory (adds EIGEN/bEIGEN immutables, replaces blacklist check for duration vaults)
-/// - DurationVaultStrategy beacon (removes deposit-time blacklist check)
-/// - RewardsCoordinator upgrade + reinitialize (if env missed v1.12.0)
-/// - EmissionsController deploy + initialize (if env missed v1.12.0)
-/// - ProtocolRegistry semantic version bump to 1.13.0
+/// Purpose: Queue the v1.14.0 core upgrade.
+/// This script queues upgrades to:
+/// - DelegationManager (disabled-pod queued withdrawal cleanup)
+/// - EigenPodManager and EigenPod (permanent pod disable)
+/// - EmissionsController (burn distributions)
+/// It also grants EmissionsController permission to burn bEIGEN and ships v1.14.0.
 contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     using Env for *;
     using Encode for *;
@@ -46,25 +40,23 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
 
     function _getCalldataToExecutor() internal returns (bytes memory) {
         MultisigCall[] storage executorCalls = Encode.newMultisigCalls();
-
         bool needsIncentiveCouncil = _needsIncentiveCouncilUpgrade();
 
-        // 1. Upgrade StrategyManager proxy to new implementation
-        executorCalls.upgradeStrategyManager();
+        executorCalls.upgradeDelegationManager();
+        executorCalls.upgradeEigenPodManager();
+        executorCalls.upgradeEigenPod();
 
-        // 2. Upgrade StrategyFactory proxy to new implementation (adds EIGEN/bEIGEN immutables)
-        executorCalls.upgradeStrategyFactory();
-
-        // 3. Upgrade DurationVaultStrategy beacon to new implementation (removes blacklist check)
-        executorCalls.upgradeDurationVaultStrategy();
-
-        // 4. Conditionally catch up with v1.12.0 incentive council changes
         if (needsIncentiveCouncil) {
             _queueIncentiveCouncilCatchUp(executorCalls);
+        } else {
+            executorCalls.upgradeEmissionsController();
         }
 
-        // 5. Bump protocol registry semantic version to 1.13.0
-        //    If catching up, also register EmissionsController in the protocol registry.
+        executorCalls.append({
+            to: address(Env.proxy.beigen()),
+            data: abi.encodeCall(IBackingEigen.setAllowedFrom, (address(Env.proxy.emissionsController()), true))
+        });
+
         if (needsIncentiveCouncil) {
             address[] memory addresses = new address[](1);
             addresses[0] = address(Env.proxy.emissionsController());
@@ -103,33 +95,15 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             });
     }
 
-    /// @notice Queues v1.12.0 incentive council changes for envs that missed that release.
-    /// Upgrades RewardsCoordinator (with reinitialize), initializes EmissionsController,
-    /// and transfers bEIGEN minting rights.
     function _queueIncentiveCouncilCatchUp(
         MultisigCall[] storage executorCalls
     ) internal {
-        // Initialize EmissionsController proxy
-        executorCalls.append({
-            to: Env.proxyAdmin(),
-            data: abi.encodeCall(
-                IProxyAdmin.upgradeAndCall,
-                (
-                    ITransparentProxy(payable(address(Env.proxy.emissionsController()))),
-                    address(Env.impl.emissionsController()),
-                    abi.encodeCall(
-                        EmissionsController.initialize,
-                        (
-                            Env.opsMultisig(), // initialOwner
-                            Env.incentiveCouncilMultisig(), // initialIncentiveCouncil
-                            0 // initialPausedStatus
-                        )
-                    )
-                )
-            )
+        executorCalls.upgradeAndInitializeEmissionsController({
+            initialOwner: Env.opsMultisig(),
+            initialIncentiveCouncil: Env.incentiveCouncilMultisig(),
+            initialPausedStatus: 0
         });
 
-        // Upgrade + reinitialize RewardsCoordinator
         executorCalls.upgradeAndReinitializeRewardsCoordinator({
             initialOwner: Env.opsMultisig(),
             initialPausedStatus: 2,
@@ -139,7 +113,6 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
             feeRecipient: Env.incentiveCouncilMultisig()
         });
 
-        // Transfer bEIGEN minting rights to EmissionsController
         if (Env.legacyTokenHopper() != address(0)) {
             executorCalls.append({
                 to: address(Env.proxy.beigen()),
@@ -152,11 +125,7 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
         });
     }
 
-    function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
-            return;
-        }
-
+    function testScript() public virtual override onlyIfUpgradeRequired("1.14.0") {
         runAsEOA();
 
         TimelockController timelock = Env.timelockController();
@@ -171,12 +140,14 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
 
         assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
 
-        // Validate new implementations
-        TestUtils.validateStrategyManagerImmutables(Env.impl.strategyManager());
-        TestUtils.validateStrategyManagerVersion();
-        TestUtils.validateStrategyManagerSlashResolutionDelay(Env.impl.strategyManager());
-        TestUtils.validateStrategyFactoryImmutables(Env.impl.strategyFactory());
-        TestUtils.validateDurationVaultStrategyImmutables(Env.impl.durationVaultStrategy());
+        TestUtils.validateDelegationManagerImmutables(Env.impl.delegationManager());
+        TestUtils.validateDelegationManagerInitialized(Env.impl.delegationManager());
+        TestUtils.validateDelegationManagerVersion();
+        TestUtils.validateEigenPodManagerImmutables(Env.impl.eigenPodManager());
+        TestUtils.validateEigenPodManagerInitialized(Env.impl.eigenPodManager());
+        TestUtils.validateEigenPodImmutables(Env.impl.eigenPod());
+        TestUtils.validateEmissionsControllerImmutables(Env.impl.emissionsController());
+        TestUtils.validateEmissionsControllerInitialized(Env.impl.emissionsController());
 
         execute();
 

@@ -56,6 +56,10 @@ contract EigenPodManager is
         IPauserRegistry _pauserRegistry
     ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager) Pausable(_pauserRegistry) {
         _disableInitializers();
+        // set the trusted checkpoint timestamp in case of mainnet
+        if (block.chainid == 1) {
+            TRUSTED_CHECKPOINT_TIMESTAMP = 1_753_132_583;
+        }
     }
 
     function initialize(
@@ -87,6 +91,64 @@ contract EigenPodManager is
             pod = _deployPod();
         }
         pod.stake{value: msg.value}(pubkey, signature, depositDataRoot);
+    }
+
+    /// @inheritdoc IEigenPodManager
+    function disablePod() external onlyWhenNotPaused(PAUSED_DISABLE_POD) nonReentrant {
+        address staker = msg.sender;
+        IEigenPod pod = ownerToPod[staker];
+        require(address(pod) != address(0), EigenPodDoesNotExist());
+        require(podOwnerDepositShares[staker] == 0, DepositSharesNotZero());
+        require(pod.lastCheckpointTimestamp() >= TRUSTED_CHECKPOINT_TIMESTAMP, StaleCheckpointSnapshot());
+
+        // Sum what queued beacon-chain withdrawals are worth at completion pricing.
+        (IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint256[][] memory shares) =
+            delegationManager.getQueuedWithdrawals(staker);
+        uint32 minWithdrawalDelayBlocks = delegationManager.minWithdrawalDelayBlocks();
+
+        uint256 queuedWithdrawableWei;
+        uint256 withdrawalsLength = withdrawals.length;
+        for (uint256 i = 0; i < withdrawalsLength; i++) {
+            bool containsBeaconChainETH;
+            bool containsOtherStrategy;
+            IStrategy[] memory strategies = withdrawals[i].strategies;
+            uint256[] memory withdrawalShares = shares[i];
+            uint256 strategiesLength = strategies.length;
+            for (uint256 j = 0; j < strategiesLength; j++) {
+                if (address(strategies[j]) == address(beaconChainETHStrategy)) {
+                    containsBeaconChainETH = true;
+                    queuedWithdrawableWei += withdrawalShares[j];
+                } else {
+                    containsOtherStrategy = true;
+                }
+            }
+
+            // Pure non-beacon withdrawals remain completable; mixed withdrawals must be
+            // completed first so non-beacon value is never stranded.
+            if (!containsBeaconChainETH) {
+                continue;
+            }
+            require(!containsOtherStrategy, MixedWithdrawalPending());
+
+            // Withdrawals must not be slashable
+            require(
+                uint32(block.number) > withdrawals[i].startBlock + minWithdrawalDelayBlocks, WithdrawalStillSlashable()
+            );
+        }
+
+        // The pod's restaked balance from checkpointed EL balance plus beacon-chain accounting.
+        IEigenPodTypes.Checkpoint memory checkpoint = pod.currentCheckpoint();
+        int256 podBalanceGwei = int256(uint256(pod.withdrawableRestakedExecutionLayerGwei()))
+            + int256(uint256(checkpoint.prevBeaconBalanceGwei)) + int256(checkpoint.balanceDeltasGwei);
+
+        uint256 podBalanceWei = podBalanceGwei <= 0 ? 0 : uint256(podBalanceGwei) * GWEI_TO_WEI;
+        // NOTE: adding 1 GWEI slack to allow pod balance to exceed queued-withdrawal value in `disablePod`,to prevent rounding
+        // behavior of the delegation manager from blocking user who never been slashed from disabling their pod
+        require(podBalanceWei <= queuedWithdrawableWei + GWEI_TO_WEI, PodValueExceedsQueuedWithdrawals());
+
+        pod.disableRestaking();
+        delegationManager.clearQueuedWithdrawalsForDisabledPod(staker);
+        emit PodRestakingDisabled(staker, pod);
     }
 
     /// @inheritdoc IEigenPodManager
@@ -168,6 +230,11 @@ contract EigenPodManager is
         uint256 shares
     ) external onlyDelegationManager nonReentrant returns (uint256, uint256) {
         require(strategy == beaconChainETHStrategy, InvalidStrategy());
+        // Blocks completing a queued withdrawal as shares once the staker's pod is disabled.
+        IEigenPod pod = ownerToPod[staker];
+        if (address(pod) != address(0)) {
+            require(!pod.restakingDisabled(), RestakingDisabled());
+        }
         return _addShares(staker, shares);
     }
 
