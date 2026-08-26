@@ -37,6 +37,8 @@ interface IEigenPodManagerErrors {
     error WithdrawalStillSlashable();
     /// @dev Thrown when the pod controls more value than queued beacon chain withdrawals.
     error PodValueExceedsQueuedWithdrawals();
+    /// @dev Thrown when the pod's retained checkpoint predates trustworthy checkpoint semantics.
+    error StaleCheckpointSnapshot();
     /// @dev Thrown when attempting to credit shares after pod restaking was disabled.
     error RestakingDisabled();
 }

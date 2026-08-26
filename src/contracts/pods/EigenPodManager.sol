@@ -56,6 +56,10 @@ contract EigenPodManager is
         IPauserRegistry _pauserRegistry
     ) EigenPodManagerStorage(_ethPOS, _eigenPodBeacon, _delegationManager) Pausable(_pauserRegistry) {
         _disableInitializers();
+        // set the trusted checkpoint timestamp in case of mainnet
+        if (block.chainid == 1) {
+            TRUSTED_CHECKPOINT_TIMESTAMP = 1_753_132_583;
+        }
     }
 
     function initialize(
@@ -95,6 +99,7 @@ contract EigenPodManager is
         IEigenPod pod = ownerToPod[staker];
         require(address(pod) != address(0), EigenPodDoesNotExist());
         require(podOwnerDepositShares[staker] == 0, DepositSharesNotZero());
+        require(pod.lastCheckpointTimestamp() >= TRUSTED_CHECKPOINT_TIMESTAMP, StaleCheckpointSnapshot());
 
         // Sum what queued beacon-chain withdrawals are worth at completion pricing.
         (IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint256[][] memory shares) =

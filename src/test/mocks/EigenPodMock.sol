@@ -11,6 +11,7 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     address internal _podOwner;
     bool internal _restakingDisabled;
     uint64 internal _withdrawableRestakedExecutionLayerGwei;
+    uint64 internal _lastCheckpointTimestamp;
     uint64 internal _currentCheckpointTimestamp;
     Checkpoint internal _currentCheckpoint;
 
@@ -24,6 +25,10 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
 
     function setCurrentCheckpointTimestamp(uint64 timestamp) external {
         _currentCheckpointTimestamp = timestamp;
+    }
+
+    function setLastCheckpointTimestamp(uint64 timestamp) external {
+        _lastCheckpointTimestamp = timestamp;
     }
 
     function setCurrentCheckpoint(uint64 prevBeaconBalanceGwei, int64 balanceDeltasGwei) external {
@@ -81,7 +86,9 @@ contract EigenPodMock is IEigenPod, SemVerMixin, Test {
     function activeValidatorCount() external view returns (uint) {}
 
     /// @notice The timestamp of the last checkpoint finalized
-    function lastCheckpointTimestamp() external view returns (uint64) {}
+    function lastCheckpointTimestamp() external view returns (uint64) {
+        return _lastCheckpointTimestamp;
+    }
 
     /// @notice The timestamp of the currently-active checkpoint. Will be 0 if there is not active checkpoint
     function currentCheckpointTimestamp() external view returns (uint64) {

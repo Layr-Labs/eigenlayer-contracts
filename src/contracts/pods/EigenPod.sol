@@ -401,7 +401,7 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     /// @inheritdoc IEigenPod
     function withdrawDisabledPodETH(
         address recipient
-    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) {
+    ) external onlyEigenPodOwner onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS) nonReentrant {
         require(recipient != address(0), InputAddressZero());
         require(restakingDisabled, RestakingNotDisabled());
         uint256 amountWei = address(this).balance;

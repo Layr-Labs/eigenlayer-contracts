@@ -91,6 +91,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         deployedPod = eigenPodManager.getPod(staker);
         cheats.prank(staker);
         eigenPodManager.createPod();
+        EigenPodMock(payable(address(deployedPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP());
         return deployedPod;
     }
 
@@ -237,6 +238,7 @@ contract EigenPodManagerUnitTests_DisablePodTests is EigenPodManagerUnitTests {
     function setUp() public virtual override {
         super.setUp();
 
+        cheats.chainId(1);
         eigenPodManagerWrapper =
             new EigenPodManagerWrapper(ethPOSMock, eigenPodBeacon, IDelegationManager(address(delegationManagerMock)), pauserRegistry);
         eigenLayerProxyAdmin.upgrade(ITransparentUpgradeableProxy(payable(address(eigenPodManager))), address(eigenPodManagerWrapper));
@@ -303,6 +305,22 @@ contract EigenPodManagerUnitTests_DisablePodTests is EigenPodManagerUnitTests {
 
         cheats.expectRevert(IEigenPodManagerErrors.DepositSharesNotZero.selector);
         eigenPodManager.disablePod();
+    }
+
+    function testFuzz_disablePod_revert_staleCheckpointSnapshot(uint64 checkpointTimestamp) public deployPodForStaker(defaultStaker) {
+        checkpointTimestamp = uint64(bound(checkpointTimestamp, 0, eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() - 1));
+        EigenPodMock(payable(address(defaultPod))).setLastCheckpointTimestamp(checkpointTimestamp);
+
+        cheats.expectRevert(IEigenPodManagerErrors.StaleCheckpointSnapshot.selector);
+        eigenPodManager.disablePod();
+    }
+
+    function test_disablePod_checkpointAtTrustedTimestamp() public deployPodForStaker(defaultStaker) {
+        EigenPodMock(payable(address(defaultPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP());
+
+        eigenPodManager.disablePod();
+
+        assertTrue(defaultPod.restakingDisabled(), "pod should be disabled");
     }
 
     function test_disablePod_revert_mixedBeaconWithdrawal() public deployPodForStaker(defaultStaker) {

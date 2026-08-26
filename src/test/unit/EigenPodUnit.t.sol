@@ -20,6 +20,21 @@ import "src/test/integration/mocks/LibValidator.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 import "src/test/utils/BytesLib.sol";
 
+contract ReentrantEigenPodOwner {
+    EigenPod internal pod;
+    bool public reentryBlocked;
+
+    function sweep(EigenPod _pod) external {
+        pod = _pod;
+        _pod.withdrawDisabledPodETH(address(this));
+    }
+
+    receive() external payable {
+        (bool success,) = address(pod).call(abi.encodeCall(EigenPod.withdrawDisabledPodETH, (address(this))));
+        reentryBlocked = !success;
+    }
+}
+
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
     using BytesLib for bytes;
     using BeaconChainProofs for *;
@@ -1979,6 +1994,15 @@ contract EigenPodUnitTests_DisableRestaking is EigenPodUnitTests {
         pod.disableRestaking();
     }
 
+    function test_disableRestaking_legacyCheckpointSnapshot() public {
+        // Emulate a pre-v1.6 finalized checkpoint retaining a nonzero `proofsRemaining`.
+        cheats.store(address(eigenPod), bytes32(uint(61)), bytes32(uint(1)));
+
+        _disableRestaking();
+
+        assertTrue(eigenPod.restakingDisabled(), "freshness should be enforced by the EigenPodManager");
+    }
+
     function test_disableRestaking_success() public {
         cheats.expectEmit(true, true, true, true, address(eigenPod));
         emit RestakingPermanentlyDisabled();
@@ -2058,6 +2082,20 @@ contract EigenPodUnitTests_DisableRestaking is EigenPodUnitTests {
 
         assertEq(address(eigenPod).balance, 0, "pod balance should be swept");
         assertEq(recipient.balance, balanceBefore + amount, "recipient should receive pod balance");
+    }
+
+    function test_withdrawDisabledPodETH_blocksReentrancy() public {
+        uint amount = 3 ether;
+        ReentrantEigenPodOwner owner = new ReentrantEigenPodOwner();
+        cheats.store(address(eigenPod), bytes32(uint(51)), bytes32(uint(uint160(address(owner)))));
+        _seedPodWithETH(amount);
+        _disableRestaking();
+
+        owner.sweep(eigenPod);
+
+        assertTrue(owner.reentryBlocked(), "reentrant withdrawal should be blocked");
+        assertEq(address(eigenPod).balance, 0, "pod balance should be swept");
+        assertEq(address(owner).balance, amount, "owner should receive pod balance");
     }
 
     function test_requestConsolidation_revert_proofSubmitterWhenDisabled() public {

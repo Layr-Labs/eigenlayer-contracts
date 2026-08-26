@@ -18,6 +18,7 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         uint[] memory depositShares = _calculateExpectedShares(strategies, tokenBalances);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         check_Deposit_State(staker, strategies, depositShares);
+        _checkpointPod(staker);
 
         // 2. Queue all native ETH shares.
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -45,6 +46,7 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         uint[] memory depositShares = _calculateExpectedShares(strategies, tokenBalances);
         staker.depositIntoEigenlayer(strategies, tokenBalances);
         check_Deposit_State(staker, strategies, depositShares);
+        _checkpointPod(staker);
 
         // 2. Queue beacon-chain ETH and LST as separate withdrawals.
         IStrategy[] memory beaconStrategy = beaconChainETHStrategy.toArray();
@@ -195,6 +197,7 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, depositShares);
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, depositShares);
+        _checkpointPod(staker);
 
         // 2. Allocate the delegated native stake to an AVS.
         OperatorSet memory operatorSet = avs.createOperatorSet(strategies);
@@ -237,6 +240,7 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         check_Deposit_State(staker, strategies, depositShares);
         staker.delegateTo(operator);
         check_Delegation_State(staker, operator, strategies, depositShares);
+        _checkpointPod(staker);
 
         // 2. Undelegate, creating a real delegation-lifecycle queued beacon withdrawal.
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -262,6 +266,7 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         IStrategy[] memory strategies = beaconChainETHStrategy.toArray();
         uint[] memory depositShares = (totalBalanceGwei * GWEI_TO_WEI).toArrayU256();
         check_Deposit_State(staker, strategies, depositShares);
+        _checkpointPod(staker);
 
         // 2. Queue all native ETH shares and disable once the queue is no longer slashable.
         uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
@@ -300,5 +305,10 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         int podBalanceGwei = int(uint(staker.pod().withdrawableRestakedExecutionLayerGwei())) + int(uint(checkpoint.prevBeaconBalanceGwei))
             + int(checkpoint.balanceDeltasGwei);
         podBalanceWei = podBalanceGwei <= 0 ? 0 : uint(podBalanceGwei) * GWEI_TO_WEI;
+    }
+
+    function _checkpointPod(User staker) internal {
+        staker.startCheckpoint();
+        staker.completeCheckpoint();
     }
 }

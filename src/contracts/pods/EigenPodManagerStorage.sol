@@ -35,6 +35,9 @@ abstract contract EigenPodManagerStorage is IEigenPodManager {
     /// @notice Canonical, virtual beacon chain ETH strategy
     IStrategy public constant beaconChainETHStrategy = IStrategy(0xbeaC0eeEeeeeEEeEeEEEEeeEEeEeeeEeeEEBEaC0);
 
+    /// @notice Earliest trustworthy EigenPod checkpoint timestamp (mainnet v1.6.0 upgrade).
+    uint64 public immutable TRUSTED_CHECKPOINT_TIMESTAMP;
+
     ///
     ///                                STATE VARIABLES
     ///
