@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import {QueueUpgrade} from "./2-queueUpgrade.s.sol";
+import {CrosschainDeployLib, createx} from "../CrosschainDeployLib.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {DelegationManager} from "src/contracts/core/DelegationManager.sol";
@@ -12,6 +13,12 @@ contract ExecuteUpgrade is QueueUpgrade {
     using Env for *;
 
     function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
+        address implementation = createx.deployCreate2(
+            CrosschainDeployLib.computeProtectedSalt(Env.protocolCouncilMultisig(), type(DelegationManager).name),
+            _delegationManagerInitCode()
+        );
+        require(implementation == address(Env.impl.delegationManager()), "unexpected implementation address");
+
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
         TimelockController timelock = Env.timelockController();
@@ -34,7 +41,7 @@ contract ExecuteUpgrade is QueueUpgrade {
         uint256 pausedStatusBefore = delegationManager.paused();
         uint32 minWithdrawalDelayBefore = delegationManager.minWithdrawalDelayBlocks();
 
-        // Deploy the implementation (from previous step 1).
+        // Precompute and register the implementation address (from previous step 1).
         super.runAsEOA();
 
         // Queue the upgrade (from previous step 2).
@@ -64,6 +71,9 @@ contract ExecuteUpgrade is QueueUpgrade {
         execute();
 
         assertTrue(timelock.isOperationDone(txHash), "Transaction should be complete.");
+        assertTrue(address(Env.impl.delegationManager()).code.length != 0, "implementation was not deployed");
+        TestUtils.validateDelegationManagerInitialized(Env.impl.delegationManager());
+        TestUtils.validateDelegationManagerVersion();
         _validateDelegationManagerUpgrade(pausedStatusBefore, minWithdrawalDelayBefore);
 
         // Run standard proxy validations.

@@ -6,7 +6,6 @@ import {Encode, MultisigCall} from "zeus-templates/utils/Encode.sol";
 import {DeployImplementations} from "./1-deployImplementations.s.sol";
 import {CoreUpgradeQueueBuilder} from "../CoreUpgradeQueueBuilder.sol";
 import "../Env.sol";
-import "../TestUtils.sol";
 
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {IProtocolRegistry, IProtocolRegistryTypes} from "src/contracts/interfaces/IProtocolRegistry.sol";
@@ -82,10 +81,9 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
 
         assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
 
-        // Validate new implementation before queueing.
-        TestUtils.validateDelegationManagerImmutables(Env.impl.delegationManager());
-        TestUtils.validateDelegationManagerInitialized(Env.impl.delegationManager());
-        TestUtils.validateDelegationManagerVersion();
+        assertEq(
+            address(Env.impl.delegationManager()).code.length, 0, "implementation must remain undeployed while queued"
+        );
 
         execute();
 

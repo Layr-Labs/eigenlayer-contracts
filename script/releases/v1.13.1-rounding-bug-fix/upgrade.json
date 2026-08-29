@@ -6,7 +6,7 @@
         {
             "type": "eoa",
             "filename": "1-deployImplementations.s.sol",
-            "description": "Deploy DelegationManager implementation for queued slash accounting fix"
+            "description": "Precompute and register the undeployed DelegationManager implementation address"
         },
         {
             "type": "multisig",
@@ -16,7 +16,7 @@
         {
             "type": "multisig",
             "filename": "3-completeUpgrade.s.sol",
-            "description": "Execute DelegationManager proxy upgrade after timelock delay"
+            "description": "Atomically deploy DelegationManager with CREATE2 and execute the proxy upgrade"
         }
     ]
 }
