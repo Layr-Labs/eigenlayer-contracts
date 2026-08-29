@@ -13,11 +13,15 @@ contract ExecuteUpgrade is QueueUpgrade {
     using Env for *;
 
     function _runAsMultisig() internal virtual override prank(Env.protocolCouncilMultisig()) {
+        _validatePinnedCreationCode();
         address implementation = createx.deployCreate2(
             CrosschainDeployLib.computeProtectedSalt(Env.protocolCouncilMultisig(), type(DelegationManager).name),
             _delegationManagerInitCode()
         );
         require(implementation == address(Env.impl.delegationManager()), "unexpected implementation address");
+        if (keccak256(bytes(Env.env())) == keccak256("mainnet")) {
+            require(implementation == EXPECTED_MAINNET_IMPLEMENTATION, "unexpected mainnet implementation");
+        }
 
         bytes memory calldata_to_executor = _getCalldataToExecutor();
 
