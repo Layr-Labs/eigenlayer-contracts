@@ -36,7 +36,7 @@ contract ExecuteUpgrade is QueueUpgrade {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || Env._versionGte(Env.envVersion(), Env.deployVersion())) {
             return;
         }
 
@@ -59,12 +59,16 @@ contract ExecuteUpgrade is QueueUpgrade {
             salt: 0
         });
 
-        assertFalse(timelock.isOperationPending(txHash), "Transaction should NOT be queued.");
-        QueueUpgrade._runAsMultisig();
-        _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+        // The operation hash is identical in simulation and reality (deterministic CREATE2
+        // implementation address), so once phase 2 has executed on-chain the fork already
+        // has this exact operation queued. Only replay the queue if it hasn't happened yet.
+        if (!timelock.isOperationPending(txHash)) {
+            QueueUpgrade._runAsMultisig();
+            _unsafeResetHasPranked(); // reset hasPranked so we can use it again
+            assertFalse(timelock.isOperationReady(txHash), "Transaction should NOT be ready for execution.");
+        }
 
         assertTrue(timelock.isOperationPending(txHash), "Transaction should be queued.");
-        assertFalse(timelock.isOperationReady(txHash), "Transaction should NOT be ready for execution.");
         assertFalse(timelock.isOperationDone(txHash), "Transaction should NOT be complete.");
 
         // Warp past the timelock delay.

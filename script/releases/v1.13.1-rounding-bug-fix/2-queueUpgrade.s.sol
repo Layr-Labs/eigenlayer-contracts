@@ -63,7 +63,7 @@ contract QueueUpgrade is DeployImplementations, MultisigBuilder {
     }
 
     function testScript() public virtual override {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || Env._versionGte(Env.envVersion(), Env.deployVersion())) {
             return;
         }
 

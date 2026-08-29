@@ -23,7 +23,7 @@ contract DeployImplementations is CoreContractsDeployer {
     }
 
     function testScript() public virtual {
-        if (!Env.isCoreProtocolDeployed()) {
+        if (!Env.isCoreProtocolDeployed() || Env._versionGte(Env.envVersion(), Env.deployVersion())) {
             return;
         }
 
