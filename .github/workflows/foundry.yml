@@ -35,7 +35,7 @@ jobs:
             github.com:443
             release-assets.githubusercontent.com:443
             eth-mainnet.g.alchemy.com:443
-            fabled-wispy-ensemble.ethereum-hoodi.quiknode.pro:443
+            warmhearted-methodical-bush.ethereum-hoodi.quiknode.pro:443
             objects.githubusercontent.com:443
 
       # Check out repository with all submodules for complete codebase access.

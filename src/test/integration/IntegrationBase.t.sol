@@ -879,17 +879,18 @@ abstract contract IntegrationBase is IntegrationDeployer, TypeImporter {
         uint[] memory curSlashableSharesInQueue;
         uint[] memory prevSlashableSharesInQueue;
         uint64[] memory maxMagnitudes;
+        uint[] memory slashingFactors;
         for (uint i = 0; i < withdrawals.length; i++) {
             curSlashableSharesInQueue = _getSlashableSharesInQueue(operator, withdrawals[i].strategies);
             prevSlashableSharesInQueue = _getPrevSlashableSharesInQueue(operator, withdrawals[i].strategies);
             maxMagnitudes = _getMaxMagnitudes(operator, withdrawals[i].strategies);
+            slashingFactors = _getSlashingFactors(User(payable(withdrawals[i].staker)), withdrawals[i].strategies);
 
             for (uint j = 0; j < withdrawals[i].strategies.length; j++) {
-                assertEq(
-                    curSlashableSharesInQueue[j],
-                    prevSlashableSharesInQueue[j] + withdrawals[i].scaledShares[j].mulWad(maxMagnitudes[j]),
-                    err
-                );
+                uint expectedIncrease = slashingFactors[j] == 0
+                    ? 0
+                    : withdrawals[i].scaledShares[j].mulWad(slashingFactors[j]).divWad(slashingFactors[j]).mulWad(maxMagnitudes[j]);
+                assertEq(curSlashableSharesInQueue[j], prevSlashableSharesInQueue[j] + expectedIncrease, err);
             }
         }
     }

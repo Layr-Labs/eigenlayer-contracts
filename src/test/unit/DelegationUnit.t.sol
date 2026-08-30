@@ -5581,6 +5581,182 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
         assertEq(slashableShares, 0, "fully slashed operator should have 0 slashable shares in queue");
     }
 
+    function test_slashOperatorShares_DoesNotDoubleCountRoundedQueueDust() public {
+        uint numStakers = 100;
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        address[] memory stakers = new address[](numStakers);
+        for (uint i = 0; i < numStakers; ++i) {
+            stakers[i] = address(uint160(0x10000 + i));
+            strategyManagerMock.addDeposit(stakers[i], strategyMock, 1);
+            _delegateToOperatorWhoAcceptsAllStakers(stakers[i], defaultOperator);
+        }
+
+        uint delegated = delegationManager.operatorShares(defaultOperator, strategyMock);
+        assertEq(delegated, numStakers, "delegated shares should equal staker deposits");
+
+        uint64 halfMagnitude = uint64(WAD / 2);
+        _setOperatorMagnitude(defaultOperator, strategyMock, halfMagnitude);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedA = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: strategyMock,
+            prevMaxMagnitude: WAD,
+            newMaxMagnitude: halfMagnitude
+        });
+
+        uint activeDustBeforeQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
+        assertEq(slashedA, numStakers / 2, "first slash should burn half");
+        assertEq(activeDustBeforeQueue, numStakers / 2, "remaining active shares should be half");
+
+        for (uint i = 0; i < numStakers; ++i) {
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+                _setUpQueueWithdrawalsSingleStrat({staker: stakers[i], strategy: strategyMock, depositSharesToWithdraw: 1});
+            cheats.prank(stakers[i]);
+            delegationManager.queueWithdrawals(queuedWithdrawalParams);
+        }
+
+        assertEq(
+            delegationManager.operatorShares(defaultOperator, strategyMock),
+            activeDustBeforeQueue,
+            "rounded queue withdrawals should not remove active dust"
+        );
+        assertEq(
+            delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock),
+            0,
+            "queue slashable shares should only include backed shares"
+        );
+
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedB = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: strategyMock,
+            prevMaxMagnitude: halfMagnitude,
+            newMaxMagnitude: 0
+        });
+
+        assertEq(slashedB, activeDustBeforeQueue, "second slash should only burn active dust");
+        assertEq(slashedA + slashedB, delegated, "total burned shares should not exceed delegated shares");
+    }
+
+    function testFuzz_slashOperatorShares_QueuedSharesAreBackedByRemovedShares(
+        uint8 numStakersRaw,
+        uint96 depositSharesRaw,
+        uint64 magnitudeRaw
+    ) public {
+        uint numStakers = bound(uint(numStakersRaw), 2, 40);
+        uint depositShares = bound(uint(depositSharesRaw), 1, 1e18);
+        uint64 newMagnitude = uint64(bound(uint(magnitudeRaw), 1, WAD - 1));
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, strategyMock, WAD);
+
+        address[] memory stakers = new address[](numStakers);
+        for (uint i = 0; i < numStakers; ++i) {
+            stakers[i] = address(uint160(0x20000 + i));
+            strategyManagerMock.addDeposit(stakers[i], strategyMock, depositShares);
+            _delegateToOperatorWhoAcceptsAllStakers(stakers[i], defaultOperator);
+        }
+
+        uint delegated = delegationManager.operatorShares(defaultOperator, strategyMock);
+
+        _setOperatorMagnitude(defaultOperator, strategyMock, newMagnitude);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedA = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: strategyMock,
+            prevMaxMagnitude: WAD,
+            newMaxMagnitude: newMagnitude
+        });
+
+        uint activeBeforeQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
+        for (uint i = 0; i < numStakers; ++i) {
+            (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) =
+                _setUpQueueWithdrawalsSingleStrat({staker: stakers[i], strategy: strategyMock, depositSharesToWithdraw: depositShares});
+            cheats.prank(stakers[i]);
+            delegationManager.queueWithdrawals(queuedWithdrawalParams);
+        }
+
+        uint activeAfterQueue = delegationManager.operatorShares(defaultOperator, strategyMock);
+        uint removedFromOperator = activeBeforeQueue - activeAfterQueue;
+        uint queueSlashable = delegationManager.getSlashableSharesInQueue(defaultOperator, strategyMock);
+        assertLe(queueSlashable, removedFromOperator, "queued slashable shares should not exceed removed backing");
+
+        _setOperatorMagnitude(defaultOperator, strategyMock, 0);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedB = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: strategyMock,
+            prevMaxMagnitude: newMagnitude,
+            newMaxMagnitude: 0
+        });
+
+        assertLe(slashedA + slashedB, delegated, "total burned shares should not exceed delegated shares");
+    }
+
+    function test_slashOperatorShares_BeaconQueueSharesAreBackedAfterCombinedRounding() public {
+        uint beaconShares = 3;
+        uint64 halfMagnitude = uint64(WAD / 2);
+
+        _registerOperatorWithBaseDetails(defaultOperator);
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, WAD);
+        eigenPodManagerMock.setPodOwnerShares(defaultStaker, int(beaconShares));
+        _delegateToOperatorWhoAcceptsAllStakers(defaultStaker, defaultOperator);
+
+        uint delegated = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        assertEq(delegated, beaconShares, "delegated beacon shares should equal initial shares");
+
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, halfMagnitude);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedA = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: beaconChainETHStrategy,
+            prevMaxMagnitude: WAD,
+            newMaxMagnitude: halfMagnitude
+        });
+
+        _decreaseBeaconChainShares(defaultStaker, int(beaconShares), 2);
+
+        uint activeBeforeQueue = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        (QueuedWithdrawalParams[] memory queuedWithdrawalParams,,) = _setUpQueueWithdrawalsSingleStrat({
+            staker: defaultStaker,
+            strategy: beaconChainETHStrategy,
+            depositSharesToWithdraw: beaconShares
+        });
+        cheats.prank(defaultStaker);
+        delegationManager.queueWithdrawals(queuedWithdrawalParams);
+
+        uint activeAfterQueue = delegationManager.operatorShares(defaultOperator, beaconChainETHStrategy);
+        uint removedFromOperator = activeBeforeQueue - activeAfterQueue;
+        uint queueSlashable = delegationManager.getSlashableSharesInQueue(defaultOperator, beaconChainETHStrategy);
+        assertLe(queueSlashable, removedFromOperator, "beacon queue slashable should not exceed removed backing");
+
+        _setOperatorMagnitude(defaultOperator, beaconChainETHStrategy, 0);
+        cheats.prank(address(allocationManagerMock));
+        uint slashedB = delegationManager.slashOperatorShares({
+            operator: defaultOperator,
+            operatorSet: defaultOperatorSet,
+            slashId: defaultSlashId,
+            strategy: beaconChainETHStrategy,
+            prevMaxMagnitude: halfMagnitude,
+            newMaxMagnitude: 0
+        });
+
+        assertLe(slashedA + slashedB, delegated, "total burned beacon shares should not exceed delegated shares");
+    }
+
     /// @notice Verifies that shares are NOT burnable for a withdrawal queued just before the MIN_WITHDRAWAL_DELAY_BLOCKS
     function test_sharesNotBurnableWhenWithdrawalCompletable() public {
         // Register operator
@@ -6172,7 +6348,12 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             uint queuedSlashableSharesBefore = delegationManager.getSlashableSharesInQueue(operator, strategyMock);
 
             uint sharesToDecrease = operatorSharesBefore / 2;
-            uint sharesToBurn = sharesToDecrease + (depositSharesToWithdraw1 + depositSharesToWithdraw2) / 4;
+            uint queuedSharesToBurn = SlashingLib.calcSlashedAmount({
+                operatorShares: queuedSlashableSharesBefore,
+                prevMaxMagnitude: (newMagnitude * 2),
+                newMaxMagnitude: newMagnitude
+            });
+            uint sharesToBurn = sharesToDecrease + queuedSharesToBurn;
 
             // 4.2 Burn shares
             _setOperatorMagnitude(operator, strategyMock, newMagnitude);
@@ -6202,7 +6383,7 @@ contract DelegationManagerUnitTests_slashingShares is DelegationManagerUnitTests
             // 4.3 Assert slashable shares and operator shares
             assertEq(
                 queuedSlashableSharesBefore,
-                (depositSharesToWithdraw1 + depositSharesToWithdraw2) / 2,
+                depositSharesToWithdraw1 / 2 + depositSharesToWithdraw2 / 2,
                 "Slashable shares in queue before should be both queued withdrawal amounts halved"
             );
             assertEq(

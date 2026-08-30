@@ -481,7 +481,9 @@ contract DelegationManager is
                 // Staker was delegated and remains slashable during the withdrawal delay period
                 // Cumulative withdrawn scaled shares are updated for the strategy, this is for accounting
                 // purposes for burning shares if slashed
-                _addQueuedSlashableShares(operator, strategies[i], scaledShares[i]);
+                uint256 slashableScaledShares =
+                    slashingFactors[i] == 0 ? 0 : withdrawableShares[i].divWad(slashingFactors[i]);
+                _addQueuedSlashableShares(operator, strategies[i], slashableScaledShares);
 
                 // forgefmt: disable-next-item
                 _decreaseDelegation({
