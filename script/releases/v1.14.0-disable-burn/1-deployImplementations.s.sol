@@ -13,7 +13,7 @@ contract DeployImplementations is CoreContractsDeployer {
 
     /// @notice Catch up environments that are still missing the v1.12.0 incentive council deployment.
     function _needsIncentiveCouncilUpgrade() internal view returns (bool) {
-        return !Env._versionGte(Env.envVersion(), "1.12.0");
+        return !Env._versionGte(Env.envVersion(), "1.12.0") && !Env._isMainnetEnvironment();
     }
 
     function _runAsEOA() internal virtual override {
@@ -49,6 +49,7 @@ contract DeployImplementations is CoreContractsDeployer {
     }
 
     function testScript() public virtual onlyIfUpgradeRequired("1.14.0") {
+        // what to test : check that immutables are the expected values .
         runAsEOA();
 
         TestUtils.validateDelegationManagerImmutables(Env.impl.delegationManager());

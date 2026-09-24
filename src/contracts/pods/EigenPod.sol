@@ -293,13 +293,9 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
     /// @inheritdoc IEigenPod
     function requestConsolidation(
         ConsolidationRequest[] calldata requests
-    ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyOwnerOrProofSubmitter {
-        bool disabled = restakingDisabled;
-        // Disabled pods: only the owner, since consolidations can now move value out of the pod.
-        if (disabled) {
-            require(msg.sender == podOwner, OnlyEigenPodOwner());
-        }
-
+    ) external payable onlyWhenNotPaused(PAUSED_CONSOLIDATIONS) onlyEigenPodOwner {
+        // only disabled pods can consolidate
+        require(restakingDisabled, RestakingNotDisabled());
         uint256 fee = getConsolidationRequestFee();
         uint256 totalFee = fee * requests.length;
         require(msg.value >= totalFee, InsufficientFunds());
@@ -307,14 +303,8 @@ contract EigenPod is Initializable, ReentrancyGuardUpgradeable, EigenPodPausingC
 
         for (uint256 i = 0; i < requests.length; i++) {
             ConsolidationRequest calldata request = requests[i];
-
-            // Ensure target has verified withdrawal credentials pointed at this pod if pod isn't disabled
-            // Disabled pods no longer mint shares, so any target is allowed.
             bytes32 sourcePubkeyHash = _calcPubkeyHash(request.srcPubkey);
             bytes32 targetPubkeyHash = _calcPubkeyHash(request.targetPubkey);
-            if (!disabled) {
-                require(validatorStatus(targetPubkeyHash) == VALIDATOR_STATUS.ACTIVE, ValidatorNotActiveInPod());
-            }
 
             // Call the predeploy
             bytes memory callData = bytes.concat(request.srcPubkey, request.targetPubkey);

@@ -59,6 +59,9 @@ contract EigenPodManager is
         // set the trusted checkpoint timestamp in case of mainnet
         if (block.chainid == 1) {
             TRUSTED_CHECKPOINT_TIMESTAMP = 1_753_132_583;
+        } else {
+            // set to non-zero otherwise
+            TRUSTED_CHECKPOINT_TIMESTAMP = 1;
         }
     }
 

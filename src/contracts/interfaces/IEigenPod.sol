@@ -305,20 +305,18 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
         BeaconChainProofs.ValidatorProof calldata proof
     ) external;
 
-    /// @notice Allows the owner or proof submitter to initiate one or more requests to
-    /// consolidate their validators on the beacon chain.
+    /// @notice Allows the owner to initiate one or more requests to
+    /// consolidate their validators on the beacon chain after the pod is disabled.
     /// @param requests An array of requests consisting of the source and target pubkeys
     /// of the validators to be consolidated
-    /// @dev While restaking is enabled, the target validator MUST have ACTIVE (proven) withdrawal
-    /// credentials pointed at the pod, preventing cross-pod consolidations. Disabled pods skip this
-    /// (they mint no shares); EIP-7251 still restricts the source to this pod's own validators.
+    /// @dev Only disabled pods can consolidate, and only the owner may call, as a consolidation
+    /// can move value out of the pod to any external validator.
     /// @dev The consolidation request predeploy requires a fee is sent with each request;
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
     /// @dev This contract exposes `getConsolidationRequestFee` to query the current fee for
     /// a single request. If submitting multiple requests in a single block, the total fee
     /// is equal to (fee * requests.length). This fee is updated at the end of each block.
-    ///
     /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for details)
     ///
     /// @dev Note on beacon chain behavior:

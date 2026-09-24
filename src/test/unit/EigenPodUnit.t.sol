@@ -1723,8 +1723,14 @@ contract EigenPodUnitTests_DenebProofsAgainstPectra is EigenPodUnitTests {
 contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
     using LibValidator for *;
 
-    /// @notice revert when requestConsolidation and requestWithdrawal are called by an invalid caller
-    function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
+    /// @dev Consolidation is only permitted once a pod has been retired
+    function _disablePod(EigenPod pod) internal {
+        cheats.prank(address(eigenPodManagerMock));
+        pod.disableRestaking();
+    }
+
+    /// @notice requestConsolidation is owner-only, requestWithdrawal allows the owner or proof submitter
+    function testFuzz_revert_invalidCaller(address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
 
         EigenPod pod = staker.pod();
@@ -1733,7 +1739,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
 
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
         pod.requestConsolidation(new ConsolidationRequest[](0));
 
         cheats.prank(invalidCaller);
@@ -1796,6 +1802,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
+        _disablePod(pod);
 
         uint curConsolidationFee = pod.getConsolidationRequestFee();
         uint curWithdrawalFee = pod.getWithdrawalRequestFee();
@@ -1817,6 +1824,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
+        _disablePod(pod);
 
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
         WithdrawalRequest[] memory wReqs = new WithdrawalRequest[](1);
@@ -1842,8 +1850,8 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         pod.requestWithdrawal{value: wFee}(wReqs);
     }
 
-    /// @notice Revert when the target for consolidation is an INACTIVE validator
-    function testFuzz_revert_consolidationTargetInactive(uint40 srcIndex, uint40 targetIndex) public {
+    /// @notice Revert when the pod owner requests a consolidation while the pod is still restaking
+    function testFuzz_revert_consolidation_restakingNotDisabled(uint40 srcIndex, uint40 targetIndex) public {
         (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
 
         EigenPod pod = staker.pod();
@@ -1853,13 +1861,36 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
         cReqs[0] = ConsolidationRequest({srcPubkey: srcIndex.toPubkey(), targetPubkey: targetIndex.toPubkey()});
 
+        cheats.deal(podOwner, address(podOwner).balance + fee);
         cheats.prank(podOwner);
-        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
+        cheats.expectRevert(IEigenPodErrors.RestakingNotDisabled.selector);
         pod.requestConsolidation{value: fee}(cReqs);
     }
 
-    /// @notice Revert when the target for consolidation is a WITHDRAWN validator
-    function testFuzz_revert_consolidationTargetWithdrawn(uint rand) public {
+    /// @notice A disabled pod may consolidate into any target, including validators never verified to the pod
+    function testFuzz_consolidation_arbitraryTarget(uint40 srcIndex, uint40 targetIndex) public {
+        cheats.assume(srcIndex != targetIndex);
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+        _disablePod(pod);
+
+        bytes memory srcPubkey = srcIndex.toPubkey();
+        bytes memory targetPubkey = targetIndex.toPubkey();
+        uint fee = pod.getConsolidationRequestFee();
+        ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
+        cReqs[0] = ConsolidationRequest({srcPubkey: srcPubkey, targetPubkey: targetPubkey});
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit ConsolidationRequested(srcPubkey.pubkeyHash(), targetPubkey.pubkeyHash());
+        cheats.prank(podOwner);
+        pod.requestConsolidation{value: fee}(cReqs);
+    }
+
+    /// @notice A disabled pod may consolidate a validator the pod has already marked WITHDRAWN
+    function testFuzz_consolidation_withdrawnTarget(uint rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker(rand);
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
@@ -1872,17 +1903,20 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
-        // Checkpoint, setting the validator to INACTIVE
+        // Checkpoint, setting the validator to WITHDRAWN, then retire the pod
         staker.startCheckpoint();
         staker.completeCheckpoint();
+        _disablePod(pod);
 
+        bytes memory pubkey = validators[0].toPubkey();
         uint fee = pod.getConsolidationRequestFee();
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
-        cReqs[0] = ConsolidationRequest({srcPubkey: validators[0].toPubkey(), targetPubkey: validators[0].toPubkey()});
+        cReqs[0] = ConsolidationRequest({srcPubkey: pubkey, targetPubkey: pubkey});
 
         cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit SwitchToCompoundingRequested(pubkey.pubkeyHash());
         cheats.prank(podOwner);
-        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
         pod.requestConsolidation{value: fee}(cReqs);
     }
 
@@ -1893,6 +1927,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         (uint40[] memory validators,,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
+        _disablePod(pod);
 
         ConsolidationRequest[] memory requests = new ConsolidationRequest[](validators.length);
         uint fee = pod.getConsolidationRequestFee() * requests.length;

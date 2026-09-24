@@ -292,6 +292,55 @@ contract Integration_DisableEigenPod is IntegrationCheckUtils {
         assertEq(recipient.balance, recipientBalanceBefore + podBalanceBefore, "recipient should receive disabled pod ETH");
     }
 
+    function testFuzz_deposit_queue_disable_consolidate_exit_sweep(uint24 _random) public rand(_random) {
+        User staker = _newEmptyStaker();
+
+        // 1. Start 0x01 validators and verify them into EigenLayer.
+        (uint40[] memory validators, uint64 totalBalanceGwei) = staker.startETH1Validators(uint8(_randUint({min: 2, max: 8})));
+        staker.verifyWithdrawalCredentials(validators);
+        IStrategy[] memory strategies = beaconChainETHStrategy.toArray();
+        uint[] memory depositShares = (totalBalanceGwei * GWEI_TO_WEI).toArrayU256();
+        check_Deposit_State(staker, strategies, depositShares);
+        _checkpointPod(staker);
+
+        // 2. Queue all native ETH shares and disable once the queue is no longer slashable.
+        uint[] memory withdrawableShares = _getStakerWithdrawableShares(staker, strategies);
+        Withdrawal[] memory withdrawals = staker.queueWithdrawals(strategies, depositShares);
+        check_QueuedWithdrawal_State(
+            staker, User(payable(address(0))), strategies, depositShares, withdrawableShares, withdrawals, _getWithdrawalHashes(withdrawals)
+        );
+        _rollBlocksForCompleteWithdrawals(withdrawals);
+        staker.disablePod();
+        assertTrue(staker.pod().restakingDisabled(), "pod should be disabled");
+
+        // 3. Only a disabled pod may consolidate. Compact the validators; balance moves on the beacon chain only.
+        (uint40[] memory newValidators, uint40[] memory consolidated) = staker.maxConsolidation(validators);
+        assertEq(newValidators.length + consolidated.length, validators.length, "every validator should be a target or a source");
+        uint64 remainingBalanceGwei;
+        for (uint i; i < newValidators.length; ++i) {
+            remainingBalanceGwei += beaconChain.currentBalance(newValidators[i]);
+        }
+        for (uint i; i < consolidated.length; ++i) {
+            assertEq(beaconChain.currentBalance(consolidated[i]), 0, "consolidated source should have moved its balance");
+        }
+        assertEq(remainingBalanceGwei, totalBalanceGwei, "consolidation should preserve total balance");
+        assertEq(staker.pod().activeValidatorCount(), validators.length, "disabled pod should no longer track validator changes");
+
+        // 4. Exit the remaining validators; ETH lands in the disabled pod and the owner sweeps it.
+        uint64 exitedBalanceGwei = staker.exitValidators(newValidators);
+        beaconChain.advanceEpoch_NoRewards();
+        assertEq(exitedBalanceGwei, totalBalanceGwei, "all consolidated balance should exit");
+        assertEq(address(staker.pod()).balance, uint(exitedBalanceGwei) * GWEI_TO_WEI, "exited ETH should land in disabled pod");
+
+        address recipient = address(0xBEEF);
+        uint recipientBalanceBefore = recipient.balance;
+        staker.withdrawDisabledPodETH(recipient);
+        assertEq(address(staker.pod()).balance, 0, "pod should be swept");
+        assertEq(
+            recipient.balance, recipientBalanceBefore + uint(exitedBalanceGwei) * GWEI_TO_WEI, "recipient should receive disabled pod ETH"
+        );
+    }
+
     function _disableConservationValues(User staker) internal view returns (uint podBalanceWei, uint queuedBeaconWei) {
         (Withdrawal[] memory withdrawals, uint[][] memory shares) = delegationManager.getQueuedWithdrawals(address(staker));
 

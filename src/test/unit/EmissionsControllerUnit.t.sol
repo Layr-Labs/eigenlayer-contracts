@@ -369,6 +369,7 @@ contract EmissionsControllerUnitTests_setIncentiveCouncil is EmissionsController
     }
 
     function testFuzz_setIncentiveCouncil_Correctness(address newIncentiveCouncil) public {
+        cheats.assume(newIncentiveCouncil != address(0));
         cheats.expectEmit(true, true, true, true);
         emit IncentiveCouncilUpdated(newIncentiveCouncil);
         cheats.prank(owner);
