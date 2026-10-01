@@ -102,7 +102,7 @@ contract EigenPodManager is
         IEigenPod pod = ownerToPod[staker];
         require(address(pod) != address(0), EigenPodDoesNotExist());
         require(podOwnerDepositShares[staker] == 0, DepositSharesNotZero());
-        require(pod.lastCheckpointTimestamp() >= TRUSTED_CHECKPOINT_TIMESTAMP, StaleCheckpointSnapshot());
+        require(pod.lastCheckpointTimestamp() > TRUSTED_CHECKPOINT_TIMESTAMP, StaleCheckpointSnapshot());
 
         // Sum what queued beacon-chain withdrawals are worth at completion pricing.
         (IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint256[][] memory shares) =
