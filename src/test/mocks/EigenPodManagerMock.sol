@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
+import "../../contracts/interfaces/IEigenPod.sol";
 import "../../contracts/interfaces/IStrategy.sol";
 import "../../contracts/permissions/Pausable.sol";
 
@@ -10,6 +11,7 @@ contract EigenPodManagerMock is Test, Pausable {
     fallback() external payable {}
 
     mapping(address => int) public podOwnerDepositShares;
+    mapping(address => IEigenPod) public ownerToPod;
 
     mapping(address => uint) public podOwnerSharesWithdrawn;
 
@@ -37,6 +39,10 @@ contract EigenPodManagerMock is Test, Pausable {
 
     function setPodOwnerShares(address podOwner, int shares) external {
         podOwnerDepositShares[podOwner] = shares;
+    }
+
+    function setOwnerToPod(address podOwner, IEigenPod pod) external {
+        ownerToPod[podOwner] = pod;
     }
 
     function addShares(address podOwner, IStrategy, uint shares) external returns (uint, uint) {

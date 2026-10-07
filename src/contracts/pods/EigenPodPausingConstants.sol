@@ -33,4 +33,7 @@ abstract contract EigenPodPausingConstants {
     uint8 internal constant PAUSED_CONSOLIDATIONS = 9;
 
     uint8 internal constant PAUSED_WITHDRAWAL_REQUESTS = 10;
+
+    /// @notice Index for flag that pauses the `disablePod` function of the EigenPodManager when set.
+    uint8 internal constant PAUSED_DISABLE_POD = 11;
 }

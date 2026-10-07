@@ -32,6 +32,7 @@ Note that the number of _withdrawable shares_ a staker's _deposit shares_ repres
 The `EigenPodManager's` responsibilities can be broken down into the following concepts:
 * [Depositing Into EigenLayer](#depositing-into-eigenlayer)
 * [Withdrawal Processing](#withdrawal-processing)
+* [Retiring a Pod](#retiring-a-pod)
 * [Other Methods](#other-methods)
 
 ## Parameterization
@@ -287,6 +288,40 @@ Also note that, like `addShares`, if the original Pod Owner has a share deficit 
 * `staker` MUST NOT be `address(0)`
 * `shares` MUST NOT be negative when converted to an `int256`
 * See [`EigenPod.withdrawRestakedBeaconChainETH`](./EigenPod.md#withdrawrestakedbeaconchaineth)
+
+---
+
+## Retiring a Pod
+
+A Pod Owner can permanently remove their `EigenPod` from restaking:
+* [`disablePod`](#disablepod)
+
+#### `disablePod`
+
+```solidity
+function disablePod() external onlyWhenNotPaused(PAUSED_DISABLE_POD) nonReentrant;
+```
+
+Permanently retires the caller's `EigenPod`. This cannot be undone.
+
+Retirement is only permitted when the pod holds no deposit shares and its tracked value does not exceed what the staker has already queued to withdraw. This prevents a slashed staker from using retirement to escape a pending burn.
+
+After retirement the pod can no longer stake, verify withdrawal credentials, or checkpoint. The Pod Owner exits remaining validators via [`EigenPod.requestWithdrawal`](./EigenPod.md#requestwithdrawal) / [`requestConsolidation`](./EigenPod.md#requestconsolidation), and sweeps the pod's ETH via [`EigenPod.withdrawDisabledPodETH`](./EigenPod.md#withdrawdisabledpodeth).
+
+*Effects*:
+* Calls [`EigenPod.disableRestaking`](./EigenPod.md#disablerestaking)
+* Calls `DelegationManager.clearQueuedWithdrawalsForDisabledPod`, deleting the staker's queued beacon chain ETH withdrawals
+* Emits `PodRestakingDisabled`
+
+*Requirements*:
+* Caller MUST have an `EigenPod`
+* `podOwnerDepositShares[caller]` MUST be 0
+* The pod's `lastCheckpointTimestamp` MUST be strictly after `TRUSTED_CHECKPOINT_TIMESTAMP`, as checkpoints finalized at or before the v1.6.0 upgrade may report a stale balance
+* For each queued withdrawal containing beacon chain ETH:
+    * It MUST NOT also contain another strategy
+    * It MUST no longer be slashable: `block.number > startBlock + minWithdrawalDelayBlocks`
+* The pod's tracked value MUST NOT exceed the value of those queued withdrawals, within a 1 gwei rounding tolerance
+* Pause status MUST NOT be set: `PAUSED_DISABLE_POD`
 
 ---
 

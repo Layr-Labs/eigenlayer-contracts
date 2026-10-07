@@ -438,6 +438,7 @@ contract RewardsCoordinatorUnitTests_initializeAndSetters is RewardsCoordinatorU
     }
 
     function testFuzz_setFeeRecipient(address newFeeRecipient) public {
+        cheats.assume(newFeeRecipient != address(0));
         cheats.startPrank(rewardsCoordinator.owner());
         cheats.expectEmit(true, true, true, true, address(rewardsCoordinator));
         emit FeeRecipientSet(feeRecipient, newFeeRecipient);

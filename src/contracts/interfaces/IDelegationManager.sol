@@ -54,6 +54,8 @@ interface IDelegationManagerErrors {
     error WithdrawalDelayNotElapsed();
     /// @dev Thrown when withdrawer is not the current caller.
     error WithdrawerNotCaller();
+    /// @dev Thrown when attempting to clear a mixed queued withdrawal for a disabled pod.
+    error MixedWithdrawalNotClearable();
 }
 
 interface IDelegationManagerTypes {
@@ -162,6 +164,9 @@ interface IDelegationManagerEvents is IDelegationManagerTypes {
 
     /// @notice Emitted whenever an operator's shares are slashed for a given strategy
     event OperatorSharesSlashed(address indexed operator, IStrategy strategy, uint256 totalSlashedShares);
+
+    /// @notice Emitted when a queued beacon-chain withdrawal is cleared for a disabled pod.
+    event QueuedWithdrawalClearedForDisabledPod(bytes32 indexed withdrawalRoot);
 }
 
 /// @title DelegationManager
@@ -288,6 +293,12 @@ interface IDelegationManager is ISignatureUtilsMixin, IDelegationManagerErrors, 
         Withdrawal[] calldata withdrawals,
         IERC20[][] calldata tokens,
         bool[] calldata receiveAsTokens
+    ) external;
+
+    /// @notice Clears queued beacon-chain withdrawals for a staker whose pod has been disabled.
+    /// @dev Callable only by the EigenPodManager.
+    function clearQueuedWithdrawalsForDisabledPod(
+        address staker
     ) external;
 
     /// @notice Called by a share manager when a staker's deposit share balance in a strategy increases.

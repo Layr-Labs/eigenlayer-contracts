@@ -746,6 +746,10 @@ library Env {
         return _isMainnet() || _isBase();
     }
 
+    function _isMainnetEnvironment() internal view returns (bool) {
+        return _isMainnet();
+    }
+
     function _isMainnet() private view returns (bool) {
         return _strEq(env(), "mainnet");
     }

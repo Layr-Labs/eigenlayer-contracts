@@ -556,6 +556,18 @@ contract User is Logger, TypeImporter {
         }
     }
 
+    function disablePod() public virtual createSnapshot {
+        print.method("disablePod");
+        eigenPodManager.disablePod();
+        print.gasUsed();
+    }
+
+    function withdrawDisabledPodETH(address recipient) public virtual createSnapshot {
+        print.method("withdrawDisabledPodETH");
+        pod.withdrawDisabledPodETH(recipient);
+        print.gasUsed();
+    }
+
     /// -----------------------------------------------------------------------
     /// Strategy Methods
     /// -----------------------------------------------------------------------

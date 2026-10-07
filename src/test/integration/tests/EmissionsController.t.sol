@@ -226,7 +226,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         check_pressButton_State(distributionIds, distributions, processed, numDistributions);
 
         // 4. Sweep
-        bool expectedSwept = emissionsController.totalWeight() < 10_000;
+        bool expectedSwept = !emissionsController.isButtonPressable() && EIGEN.balanceOf(address(emissionsController)) != 0;
         bool swept = ic.sweep();
         check_sweep_State(distributionIds, distributions, swept, expectedSwept);
 
@@ -257,7 +257,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         check_pressButton_State(distributionIds, updatedDistributions, processed, numDistributions);
 
         // 5. Sweep
-        bool expectedSwept = emissionsController.totalWeight() < 10_000;
+        bool expectedSwept = !emissionsController.isButtonPressable() && EIGEN.balanceOf(address(emissionsController)) != 0;
         bool swept = ic.sweep();
         check_sweep_State(distributionIds, updatedDistributions, swept, expectedSwept);
 
@@ -312,7 +312,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         check_pressButton_State(distributionIds, distributions, processed, numDistributions);
 
         // 5. Sweep
-        bool expectedSwept = emissionsController.totalWeight() < 10_000;
+        bool expectedSwept = !emissionsController.isButtonPressable() && EIGEN.balanceOf(address(emissionsController)) != 0;
         bool swept = ic.sweep();
         check_sweep_State(distributionIds, distributions, swept, expectedSwept);
 
@@ -329,12 +329,13 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
     function testFuzz_addDists_pressButton_allDistributionTypes(uint24 r) public rand(r) {
         (uint64 startEpoch,,) = _genRandParams();
 
-        DistributionType[] memory types = new DistributionType[](5);
+        DistributionType[] memory types = new DistributionType[](6);
         types[0] = DistributionType.RewardsForAllEarners;
         types[1] = DistributionType.OperatorSetTotalStake;
         types[2] = DistributionType.OperatorSetUniqueStake;
         types[3] = DistributionType.EigenDA;
         types[4] = DistributionType.Manual;
+        types[5] = DistributionType.Burn;
         uint16 totalWeight = uint16(_randUint({min: types.length, max: 10_000}));
 
         // 1. Add distributions with all types
@@ -366,7 +367,9 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         uint numToDisable = _randUint({min: 1, max: numDistributions - 1}); // At least 1 disabled, at least 1 enabled
 
         for (uint i = 0; i < numDistributions; ++i) {
-            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5}))); // Non-disabled types
+            // Exclude Burn because this test later rewrites distributions to Disabled,
+            // and Disabled still needs a non-empty rewards submission array.
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: uint8(DistributionType.Manual)}))); // Non-disabled types
         }
 
         // 1. Add distributions (all enabled)
@@ -404,7 +407,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         // Generate random distribution types (non-disabled)
         DistributionType[] memory types = new DistributionType[](numDistributions);
         for (uint i = 0; i < numDistributions; ++i) {
-            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: uint8(type(DistributionType).max)})));
         }
 
         // 1. Add distributions with staggered start epochs
@@ -440,7 +443,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         // Generate random distribution types (non-disabled)
         DistributionType[] memory types = new DistributionType[](numDistributions);
         for (uint i = 0; i < numDistributions; ++i) {
-            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: uint8(type(DistributionType).max)})));
         }
 
         // 1. Add distributions (all have totalEpochs = 1 by default, meaning they end after first epoch)
@@ -491,7 +494,7 @@ contract Integration_EmissionsController_E2E is Integration_EmissionsController_
         // Generate random distribution types (non-disabled)
         DistributionType[] memory types = new DistributionType[](numDistributions);
         for (uint i = 0; i < numDistributions; ++i) {
-            types[i] = DistributionType(uint8(_randUint({min: 1, max: 5})));
+            types[i] = DistributionType(uint8(_randUint({min: 1, max: uint8(type(DistributionType).max)})));
         }
 
         // 1. Add distributions

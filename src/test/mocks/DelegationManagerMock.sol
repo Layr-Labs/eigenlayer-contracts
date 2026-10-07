@@ -16,6 +16,9 @@ contract DelegationManagerMock is Test {
     mapping(address => mapping(IStrategy => uint)) public operatorShares;
 
     uint32 internal _minWithdrawalDelayBlocks;
+    mapping(address => IDelegationManagerTypes.Withdrawal[]) internal _queuedWithdrawals;
+    mapping(address => uint[][]) internal _queuedWithdrawalShares;
+    address public lastClearedDisabledPodStaker;
 
     struct RegisterAsOperatorCall {
         address operator;
@@ -50,6 +53,33 @@ contract DelegationManagerMock is Test {
 
     function minWithdrawalDelayBlocks() external view returns (uint32) {
         return _minWithdrawalDelayBlocks;
+    }
+
+    function setQueuedWithdrawals(address staker, IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint[][] memory shares)
+        external
+    {
+        require(withdrawals.length == shares.length, "length mismatch");
+
+        delete _queuedWithdrawals[staker];
+        delete _queuedWithdrawalShares[staker];
+
+        for (uint i; i < withdrawals.length; ++i) {
+            _queuedWithdrawals[staker].push(withdrawals[i]);
+            _queuedWithdrawalShares[staker].push(shares[i]);
+        }
+    }
+
+    function getQueuedWithdrawals(address staker)
+        external
+        view
+        returns (IDelegationManagerTypes.Withdrawal[] memory withdrawals, uint[][] memory shares)
+    {
+        withdrawals = _queuedWithdrawals[staker];
+        shares = _queuedWithdrawalShares[staker];
+    }
+
+    function clearQueuedWithdrawalsForDisabledPod(address staker) external {
+        lastClearedDisabledPodStaker = staker;
     }
 
     function setStrategyWithdrawalDelayBlocks(IStrategy[] calldata strategies, uint[] calldata withdrawalDelayBlocks) external {}
