@@ -316,7 +316,7 @@ After retirement the pod can no longer stake, verify withdrawal credentials, or 
 *Requirements*:
 * Caller MUST have an `EigenPod`
 * `podOwnerDepositShares[caller]` MUST be 0
-* The pod's `lastCheckpointTimestamp` MUST be at or after `TRUSTED_CHECKPOINT_TIMESTAMP`, as checkpoints finalized before the v1.6.0 upgrade may report a stale balance
+* The pod's `lastCheckpointTimestamp` MUST be strictly after `TRUSTED_CHECKPOINT_TIMESTAMP`, as checkpoints finalized at or before the v1.6.0 upgrade may report a stale balance
 * For each queued withdrawal containing beacon chain ETH:
     * It MUST NOT also contain another strategy
     * It MUST no longer be slashable: `block.number > startBlock + minWithdrawalDelayBlocks`

@@ -91,7 +91,7 @@ contract EigenPodManagerUnitTests is EigenLayerUnitTestSetup, IEigenPodManagerEv
         deployedPod = eigenPodManager.getPod(staker);
         cheats.prank(staker);
         eigenPodManager.createPod();
-        EigenPodMock(payable(address(deployedPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP());
+        EigenPodMock(payable(address(deployedPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() + 1);
         return deployedPod;
     }
 
@@ -308,7 +308,7 @@ contract EigenPodManagerUnitTests_DisablePodTests is EigenPodManagerUnitTests {
     }
 
     function testFuzz_disablePod_revert_staleCheckpointSnapshot(uint64 checkpointTimestamp) public deployPodForStaker(defaultStaker) {
-        checkpointTimestamp = uint64(bound(checkpointTimestamp, 0, eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() - 1));
+        checkpointTimestamp = uint64(bound(checkpointTimestamp, 0, eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP()));
         EigenPodMock(payable(address(defaultPod))).setLastCheckpointTimestamp(checkpointTimestamp);
 
         cheats.expectRevert(IEigenPodManagerErrors.StaleCheckpointSnapshot.selector);
@@ -316,7 +316,7 @@ contract EigenPodManagerUnitTests_DisablePodTests is EigenPodManagerUnitTests {
     }
 
     function test_disablePod_checkpointAtTrustedTimestamp() public deployPodForStaker(defaultStaker) {
-        EigenPodMock(payable(address(defaultPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP());
+        EigenPodMock(payable(address(defaultPod))).setLastCheckpointTimestamp(eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() + 1);
 
         eigenPodManager.disablePod();
 
