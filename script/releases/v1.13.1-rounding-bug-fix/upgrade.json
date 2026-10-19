@@ -1,0 +1,22 @@
+{
+    "name": "queued-slash-accounting-fix-v1.13.1",
+    "from": "1.13.0",
+    "to": "1.13.1",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployImplementations.s.sol",
+            "description": "Precompute and register the undeployed DelegationManager implementation address"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol",
+            "description": "Queue DelegationManager proxy upgrade and protocol registry version bump"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-completeUpgrade.s.sol",
+            "description": "Atomically deploy DelegationManager with CREATE2 and execute the proxy upgrade"
+        }
+    ]
+}
