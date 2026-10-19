@@ -165,7 +165,12 @@ contract EmissionsController is
         // Skip if the total amount is 0.
         if (totalAmount == 0) return;
 
-        if (distribution.distributionType != DistributionType.Manual) {
+        if (distribution.distributionType == DistributionType.Burn) {
+            // Unwrap the EIGEN allotment back into bEIGEN, then burn it.
+            EIGEN.unwrap(totalAmount);
+            BACKING_EIGEN.burn(totalAmount);
+            success = true;
+        } else if (distribution.distributionType != DistributionType.Manual) {
             uint256 strategiesAndMultipliersLength = distribution.strategiesAndMultipliers.length;
 
             // Skip cases where the below `amountPerSubmission` calculation would revert.
@@ -384,10 +389,11 @@ contract EmissionsController is
         // Prevents distributing more supply than inflation rate allows.
         require(distribution.weight + totalWeightBefore <= MAX_TOTAL_WEIGHT, TotalWeightExceedsMax());
 
-        // Check if rewards submissions array is empty for non-Manual distributions.
-        // Manual distributions handle rewards differently and don't require submissions.
+        // Check if rewards submissions array is empty for distributions that require them.
+        // Manual and Burn distributions handle emissions directly and don't require submissions.
         require(
             distribution.distributionType == DistributionType.Manual
+                || distribution.distributionType == DistributionType.Burn
                 || distribution.strategiesAndMultipliers.length > 0,
             RewardsSubmissionsCannotBeEmpty()
         );

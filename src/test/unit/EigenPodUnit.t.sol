@@ -20,6 +20,21 @@ import "src/test/integration/mocks/LibValidator.t.sol";
 import "src/test/utils/EigenPodUser.t.sol";
 import "src/test/utils/BytesLib.sol";
 
+contract ReentrantEigenPodOwner {
+    EigenPod internal pod;
+    bool public reentryBlocked;
+
+    function sweep(EigenPod _pod) external {
+        pod = _pod;
+        _pod.withdrawDisabledPodETH(address(this));
+    }
+
+    receive() external payable {
+        (bool success,) = address(pod).call(abi.encodeCall(EigenPod.withdrawDisabledPodETH, (address(this))));
+        reentryBlocked = !success;
+    }
+}
+
 contract EigenPodUnitTests is EigenLayerUnitTestSetup, EigenPodPausingConstants, IEigenPodEvents {
     using BytesLib for bytes;
     using BeaconChainProofs for *;
@@ -1708,8 +1723,14 @@ contract EigenPodUnitTests_DenebProofsAgainstPectra is EigenPodUnitTests {
 contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
     using LibValidator for *;
 
-    /// @notice revert when requestConsolidation and requestWithdrawal are called by an invalid caller
-    function testFuzz_revert_callerIsNotPodOwnerOrProofSubmitter(address invalidCaller) public {
+    /// @dev Consolidation is only permitted once a pod has been retired
+    function _disablePod(EigenPod pod) internal {
+        cheats.prank(address(eigenPodManagerMock));
+        pod.disableRestaking();
+    }
+
+    /// @notice requestConsolidation is owner-only, requestWithdrawal allows the owner or proof submitter
+    function testFuzz_revert_invalidCaller(address invalidCaller) public {
         (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
 
         EigenPod pod = staker.pod();
@@ -1718,7 +1739,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         cheats.assume(invalidCaller != podOwner && invalidCaller != proofSubmitter);
 
         cheats.prank(invalidCaller);
-        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwnerOrProofSubmitter.selector);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
         pod.requestConsolidation(new ConsolidationRequest[](0));
 
         cheats.prank(invalidCaller);
@@ -1781,6 +1802,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
+        _disablePod(pod);
 
         uint curConsolidationFee = pod.getConsolidationRequestFee();
         uint curWithdrawalFee = pod.getWithdrawalRequestFee();
@@ -1802,6 +1824,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
+        _disablePod(pod);
 
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
         WithdrawalRequest[] memory wReqs = new WithdrawalRequest[](1);
@@ -1827,8 +1850,8 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         pod.requestWithdrawal{value: wFee}(wReqs);
     }
 
-    /// @notice Revert when the target for consolidation is an INACTIVE validator
-    function testFuzz_revert_consolidationTargetInactive(uint40 srcIndex, uint40 targetIndex) public {
+    /// @notice Revert when the pod owner requests a consolidation while the pod is still restaking
+    function testFuzz_revert_consolidation_restakingNotDisabled(uint40 srcIndex, uint40 targetIndex) public {
         (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
 
         EigenPod pod = staker.pod();
@@ -1838,13 +1861,36 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
         cReqs[0] = ConsolidationRequest({srcPubkey: srcIndex.toPubkey(), targetPubkey: targetIndex.toPubkey()});
 
+        cheats.deal(podOwner, address(podOwner).balance + fee);
         cheats.prank(podOwner);
-        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
+        cheats.expectRevert(IEigenPodErrors.RestakingNotDisabled.selector);
         pod.requestConsolidation{value: fee}(cReqs);
     }
 
-    /// @notice Revert when the target for consolidation is a WITHDRAWN validator
-    function testFuzz_revert_consolidationTargetWithdrawn(uint rand) public {
+    /// @notice A disabled pod may consolidate into any target, including validators never verified to the pod
+    function testFuzz_consolidation_arbitraryTarget(uint40 srcIndex, uint40 targetIndex) public {
+        cheats.assume(srcIndex != targetIndex);
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+
+        EigenPod pod = staker.pod();
+        address podOwner = pod.podOwner();
+        _disablePod(pod);
+
+        bytes memory srcPubkey = srcIndex.toPubkey();
+        bytes memory targetPubkey = targetIndex.toPubkey();
+        uint fee = pod.getConsolidationRequestFee();
+        ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
+        cReqs[0] = ConsolidationRequest({srcPubkey: srcPubkey, targetPubkey: targetPubkey});
+
+        cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit ConsolidationRequested(srcPubkey.pubkeyHash(), targetPubkey.pubkeyHash());
+        cheats.prank(podOwner);
+        pod.requestConsolidation{value: fee}(cReqs);
+    }
+
+    /// @notice A disabled pod may consolidate a validator the pod has already marked WITHDRAWN
+    function testFuzz_consolidation_withdrawnTarget(uint rand) public {
         (EigenPodUser staker,) = _newEigenPodStaker(rand);
         EigenPod pod = staker.pod();
         address podOwner = pod.podOwner();
@@ -1857,17 +1903,20 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         staker.exitValidators(validators);
         beaconChain.advanceEpoch_NoRewards();
 
-        // Checkpoint, setting the validator to INACTIVE
+        // Checkpoint, setting the validator to WITHDRAWN, then retire the pod
         staker.startCheckpoint();
         staker.completeCheckpoint();
+        _disablePod(pod);
 
+        bytes memory pubkey = validators[0].toPubkey();
         uint fee = pod.getConsolidationRequestFee();
         ConsolidationRequest[] memory cReqs = new ConsolidationRequest[](1);
-        cReqs[0] = ConsolidationRequest({srcPubkey: validators[0].toPubkey(), targetPubkey: validators[0].toPubkey()});
+        cReqs[0] = ConsolidationRequest({srcPubkey: pubkey, targetPubkey: pubkey});
 
         cheats.deal(podOwner, address(podOwner).balance + fee);
+        cheats.expectEmit(true, true, true, true, address(pod));
+        emit SwitchToCompoundingRequested(pubkey.pubkeyHash());
         cheats.prank(podOwner);
-        cheats.expectRevert(IEigenPodErrors.ValidatorNotActiveInPod.selector);
         pod.requestConsolidation{value: fee}(cReqs);
     }
 
@@ -1878,6 +1927,7 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
 
         (uint40[] memory validators,,) = staker.startValidators();
         staker.verifyWithdrawalCredentials(validators);
+        _disablePod(pod);
 
         ConsolidationRequest[] memory requests = new ConsolidationRequest[](validators.length);
         uint fee = pod.getConsolidationRequestFee() * requests.length;
@@ -1943,6 +1993,159 @@ contract EigenPodUnitTests_PectraFeatures is EigenPodUnitTests {
         cheats.deal(podOwner, address(podOwner).balance + fee);
         cheats.prank(podOwner);
         pod.requestWithdrawal{value: fee}(requests);
+    }
+}
+
+contract EigenPodUnitTests_DisableRestaking is EigenPodUnitTests {
+    function _disableRestaking() internal {
+        cheats.prank(address(eigenPodManagerMock));
+        eigenPod.disableRestaking();
+    }
+
+    function test_disableRestaking_revert_notEigenPodManager() public {
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodManager.selector);
+        eigenPod.disableRestaking();
+    }
+
+    function test_disableRestaking_revert_alreadyDisabled() public {
+        _disableRestaking();
+
+        cheats.prank(address(eigenPodManagerMock));
+        cheats.expectRevert(IEigenPodErrors.RestakingDisabled.selector);
+        eigenPod.disableRestaking();
+    }
+
+    function test_disableRestaking_revert_checkpointAlreadyActive() public {
+        (EigenPodUser staker,) = _newEigenPodStaker(32 ether);
+        EigenPod pod = staker.pod();
+        (uint40[] memory validators, uint64 podBalanceGwei,) = staker.startValidators();
+        staker.verifyWithdrawalCredentials(validators);
+
+        cheats.deal(address(pod), podBalanceGwei * GWEI_TO_WEI);
+        staker.startCheckpoint();
+
+        cheats.prank(address(eigenPodManagerMock));
+        cheats.expectRevert(IEigenPodErrors.CheckpointAlreadyActive.selector);
+        pod.disableRestaking();
+    }
+
+    function test_disableRestaking_legacyCheckpointSnapshot() public {
+        // Emulate a pre-v1.6 finalized checkpoint retaining a nonzero `proofsRemaining`.
+        cheats.store(address(eigenPod), bytes32(uint(61)), bytes32(uint(1)));
+
+        _disableRestaking();
+
+        assertTrue(eigenPod.restakingDisabled(), "freshness should be enforced by the EigenPodManager");
+    }
+
+    function test_disableRestaking_success() public {
+        cheats.expectEmit(true, true, true, true, address(eigenPod));
+        emit RestakingPermanentlyDisabled();
+
+        _disableRestaking();
+
+        assertTrue(eigenPod.restakingDisabled(), "pod should be disabled");
+    }
+
+    function test_verifyWithdrawalCredentials_revert_restakingDisabled() public {
+        _disableRestaking();
+
+        cheats.expectRevert(IEigenPodErrors.RestakingDisabled.selector);
+        eigenPod.verifyWithdrawalCredentials({
+            beaconTimestamp: uint64(block.timestamp),
+            stateRootProof: BeaconChainProofs.StateRootProof({beaconStateRoot: bytes32(0), proof: new bytes(0)}),
+            validatorIndices: new uint40[](0),
+            validatorFieldsProofs: new bytes[](0),
+            validatorFields: new bytes32[][](0)
+        });
+    }
+
+    function test_startCheckpoint_revert_restakingDisabled() public {
+        _disableRestaking();
+
+        cheats.expectRevert(IEigenPodErrors.RestakingDisabled.selector);
+        eigenPod.startCheckpoint(false);
+    }
+
+    function test_stake_revert_restakingDisabled() public {
+        _disableRestaking();
+
+        cheats.prank(address(eigenPodManagerMock));
+        cheats.expectRevert(IEigenPodErrors.RestakingDisabled.selector);
+        eigenPod.stake(bytes("pubkey"), bytes("signature"), bytes32("depositDataRoot"));
+    }
+
+    function test_withdrawRestakedBeaconChainETH_revert_restakingDisabled() public {
+        _disableRestaking();
+
+        cheats.prank(address(eigenPodManagerMock));
+        cheats.expectRevert(IEigenPodErrors.RestakingDisabled.selector);
+        eigenPod.withdrawRestakedBeaconChainETH(address(this), 1 ether);
+    }
+
+    function test_withdrawDisabledPodETH_revert_notOwner() public {
+        _disableRestaking();
+
+        cheats.prank(address(0xBEEF));
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
+        eigenPod.withdrawDisabledPodETH(address(this));
+    }
+
+    function test_withdrawDisabledPodETH_revert_zeroRecipient() public {
+        _disableRestaking();
+
+        cheats.expectRevert(IEigenPodErrors.InputAddressZero.selector);
+        eigenPod.withdrawDisabledPodETH(address(0));
+    }
+
+    function test_withdrawDisabledPodETH_revert_restakingNotDisabled() public {
+        cheats.expectRevert(IEigenPodErrors.RestakingNotDisabled.selector);
+        eigenPod.withdrawDisabledPodETH(address(this));
+    }
+
+    function test_withdrawDisabledPodETH_success() public {
+        uint amount = 3 ether;
+        address recipient = address(0xCAFE);
+        _seedPodWithETH(amount);
+        _disableRestaking();
+
+        uint balanceBefore = recipient.balance;
+        cheats.expectEmit(true, true, true, true, address(eigenPod));
+        emit DisabledPodETHWithdrawn(recipient, amount);
+
+        eigenPod.withdrawDisabledPodETH(recipient);
+
+        assertEq(address(eigenPod).balance, 0, "pod balance should be swept");
+        assertEq(recipient.balance, balanceBefore + amount, "recipient should receive pod balance");
+    }
+
+    function test_withdrawDisabledPodETH_blocksReentrancy() public {
+        uint amount = 3 ether;
+        ReentrantEigenPodOwner owner = new ReentrantEigenPodOwner();
+        cheats.store(address(eigenPod), bytes32(uint(51)), bytes32(uint(uint160(address(owner)))));
+        _seedPodWithETH(amount);
+        _disableRestaking();
+
+        owner.sweep(eigenPod);
+
+        assertTrue(owner.reentryBlocked(), "reentrant withdrawal should be blocked");
+        assertEq(address(eigenPod).balance, 0, "pod balance should be swept");
+        assertEq(address(owner).balance, amount, "owner should receive pod balance");
+    }
+
+    function test_requestConsolidation_revert_proofSubmitterWhenDisabled() public {
+        _disableRestaking();
+
+        cheats.prank(defaultProofSubmitter);
+        cheats.expectRevert(IEigenPodErrors.OnlyEigenPodOwner.selector);
+        eigenPod.requestConsolidation(new ConsolidationRequest[](0));
+    }
+
+    function test_requestWithdrawal_allowsProofSubmitterWhenDisabled() public {
+        _disableRestaking();
+
+        cheats.prank(defaultProofSubmitter);
+        eigenPod.requestWithdrawal(new WithdrawalRequest[](0));
     }
 }
 

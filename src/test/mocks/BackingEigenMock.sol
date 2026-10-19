@@ -10,5 +10,9 @@ contract BackingEigenMock is Test, ERC20 {
     function mint(address to, uint amount) external {
         _mint(to, amount);
     }
+
+    function burn(uint amount) external {
+        _burn(msg.sender, amount);
+    }
 }
 

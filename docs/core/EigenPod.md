@@ -156,7 +156,6 @@ Checkpoint proofs comprise the bulk of proofs submitted to an `EigenPod`. Comple
 * when validators have exited from the beacon chain, leaving the pod's _active validator set_
 * when the pod has accumulated fees / partial withdrawals from validators
 * whether any validators on the beacon chain have increased/decreased in balance
-* when consolidation requests have been completed
 
 When a checkpoint is completed, shares are updated accordingly for each of these events. OwnedShares can be withdrawn via the `DelegationManager` withdrawal queue (see [DelegationManager: Undelegating and Withdrawing](./DelegationManager.md#undelegating-and-withdrawing)), which means an `EigenPod's` checkpoint proofs also play an important role in allowing Pod Owners to exit funds from the system.
 
@@ -334,7 +333,7 @@ Methods for interacting with predeploys introduced in Pectra. See supplemental d
 /// SEE FULL METHOD DOCS IN IEigenPod.sol
 function requestConsolidation(
     ConsolidationRequest[] calldata requests
-) external payable onlyOwnerOrProofSubmitter;
+) external payable onlyEigenPodOwner;
 
 /**
  * @param srcPubkey the pubkey of the source validator for the consolidation
@@ -354,17 +353,17 @@ struct ConsolidationRequest {
 function getConsolidationRequestFee() external view returns (uint256);
 ```
 
-This method allows the pod owner or proof submitter to submit validator consolidation requests via the [EIP-7521](https://eips.ethereum.org/EIPS/eip-7251) predeploy. Consolidation requests come in two forms:
+This method allows the pod owner of a disabled pod to submit validator consolidation requests via the [EIP-7521](https://eips.ethereum.org/EIPS/eip-7251) predeploy. Consolidation requests come in two forms:
 * "Switch requests" will switch a validator's withdrawal credentials from the 0x01 "eth1" prefix to the 0x02 "compounding" prefix. For a switch request, `srcPubkey == targetPubkey`.
 * Standard requests will consolidate a source validator's balance _into_ a target 0x02 validator. For a standard request, `srcPubkey != targetPubkey`.
 
 In order to initiate a consolidation request ([basic how-to guide here]((https://hackmd.io/uijo9RSnSMOmejK1aKH0vw?view#How-to-use-these-methods))):
 * The predeploy requires a fee for each request. The current fee for the block can be queried using `getConsolidationRequestFee`. This should be multiplied for each request in the passed-in `requests` array and provided as `msg.value`. The predeploy updates its fee each block depending on how many consolidation requests are queued vs how many are processed.
     * Note that any unused fee is transferred back to `msg.sender` at the end of this method.
-* The `target` validator MUST have verified withdrawal credentials (`getValidatorStatus` returns `ACTIVE`)
+* Restaking MUST be permanently disabled for the pod (see `EigenPodManager.disablePod`)
 * For standard requests, the `target` validator MUST have 0x02 withdrawal credentials on the beacon chain.
 
-When a standard consolidation is completed on the beacon chain, the source validator's balance will be transferred to the target validator. For all intents and purposes, the source validator will appear to have "exited" - its exit epoch and withdrawable epoch are set, and its balance drops to zero. When processed by a checkpoint, this 0 balance will cause the _source_ validator to be marked as `WITHDRAWN`, exempting it from future checkpoint proofs.
+When a standard consolidation is completed on the beacon chain, the source validator's balance will be transferred to the target validator. For all intents and purposes, the source validator will appear to have "exited" - its exit epoch and withdrawable epoch are set, and its balance drops to zero.
 
 Note that the beacon chain may "skip" a consolidation request for many reasons. This skip is inherently invisible to the `EigenPod`. See [the `process_consolidation_request` spec](https://github.com/ethereum/consensus-specs/blob/dev/specs/electra/beacon-chain.md#new-process_consolidation_request) for a complete list of conditions that may cause a request to be skipped.
 
@@ -373,12 +372,12 @@ Note that the beacon chain may "skip" a consolidation request for many reasons. 
 * If excess `msg.value` was provided, transfer the remainder back to `msg.sender`
 
 *Requirements*:
-* Caller MUST be EITHER the Pod Owner or Proof Submitter
+* Caller MUST be the Pod Owner
+* Restaking MUST be disabled: `restakingDisabled` is true
 * Pause status MUST NOT be set: `PAUSED_CONSOLIDATIONS`
 * `msg.value` MUST be at least `getConsolidationRequestFee() * requests.length`
 * For each `request` in `requests`:
     * `request.srcPubkey` and `request.targetPubkey` MUST have a length of 48
-    * `request.targetPubkey` MUST correspond to a validator whose withdrawal credentials are proven to point at the pod (`VALIDATOR_STATUS.ACTIVE`)
 * If excess `msg.value` was provided, the transfer of the excess back to `msg.sender` MUST succeed.
 
 #### `requestWithdrawal`
@@ -445,6 +444,8 @@ Minor methods that do not fit well into other sections:
 * [`stake`](#stake)
 * [`withdrawRestakedBeaconChainETH`](#withdrawrestakedbeaconchaineth)
 * [`recoverTokens`](#recovertokens)
+* [`disableRestaking`](#disablerestaking)
+* [`withdrawDisabledPodETH`](#withdrawdisabledpodeth)
 
 #### `setProofSubmitter`
 
@@ -459,7 +460,6 @@ This method/role is intended to allow the Pod Owner to create a hot wallet to pe
 If set, EITHER the Pod Owner OR Proof Submitter may call:
 * `verifyWithdrawalCredentials`
 * `startCheckpoint`
-* `requestConsolidation`
 * `requestWithdrawal`
 
 The Pod Owner can call this with `newProofSubmitter == 0` to remove the current Proof Submitter. If there is no designated Proof Submitter, ONLY the Pod Owner can call the above methods.
@@ -517,6 +517,7 @@ Note that if `amountWei` is not a whole gwei amount, the sub-gwei portion is tru
 * Converts `amountWei` to gwei, then sends that amount to `recipient`
 
 *Requirements*:
+* Restaking MUST NOT be disabled (see [`disableRestaking`](#disablerestaking))
 * `amountWei / GWEI_TO_WEI` MUST NOT be greater than the proven `withdrawableRestakedExecutionLayerGwei`
 * Pod MUST have at least `amountWei` ETH balance
 * `recipient` MUST NOT revert when transferred `amountWei`
@@ -543,4 +544,46 @@ Allows the Pod Owner to rescue ERC20 tokens accidentally sent to the `EigenPod`.
 * Caller MUST be the Pod Owner
 * Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
 * `tokenList` and `amountsToWithdraw` MUST have equal lengths
+
+#### `disableRestaking`
+
+```solidity
+function disableRestaking() external onlyEigenPodManager
+```
+
+Called by the `EigenPodManager` during [`disablePod`](./EigenPodManager.md#disablepod). Permanently disables restaking for this pod; this cannot be undone.
+
+Once disabled, `stake`, `verifyWithdrawalCredentials`, `startCheckpoint` and `withdrawRestakedBeaconChainETH` revert, so the pod no longer tracks shares. `requestWithdrawal` no longer requires validators to be `ACTIVE` in the pod, and `requestConsolidation` becomes available (Pod Owner only).
+
+*Effects:*
+* Sets `restakingDisabled` to true
+* Emits `RestakingPermanentlyDisabled`
+
+*Requirements:*
+* Caller MUST be the `EigenPodManager`
+* Restaking MUST NOT already be disabled
+* The pod MUST NOT have an active checkpoint
+
+#### `withdrawDisabledPodETH`
+
+```solidity
+function withdrawDisabledPodETH(address recipient)
+    external
+    onlyEigenPodOwner
+    onlyWhenNotPaused(PAUSED_NON_PROOF_WITHDRAWALS)
+    nonReentrant
+```
+
+Sends the retired pod's entire ETH balance to `recipient`. A disabled pod no longer tracks shares, so no accounting is updated.
+
+*Effects:*
+* Transfers `address(this).balance` to `recipient`
+* Emits `DisabledPodETHWithdrawn`
+
+*Requirements:*
+* Caller MUST be the Pod Owner
+* Restaking MUST be disabled
+* `recipient` MUST NOT be the zero address
+* Pause status MUST NOT be set: `PAUSED_NON_PROOF_WITHDRAWALS`
+* The transfer MUST succeed
 

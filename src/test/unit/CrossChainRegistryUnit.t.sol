@@ -660,7 +660,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservations is CrossCha
         numReservations = uint8(bound(numReservations, 1, 10));
 
         for (uint i = 0; i < numReservations; i++) {
-            OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i));
+            OperatorSet memory operatorSet = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
             // Set the key type for the operator set in KeyRegistrar
@@ -864,7 +864,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
         // Create multiple reservations
         OperatorSet[] memory operatorSets = new OperatorSet[](5);
         for (uint i = 0; i < 5; i++) {
-            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            operatorSets[i] = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
             keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
@@ -890,7 +890,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
         // Create 12 reservations to divide evenly by 4
         OperatorSet[] memory operatorSets = new OperatorSet[](12);
         for (uint i = 0; i < 12; i++) {
-            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            operatorSets[i] = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
             keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
@@ -934,7 +934,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationsByRange is C
         // Create multiple reservations
         OperatorSet[] memory operatorSets = new OperatorSet[](3);
         for (uint i = 0; i < 3; i++) {
-            operatorSets[i] = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            operatorSets[i] = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSets[i], true);
             _grantUAMRole(address(this), operatorSets[i].avs);
             keyRegistrar.configureOperatorSet(operatorSets[i], CurveType.BN254);
@@ -972,7 +972,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is Cros
     function test_getActiveGenerationReservationCount_Multiple() public {
         // Create multiple reservations
         for (uint i = 0; i < 5; i++) {
-            OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            OperatorSet memory operatorSet = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
             keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);
@@ -1002,7 +1002,7 @@ contract CrossChainRegistryUnitTests_getActiveGenerationReservationCount is Cros
 
         // Create reservations
         for (uint i = 0; i < numReservations; i++) {
-            OperatorSet memory operatorSet = _createOperatorSet(cheats.randomAddress(), uint32(i + 1));
+            OperatorSet memory operatorSet = _createOperatorSet(cheats.addr(uint(keccak256(abi.encode("avs", i)))), uint32(i + 1));
             allocationManagerMock.setIsOperatorSet(operatorSet, true);
             _grantUAMRole(address(this), operatorSet.avs);
             keyRegistrar.configureOperatorSet(operatorSet, CurveType.BN254);

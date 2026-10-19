@@ -70,7 +70,7 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
     }
 
     function _randomDistributionType(bool allowDisabled) internal returns (DistributionType distributionType) {
-        return DistributionType(uint8(vm.randomUint({min: allowDisabled ? 0 : 1, max: 5})));
+        return DistributionType(uint8(vm.randomUint({min: allowDisabled ? 0 : 1, max: uint8(type(DistributionType).max)})));
     }
 
     function addDistributions(
@@ -154,7 +154,9 @@ contract IncentiveCouncil is Logger, IEmissionsControllerTypes {
                         || distributionType == DistributionType.OperatorSetUniqueStake || distributionType == DistributionType.EigenDA)
                     ? _randomOperatorSet(operatorSets)
                     : OperatorSet({avs: address(0), id: 0}),
-                strategiesAndMultipliers: _randomStrategiesAndMultipliers(strategies)
+                strategiesAndMultipliers: distributionType == DistributionType.Burn
+                    ? new IRewardsCoordinatorTypes.StrategyAndMultiplier[][](0)
+                    : _randomStrategiesAndMultipliers(strategies)
             });
 
             vm.prank(incentiveCouncil);

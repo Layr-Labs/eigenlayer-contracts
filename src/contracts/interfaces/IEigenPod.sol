@@ -42,6 +42,10 @@ interface IEigenPodErrors {
 
     /// @dev Thrown when amount exceeds `restakedExecutionLayerGwei`.
     error InsufficientWithdrawableBalance();
+    /// @dev Thrown when attempting to call a function disabled after `disableRestaking`.
+    error RestakingDisabled();
+    /// @dev Thrown when attempting to sweep ETH before calling `disableRestaking`.
+    error RestakingNotDisabled();
 
     /// Validator Status
 
@@ -175,6 +179,12 @@ interface IEigenPodEvents is IEigenPodTypes {
 
     /// @notice Emitted when a partial withdrawal request is initiated
     event WithdrawalRequested(bytes32 indexed validatorPubkeyHash, uint64 withdrawalAmountGwei);
+
+    /// @notice Emitted when restaking is permanently disabled for a pod.
+    event RestakingPermanentlyDisabled();
+
+    /// @notice Emitted when ETH is withdrawn from a disabled pod.
+    event DisabledPodETHWithdrawn(address indexed recipient, uint256 amountWei);
 }
 
 /// @title The implementation contract used for restaking beacon chain ETH on EigenLayer
@@ -196,12 +206,22 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
         bytes32 depositDataRoot
     ) external payable;
 
+    /// @notice Permanently disables restaking for this pod.
+    /// @dev Callable only by the EigenPodManager after staker-level checks pass.
+    function disableRestaking() external;
+
     /// @notice Transfers `amountWei` from this contract to the `recipient`. Only callable by the EigenPodManager as part
     /// of the DelegationManager's withdrawal flow.
     /// @dev `amountWei` is not required to be a whole Gwei amount. Amounts less than a Gwei multiple may be unrecoverable due to Gwei conversion.
     function withdrawRestakedBeaconChainETH(
         address recipient,
         uint256 amount
+    ) external;
+
+    /// @notice Withdraws all ETH held by a disabled pod.
+    /// @dev Callable only by the pod owner once `restakingDisabled` is true.
+    function withdrawDisabledPodETH(
+        address recipient
     ) external;
 
     /// @dev Create a checkpoint used to prove this pod's active validator set. Checkpoints are completed
@@ -285,19 +305,18 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
         BeaconChainProofs.ValidatorProof calldata proof
     ) external;
 
-    /// @notice Allows the owner or proof submitter to initiate one or more requests to
-    /// consolidate their validators on the beacon chain.
+    /// @notice Allows the owner to initiate one or more requests to
+    /// consolidate their validators on the beacon chain after the pod is disabled.
     /// @param requests An array of requests consisting of the source and target pubkeys
     /// of the validators to be consolidated
-    /// @dev The target validator MUST have ACTIVE (proven) withdrawal credentials pointed at
-    /// the pod. This prevents cross-pod consolidations.
+    /// @dev Only disabled pods can consolidate, and only the owner may call, as a consolidation
+    /// can move value out of the pod to any external validator.
     /// @dev The consolidation request predeploy requires a fee is sent with each request;
     /// this is pulled from msg.value. After submitting all requests, any remaining fee is
     /// refunded to the caller by calling its fallback function.
     /// @dev This contract exposes `getConsolidationRequestFee` to query the current fee for
     /// a single request. If submitting multiple requests in a single block, the total fee
     /// is equal to (fee * requests.length). This fee is updated at the end of each block.
-    ///
     /// (See https://eips.ethereum.org/EIPS/eip-7251#fee-calculation for details)
     ///
     /// @dev Note on beacon chain behavior:
@@ -416,6 +435,9 @@ interface IEigenPod is IEigenPodErrors, IEigenPodEvents {
 
     /// @notice The owner of this EigenPod
     function podOwner() external view returns (address);
+
+    /// @notice Returns true if restaking has been permanently disabled on this pod.
+    function restakingDisabled() external view returns (bool);
 
     /// @notice Returns the validatorInfo struct for the provided pubkeyHash
     function validatorPubkeyHashToInfo(

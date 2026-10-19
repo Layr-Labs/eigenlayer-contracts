@@ -840,6 +840,12 @@ library TestUtils {
         assertTrue(
             eigenPodManager.pauserRegistry() == Env.impl.pauserRegistry(), "eigenPodManager pauserRegistry incorrect"
         );
+        assertTrue(
+            Env._isMainnetEnvironment()
+                ? eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() == 1_753_132_583
+                : eigenPodManager.TRUSTED_CHECKPOINT_TIMESTAMP() == 1,
+            "eigenPodManager TRUSTED_CHECKPOINT_TIMESTAMP incorrect"
+        );
     }
 
     /// strategies/
@@ -1057,7 +1063,7 @@ library TestUtils {
     ) internal {
         vm.label(address(eigenPodManager), type(EigenPodManager).name);
         vm.expectRevert(errInit);
-        eigenPodManager.initialize(address(0), 0);
+        eigenPodManager.initialize(address(123), 0);
     }
 
     /// strategies/
