@@ -7,6 +7,8 @@ import "./IDelegationManager.sol";
 import "./IEigenPodManager.sol";
 
 interface IStrategyManagerErrors {
+    /// @dev Thrown when call attempted from address that's not the slash resolution delay setter.
+    error OnlySlashResolutionDelaySetter();
     /// @dev Thrown when total strategies deployed exceeds max.
     error MaxStrategiesExceeded();
     /// @dev Thrown when call attempted from address that's not delegation manager.
@@ -55,6 +57,12 @@ interface IStrategyManagerEvents {
 
     /// @notice Emitted when the slash resolution block is set for an operator set slash
     event SlashResolutionBlockSet(OperatorSet operatorSet, uint256 slashId, uint32 resolutionBlock);
+
+    /// @notice Emitted when the `slashResolutionDelaySetter` is changed
+    event SlashResolutionDelaySetterChanged(address previousSetter, address newSetter);
+
+    /// @notice Emitted when the slash resolution delay (in blocks) is changed
+    event SlashResolutionDelayBlocksChanged(uint32 previousDelayBlocks, uint32 newDelayBlocks);
 
     /// @notice Emitted when shares marked for burning or redistribution are decreased and transferred to the operator set's redistribution recipient
     event BurnOrRedistributableSharesDecreased(
@@ -134,7 +142,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external;
 
     /// @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
-    /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
+    /// @dev Reverts if the slash's resolution block has not been reached (see `getSlashResolutionBlock`).
     /// @dev Reverts if clearing is paused via `PAUSED_BURNING_AND_REDISTRIBUTION`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
@@ -145,7 +153,7 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
     ) external returns (uint256[] memory);
 
     /// @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
-    /// @dev Reverts if `SLASH_RESOLUTION_DELAY_BLOCKS` has not elapsed since the slash was recorded.
+    /// @dev Reverts if the slash's resolution block has not been reached (see `getSlashResolutionBlock`).
     /// @dev Reverts if clearing is paused via `PAUSED_BURNING_AND_REDISTRIBUTION`.
     /// @param operatorSet The operator set to burn shares in.
     /// @param slashId The slash ID to burn shares in.
@@ -291,4 +299,25 @@ interface IStrategyManager is IStrategyManagerErrors, IStrategyManagerEvents, IS
         OperatorSet calldata operatorSet,
         uint256 slashId
     ) external view returns (uint32);
+
+    /// @notice Returns the address permitted to update the slash resolution delay.
+    function slashResolutionDelaySetter() external view returns (address);
+
+    /// @notice Returns the number of blocks that must elapse after a slash before its shares can be cleared.
+    /// @dev Applies only to slashes recorded after the value is set; existing slashes keep their resolution block.
+    function SLASH_RESOLUTION_DELAY_BLOCKS() external view returns (uint32);
+
+    /// @notice Sets the address permitted to update the slash resolution delay.
+    /// @dev Only callable by the owner.
+    /// @param newSlashResolutionDelaySetter The new slash resolution delay setter. Cannot be the zero address.
+    function setSlashResolutionDelaySetter(
+        address newSlashResolutionDelaySetter
+    ) external;
+
+    /// @notice Sets the number of blocks that must elapse after a slash before its shares can be cleared.
+    /// @dev Only callable by the `slashResolutionDelaySetter`. Applies to slashes recorded after this call.
+    /// @param newSlashResolutionDelayBlocks The new slash resolution delay in blocks.
+    function setSlashResolutionDelayBlocks(
+        uint32 newSlashResolutionDelayBlocks
+    ) external;
 }

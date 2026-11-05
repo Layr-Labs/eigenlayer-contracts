@@ -564,8 +564,8 @@ library TestUtils {
         StrategyManager strategyManager
     ) internal view {
         assertTrue(
-            strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS() == 50_400,
-            "strategyManager slash resolution delay incorrect"
+            strategyManager.slashResolutionDelaySetter() == Env.opsMultisig(),
+            "strategyManager slashResolutionDelaySetter incorrect"
         );
 
         OperatorSet memory operatorSet = OperatorSet({avs: address(0xE1), id: type(uint32).max});
@@ -811,10 +811,6 @@ library TestUtils {
         );
         assertTrue(
             strategyManager.pauserRegistry() == Env.impl.pauserRegistry(), "strategyManager pauserRegistry incorrect"
-        );
-        assertTrue(
-            strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS() == 50_400,
-            "strategyManager SLASH_RESOLUTION_DELAY_BLOCKS incorrect"
         );
     }
 

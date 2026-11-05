@@ -173,7 +173,7 @@ contract StrategyManager is
         uint256 slashId
     ) external onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) nonReentrant returns (uint256[] memory) {
         // Pause/delay are checked once here; per-strategy iteration shares the same slashId resolution block.
-        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
+        require(block.number >= _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
 
         // Get the strategies to clear.
         address[] memory strategies = _burnOrRedistributableShares[operatorSet.key()][slashId].keys();
@@ -199,7 +199,7 @@ contract StrategyManager is
         uint256 slashId,
         IStrategy strategy
     ) external onlyWhenNotPaused(PAUSED_BURNING_AND_REDISTRIBUTION) nonReentrant returns (uint256) {
-        require(block.number > _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
+        require(block.number >= _slashResolutionBlock[operatorSet.key()][slashId], SlashResolutionDelayNotElapsed());
         return _clearBurnOrRedistributableShares({
             operatorSet: operatorSet,
             slashId: slashId,
@@ -228,6 +228,24 @@ contract StrategyManager is
         address newStrategyWhitelister
     ) external onlyOwner nonReentrant {
         _setStrategyWhitelister(newStrategyWhitelister);
+    }
+
+    /// @inheritdoc IStrategyManager
+    function setSlashResolutionDelaySetter(
+        address newSlashResolutionDelaySetter
+    ) external onlyOwner {
+        require(newSlashResolutionDelaySetter != address(0), InputAddressZero());
+        emit SlashResolutionDelaySetterChanged(slashResolutionDelaySetter, newSlashResolutionDelaySetter);
+        slashResolutionDelaySetter = newSlashResolutionDelaySetter;
+    }
+
+    /// @inheritdoc IStrategyManager
+    function setSlashResolutionDelayBlocks(
+        uint32 newSlashResolutionDelayBlocks
+    ) external {
+        require(msg.sender == slashResolutionDelaySetter, OnlySlashResolutionDelaySetter());
+        emit SlashResolutionDelayBlocksChanged(SLASH_RESOLUTION_DELAY_BLOCKS, newSlashResolutionDelayBlocks);
+        SLASH_RESOLUTION_DELAY_BLOCKS = newSlashResolutionDelayBlocks;
     }
 
     /// @inheritdoc IStrategyManager

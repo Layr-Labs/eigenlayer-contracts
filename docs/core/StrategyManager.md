@@ -252,7 +252,7 @@ This method directs the `strategy` to convert the input deposit shares to tokens
 
 Slashed shares are marked as burnable or redistributable. Shares to clear are stored in `_burnOrRedistributableShares`, a nested [EnumerableMap](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/utils/structs/EnumerableMap.sol). The `operatorSet` and `slashId` are used to index into the enumerableMap of strategies to shares.
 
-For slashes recorded after the slash resolution delay was introduced, clearing is delayed until after `SLASH_RESOLUTION_DELAY_BLOCKS` have elapsed. The resolution block for a slash can be queried with `getSlashResolutionBlock(operatorSet, slashId)`, and clearing reverts with `SlashResolutionDelayNotElapsed` until `block.number` is greater than that value. Slashes recorded before this delay was introduced have a resolution block of `0` and remain immediately clearable as grandfathered state.
+Clearing a slash is delayed by `SLASH_RESOLUTION_DELAY_BLOCKS`, a configurable number of blocks managed by the `slashResolutionDelaySetter` (see [System Configuration](#system-configuration)). When a slash is first recorded, its resolution block is set to the current block plus the delay in effect at that time; later changes to the delay do not affect slashes already recorded. The resolution block for a slash can be queried with `getSlashResolutionBlock(operatorSet, slashId)`, and clearing reverts with `SlashResolutionDelayNotElapsed` until `block.number` reaches that value. Slashes recorded before the delay was introduced have a resolution block of `0` and remain immediately clearable as grandfathered state.
 
 Anybody can call `clearBurnOrRedistributableShares` or `clearBurnOrRedistributableSharesByStrategy` after the delay to send tokens to the slash's `redistributionRecipient`. Clearing can be paused with `PAUSED_BURNING_AND_REDISTRIBUTION`. The following methods handle clearing burn or redistributable shares:
 * [`StrategyManager.increaseBurnOrRedistributableShares`](#increaseburnorredistributableshares)
@@ -301,7 +301,7 @@ The first strategy recorded for an `operatorSet` and `slashId` also sets the sla
 ```solidity
 /**
  * @notice Removes burned shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
- * @dev Reverts if SLASH_RESOLUTION_DELAY_BLOCKS has not elapsed since the slash was recorded.
+ * @dev Reverts if the slash's resolution block has not been reached (see getSlashResolutionBlock).
  * @dev Reverts if clearing is paused via PAUSED_BURNING_AND_REDISTRIBUTION.
  * @param operatorSet The operator set to burn shares in.
  * @param slashId The slash ID to burn shares in.
@@ -314,7 +314,7 @@ external returns (uint256[] memory);
 
 /**
  * @notice Removes a single strategy's shares from storage and transfers the underlying tokens for the slashId to the redistribution recipient.
- * @dev Reverts if SLASH_RESOLUTION_DELAY_BLOCKS has not elapsed since the slash was recorded.
+ * @dev Reverts if the slash's resolution block has not been reached (see getSlashResolutionBlock).
  * @dev Reverts if clearing is paused via PAUSED_BURNING_AND_REDISTRIBUTION.
  * @param operatorSet The operator set to burn shares in.
  * @param slashId The slash ID to burn shares in.
@@ -328,7 +328,7 @@ function clearBurnOrRedistributableSharesByStrategy(
 ) external returns (uint256);
 ```
 
-Anyone can call these methods after the slash resolution delay to transfer slashed shares to the operator set's `redistributionRecipient`. `clearBurnOrRedistributableShares` clears every strategy recorded for the `operatorSet` and `slashId`. To accommodate the unlimited number of strategies that can be added to an operator set, callers can also clear one strategy at a time with `clearBurnOrRedistributableSharesByStrategy`. The strategies that have not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`.
+Anyone can call these methods once the slash's resolution block has been reached to transfer slashed shares to the operator set's `redistributionRecipient`. `clearBurnOrRedistributableShares` clears every strategy recorded for the `operatorSet` and `slashId`. To accommodate the unlimited number of strategies that can be added to an operator set, callers can also clear one strategy at a time with `clearBurnOrRedistributableSharesByStrategy`. The strategies that have not been cleared can be retrieved by calling `getBurnOrRedistributableShares(operatorSet, slashId)`.
 
 *Effects*:
 * Removes the strategy's burn or redistributable shares for the `operatorSet` and `slashId`
@@ -573,9 +573,15 @@ Allows the owner to remove strategies from the `StrategyManager` strategy whitel
 ## System Configuration
 
 The Strategy Whitelister role has the ability to permit/remove strategies from being depositable via the `StrategyManager`. This role is held by the `StrategyFactory` (which is fully documented in [Strategies](#strategies)). The following methods concern the Strategy Whitelister role and its abilities within the `StrategyManager`:
+
 * [`StrategyManager.setStrategyWhitelister`](#setstrategywhitelister)
 * [`StrategyManager.addStrategiesToDepositWhitelist`](#addstrategiestodepositwhitelist)
 * [`StrategyManager.removeStrategiesFromDepositWhitelist`](#removestrategiesfromdepositwhitelist)
+
+The Slash Resolution Delay Setter role can update the number of blocks that must elapse after a slash before its shares can be cleared. The `owner` assigns this role. The following methods concern the Slash Resolution Delay Setter role:
+
+* [`StrategyManager.setSlashResolutionDelaySetter`](#setslashresolutiondelaysetter)
+* [`StrategyManager.setSlashResolutionDelayBlocks`](#setslashresolutiondelayblocks)
 
 #### `setStrategyWhitelister`
 
@@ -638,3 +644,45 @@ Allows the Strategy Whitelister to remove any number of strategies from the `Str
 
 *Requirements*:
 * Caller MUST be the `strategyWhitelister`
+
+#### `setSlashResolutionDelaySetter`
+
+```solidity
+/**
+ * @notice Sets the address permitted to update the slash resolution delay.
+ * @dev Only callable by the owner.
+ * @param newSlashResolutionDelaySetter The new slash resolution delay setter. Cannot be the zero address.
+ */
+function setSlashResolutionDelaySetter(address newSlashResolutionDelaySetter) external onlyOwner
+```
+
+Allows the `owner` to update the address permitted to call `setSlashResolutionDelayBlocks`.
+
+*Effects*:
+* Updates `StrategyManager.slashResolutionDelaySetter`
+* Emits a `SlashResolutionDelaySetterChanged` event
+
+*Requirements*:
+* Caller MUST be the `owner`
+* `newSlashResolutionDelaySetter` MUST NOT be the zero address
+
+#### `setSlashResolutionDelayBlocks`
+
+```solidity
+/**
+ * @notice Sets the number of blocks that must elapse after a slash before its shares can be cleared.
+ * @dev Only callable by the `slashResolutionDelaySetter`. Applies to slashes recorded after this call.
+ * @param newSlashResolutionDelayBlocks The new slash resolution delay in blocks.
+ */
+function setSlashResolutionDelayBlocks(uint32 newSlashResolutionDelayBlocks) external
+```
+
+Allows the `slashResolutionDelaySetter` to update `SLASH_RESOLUTION_DELAY_BLOCKS`. The new value applies to slashes recorded after the call; slashes already recorded keep their existing resolution block (see [Increasing/Clearing Slashed Shares](#increasingclearing-slashed-shares)).
+
+*Effects*:
+* Updates `StrategyManager.SLASH_RESOLUTION_DELAY_BLOCKS`
+* Emits a `SlashResolutionDelayBlocksChanged` event
+
+*Requirements*:
+* Caller MUST be the `slashResolutionDelaySetter`
+

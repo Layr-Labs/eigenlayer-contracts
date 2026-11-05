@@ -1,0 +1,22 @@
+{
+    "name": "configurable-redistribution-delay-1.13.2",
+    "from": "1.13.1",
+    "to": "1.13.2",
+    "phases": [
+        {
+            "type": "eoa",
+            "filename": "1-deployImplementations.s.sol",
+            "description": "Deploy the StrategyManager implementation with a configurable slash resolution delay"
+        },
+        {
+            "type": "multisig",
+            "filename": "2-queueUpgrade.s.sol",
+            "description": "Queue StrategyManager proxy upgrade, set the ops multisig as slash resolution delay setter, and bump the protocol registry version to 1.13.2"
+        },
+        {
+            "type": "multisig",
+            "filename": "3-completeUpgrade.s.sol",
+            "description": "Execute the queued StrategyManager upgrade via the timelock"
+        }
+    ]
+}

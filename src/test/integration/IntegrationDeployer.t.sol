@@ -50,6 +50,8 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
     // Multiple of 12 for sanity's sake
     uint64 constant GENESIS_TIME_LOCAL = 1 hours * 12;
     uint64 constant GENESIS_TIME_MAINNET = 1_606_824_023;
+    /// @dev Slash resolution delay configured for tests (storage value since v1.13.2; defaults to 0 until set).
+    uint32 constant DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS = 50_400;
     uint64 BEACON_GENESIS_TIME; // set after forkType is decided
 
     // Beacon chain deposit contract. The BeaconChainMock contract etchs ETHPOSDepositMock code here.
@@ -304,6 +306,9 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             cheats.startPrank(executorMultisig);
             eigenPodManager.setProofTimestampSetter(executorMultisig);
             eigenPodManager.setPectraForkTimestamp(BEACON_GENESIS_TIME);
+            // Configure the slash resolution delay (mirrors the post-upgrade setter action).
+            strategyManager.setSlashResolutionDelaySetter(executorMultisig);
+            strategyManager.setSlashResolutionDelayBlocks(DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS);
             cheats.stopPrank();
         }
     }
@@ -542,6 +547,11 @@ abstract contract IntegrationDeployer is ExistingDeploymentParser {
             initialStrategyWhitelister: address(strategyFactory),
             initialPausedStatus: 0
         });
+        // Configure the slash resolution delay (storage value since v1.13.2; defaults to 0 until set).
+        cheats.startPrank(executorMultisig);
+        strategyManager.setSlashResolutionDelaySetter(executorMultisig);
+        strategyManager.setSlashResolutionDelayBlocks(DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS);
+        cheats.stopPrank();
 
         eigenPodManager.initialize({initialOwner: executorMultisig, _initPausedStatus: 0});
 
