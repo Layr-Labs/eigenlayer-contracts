@@ -376,6 +376,9 @@ contract DeployFromScratch is Script, Test {
         // Set the strategyWhitelister to the factory
         strategyManager.setStrategyWhitelister(address(strategyFactory));
 
+        // Set the slash resolution delay setter to the operations multisig
+        strategyManager.setSlashResolutionDelaySetter(operationsMultisig);
+
         // Deploy a WETH strategy
         strategyFactory.deployNewStrategy(IERC20(address(0x94373a4919B3240D86eA41593D5eBa789FEF3848)));
 
@@ -575,6 +578,10 @@ contract DeployFromScratch is Script, Test {
 
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
+        require(
+            strategyManager.slashResolutionDelaySetter() == operationsMultisig,
+            "strategyManager: slashResolutionDelaySetter not set correctly"
+        );
         // require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
         // require(allocationManager.owner() == executorMultisig, "allocationManager: owner not set correctly");

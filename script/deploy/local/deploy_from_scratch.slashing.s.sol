@@ -378,6 +378,9 @@ contract DeployFromScratch is Script, Test {
             );
         }
 
+        // Set the slash resolution delay setter to the operations multisig
+        strategyManager.setSlashResolutionDelaySetter(operationsMultisig);
+
         // Transfer ownership
         eigenLayerProxyAdmin.transferOwnership(executorMultisig);
         eigenPodBeacon.transferOwnership(executorMultisig);
@@ -554,6 +557,10 @@ contract DeployFromScratch is Script, Test {
 
     function _verifyInitialOwners() internal view {
         require(strategyManager.owner() == executorMultisig, "strategyManager: owner not set correctly");
+        require(
+            strategyManager.slashResolutionDelaySetter() == operationsMultisig,
+            "strategyManager: slashResolutionDelaySetter not set correctly"
+        );
         // require(delegation.owner() == executorMultisig, "delegation: owner not set correctly");
         require(eigenPodManager.owner() == executorMultisig, "eigenPodManager: owner not set correctly");
 
