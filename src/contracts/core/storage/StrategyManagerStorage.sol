@@ -31,10 +31,6 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev Index for flag that pauses clearing of burn or redistributable shares when set.
     uint8 internal constant PAUSED_BURNING_AND_REDISTRIBUTION = 1;
 
-    /// @notice The number of blocks that must elapse after a slash before its shares can be cleared.
-    /// @dev Approximately 7 days at 12-second block times.
-    uint32 public constant SLASH_RESOLUTION_DELAY_BLOCKS = 50_400;
-
     /// @notice default address for burning slashed shares and transferring underlying tokens
     address public constant DEFAULT_BURN_ADDRESS = 0x00000000000000000000000000000000000E16E4;
 
@@ -100,6 +96,14 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     mapping(bytes32 operatorSetKey => mapping(uint256 slashId => uint32 resolutionBlock)) internal
         _slashResolutionBlock;
 
+    /// @notice The address permitted to update `SLASH_RESOLUTION_DELAY_BLOCKS`.
+    address public slashResolutionDelaySetter;
+
+    /// @notice The number of blocks that must elapse after a slash before its shares can be cleared.
+    /// @dev Applies only to slashes recorded after it is set. Defaults to 0 (no delay) until set by the setter.
+    /// @dev Named in SCREAMING_CASE so the getter stays ABI-compatible with the former constant.
+    uint32 public SLASH_RESOLUTION_DELAY_BLOCKS;
+
     // Construction
 
     /// @param _delegation The delegation contract of EigenLayer.
@@ -114,5 +118,5 @@ abstract contract StrategyManagerStorage is IStrategyManager {
     /// @dev This empty reserved space is put in place to allow future versions to add new
     /// variables without shifting down storage in the inheritance chain.
     /// See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-    uint256[31] private __gap;
+    uint256[30] private __gap;
 }
