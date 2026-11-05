@@ -21,6 +21,7 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
 
     OperatorSet defaultOperatorSet = OperatorSet(address(this), 0);
     uint defaultSlashId = 1;
+    uint32 constant DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS = 50_400;
 
     StrategyManager public strategyManagerImplementation;
     StrategyManager public strategyManager;
@@ -57,6 +58,9 @@ contract StrategyManagerUnitTests is EigenLayerUnitTestSetup, IStrategyManagerEv
                 )
             )
         );
+        // Configure the slash resolution delay (storage value since v1.13.2; defaults to 0 until set).
+        strategyManager.setSlashResolutionDelaySetter(initialOwner);
+        strategyManager.setSlashResolutionDelayBlocks(DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS);
         dummyToken = new ERC20PresetFixedSupply("mock token", "MOCK", MAX_STRATEGY_TOTAL_SHARES, address(this));
         revertToken = new ERC20_SetTransferReverting_Mock(1000e18, address(this));
         revertToken.setTransfersRevert(true);
@@ -1522,15 +1526,32 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
         );
     }
 
-    function testFuzz_Revert_ClearBeforeOrAtResolutionBlock(uint32 blocksElapsed) external {
+    function testFuzz_Revert_ClearBeforeResolutionBlock(uint32 blocksElapsed) external {
         uint shares = 1e18;
         _depositAndSlash(dummyStrat, defaultSlashId, shares);
 
-        blocksElapsed = uint32(bound(blocksElapsed, 0, strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS()));
+        blocksElapsed = uint32(bound(blocksElapsed, 0, strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS() - 1));
         cheats.roll(block.number + blocksElapsed);
 
         cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
         strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+    }
+
+    function test_clearBurnOrRedistributableShares_AtResolutionBlock() external {
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        uint32 resolutionBlock = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        uint recipientBalanceBefore = dummyToken.balanceOf(redistributionRecipient);
+
+        // Clearing is permitted at exactly the resolution block: the delay has elapsed.
+        cheats.roll(resolutionBlock);
+        strategyManager.clearBurnOrRedistributableShares(defaultOperatorSet, defaultSlashId);
+
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "slash should be cleared");
+        assertEq(strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId), 0, "resolution block should be deleted");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect");
     }
 
     function test_clearBurnOrRedistributableSharesByStrategy_AfterDelay() external {
@@ -1816,6 +1837,129 @@ contract StrategyManagerUnitTests_slashResolutionDelay is StrategyManagerUnitTes
 
         assertEq(strategyManager.getPendingOperatorSets().length, 0, "all operator sets should be cleared");
         assertEq(dummyToken.balanceOf(redistributionRecipient2), recipient2BalanceBefore + shares, "second recipient balance incorrect");
+    }
+}
+
+contract StrategyManagerUnitTests_slashResolutionDelayConfig is StrategyManagerUnitTests {
+    function _depositAndSlash(IStrategy strategy, uint slashId, uint shares) internal {
+        _depositIntoStrategySuccessfully(strategy, address(this), shares);
+        cheats.prank(address(delegationManagerMock));
+        strategyManager.increaseBurnOrRedistributableShares(defaultOperatorSet, slashId, strategy, shares);
+    }
+
+    function test_FreshDeployment_DelayIsZeroAndSetterUnset() external {
+        StrategyManager fresh = StrategyManager(
+            address(new TransparentUpgradeableProxy(address(strategyManagerImplementation), address(eigenLayerProxyAdmin), ""))
+        );
+        fresh.initialize(initialOwner, initialOwner, 0);
+
+        assertEq(fresh.SLASH_RESOLUTION_DELAY_BLOCKS(), 0, "fresh delay should be zero");
+        assertEq(fresh.slashResolutionDelaySetter(), address(0), "fresh setter should be unset");
+
+        // Nobody, not even the owner, can set the delay until a setter is configured.
+        cheats.expectRevert(IStrategyManagerErrors.OnlySlashResolutionDelaySetter.selector);
+        fresh.setSlashResolutionDelayBlocks(1);
+    }
+
+    function testFuzz_Revert_setSlashResolutionDelaySetter_NotOwner(address notOwner) external filterFuzzedAddressInputs(notOwner) {
+        cheats.assume(notOwner != strategyManager.owner());
+        cheats.prank(notOwner);
+        cheats.expectRevert("Ownable: caller is not the owner");
+        strategyManager.setSlashResolutionDelaySetter(notOwner);
+    }
+
+    function test_Revert_setSlashResolutionDelaySetter_ZeroAddress() external {
+        cheats.expectRevert(IPausable.InputAddressZero.selector);
+        strategyManager.setSlashResolutionDelaySetter(address(0));
+    }
+
+    function testFuzz_setSlashResolutionDelaySetter(address newSetter) external filterFuzzedAddressInputs(newSetter) {
+        cheats.assume(newSetter != address(0));
+        address previousSetter = strategyManager.slashResolutionDelaySetter();
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit SlashResolutionDelaySetterChanged(previousSetter, newSetter);
+        strategyManager.setSlashResolutionDelaySetter(newSetter);
+
+        assertEq(strategyManager.slashResolutionDelaySetter(), newSetter, "setter not updated");
+    }
+
+    function testFuzz_Revert_setSlashResolutionDelayBlocks_NotSetter(address notSetter) external filterFuzzedAddressInputs(notSetter) {
+        cheats.assume(notSetter != strategyManager.slashResolutionDelaySetter());
+        cheats.prank(notSetter);
+        cheats.expectRevert(IStrategyManagerErrors.OnlySlashResolutionDelaySetter.selector);
+        strategyManager.setSlashResolutionDelayBlocks(1);
+    }
+
+    function test_setSlashResolutionDelaySetter_Handover() external {
+        address newSetter = address(0xBEEF);
+        strategyManager.setSlashResolutionDelaySetter(newSetter);
+
+        // The previous setter (the owner, from setUp) can no longer change the delay.
+        cheats.expectRevert(IStrategyManagerErrors.OnlySlashResolutionDelaySetter.selector);
+        strategyManager.setSlashResolutionDelayBlocks(1);
+
+        // The new setter can.
+        cheats.prank(newSetter);
+        strategyManager.setSlashResolutionDelayBlocks(1);
+        assertEq(strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS(), 1, "new setter should be able to set the delay");
+    }
+
+    function testFuzz_setSlashResolutionDelayBlocks(uint32 newDelay) external {
+        uint32 previousDelay = strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS();
+
+        cheats.expectEmit(true, true, true, true, address(strategyManager));
+        emit SlashResolutionDelayBlocksChanged(previousDelay, newDelay);
+        strategyManager.setSlashResolutionDelayBlocks(newDelay);
+
+        assertEq(strategyManager.SLASH_RESOLUTION_DELAY_BLOCKS(), newDelay, "delay not updated");
+    }
+
+    function testFuzz_setSlashResolutionDelayBlocks_OnlyAffectsSubsequentSlashes(uint32 newDelay) external {
+        newDelay = uint32(bound(newDelay, 0, type(uint32).max - uint32(block.number)));
+        uint shares = 1e18;
+        uint slashId2 = defaultSlashId + 1;
+
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+        uint32 resolutionBlock1 = strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId);
+
+        strategyManager.setSlashResolutionDelayBlocks(newDelay);
+
+        // The pending slash keeps the resolution block computed when it was recorded.
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            resolutionBlock1,
+            "pending slash resolution block should not change"
+        );
+
+        // A subsequent slash resolves under the new delay.
+        _depositAndSlash(dummyStrat, slashId2, shares);
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, slashId2),
+            uint32(block.number) + newDelay,
+            "new slash resolution block incorrect"
+        );
+    }
+
+    function test_DelayZero_ClearableInSameBlock() external {
+        strategyManager.setSlashResolutionDelayBlocks(0);
+        uint shares = 1e18;
+        _depositAndSlash(dummyStrat, defaultSlashId, shares);
+
+        assertEq(
+            strategyManager.getSlashResolutionBlock(defaultOperatorSet, defaultSlashId),
+            uint32(block.number),
+            "zero-delay slash should resolve at the slash block"
+        );
+
+        address redistributionRecipient = allocationManagerMock.getRedistributionRecipient(defaultOperatorSet);
+        uint recipientBalanceBefore = dummyToken.balanceOf(redistributionRecipient);
+
+        // No roll: with a zero delay the slash is clearable in the block it was recorded.
+        strategyManager.clearBurnOrRedistributableSharesByStrategy(defaultOperatorSet, defaultSlashId, dummyStrat);
+
+        assertEq(strategyManager.getBurnOrRedistributableCount(defaultOperatorSet, defaultSlashId), 0, "slash should be cleared");
+        assertEq(dummyToken.balanceOf(redistributionRecipient), recipientBalanceBefore + shares, "recipient balance incorrect");
     }
 }
 

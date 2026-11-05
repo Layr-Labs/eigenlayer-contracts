@@ -211,4 +211,41 @@ contract Integration_SlashResolutionDelay is Integration_SlashResolutionDelay_Ba
             );
         }
     }
+
+    function testFuzz_slash_changeDelay_slash_independentResolution(uint24 _random) public rand(_random) {
+        // 6. First slash under the configured delay
+        SlashingParams memory firstSlashParams = _genSlashing_SingleStrategy(operator, operatorSet, strategies[0]);
+        firstSlashParams.wadsToSlash[0] = 0.1e18;
+        (uint slashId1,) = avs.slashOperator(firstSlashParams);
+        uint32 resolutionBlock1 = strategyManager.getSlashResolutionBlock(operatorSet, slashId1);
+        assertEq(resolutionBlock1, uint32(block.number) + DEFAULT_SLASH_RESOLUTION_DELAY_BLOCKS, "first resolution block incorrect");
+
+        // 7. The setter shortens the delay; the pending slash keeps its resolution block
+        uint32 newDelay = uint32(_randUint({min: 1, max: 1000}));
+        cheats.prank(executorMultisig);
+        strategyManager.setSlashResolutionDelayBlocks(newDelay);
+        assertEq(strategyManager.getSlashResolutionBlock(operatorSet, slashId1), resolutionBlock1, "pending slash resolution block changed");
+
+        // 8. A second slash resolves under the new delay
+        SlashingParams memory secondSlashParams = _genSlashing_SingleStrategy(operator, operatorSet, strategies[0]);
+        secondSlashParams.wadsToSlash[0] = 0.1e18;
+        (uint slashId2,) = avs.slashOperator(secondSlashParams);
+        uint32 resolutionBlock2 = strategyManager.getSlashResolutionBlock(operatorSet, slashId2);
+        assertEq(resolutionBlock2, uint32(block.number) + newDelay, "second resolution block incorrect");
+        assertLt(resolutionBlock2, resolutionBlock1, "second slash should resolve before the first");
+
+        // 9. The second slash clears once its shorter delay elapses while the first remains pending
+        _rollPastSlashResolutionDelay(resolutionBlock2);
+        avs.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId2, strategies[0]);
+        assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId2), 0, "second slash should be cleared");
+        assertEq(strategyManager.getBurnOrRedistributableCount(operatorSet, slashId1), 1, "first slash should remain pending");
+
+        cheats.expectRevert(IStrategyManagerErrors.SlashResolutionDelayNotElapsed.selector);
+        avs.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId1, strategies[0]);
+
+        // 10. The first slash clears once its original delay elapses
+        _rollPastSlashResolutionDelay(resolutionBlock1);
+        avs.clearBurnOrRedistributableSharesByStrategy(operatorSet, slashId1, strategies[0]);
+        assertEq(strategyManager.getPendingSlashIds(operatorSet).length, 0, "pending slash ids should be empty");
+    }
 }
